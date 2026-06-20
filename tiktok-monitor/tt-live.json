@@ -1,0 +1,37 @@
+{
+  // tt-live.json — configuration for the TikTok LIVE monitor skill.
+  //
+  // Location: same directory as tt_live.py and tt-live.sh, OR under
+  // $TT_LIVE_WORKSPACE/tt-live.json (workspace override takes priority).
+  //
+  // Format: JSON5 (JSON with comments and trailing commas allowed).
+  //
+  // Scope: three keys only. No notifications.* keys, no webhook URLs,
+  // no slack/discord/telegram keys. The tool is a pure data provider;
+  // announcements are owned by the OpenClaw sub-agent that invokes it.
+
+  // ---------------------------------------------------------------------
+  // url_retention_days
+  // ---------------------------------------------------------------------
+  // Stream URL retention window in days. StateStore.strip_stale_urls()
+  // drops entries with captured_at older than this on every state-write
+  // path. Integer >= 1. Default: 3.
+  "url_retention_days": 3,
+
+  // ---------------------------------------------------------------------
+  // request_timeout_sec
+  // ---------------------------------------------------------------------
+  // Per-HTTP-request timeout in seconds for direct urllib calls.
+  // Subprocess fallbacks (yt-dlp, streamlink) receive 2x this value as
+  // their subprocess timeout. Integer >= 1. Default: 15.
+  "request_timeout_sec": 15,
+
+  // ---------------------------------------------------------------------
+  // yt_dlp_path
+  // ---------------------------------------------------------------------
+  // Absolute path to the yt-dlp binary used as a stream-URL extraction
+  // fallback when the direct API path fails. Empty string ("") means
+  // "auto-discover via shutil.which('yt-dlp') on PATH". A non-empty value
+  // must point at an executable file. Default: "".
+  "yt_dlp_path": ""
+}
