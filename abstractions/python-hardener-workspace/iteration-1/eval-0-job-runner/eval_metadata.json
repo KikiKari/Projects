@@ -1,0 +1,13 @@
+{
+  "eval_id": 0,
+  "eval_name": "job-runner-full-hardening",
+  "prompt": "This job_runner.py script is used in production cron jobs. Can you do a full review and fix — security, error handling, logging, and docstrings? It currently opens the log file on every single call and uses os.chdir() somewhere. Please fix the file and give me a documentation markdown.",
+  "assertions": [
+    {"id": "no_bare_except", "description": "No bare except: blocks remain in the output file"},
+    {"id": "no_os_chdir", "description": "os.chdir() removed from output"},
+    {"id": "no_shell_true", "description": "shell=True removed from subprocess calls"},
+    {"id": "rotating_handler", "description": "RotatingFileHandler used for logging"},
+    {"id": "atomic_write", "description": "Atomic state write via os.replace or tempfile"},
+    {"id": "doc_file_present", "description": "Documentation .md file produced"}
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "assertions": [
+    {
+      "text": "SQL injection via unvalidated f-string removed",
+      "passed": true,
+      "evidence": "f-string SELECT without allowlist validation check"
+    },
+    {
+      "text": "No bare except: blocks (AST-verified)",
+      "passed": true,
+      "evidence": "AST bare handler count: 0"
+    },
+    {
+      "text": "DB connection properly closed (contextmanager/finally)",
+      "passed": true,
+      "evidence": "grep for contextmanager/conn.close()/finally"
+    },
+    {
+      "text": "Docstrings with Args: present",
+      "passed": true,
+      "evidence": "grep for 'Args:' in output"
+    },
+    {
+      "text": "Documentation .md file produced",
+      "passed": true,
+      "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/with_skill/outputs/report_db.md"
+    }
+  ],
+  "score": 5,
+  "total": 5,
+  "pass_rate": 1.0
+}
