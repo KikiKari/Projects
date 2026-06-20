@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "report-db-sql-injection-and-connection",
+  "prompt": "Please review report_db.py — add proper error handling (no bare excepts), fix any SQL injection issues, close the database connection properly, and add docstrings. Same filename please, and produce a markdown doc.",
+  "assertions": [
+    {"id": "no_sql_fstring", "description": "No f-string SQL interpolation in output"},
+    {"id": "no_bare_except", "description": "No bare except: blocks"},
+    {"id": "connection_closed", "description": "Connection closed via contextmanager or finally/close()"},
+    {"id": "docstring_present", "description": "At least one docstring block with Args: present"},
+    {"id": "doc_file_present", "description": "Documentation .md file produced"}
+  ]
+}

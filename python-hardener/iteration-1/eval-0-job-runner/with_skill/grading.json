@@ -1,0 +1,37 @@
+{
+  "assertions": [
+    {
+      "text": "No bare except: blocks (AST-verified)",
+      "passed": true,
+      "evidence": "AST bare handler count: 0"
+    },
+    {
+      "text": "os.chdir() removed (AST-verified)",
+      "passed": true,
+      "evidence": "AST chdir call count: 0"
+    },
+    {
+      "text": "No shell=True in subprocess calls (AST-verified)",
+      "passed": true,
+      "evidence": "AST shell=True count: 0"
+    },
+    {
+      "text": "RotatingFileHandler used for logging",
+      "passed": true,
+      "evidence": "grep for 'RotatingFileHandler' in output"
+    },
+    {
+      "text": "Atomic state write (tempfile/os.replace)",
+      "passed": true,
+      "evidence": "grep for 'os.replace' or 'tempfile'"
+    },
+    {
+      "text": "Documentation .md file produced",
+      "passed": true,
+      "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/with_skill/outputs/job_runner.md"
+    }
+  ],
+  "score": 6,
+  "total": 6,
+  "pass_rate": 1.0
+}

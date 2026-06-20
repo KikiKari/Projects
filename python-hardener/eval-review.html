@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "python-hardener", "runs": [{"id": "eval-0-job-runner-with_skill", "prompt": "This job_runner.py script is used in production cron jobs. Can you do a full review and fix \u2014 security, error handling, logging, and docstrings? It currently opens the log file on every single call and uses os.chdir() somewhere. Please fix the file and give me a documentation markdown.", "eval_id": 0, "outputs": [{"name": "job_runner.md", "type": "text", "content": "# job_runner.py\n\n## Overview\n\n`job_runner.py` is a production cron-job runner that sequentially executes a\nfixed set of build, test, and lint commands, commits the resulting changes to\na local Git repository, and persists run state to a JSON file.  All operational\noutput is routed through Python's `logging` module with a rotating file handler\nand a console handler configured once at start-up.\n\n---\n\n## Architecture\n\n```\nmain()\n  \u2502\n  \u251c\u2500\u2500 setup_logging()          \u2014 configure RotatingFileHandler + StreamHandler once\n  \u251c\u2500\u2500 load_state()             \u2014 read job_state.json (safe default on failure)\n  \u2502\n  \u251c\u2500\u2500 run_job(\"build\", [...])  \u2500\u2510\n  \u251c\u2500\u2500 run_job(\"test\",  [...])   \u251c\u2500\u2500 subprocess.run(cmd, shell=False, cwd unchanged)\n  \u251c\u2500\u2500 run_job(\"lint\",  [...])  \u2500\u2518\n  \u2502\n  \u251c\u2500\u2500 commit_results(msg)      \u2014 git -C <repo> add . && git -C <repo> commit -m msg\n  \u2514\u2500\u2500 save_state(state)        \u2014 atomic write via tempfile + os.replace()\n```\n\n---\n\n## Configuration\n\nAll configuration is read from environment variables so deployments can override\ndefaults without editing the file.\n\n| Variable                  | Default                               | Description                                    |\n|---------------------------|---------------------------------------|------------------------------------------------|\n| `JOB_RUNNER_WORKSPACE`    | `/home/runner/workspace`              | Root workspace directory                       |\n| `JOB_RUNNER_LOG_DIR`      | `$JOB_RUNNER_WORKSPACE/logs`          | Directory for rotating log files               |\n| `JOB_RUNNER_GIT_REPO`     | `$JOB_RUNNER_WORKSPACE/output-repo`   | Path to the Git repository for result commits  |\n| `LOG_LEVEL`               | `INFO`                                | Python logging level (DEBUG / INFO / WARNING \u2026)|\n| `JOB_TIMEOUT_SECONDS`     | `300`                                 | Per-job subprocess timeout in seconds          |\n\n---\n\n## API / Functions\n\n| Function | Signature | Description |\n|---|---|---|\n| `setup_logging` | `() -> None` | Configures the module logger once with a `RotatingFileHandler` (10 MB / 7 backups) and a `StreamHandler`. Reads level from `LOG_LEVEL`. Idempotent. |\n| `load_state` | `() -> dict` | Reads `job_state.json`. Returns `{\"jobs\": [], \"last_run\": None}` on missing file or parse error. |\n| `save_state` | `(state: dict) -> None` | Serialises `state` to `job_state.json` atomically via `tempfile.mkstemp` + `os.replace`. |\n| `run_job` | `(cmd: list[str], job_name: str) -> bool` | Runs `cmd` as a subprocess without a shell. Returns `True` on exit code 0. Handles timeout and OS errors. |\n| `commit_results` | `(message: str) -> bool` | Runs `git -C <GIT_REPO> add .` then `git -C <GIT_REPO> commit -m <message>`. Returns `True` on success. |\n| `main` | `() -> None` | Orchestrates logging setup, job execution, git commit, and state persistence. |\n\n---\n\n## Security\n\n| Threat | Original code | Countermeasure applied |\n|---|---|---|\n| **Shell injection** | `subprocess.run(cmd, shell=True)` \u2014 an attacker-controlled `cmd` string could execute arbitrary shell syntax | Changed to `shell=False` with `cmd` as a `list[str]`; the shell is never invoked |\n| **CWD mutation** | `os.chdir(GIT_REPO)` permanently alters the process working directory, affecting all subsequent relative-path operations | Replaced with `git -C <GIT_REPO> ...`; process CWD is never changed |\n| **Path traversal** | Log and state paths were derived from module-level constants without resolution checks | Paths are now resolved from environment variables; `Path.mkdir(parents=True)` is called only inside functions, not at import time |\n| **Secrets in code** | None in original; paths were hardcoded | Paths externalised to environment variables so sensitive deployment details are not committed |\n\n---\n\n## Error handling\n\n| Function | Exception caught | Behaviour on failure |\n|---|---|---|\n| `load_state` | `json.JSONDecodeError` | Logs a warning with the error detail; returns safe default state |\n| `load_state` | `OSError` | Logs a warning with the error detail; returns safe default state |\n| `save_state` | `OSError` | Cleans up the temporary file; re-raises so the caller can decide |\n| `run_job` | `subprocess.TimeoutExpired` | Logs error with timeout duration; returns `False` |\n| `run_job` | `subprocess.SubprocessError` | Logs error with `exc_info=True`; returns `False` |\n| `run_job` | `OSError` | Logs error with `exc_info=True`; returns `False` |\n| `commit_results` | `subprocess.CalledProcessError` | Logs rc, command, stdout and stderr; returns `False` |\n| `commit_results` | `OSError` | Logs error with `exc_info=True`; returns `False` |\n| `main` | `OSError` (from `save_state`) | Logs error; script continues and exits normally |\n\n---\n\n## Changes from the original\n\n| # | Category | Original | Fixed |\n|---|---|---|---|\n| 1 | Resource management | `log()` opened the log file on every call | `setup_logging()` configures `RotatingFileHandler` once; no per-call file open |\n| 2 | Security / CWD | `os.chdir(GIT_REPO)` mutated process CWD | `git -C <GIT_REPO>` used; CWD never changed |\n| 3 | Security / shell injection | `subprocess.run(cmd, shell=True)` | `subprocess.run(cmd, shell=False)` with `cmd` as a list |\n| 4 | Error handling | Bare `except:` in `load_state`, `run_job`, `commit_results` | Replaced with specific exception types + logged errors |\n| 5 | Error handling | Silent `pass` in `commit_results` hid all git failures | Returns `bool`; all failures are logged with details |\n| 6 | Resource management | `json.load(open(STATE_FILE))` \u2014 file handle never closed | Wrapped in `with open(...) as fh:` |\n| 7 | Reliability | `save_state` wrote directly \u2014 torn writes possible | Atomic write via `tempfile.mkstemp` + `os.replace` |\n| 8 | Module-level side effects | `LOG_DIR.mkdir()` called inside `log()` on every invocation | Called once inside `setup_logging()` |\n| 9 | Docstrings | None | Google-style docstrings on every public function |\n| 10 | Type hints | None | Added to all function signatures |\n| 11 | Configuration | Paths hardcoded | Externalised to environment variables with sensible defaults |\n"}, {"name": "job_runner.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\njob_runner.py \u2014 Production cron job runner.\n\nExecutes a fixed set of build/test/lint jobs, commits results to a local Git\nrepository, and persists run state to a JSON file.  All log output goes through\nPython's standard ``logging`` module (RotatingFileHandler + StreamHandler).\n\"\"\"\n\nimport json\nimport logging\nimport logging.handlers\nimport os\nimport subprocess\nimport tempfile\nfrom datetime import datetime\nfrom pathlib import Path\nfrom typing import Optional\n\n# ---------------------------------------------------------------------------\n# Paths \u2014 resolved from environment variables so deployments can override them\n# without changing the file.\n# ---------------------------------------------------------------------------\nWORKSPACE: Path = Path(os.environ.get(\"JOB_RUNNER_WORKSPACE\", \"/home/runner/workspace\"))\nSTATE_FILE: Path = WORKSPACE / \"job_state.json\"\nLOG_DIR: Path = Path(os.environ.get(\"JOB_RUNNER_LOG_DIR\", str(WORKSPACE / \"logs\")))\nGIT_REPO: Path = Path(os.environ.get(\"JOB_RUNNER_GIT_REPO\", str(WORKSPACE / \"output-repo\")))\n\n# Module-level logger; configured in setup_logging().\nlogger = logging.getLogger(__name__)\n\n\n# ---------------------------------------------------------------------------\n# Logging\n# ---------------------------------------------------------------------------\n\ndef setup_logging() -> None:\n    \"\"\"Configure the root logger with a RotatingFileHandler and StreamHandler.\n\n    Reads the desired log level from the ``LOG_LEVEL`` environment variable\n    (default: ``INFO``).  The log directory is created if it does not exist.\n    Handler setup is idempotent: calling this function more than once does not\n    add duplicate handlers.\n    \"\"\"\n    if logger.handlers:\n        # Already configured \u2014 nothing to do.\n        return\n\n    level_name: str = os.environ.get(\"LOG_LEVEL\", \"INFO\").upper()\n    level: int = getattr(logging, level_name, logging.INFO)\n    logger.setLevel(level)\n\n    LOG_DIR.mkdir(parents=True, exist_ok=True)\n\n    log_path = LOG_DIR / f\"{datetime.now().strftime('%Y-%m-%d')}.log\"\n\n    file_handler = logging.handlers.RotatingFileHandler(\n        log_path,\n        maxBytes=10 * 1024 * 1024,  # 10 MB\n        backupCount=7,\n        encoding=\"utf-8\",\n    )\n    file_handler.setFormatter(\n        logging.Formatter(\"[%(asctime)s] [%(levelname)s] %(message)s\")\n    )\n\n    stream_handler = logging.StreamHandler()\n    stream_handler.setFormatter(\n        logging.Formatter(\"[%(asctime)s] [%(levelname)s] %(message)s\")\n    )\n\n    logger.addHandler(file_handler)\n    logger.addHandler(stream_handler)\n\n\n# ---------------------------------------------------------------------------\n# State persistence\n# ---------------------------------------------------------------------------\n\ndef load_state() -> dict:\n    \"\"\"Load job runner state from the JSON state file.\n\n    Returns:\n        A dictionary with the persisted state.  If the file does not exist or\n        cannot be parsed, returns a safe default ``{\"jobs\": [], \"last_run\": None}``.\n    \"\"\"\n    if STATE_FILE.exists():\n        try:\n            with open(STATE_FILE, \"r\", encoding=\"utf-8\") as fh:\n                return json.load(fh)\n        except json.JSONDecodeError as exc:\n            logger.warning(\"State file is corrupt, resetting: %s\", exc)\n        except OSError as exc:\n            logger.warning(\"Cannot read state file: %s\", exc)\n    return {\"jobs\": [], \"last_run\": None}\n\n\ndef save_state(state: dict) -> None:\n    \"\"\"Persist job runner state to the JSON state file atomically.\n\n    Uses a temporary file in the same directory followed by ``os.replace()``\n    to avoid torn writes if the process is interrupted mid-write.\n\n    Args:\n        state: Dictionary to serialise as JSON.\n\n    Raises:\n        OSError: If the temporary file cannot be created or renamed.\n    \"\"\"\n    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)\n    dir_path = str(STATE_FILE.parent)\n\n    fd, tmp_path = tempfile.mkstemp(dir=dir_path, suffix=\".tmp\")\n    try:\n        with os.fdopen(fd, \"w\", encoding=\"utf-8\") as fh:\n            json.dump(state, fh, indent=2)\n        os.replace(tmp_path, STATE_FILE)\n    except OSError:\n        # Clean up the temp file if the replace failed.\n        try:\n            os.unlink(tmp_path)\n        except OSError:\n            pass\n        raise\n\n\n# ---------------------------------------------------------------------------\n# Job execution\n# ---------------------------------------------------------------------------\n\ndef run_job(cmd: list[str], job_name: str) -> bool:\n    \"\"\"Execute a single job as a subprocess.\n\n    The command is passed as a list so the shell is never involved, preventing\n    shell-injection vulnerabilities.\n\n    Args:\n        cmd:      The command and its arguments as a list of strings.\n        job_name: Human-readable name used in log messages.\n\n    Returns:\n        ``True`` if the process exited with return code 0, ``False`` otherwise.\n    \"\"\"\n    try:\n        result = subprocess.run(\n            cmd,\n            shell=False,\n            capture_output=True,\n            text=True,\n            timeout=int(os.environ.get(\"JOB_TIMEOUT_SECONDS\", \"300\")),\n        )\n        if result.returncode == 0:\n            logger.info(\"Job '%s' finished successfully (rc=%d)\", job_name, result.returncode)\n        else:\n            logger.warning(\n                \"Job '%s' finished with non-zero exit code %d\\nstdout: %s\\nstderr: %s\",\n                job_name,\n                result.returncode,\n                result.stdout.strip(),\n                result.stderr.strip(),\n            )\n        return result.returncode == 0\n    except subprocess.TimeoutExpired as exc:\n        logger.error(\"Job '%s' timed out after %s seconds\", job_name, exc.timeout)\n        return False\n    except subprocess.SubprocessError as exc:\n        logger.error(\"Job '%s' failed to start: %s\", job_name, exc, exc_info=True)\n        return False\n    except OSError as exc:\n        logger.error(\"OS error running job '%s': %s\", job_name, exc, exc_info=True)\n        return False\n\n\n# ---------------------------------------------------------------------------\n# Git commit\n# ---------------------------------------------------------------------------\n\ndef commit_results(message: str) -> bool:\n    \"\"\"Stage all changes in the Git repository and create a commit.\n\n    Uses ``git -C <repo_path>`` instead of ``os.chdir()`` so the process\n    working directory is never mutated.\n\n    Args:\n        message: Commit message.\n\n    Returns:\n        ``True`` if both ``git add`` and ``git commit`` succeeded,\n        ``False`` otherwise.\n    \"\"\"\n    try:\n        subprocess.run(\n            [\"git\", \"-C\", str(GIT_REPO), \"add\", \".\"],\n            check=True,\n            capture_output=True,\n            text=True,\n        )\n        subprocess.run(\n            [\"git\", \"-C\", str(GIT_REPO), \"commit\", \"-m\", message],\n            check=True,\n            capture_output=True,\n            text=True,\n        )\n        logger.info(\"Git commit created: %s\", message)\n        return True\n    except subprocess.CalledProcessError as exc:\n        logger.error(\n            \"Git operation failed (rc=%d): %s\\nstdout: %s\\nstderr: %s\",\n            exc.returncode,\n            exc.cmd,\n            exc.stdout.strip() if exc.stdout else \"\",\n            exc.stderr.strip() if exc.stderr else \"\",\n        )\n        return False\n    except OSError as exc:\n        logger.error(\"Could not invoke git: %s\", exc, exc_info=True)\n        return False\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\ndef main() -> None:\n    \"\"\"Run all configured jobs, commit results, and persist state.\n\n    Jobs are defined as ``(name, command_list)`` pairs.  Each command list is\n    passed directly to :func:`run_job` without shell interpretation.  State is\n    persisted atomically after every run.\n    \"\"\"\n    setup_logging()\n    logger.info(\"Runner started\")\n\n    state = load_state()\n\n    jobs: list[tuple[str, list[str]]] = [\n        (\"build\", [\"make\", \"build\"]),\n        (\"test\",  [\"make\", \"test\"]),\n        (\"lint\",  [\"flake8\", \".\"]),\n    ]\n\n    success = 0\n    for name, cmd in jobs:\n        if run_job(cmd, name):\n            success += 1\n\n    commit_results(f\"Run: {success}/{len(jobs)} jobs passed\")\n\n    state[\"last_run\"] = datetime.now().isoformat()\n    try:\n        save_state(state)\n    except OSError as exc:\n        logger.error(\"Failed to persist state: %s\", exc, exc_info=True)\n\n    logger.info(\"Done. %d/%d passed\", success, len(jobs))\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"assertions": [{"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "os.chdir() removed (AST-verified)", "passed": true, "evidence": "AST chdir call count: 0"}, {"text": "No shell=True in subprocess calls (AST-verified)", "passed": true, "evidence": "AST shell=True count: 0"}, {"text": "RotatingFileHandler used for logging", "passed": true, "evidence": "grep for 'RotatingFileHandler' in output"}, {"text": "Atomic state write (tempfile/os.replace)", "passed": true, "evidence": "grep for 'os.replace' or 'tempfile'"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/with_skill/outputs/job_runner.md"}], "score": 6, "total": 6, "pass_rate": 1.0}}, {"id": "eval-0-job-runner-without_skill", "prompt": "This job_runner.py script is used in production cron jobs. Can you do a full review and fix \u2014 security, error handling, logging, and docstrings? It currently opens the log file on every single call and uses os.chdir() somewhere. Please fix the file and give me a documentation markdown.", "eval_id": 0, "outputs": [{"name": "job_runner.md", "type": "text", "content": "# job_runner.py \u2014 Review & Fix Documentation\n\n## Overview\n\n`job_runner.py` is a production cron-job runner that executes a fixed set of\nbuild, test, and lint commands, persists run state to a JSON file, and\ncommits results to a local Git repository.\n\n---\n\n## Issues Found and Fixed\n\n### 1. Security \u2014 `shell=True` in `run_job()`\n\n**Original**\n```python\nresult = subprocess.run(cmd, shell=True, capture_output=True, text=True)\n```\n\n**Problem**  \n`shell=True` passes the command string to `/bin/sh -c`, which allows shell\nmetacharacters (`;`, `&&`, `|`, `$()`, etc.) embedded in `cmd` to be\ninterpreted.  If `cmd` ever contains user-supplied or environment-derived\ndata, this is a shell-injection vulnerability.\n\n**Fix**  \nSplit the command string on whitespace and pass a list to `subprocess.run`\nwith `shell=False` (the default):\n\n```python\nresult = subprocess.run(\n    cmd.split(),\n    shell=False,\n    capture_output=True,\n    text=True,\n    timeout=300,\n)\n```\n\n---\n\n### 2. Security / Correctness \u2014 `os.chdir()` in `commit_results()`\n\n**Original**\n```python\nos.chdir(GIT_REPO)\nsubprocess.run([\"git\", \"add\", \".\"], check=True)\n```\n\n**Problem**  \n`os.chdir()` mutates the working directory of the entire process.  In a\ncron job (or any long-running process) this is a latent bug: any relative\npath used after the `chdir` silently resolves against the new directory.\nIf `commit_results` raises before the `chdir` completes, subsequent code\nruns in an unexpected directory.\n\n**Fix**  \nUse the `cwd=` parameter of `subprocess.run`, which scopes the working\ndirectory change to that one child process only:\n\n```python\nsubprocess.run([\"git\", \"add\", \".\"], cwd=GIT_REPO, check=True, ...)\nsubprocess.run([\"git\", \"commit\", \"-m\", message], cwd=GIT_REPO, check=True, ...)\n```\n\n---\n\n### 3. Error Handling \u2014 Bare `except:` clauses\n\n**Original**\n```python\nexcept:\n    pass          # in load_state(), commit_results(), run_job()\n```\n\n**Problem**  \nBare `except:` catches _everything_ including `KeyboardInterrupt`,\n`SystemExit`, and programming errors such as `AttributeError`.  Silent\n`pass` means failures are invisible \u2014 there is no way to know why a job\nfailed or why the state file could not be read.\n\n**Fix**  \nReplace with specific exception types and log each case:\n\n| Location | Exceptions caught | Action |\n|---|---|---|\n| `load_state` | `json.JSONDecodeError`, `OSError` | Log WARNING, return default state |\n| `run_job` | `subprocess.TimeoutExpired`, `FileNotFoundError`, `OSError` | Log ERROR, return `False` |\n| `commit_results` | `subprocess.CalledProcessError`, `FileNotFoundError`, `OSError` | Log ERROR, return `False` |\n| `main` (save_state) | `OSError` | Log ERROR, continue to exit |\n\n---\n\n### 4. Error Handling \u2014 No timeout on subprocess calls\n\n**Original**  \nNo `timeout=` argument on any `subprocess.run` call.\n\n**Problem**  \nA hung child process (e.g. `make build` waiting for user input, or a\nnetwork-dependent test suite waiting for a server) blocks the cron job\nindefinitely, eventually exhausting cron slots.\n\n**Fix**  \nAdd `timeout=300` (5 minutes) to `run_job()`.  `commit_results()` uses\n`check=True`, so git errors raise `CalledProcessError` immediately.\n\n---\n\n### 5. Logging \u2014 Log file opened on every call\n\n**Original**\n```python\ndef log(msg, level=\"INFO\"):\n    LOG_DIR.mkdir(exist_ok=True)\n    logfile = LOG_DIR / f\"{datetime.now().strftime('%Y-%m-%d')}.log\"\n    with open(logfile, 'a') as f:\n        f.write(line + '\\n')\n```\n\n**Problem**  \n- The log directory existence check and an `open()` syscall happen on\n  every single log message \u2014 unnecessary overhead in a tight loop.\n- The custom `log()` function duplicates functionality provided by the\n  standard library `logging` module, which handles file rotation, levels,\n  formatting, and thread safety.\n- The raw `open()` leaves the file descriptor open for the duration of\n  the `with` block but not across calls; on a crash between calls the last\n  message may not be flushed.\n\n**Fix**  \nReplace the custom `log()` function with the standard `logging` module.\nA `_build_logger()` factory function opens both handlers **once** at\nstartup.  All call-sites use `logger.info(...)`, `logger.error(...)`, etc.\n\n```python\nlogger = _build_logger()   # called once at module import\n\n# usage\nlogger.info(\"Runner started\")\nlogger.error(\"Job '%s' failed (exit %d)\", job_name, result.returncode)\n```\n\n---\n\n### 6. Resource leak \u2014 `open()` without context manager in `load_state()`\n\n**Original**\n```python\nreturn json.load(open(STATE_FILE))\n```\n\n**Problem**  \nThe file object returned by `open()` is never explicitly closed.  The\nCPython garbage collector will close it eventually, but this is not\nguaranteed on other runtimes and may cause issues under resource pressure.\n\n**Fix**\n```python\nwith open(STATE_FILE, encoding=\"utf-8\") as fh:\n    return json.load(fh)\n```\n\n---\n\n### 7. Correctness \u2014 Naive datetime (no timezone)\n\n**Original**\n```python\nstate[\"last_run\"] = datetime.now().isoformat()\n```\n\n**Problem**  \n`datetime.now()` returns a _naive_ datetime (no timezone info).  When the\ncron host's local timezone changes (DST, migration) the timestamps become\nambiguous or incorrect.\n\n**Fix**\n```python\nstate[\"last_run\"] = datetime.now(tz=timezone.utc).isoformat()\n```\n\nProduces an unambiguous ISO-8601 string such as\n`2026-05-26T14:30:00.123456+00:00`.\n\n---\n\n### 8. Observability \u2014 stdout/stderr from failed jobs never recorded\n\n**Original**  \n`result.returncode` was logged but `result.stdout` and `result.stderr` were\ndiscarded on failure.\n\n**Fix**  \nLog `stdout` and `stderr` at ERROR level when a job fails:\n\n```python\nlogger.error(\n    \"Job '%s' failed (exit %d).\\nstdout: %s\\nstderr: %s\",\n    job_name, result.returncode,\n    result.stdout.strip(), result.stderr.strip(),\n)\n```\n\n---\n\n### 9. State \u2014 Failed job names not recorded\n\n**Original**  \nThe state file recorded only `last_run` timestamp; there was no record of\nwhich jobs passed or failed.\n\n**Fix**  \nThe `last_run_summary` key is added to state:\n\n```json\n{\n  \"last_run\": \"2026-05-26T14:30:00+00:00\",\n  \"last_run_summary\": {\n    \"total\": 3,\n    \"passed\": 2,\n    \"failed\": [\"lint\"]\n  }\n}\n```\n\n---\n\n### 10. Exit code \u2014 `main()` always exited 0\n\n**Original**  \n`main()` had no return value; `sys.exit()` was not called.\n\n**Fix**  \n`main()` returns `int` and `sys.exit(main())` is called so that the cron\nscheduler can detect failure:\n\n```python\nif __name__ == \"__main__\":\n    sys.exit(main())\n```\n\n---\n\n## Summary of All Changes\n\n| # | Category | Change |\n|---|---|---|\n| 1 | Security | Replaced `shell=True` with `shell=False` + list args in `run_job` |\n| 2 | Security / Correctness | Replaced `os.chdir()` with `cwd=` parameter in `commit_results` |\n| 3 | Error handling | Replaced bare `except: pass` with specific exception handling + logging |\n| 4 | Error handling | Added `timeout=300` to subprocess calls in `run_job` |\n| 5 | Logging | Replaced custom `log()` with stdlib `logging`; file opened once at startup |\n| 6 | Resource safety | Used context manager for `open()` in `load_state` |\n| 7 | Correctness | Used timezone-aware UTC datetime for `last_run` |\n| 8 | Observability | Log stdout/stderr of failed jobs |\n| 9 | Observability | Record failed job names in persistent state |\n| 10 | Correctness | `main()` returns meaningful exit code; `sys.exit(main())` called |\n\n---\n\n## Docstring Coverage\n\nAll public functions now carry NumPy-style docstrings with:\n\n- One-line summary sentence.\n- Extended description (where relevant).\n- `Parameters` section (typed).\n- `Returns` section (typed).\n- `Raises` section where exceptions propagate to the caller.\n\nThe module itself has a top-level docstring describing purpose, usage, and\nexit codes.\n\n---\n\n## File Locations\n\n| Path | Description |\n|---|---|\n| `/home/runner/workspace/logs/YYYY-MM-DD.log` | Daily rotating log file |\n| `/home/runner/workspace/job_state.json` | Persistent run state |\n| `/home/runner/workspace/output-repo/` | Git repository for committed results |\n"}, {"name": "job_runner.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"job_runner.py \u2014 Production cron-job runner.\n\nRuns a fixed set of build/test/lint jobs, records their outcomes in a\npersistent JSON state file, and commits the results to a local Git\nrepository.\n\nTypical usage (from cron)::\n\n    /usr/bin/python3 /opt/scripts/job_runner.py\n\nExit codes:\n    0  All jobs passed and state was saved successfully.\n    1  One or more jobs failed (logged; script still exits cleanly so cron\n       does not flood the operator with \"command failed\" e-mails \u2014 see the\n       log for details).\n\"\"\"\n\nimport json\nimport logging\nimport subprocess\nimport sys\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\n# ---------------------------------------------------------------------------\n# Configuration\n# ---------------------------------------------------------------------------\n\nWORKSPACE: Path = Path(\"/home/runner/workspace\")\nSTATE_FILE: Path = WORKSPACE / \"job_state.json\"\nLOG_DIR: Path = WORKSPACE / \"logs\"\nGIT_REPO: Path = WORKSPACE / \"output-repo\"\n\n# ---------------------------------------------------------------------------\n# Logging\n# ---------------------------------------------------------------------------\n\n\ndef _build_logger() -> logging.Logger:\n    \"\"\"Create and configure the module-level logger.\n\n    Writes to both *stdout* and a date-stamped file under ``LOG_DIR``.\n    The log directory is created once at startup so that the ``log()``\n    helper does not need to touch the filesystem on every call.\n\n    Returns\n    -------\n    logging.Logger\n        Configured logger instance named ``job_runner``.\n    \"\"\"\n    LOG_DIR.mkdir(parents=True, exist_ok=True)\n\n    logger = logging.getLogger(\"job_runner\")\n    logger.setLevel(logging.DEBUG)\n\n    formatter = logging.Formatter(\n        fmt=\"[%(asctime)s] [%(levelname)s] %(message)s\",\n        datefmt=\"%Y-%m-%d %H:%M:%S\",\n    )\n\n    # Console handler\n    console_handler = logging.StreamHandler(sys.stdout)\n    console_handler.setFormatter(formatter)\n    logger.addHandler(console_handler)\n\n    # File handler \u2014 one file per calendar day\n    log_path = LOG_DIR / f\"{datetime.now().strftime('%Y-%m-%d')}.log\"\n    file_handler = logging.FileHandler(log_path, encoding=\"utf-8\")\n    file_handler.setFormatter(formatter)\n    logger.addHandler(file_handler)\n\n    return logger\n\n\nlogger = _build_logger()\n\n# ---------------------------------------------------------------------------\n# State helpers\n# ---------------------------------------------------------------------------\n\n\ndef load_state() -> dict:\n    \"\"\"Load the persistent job state from ``STATE_FILE``.\n\n    If the file does not exist or contains invalid JSON, a default empty\n    state is returned and the error is logged at WARNING level so that the\n    runner can still proceed.\n\n    Returns\n    -------\n    dict\n        Mapping with at least the keys ``\"jobs\"`` (list) and\n        ``\"last_run\"`` (str | None).\n    \"\"\"\n    if STATE_FILE.exists():\n        try:\n            with open(STATE_FILE, encoding=\"utf-8\") as fh:\n                return json.load(fh)\n        except json.JSONDecodeError as exc:\n            logger.warning(\"State file is corrupt, starting fresh: %s\", exc)\n        except OSError as exc:\n            logger.warning(\"Could not read state file: %s\", exc)\n\n    return {\"jobs\": [], \"last_run\": None}\n\n\ndef save_state(state: dict) -> None:\n    \"\"\"Persist *state* to ``STATE_FILE`` as formatted JSON.\n\n    Parameters\n    ----------\n    state:\n        The state dictionary to serialise.\n\n    Raises\n    ------\n    OSError\n        Propagated if the file cannot be written; the caller logs this.\n    \"\"\"\n    with open(STATE_FILE, \"w\", encoding=\"utf-8\") as fh:\n        json.dump(state, fh, indent=2)\n\n# ---------------------------------------------------------------------------\n# Job execution\n# ---------------------------------------------------------------------------\n\n\ndef run_job(cmd: str, job_name: str) -> bool:\n    \"\"\"Execute a shell command and return whether it succeeded.\n\n    The command string is split on whitespace and executed without\n    ``shell=True`` to avoid shell-injection vulnerabilities.  If you need\n    shell features (pipes, redirects) pass the tokens as a list directly.\n    Never pass untrusted input to ``shell=True``.\n\n    Parameters\n    ----------\n    cmd:\n        The command string to run (e.g. ``\"make build\"``).  It is split on\n        whitespace; avoid embedding shell metacharacters.\n    job_name:\n        Human-readable name used in log messages.\n\n    Returns\n    -------\n    bool\n        ``True`` if the process exited with code 0, ``False`` otherwise.\n    \"\"\"\n    logger.info(\"Starting job '%s': %s\", job_name, cmd)\n    try:\n        result = subprocess.run(\n            cmd.split(),\n            shell=False,          # avoids shell-injection risk\n            capture_output=True,\n            text=True,\n            timeout=300,          # prevent hung jobs from blocking the cron\n        )\n        if result.returncode == 0:\n            logger.info(\"Job '%s' finished successfully (exit 0)\", job_name)\n        else:\n            logger.error(\n                \"Job '%s' failed (exit %d).\\nstdout: %s\\nstderr: %s\",\n                job_name,\n                result.returncode,\n                result.stdout.strip(),\n                result.stderr.strip(),\n            )\n        return result.returncode == 0\n    except subprocess.TimeoutExpired:\n        logger.error(\"Job '%s' timed out after 300 s\", job_name)\n        return False\n    except FileNotFoundError:\n        logger.error(\"Job '%s': command not found \u2014 %s\", job_name, cmd.split()[0])\n        return False\n    except OSError as exc:\n        logger.error(\"Job '%s' could not be started: %s\", job_name, exc)\n        return False\n\n# ---------------------------------------------------------------------------\n# Git helpers\n# ---------------------------------------------------------------------------\n\n\ndef commit_results(message: str) -> bool:\n    \"\"\"Stage all changes in ``GIT_REPO`` and create a commit.\n\n    Uses ``cwd=`` on each :func:`subprocess.run` call instead of\n    ``os.chdir()`` so the process working-directory is never mutated\n    (mutation of the working directory is a source of hard-to-debug bugs\n    in long-running processes and cron jobs).\n\n    Parameters\n    ----------\n    message:\n        Git commit message.  Must not be empty.\n\n    Returns\n    -------\n    bool\n        ``True`` if the commit was created successfully, ``False`` on any\n        error (the error is logged at ERROR level).\n    \"\"\"\n    if not message:\n        logger.error(\"commit_results: commit message must not be empty\")\n        return False\n\n    if not GIT_REPO.is_dir():\n        logger.error(\"Git repo directory does not exist: %s\", GIT_REPO)\n        return False\n\n    try:\n        subprocess.run(\n            [\"git\", \"add\", \".\"],\n            cwd=GIT_REPO,\n            check=True,\n            capture_output=True,\n            text=True,\n        )\n        subprocess.run(\n            [\"git\", \"commit\", \"-m\", message],\n            cwd=GIT_REPO,\n            check=True,\n            capture_output=True,\n            text=True,\n        )\n        logger.info(\"Git commit created: %s\", message)\n        return True\n    except subprocess.CalledProcessError as exc:\n        logger.error(\n            \"Git command failed (exit %d): %s\\nstderr: %s\",\n            exc.returncode,\n            exc.cmd,\n            exc.stderr.strip() if exc.stderr else \"\",\n        )\n        return False\n    except FileNotFoundError:\n        logger.error(\"'git' executable not found on PATH\")\n        return False\n    except OSError as exc:\n        logger.error(\"Unexpected OS error during git commit: %s\", exc)\n        return False\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\n\ndef main() -> int:\n    \"\"\"Orchestrate job execution, state persistence, and git commit.\n\n    Defines the list of jobs to run, executes each in order, commits the\n    aggregate result to the output repository, and updates the persistent\n    state file.\n\n    Returns\n    -------\n    int\n        ``0`` if all jobs passed; ``1`` if one or more jobs failed.\n    \"\"\"\n    logger.info(\"Runner started\")\n    state = load_state()\n\n    jobs: list[tuple[str, str]] = [\n        (\"build\", \"make build\"),\n        (\"test\",  \"make test\"),\n        (\"lint\",  \"flake8 .\"),\n    ]\n\n    success = 0\n    failed_jobs: list[str] = []\n\n    for name, cmd in jobs:\n        if run_job(cmd, name):\n            success += 1\n        else:\n            failed_jobs.append(name)\n\n    commit_results(f\"Run: {success}/{len(jobs)} jobs passed\")\n\n    state[\"last_run\"] = datetime.now(tz=timezone.utc).isoformat()\n    state[\"last_run_summary\"] = {\n        \"total\": len(jobs),\n        \"passed\": success,\n        \"failed\": failed_jobs,\n    }\n\n    try:\n        save_state(state)\n    except OSError as exc:\n        logger.error(\"Could not save state file: %s\", exc)\n\n    logger.info(\"Done. %d/%d jobs passed.\", success, len(jobs))\n\n    return 0 if not failed_jobs else 1\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"}], "grading": {"assertions": [{"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "os.chdir() removed (AST-verified)", "passed": true, "evidence": "AST chdir call count: 0"}, {"text": "No shell=True in subprocess calls (AST-verified)", "passed": true, "evidence": "AST shell=True count: 0"}, {"text": "RotatingFileHandler used for logging", "passed": false, "evidence": "grep for 'RotatingFileHandler' in output"}, {"text": "Atomic state write (tempfile/os.replace)", "passed": false, "evidence": "grep for 'os.replace' or 'tempfile'"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/without_skill/outputs/job_runner.md"}], "score": 4, "total": 6, "pass_rate": 0.6666666666666666}}, {"id": "eval-1-report-db-with_skill", "prompt": "Please review report_db.py \u2014 add proper error handling (no bare excepts), fix any SQL injection issues, close the database connection properly, and add docstrings. Same filename please, and produce a markdown doc.", "eval_id": 1, "outputs": [{"name": "report_db.md", "type": "text", "content": "# report_db\n\n## Overview\n\n`report_db.py` exports tables from a SQLite reports database to CSV or JSON\nfiles.  The module defines a `ReportDatabase` class whose methods validate\ntable names against a fixed allowlist, pass query values through parameterised\nqueries, write output files atomically, and log all operations through\nPython's standard `logging` module.  A `main()` entry point iterates over all\nknown tables and exports each one, continuing past individual failures so a\nsingle bad table does not abort the run.\n\n---\n\n## Architecture\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502                    main()                        \u2502\n\u2502  iterates ALLOWED_TABLES, calls export_table()  \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                    \u2502\n        \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n        \u2502     ReportDatabase     \u2502\n        \u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510  \u2502\n        \u2502  \u2502  _validate_table \u2502  \u2502  allowlist guard\n        \u2502  \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524  \u2502\n        \u2502  \u2502    get_table     \u2502  \u2502  SELECT * (table allowlisted)\n        \u2502  \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524  \u2502\n        \u2502  \u2502  search_reports  \u2502  \u2502  parameterised WHERE\n        \u2502  \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524  \u2502\n        \u2502  \u2502  export_table    \u2502  \u2502  atomic CSV / JSON write\n        \u2502  \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524  \u2502\n        \u2502  \u2502   run_custom     \u2502  \u2502  trusted SQL execution\n        \u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518  \u2502\n        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                    \u2502\n        \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25bc\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n        \u2502   get_connection()     \u2502  @contextmanager \u2014 always closes conn\n        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                    \u2502\n            SQLite on disk\n           /var/data/reports.db\n```\n\n---\n\n## Configuration\n\n| Environment variable | Default | Description |\n|---|---|---|\n| `LOG_LEVEL` | `INFO` | Python log level name (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`). |\n\nThe log file path is hard-coded to `/var/log/report_db.log` with a\n`RotatingFileHandler` (10 MB per file, 7 backups).  If that path is not\nwritable the module falls back to console-only logging.\n\nDatabase and export paths can be overridden at `ReportDatabase.__init__` time\nusing the `db_path` and `export_dir` keyword arguments.\n\n---\n\n## API / Functions\n\n### Module-level\n\n| Name | Signature | Description |\n|---|---|---|\n| `setup_logging` | `() -> None` | Configures the module logger once with a `RotatingFileHandler` and a `StreamHandler`. Idempotent. |\n| `get_connection` | `(db_path: Path) -> Generator[sqlite3.Connection, None, None]` | Context manager: opens the database, yields the connection, always closes on exit. |\n| `main` | `() -> None` | Entry point: calls `setup_logging()`, instantiates `ReportDatabase`, and exports all tables in `ALLOWED_TABLES`. |\n\n### `ReportDatabase`\n\n| Method | Signature | Description |\n|---|---|---|\n| `__init__` | `(db_path=DB_PATH, export_dir=EXPORT_DIR) -> None` | Stores paths; does **not** open a connection. |\n| `_validate_table` | `(table_name: str) -> None` | Raises `ValueError` if `table_name` is not in `ALLOWED_TABLES`. |\n| `get_table` | `(table_name: str) -> List[sqlite3.Row]` | Returns all rows from an allowlisted table. |\n| `search_reports` | `(status: str, owner: str) -> List[sqlite3.Row]` | Parameterised query against `reports` filtered by status and owner. |\n| `export_table` | `(table_name: str, fmt: str = \"csv\") -> Optional[Path]` | Exports table to CSV or JSON using an atomic temp-file write. Returns the output path, or `None` if the table is empty. |\n| `run_custom` | `(raw_sql: str) -> None` | Executes trusted raw SQL and commits. Logs and re-raises on error. |\n\n---\n\n## Security\n\n| Threat | Location in original | Countermeasure applied |\n|---|---|---|\n| **SQL injection via table name** | `get_table`: `f\"SELECT * FROM {table_name}\"` | Table name validated against `ALLOWED_TABLES` frozenset before interpolation. |\n| **SQL injection via user values** | `search_reports`: f-string with `status` and `user_input` in WHERE clause | Replaced with a parameterised query (`?` placeholders). |\n| **DB connection never closed** | `__init__` opened `self.conn`; no `close()` anywhere | All access flows through the `get_connection()` context manager which calls `conn.close()` in `finally`. |\n| **Module-level side effect** | `EXPORT_DIR.mkdir(exist_ok=True)` at import time | Moved into `export_table()` (called only when actually exporting) and `main()`. |\n| **Torn / partial export files** | Direct `open()` write to final path | Atomic write: `tempfile.mkstemp()` then `os.replace()`. |\n\n---\n\n## Error handling\n\n| Function | Exception(s) handled | Behaviour on failure |\n|---|---|---|\n| `setup_logging` | `OSError` (log file open) | Falls back to console-only; logs a warning. |\n| `get_connection` | \u2014 (callers handle `sqlite3.Error`) | Ensures `conn.close()` is always called via `finally`. |\n| `ReportDatabase._validate_table` | Raises `ValueError` for unknown tables | Propagates to caller; prevents malicious or typo'd table names from reaching the DB. |\n| `ReportDatabase.get_table` | `sqlite3.Error` | Propagates to caller with full traceback available. |\n| `ReportDatabase.search_reports` | `sqlite3.Error` | Propagates to caller. |\n| `ReportDatabase.export_table` | `OSError` on write | Logs error with `exc_info=True`, removes the temp file, re-raises. Cleans up the partial temp file. |\n| `ReportDatabase.run_custom` | `sqlite3.Error` | Logs error with `exc_info=True` and re-raises. |\n| `main` | `ValueError`, `sqlite3.Error`, `OSError` | Logs the error with `exc_info=True` and continues to the next table so one failure does not abort the run. |\n"}, {"name": "report_db.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nreport_db.py \u2014 Hardened database reporting module.\n\nExports tables from a SQLite reports database to CSV or JSON.\nAll SQL injection vectors are closed, connections are managed via context\nmanagers, and errors are logged rather than swallowed.\n\"\"\"\n\nimport csv\nimport json\nimport logging\nimport logging.handlers\nimport os\nimport sqlite3\nimport tempfile\nfrom contextlib import contextmanager\nfrom pathlib import Path\nfrom typing import Generator, List, Optional\n\nDB_PATH = Path(\"/var/data/reports.db\")\nEXPORT_DIR = Path(\"/var/data/exports\")\n\nALLOWED_TABLES = frozenset({\"reports\", \"users\", \"audit_log\"})\n\nlogger = logging.getLogger(__name__)\n\n\ndef setup_logging() -> None:\n    \"\"\"\n    Configure application-wide logging.\n\n    Reads LOG_LEVEL from the environment (default: INFO).  Attaches a\n    RotatingFileHandler (10 MB / 7 backups) and a StreamHandler so output\n    goes to both a file and the console.  Safe to call multiple times \u2014\n    subsequent calls are no-ops if handlers are already present.\n    \"\"\"\n    if logger.handlers:\n        return\n\n    level_name = os.environ.get(\"LOG_LEVEL\", \"INFO\").upper()\n    level = getattr(logging, level_name, logging.INFO)\n    logger.setLevel(level)\n\n    formatter = logging.Formatter(\n        \"%(asctime)s %(levelname)-8s %(name)s \u2014 %(message)s\",\n        datefmt=\"%Y-%m-%dT%H:%M:%S\",\n    )\n\n    log_file = Path(\"/var/log/report_db.log\")\n    try:\n        file_handler = logging.handlers.RotatingFileHandler(\n            log_file, maxBytes=10 * 1024 * 1024, backupCount=7\n        )\n        file_handler.setFormatter(formatter)\n        logger.addHandler(file_handler)\n    except OSError as exc:\n        # If the log directory is not writable, fall back to console-only.\n        logging.warning(\"Cannot open log file %s: %s\", log_file, exc)\n\n    console_handler = logging.StreamHandler()\n    console_handler.setFormatter(formatter)\n    logger.addHandler(console_handler)\n\n\n@contextmanager\ndef get_connection(db_path: Path) -> Generator[sqlite3.Connection, None, None]:\n    \"\"\"\n    Yield an open SQLite connection and close it on exit.\n\n    Args:\n        db_path: Filesystem path to the SQLite database file.\n\n    Yields:\n        An open :class:`sqlite3.Connection` with ``row_factory`` set to\n        :data:`sqlite3.Row`.\n\n    Raises:\n        sqlite3.Error: If the database cannot be opened.\n    \"\"\"\n    conn = sqlite3.connect(db_path)\n    conn.row_factory = sqlite3.Row\n    try:\n        yield conn\n    finally:\n        conn.close()\n\n\nclass ReportDatabase:\n    \"\"\"\n    High-level interface for the reports SQLite database.\n\n    All database access is performed through :func:`get_connection` so\n    connections are never leaked.  Table names are validated against\n    :data:`ALLOWED_TABLES` before being interpolated into SQL; query\n    values are always passed via parameterised queries.\n\n    Args:\n        db_path: Path to the SQLite database file.\n        export_dir: Directory where exported files are written.\n    \"\"\"\n\n    def __init__(\n        self,\n        db_path: Path = DB_PATH,\n        export_dir: Path = EXPORT_DIR,\n    ) -> None:\n        \"\"\"\n        Initialise ReportDatabase.\n\n        Args:\n            db_path: Path to the SQLite database file.  Defaults to\n                :data:`DB_PATH`.\n            export_dir: Directory that will receive exported files.\n                Created automatically if it does not exist.  Defaults\n                to :data:`EXPORT_DIR`.\n        \"\"\"\n        self.db_path = db_path\n        self.export_dir = export_dir\n\n    def _validate_table(self, table_name: str) -> None:\n        \"\"\"\n        Raise ValueError if *table_name* is not in the allowlist.\n\n        Args:\n            table_name: The table name to validate.\n\n        Raises:\n            ValueError: If *table_name* is not in :data:`ALLOWED_TABLES`.\n        \"\"\"\n        if table_name not in ALLOWED_TABLES:\n            raise ValueError(\n                f\"Table '{table_name}' is not in the allowlist \"\n                f\"{sorted(ALLOWED_TABLES)}.\"\n            )\n\n    def get_table(self, table_name: str) -> List[sqlite3.Row]:\n        \"\"\"\n        Return all rows from *table_name*.\n\n        Args:\n            table_name: Name of the table to query.  Must be present in\n                :data:`ALLOWED_TABLES`.\n\n        Returns:\n            A list of :class:`sqlite3.Row` objects (may be empty).\n\n        Raises:\n            ValueError: If *table_name* is not in the allowlist.\n            sqlite3.Error: On database errors.\n        \"\"\"\n        self._validate_table(table_name)\n        # Table name has been validated against an allowlist \u2014 safe to\n        # interpolate.  Values are never interpolated this way.\n        sql = f\"SELECT * FROM {table_name}\"  # nosec B608\n        with get_connection(self.db_path) as conn:\n            cursor = conn.cursor()\n            cursor.execute(sql)\n            return cursor.fetchall()\n\n    def search_reports(self, status: str, owner: str) -> List[sqlite3.Row]:\n        \"\"\"\n        Return reports matching *status* and *owner*.\n\n        Args:\n            status: Report status string to filter by.\n            owner: Owner name to filter by.\n\n        Returns:\n            A list of matching :class:`sqlite3.Row` objects (may be empty).\n\n        Raises:\n            sqlite3.Error: On database errors.\n        \"\"\"\n        sql = \"SELECT * FROM reports WHERE status = ? AND owner = ?\"\n        with get_connection(self.db_path) as conn:\n            cursor = conn.cursor()\n            cursor.execute(sql, (status, owner))\n            return cursor.fetchall()\n\n    def export_table(\n        self, table_name: str, fmt: str = \"csv\"\n    ) -> Optional[Path]:\n        \"\"\"\n        Export a table to a file and return its path.\n\n        Files are written atomically: data is first written to a\n        temporary file in :attr:`export_dir`, then renamed into place\n        with :func:`os.replace` so a crash mid-write never leaves a\n        partial file.\n\n        Args:\n            table_name: Table to export.  Must be in :data:`ALLOWED_TABLES`.\n            fmt: Output format \u2014 ``\"csv\"`` (default) or ``\"json\"``.\n\n        Returns:\n            :class:`~pathlib.Path` to the written file, or ``None`` if the\n            table is empty.\n\n        Raises:\n            ValueError: If *table_name* is not in the allowlist, or if\n                *fmt* is not ``\"csv\"`` or ``\"json\"``.\n            sqlite3.Error: On database read errors.\n            OSError: If the export directory cannot be created or the\n                file cannot be written.\n        \"\"\"\n        if fmt not in {\"csv\", \"json\"}:\n            raise ValueError(f\"Unsupported format '{fmt}'. Use 'csv' or 'json'.\")\n\n        data = self.get_table(table_name)\n        if not data:\n            logger.info(\"Table '%s' is empty \u2014 skipping export.\", table_name)\n            return None\n\n        self.export_dir.mkdir(parents=True, exist_ok=True)\n        out_path = self.export_dir / f\"{table_name}.{fmt}\"\n\n        # Atomic write: write to a temp file, then rename.\n        fd, tmp_path = tempfile.mkstemp(\n            dir=self.export_dir, prefix=f\".{table_name}_\", suffix=f\".{fmt}\"\n        )\n        try:\n            with os.fdopen(fd, \"w\", newline=\"\" if fmt == \"csv\" else \"\\n\") as fh:\n                if fmt == \"csv\":\n                    writer = csv.writer(fh)\n                    writer.writerow(data[0].keys())\n                    writer.writerows([tuple(row) for row in data])\n                else:\n                    json.dump([dict(row) for row in data], fh, indent=2)\n            os.replace(tmp_path, out_path)\n        except OSError:\n            logger.error(\n                \"Failed to write export for table '%s'.\", table_name, exc_info=True\n            )\n            try:\n                os.unlink(tmp_path)\n            except OSError:\n                pass\n            raise\n\n        logger.info(\"Exported '%s' to %s\", table_name, out_path)\n        return out_path\n\n    def run_custom(self, raw_sql: str) -> None:\n        \"\"\"\n        Execute arbitrary SQL and commit the transaction.\n\n        .. warning::\n            This method accepts a raw SQL string.  The caller is\n            responsible for ensuring the input is trusted and does not\n            contain user-supplied data.\n\n        Args:\n            raw_sql: SQL statement to execute.\n\n        Raises:\n            sqlite3.Error: If execution or commit fails.\n        \"\"\"\n        with get_connection(self.db_path) as conn:\n            try:\n                cursor = conn.cursor()\n                cursor.execute(raw_sql)\n                conn.commit()\n                logger.debug(\"run_custom executed successfully.\")\n            except sqlite3.Error:\n                logger.error(\n                    \"run_custom failed for SQL: %.200s\", raw_sql, exc_info=True\n                )\n                raise\n\n\ndef main() -> None:\n    \"\"\"\n    Entry point: export all known tables to CSV.\n\n    Creates the export directory if it does not exist, instantiates\n    :class:`ReportDatabase`, and iterates over :data:`ALLOWED_TABLES`.\n    Errors for individual tables are logged and execution continues so\n    that one failing table does not abort the others.\n    \"\"\"\n    setup_logging()\n    db = ReportDatabase()\n    for table in sorted(ALLOWED_TABLES):\n        try:\n            path = db.export_table(table)\n            if path:\n                logger.info(\"Exported %s -> %s\", table, path)\n        except (ValueError, sqlite3.Error, OSError):\n            logger.error(\"Could not export table '%s'.\", table, exc_info=True)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"assertions": [{"text": "SQL injection via unvalidated f-string removed", "passed": true, "evidence": "f-string SELECT without allowlist validation check"}, {"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "DB connection properly closed (contextmanager/finally)", "passed": true, "evidence": "grep for contextmanager/conn.close()/finally"}, {"text": "Docstrings with Args: present", "passed": true, "evidence": "grep for 'Args:' in output"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/with_skill/outputs/report_db.md"}], "score": 5, "total": 5, "pass_rate": 1.0}}, {"id": "eval-1-report-db-without_skill", "prompt": "Please review report_db.py \u2014 add proper error handling (no bare excepts), fix any SQL injection issues, close the database connection properly, and add docstrings. Same filename please, and produce a markdown doc.", "eval_id": 1, "outputs": [{"name": "report_db.md", "type": "text", "content": "# report_db.py \u2014 Code Review & Changes\n\n## Overview\n\n`report_db.py` provides the `ReportDatabase` class for querying, exporting, and managing data stored in an SQLite reports database.  The file was reviewed and hardened in the following four areas:\n\n1. SQL injection vulnerabilities\n2. Bare `except` clauses\n3. Database connection lifecycle\n4. Missing docstrings\n\n---\n\n## Issues Found and Fixed\n\n### 1. SQL Injection\n\n**Original problems**\n\n| Method | Issue |\n|---|---|\n| `get_table` | Table name embedded directly via f-string: `f\"SELECT * FROM {table_name}\"` |\n| `search_reports` | Both `status` and `user_input` interpolated via f-string into the WHERE clause |\n\n**Fixes applied**\n\n- `get_table` \u2014 A static `_validate_table_name` helper now checks the supplied name against an explicit allowlist (`ALLOWED_TABLES`).  SQLite does not support parameterised identifier substitution, so allowlist validation is the correct mitigation here.  Any name not in the set raises `ValueError` before the query is built.\n- `search_reports` \u2014 Rewritten to use a parameterised query (`?` placeholders) so user-supplied values are never concatenated into SQL:\n\n  ```python\n  # Before (vulnerable)\n  query = f\"SELECT * FROM reports WHERE status = '{status}' AND owner = '{user_input}'\"\n\n  # After (safe)\n  sql = \"SELECT * FROM reports WHERE status = ? AND owner = ?\"\n  cursor.execute(sql, (status, owner))\n  ```\n\n---\n\n### 2. Bare `except` Clauses\n\n**Original problem**\n\n`run_custom` used a bare `except: pass`, which silently swallowed every possible exception including `KeyboardInterrupt`, `SystemExit`, and programming errors:\n\n```python\ntry:\n    cursor = self.conn.cursor()\n    cursor.execute(raw_sql)\n    self.conn.commit()\nexcept:          # bare except \u2013 catches everything, including KeyboardInterrupt\n    pass         # silent failure \u2013 no logging, no re-raise\n```\n\n**Fix applied**\n\nReplaced with a specific `except sqlite3.Error` that re-raises as the module's own `ReportDatabaseError`, preserving the original cause via `raise ... from exc`:\n\n```python\nexcept sqlite3.Error as exc:\n    raise ReportDatabaseError(\n        f\"Failed to execute custom SQL: {exc}\"\n    ) from exc\n```\n\nThe same pattern was applied consistently to all other `try/except` blocks in the class.\n\n---\n\n### 3. Database Connection Not Closed\n\n**Original problem**\n\n`ReportDatabase.__init__` opened a connection that was never closed.  In `main()` the `db` object went out of scope without an explicit `close()`, relying on the garbage collector to flush any pending writes \u2014 which is not guaranteed, especially in CPython with reference cycles or in other Python implementations.\n\n**Fix applied**\n\n- Added a `close()` method that safely shuts the connection and sets `self.conn = None` (idempotent on repeated calls).\n- Implemented `__enter__` / `__exit__` so the class can be used as a context manager.\n- Updated `main()` to use `with ReportDatabase() as db:` so the connection is always closed, even if an exception is raised mid-loop.\n\n```python\n# Before\ndef main():\n    db = ReportDatabase()\n    for t in tables:\n        path = db.export_table(t)   # connection never explicitly closed\n\n# After\ndef main():\n    with ReportDatabase() as db:    # __exit__ calls close() unconditionally\n        for table in tables:\n            ...\n```\n\n---\n\n### 4. Missing Docstrings\n\nNo docstrings were present on the module, class, or any method.\n\n**Fix applied**\n\nAdded Google-style docstrings to:\n\n| Target | Content |\n|---|---|\n| Module | High-level purpose, usage note |\n| `ReportDatabase` | Class purpose, attributes, context-manager usage example |\n| `__init__` | Parameters, raises |\n| `__enter__` / `__exit__` | Brief description |\n| `close` | Behaviour, idempotency note |\n| `_validate_table_name` | Why an allowlist is used instead of parameters, raises |\n| `get_table` | Args, returns, raises |\n| `search_reports` | Args, returns, raises |\n| `export_table` | Args, returns, raises |\n| `run_custom` | Security warning, args, returns, raises |\n| `main` | One-line summary |\n\n---\n\n## Additional Improvements\n\n| Area | Change |\n|---|---|\n| Custom exception class | `ReportDatabaseError(Exception)` added so callers can distinguish expected database errors from programming errors |\n| Export format validation | `export_table` now raises `ValueError` immediately for unknown `fmt` values instead of silently returning `None` |\n| CSV header row | The exported CSV now includes a header row derived from `sqlite3.Row.keys()` |\n| Encoding | File opens now specify `encoding=\"utf-8\"` explicitly |\n| Logging | `logging` replaces bare `print` for diagnostic messages; `main()` configures `basicConfig` when run as a script |\n| `EXPORT_DIR` side-effect | Directory creation moved from module level into `__init__` to avoid side-effects on import |\n\n---\n\n## Summary of All Changes\n\n```\nreport_db.py\n\u251c\u2500\u2500 Module docstring added\n\u251c\u2500\u2500 ALLOWED_TABLES constant introduced\n\u251c\u2500\u2500 ReportDatabaseError custom exception added\n\u251c\u2500\u2500 ReportDatabase\n\u2502   \u251c\u2500\u2500 __init__: export_dir.mkdir moved here; sqlite3.Error caught; docstring added\n\u2502   \u251c\u2500\u2500 __enter__ / __exit__ added (context-manager support)\n\u2502   \u251c\u2500\u2500 close() added\n\u2502   \u251c\u2500\u2500 _validate_table_name() added (SQL injection mitigation for table names)\n\u2502   \u251c\u2500\u2500 get_table: uses _validate_table_name; sqlite3.Error caught; docstring added\n\u2502   \u251c\u2500\u2500 search_reports: parameterised query replaces f-string; docstring added\n\u2502   \u251c\u2500\u2500 export_table: format validated; OSError caught; header row added; docstring added\n\u2502   \u2514\u2500\u2500 run_custom: bare except replaced; result rows returned; docstring + warning added\n\u2514\u2500\u2500 main: uses context manager; per-table errors caught and logged\n```\n"}, {"name": "report_db.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nreport_db.py\n\nProvides the ReportDatabase class for querying, searching, and exporting\ndata from an SQLite reports database. Includes safe parameterised queries\nand proper resource management.\n\"\"\"\n\nimport sqlite3\nimport json\nimport csv\nimport logging\nfrom pathlib import Path\n\nDB_PATH = Path(\"/var/data/reports.db\")\nEXPORT_DIR = Path(\"/var/data/exports\")\n\nlogger = logging.getLogger(__name__)\n\n# Allowlist of table names that callers may access.\nALLOWED_TABLES = {\"reports\", \"users\", \"audit_log\"}\n\n\nclass ReportDatabaseError(Exception):\n    \"\"\"Raised for expected errors originating from ReportDatabase operations.\"\"\"\n\n\nclass ReportDatabase:\n    \"\"\"Manages read and export operations against the SQLite reports database.\n\n    The connection is opened lazily on first use and must be closed explicitly\n    by calling :meth:`close`, or by using the instance as a context manager::\n\n        with ReportDatabase() as db:\n            rows = db.search_reports(\"open\", \"alice\")\n\n    Attributes:\n        db_path: Path to the SQLite database file.\n        export_dir: Directory where exported files are written.\n    \"\"\"\n\n    def __init__(self, db_path: Path = DB_PATH, export_dir: Path = EXPORT_DIR) -> None:\n        \"\"\"Initialise the ReportDatabase.\n\n        Args:\n            db_path: Filesystem path to the SQLite database.  Defaults to\n                ``/var/data/reports.db``.\n            export_dir: Directory used for exported CSV/JSON files.  The\n                directory is created if it does not already exist.  Defaults to\n                ``/var/data/exports``.\n\n        Raises:\n            ReportDatabaseError: If the database cannot be opened or the export\n                directory cannot be created.\n        \"\"\"\n        self.db_path = db_path\n        self.export_dir = export_dir\n        try:\n            self.export_dir.mkdir(parents=True, exist_ok=True)\n        except OSError as exc:\n            raise ReportDatabaseError(\n                f\"Cannot create export directory '{export_dir}': {exc}\"\n            ) from exc\n        try:\n            self.conn = sqlite3.connect(self.db_path)\n            self.conn.row_factory = sqlite3.Row\n        except sqlite3.Error as exc:\n            raise ReportDatabaseError(\n                f\"Cannot open database '{db_path}': {exc}\"\n            ) from exc\n\n    # ------------------------------------------------------------------\n    # Context-manager support\n    # ------------------------------------------------------------------\n\n    def __enter__(self) -> \"ReportDatabase\":\n        \"\"\"Return self to support use as a context manager.\"\"\"\n        return self\n\n    def __exit__(self, exc_type, exc_val, exc_tb) -> None:\n        \"\"\"Close the database connection on context-manager exit.\"\"\"\n        self.close()\n\n    def close(self) -> None:\n        \"\"\"Close the underlying database connection.\n\n        Safe to call multiple times; subsequent calls after the first are\n        no-ops.\n        \"\"\"\n        if self.conn is not None:\n            try:\n                self.conn.close()\n            except sqlite3.Error as exc:\n                logger.warning(\"Error while closing database connection: %s\", exc)\n            finally:\n                self.conn = None\n\n    # ------------------------------------------------------------------\n    # Query helpers\n    # ------------------------------------------------------------------\n\n    @staticmethod\n    def _validate_table_name(table_name: str) -> None:\n        \"\"\"Raise ValueError if *table_name* is not in the allowlist.\n\n        SQLite does not support parameterised table-name substitution, so we\n        validate against a fixed allowlist instead of interpolating the name\n        directly into the SQL string.\n\n        Args:\n            table_name: The table name to validate.\n\n        Raises:\n            ValueError: If *table_name* is not in :data:`ALLOWED_TABLES`.\n        \"\"\"\n        if table_name not in ALLOWED_TABLES:\n            raise ValueError(\n                f\"Table '{table_name}' is not in the allowed list: {sorted(ALLOWED_TABLES)}\"\n            )\n\n    def get_table(self, table_name: str) -> list:\n        \"\"\"Return all rows from *table_name*.\n\n        Args:\n            table_name: Name of the table to read.  Must be one of\n                :data:`ALLOWED_TABLES`.\n\n        Returns:\n            A list of :class:`sqlite3.Row` objects (empty list if the table\n            has no rows).\n\n        Raises:\n            ValueError: If *table_name* is not allowlisted.\n            ReportDatabaseError: If the query fails.\n        \"\"\"\n        self._validate_table_name(table_name)\n        # Table name has been validated against an allowlist; safe to embed.\n        sql = f\"SELECT * FROM {table_name}\"  # noqa: S608 \u2013 allowlist-validated above\n        try:\n            cursor = self.conn.cursor()\n            cursor.execute(sql)\n            return cursor.fetchall()\n        except sqlite3.Error as exc:\n            raise ReportDatabaseError(\n                f\"Failed to read table '{table_name}': {exc}\"\n            ) from exc\n\n    def search_reports(self, status: str, owner: str) -> list:\n        \"\"\"Search the *reports* table by status and owner using parameterised queries.\n\n        Args:\n            status: The report status to filter on (e.g. ``\"open\"``).\n            owner: The owner/username to filter on.\n\n        Returns:\n            A list of matching :class:`sqlite3.Row` objects.\n\n        Raises:\n            ReportDatabaseError: If the query fails.\n        \"\"\"\n        sql = \"SELECT * FROM reports WHERE status = ? AND owner = ?\"\n        try:\n            cursor = self.conn.cursor()\n            cursor.execute(sql, (status, owner))\n            return cursor.fetchall()\n        except sqlite3.Error as exc:\n            raise ReportDatabaseError(\n                f\"Failed to search reports (status={status!r}, owner={owner!r}): {exc}\"\n            ) from exc\n\n    # ------------------------------------------------------------------\n    # Export helpers\n    # ------------------------------------------------------------------\n\n    def export_table(self, table_name: str, fmt: str = \"csv\") -> Path | None:\n        \"\"\"Export *table_name* to a file in the export directory.\n\n        Args:\n            table_name: Name of the table to export.  Must be one of\n                :data:`ALLOWED_TABLES`.\n            fmt: Output format \u2013 either ``\"csv\"`` (default) or ``\"json\"``.\n\n        Returns:\n            The :class:`~pathlib.Path` of the written file, or ``None`` if the\n            table contains no rows.\n\n        Raises:\n            ValueError: If *table_name* is not allowlisted or *fmt* is unknown.\n            ReportDatabaseError: If the query or file-write fails.\n        \"\"\"\n        if fmt not in {\"csv\", \"json\"}:\n            raise ValueError(f\"Unsupported export format '{fmt}'. Use 'csv' or 'json'.\")\n\n        data = self.get_table(table_name)\n        if not data:\n            logger.info(\"Table '%s' is empty; skipping export.\", table_name)\n            return None\n\n        out_path = self.export_dir / f\"{table_name}.{fmt}\"\n        try:\n            if fmt == \"csv\":\n                with open(out_path, \"w\", newline=\"\", encoding=\"utf-8\") as fh:\n                    writer = csv.writer(fh)\n                    writer.writerow(data[0].keys())   # header row\n                    writer.writerows(data)\n            else:  # json\n                with open(out_path, \"w\", encoding=\"utf-8\") as fh:\n                    json.dump([dict(row) for row in data], fh, indent=2)\n        except OSError as exc:\n            raise ReportDatabaseError(\n                f\"Failed to write export file '{out_path}': {exc}\"\n            ) from exc\n\n        logger.info(\"Exported '%s' to '%s'.\", table_name, out_path)\n        return out_path\n\n    def run_custom(self, raw_sql: str) -> list:\n        \"\"\"Execute a caller-supplied SQL statement and return any result rows.\n\n        .. warning::\n            This method executes arbitrary SQL.  Only call it with trusted,\n            internally-generated queries.  Never pass user-supplied input\n            directly to this method.\n\n        Args:\n            raw_sql: A complete SQL statement to execute.\n\n        Returns:\n            A list of :class:`sqlite3.Row` objects (may be empty for\n            non-SELECT statements).\n\n        Raises:\n            ReportDatabaseError: If execution fails.\n        \"\"\"\n        try:\n            cursor = self.conn.cursor()\n            cursor.execute(raw_sql)\n            self.conn.commit()\n            return cursor.fetchall()\n        except sqlite3.Error as exc:\n            raise ReportDatabaseError(\n                f\"Failed to execute custom SQL: {exc}\"\n            ) from exc\n\n\ndef main() -> None:\n    \"\"\"Export all standard tables to CSV files and print the output paths.\"\"\"\n    tables = list(ALLOWED_TABLES)\n    try:\n        with ReportDatabase() as db:\n            for table in tables:\n                try:\n                    path = db.export_table(table)\n                    if path:\n                        print(f\"Exported {table}: {path}\")\n                    else:\n                        print(f\"Skipped {table}: no rows found.\")\n                except (ReportDatabaseError, ValueError) as exc:\n                    logger.error(\"Could not export table '%s': %s\", table, exc)\n    except ReportDatabaseError as exc:\n        logger.critical(\"Database initialisation failed: %s\", exc)\n        raise SystemExit(1) from exc\n\n\nif __name__ == \"__main__\":\n    logging.basicConfig(level=logging.INFO, format=\"%(levelname)s: %(message)s\")\n    main()\n"}], "grading": {"assertions": [{"text": "SQL injection via unvalidated f-string removed", "passed": true, "evidence": "f-string SELECT without allowlist validation check"}, {"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "DB connection properly closed (contextmanager/finally)", "passed": true, "evidence": "grep for contextmanager/conn.close()/finally"}, {"text": "Docstrings with Args: present", "passed": true, "evidence": "grep for 'Args:' in output"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/without_skill/outputs/report_db.md"}], "score": 5, "total": 5, "pass_rate": 1.0}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"skill_name": "python-hardener", "iteration": 1, "configurations": [{"name": "with_skill", "label": "With python-hardener skill", "evals": [{"eval_id": 0, "eval_name": "job-runner-full-hardening", "pass_rate": 1.0, "score": 6, "total": 6, "assertions": [{"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "os.chdir() removed (AST-verified)", "passed": true, "evidence": "AST chdir call count: 0"}, {"text": "No shell=True in subprocess calls (AST-verified)", "passed": true, "evidence": "AST shell=True count: 0"}, {"text": "RotatingFileHandler used for logging", "passed": true, "evidence": "grep for 'RotatingFileHandler' in output"}, {"text": "Atomic state write (tempfile/os.replace)", "passed": true, "evidence": "grep for 'os.replace' or 'tempfile'"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/with_skill/outputs/job_runner.md"}], "duration_ms": 98885, "total_tokens": 24441}, {"eval_id": 1, "eval_name": "report-db-sql-injection-and-connection", "pass_rate": 1.0, "score": 5, "total": 5, "assertions": [{"text": "SQL injection via unvalidated f-string removed", "passed": true, "evidence": "f-string SELECT without allowlist validation check"}, {"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "DB connection properly closed (contextmanager/finally)", "passed": true, "evidence": "grep for contextmanager/conn.close()/finally"}, {"text": "Docstrings with Args: present", "passed": true, "evidence": "grep for 'Args:' in output"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/with_skill/outputs/report_db.md"}], "duration_ms": 95241, "total_tokens": 24277}], "summary": {"mean_pass_rate": 1.0, "mean_tokens": 24359.0, "mean_duration_ms": 97063.0}}, {"name": "without_skill", "label": "Baseline (no skill)", "evals": [{"eval_id": 0, "eval_name": "job-runner-full-hardening", "pass_rate": 0.6666666666666666, "score": 4, "total": 6, "assertions": [{"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "os.chdir() removed (AST-verified)", "passed": true, "evidence": "AST chdir call count: 0"}, {"text": "No shell=True in subprocess calls (AST-verified)", "passed": true, "evidence": "AST shell=True count: 0"}, {"text": "RotatingFileHandler used for logging", "passed": false, "evidence": "grep for 'RotatingFileHandler' in output"}, {"text": "Atomic state write (tempfile/os.replace)", "passed": false, "evidence": "grep for 'os.replace' or 'tempfile'"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/without_skill/outputs/job_runner.md"}], "duration_ms": 139791, "total_tokens": 25398}, {"eval_id": 1, "eval_name": "report-db-sql-injection-and-connection", "pass_rate": 1.0, "score": 5, "total": 5, "assertions": [{"text": "SQL injection via unvalidated f-string removed", "passed": true, "evidence": "f-string SELECT without allowlist validation check"}, {"text": "No bare except: blocks (AST-verified)", "passed": true, "evidence": "AST bare handler count: 0"}, {"text": "DB connection properly closed (contextmanager/finally)", "passed": true, "evidence": "grep for contextmanager/conn.close()/finally"}, {"text": "Docstrings with Args: present", "passed": true, "evidence": "grep for 'Args:' in output"}, {"text": "Documentation .md file produced", "passed": true, "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/without_skill/outputs/report_db.md"}], "duration_ms": 101033, "total_tokens": 22130}], "summary": {"mean_pass_rate": 0.8333333333333333, "mean_tokens": 23764.0, "mean_duration_ms": 120412.0}}]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

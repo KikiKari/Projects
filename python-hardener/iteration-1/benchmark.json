@@ -1,0 +1,182 @@
+{
+  "skill_name": "python-hardener",
+  "iteration": 1,
+  "configurations": [
+    {
+      "name": "with_skill",
+      "label": "With python-hardener skill",
+      "evals": [
+        {
+          "eval_id": 0,
+          "eval_name": "job-runner-full-hardening",
+          "pass_rate": 1.0,
+          "score": 6,
+          "total": 6,
+          "assertions": [
+            {
+              "text": "No bare except: blocks (AST-verified)",
+              "passed": true,
+              "evidence": "AST bare handler count: 0"
+            },
+            {
+              "text": "os.chdir() removed (AST-verified)",
+              "passed": true,
+              "evidence": "AST chdir call count: 0"
+            },
+            {
+              "text": "No shell=True in subprocess calls (AST-verified)",
+              "passed": true,
+              "evidence": "AST shell=True count: 0"
+            },
+            {
+              "text": "RotatingFileHandler used for logging",
+              "passed": true,
+              "evidence": "grep for 'RotatingFileHandler' in output"
+            },
+            {
+              "text": "Atomic state write (tempfile/os.replace)",
+              "passed": true,
+              "evidence": "grep for 'os.replace' or 'tempfile'"
+            },
+            {
+              "text": "Documentation .md file produced",
+              "passed": true,
+              "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/with_skill/outputs/job_runner.md"
+            }
+          ],
+          "duration_ms": 98885,
+          "total_tokens": 24441
+        },
+        {
+          "eval_id": 1,
+          "eval_name": "report-db-sql-injection-and-connection",
+          "pass_rate": 1.0,
+          "score": 5,
+          "total": 5,
+          "assertions": [
+            {
+              "text": "SQL injection via unvalidated f-string removed",
+              "passed": true,
+              "evidence": "f-string SELECT without allowlist validation check"
+            },
+            {
+              "text": "No bare except: blocks (AST-verified)",
+              "passed": true,
+              "evidence": "AST bare handler count: 0"
+            },
+            {
+              "text": "DB connection properly closed (contextmanager/finally)",
+              "passed": true,
+              "evidence": "grep for contextmanager/conn.close()/finally"
+            },
+            {
+              "text": "Docstrings with Args: present",
+              "passed": true,
+              "evidence": "grep for 'Args:' in output"
+            },
+            {
+              "text": "Documentation .md file produced",
+              "passed": true,
+              "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/with_skill/outputs/report_db.md"
+            }
+          ],
+          "duration_ms": 95241,
+          "total_tokens": 24277
+        }
+      ],
+      "summary": {
+        "mean_pass_rate": 1.0,
+        "mean_tokens": 24359.0,
+        "mean_duration_ms": 97063.0
+      }
+    },
+    {
+      "name": "without_skill",
+      "label": "Baseline (no skill)",
+      "evals": [
+        {
+          "eval_id": 0,
+          "eval_name": "job-runner-full-hardening",
+          "pass_rate": 0.6666666666666666,
+          "score": 4,
+          "total": 6,
+          "assertions": [
+            {
+              "text": "No bare except: blocks (AST-verified)",
+              "passed": true,
+              "evidence": "AST bare handler count: 0"
+            },
+            {
+              "text": "os.chdir() removed (AST-verified)",
+              "passed": true,
+              "evidence": "AST chdir call count: 0"
+            },
+            {
+              "text": "No shell=True in subprocess calls (AST-verified)",
+              "passed": true,
+              "evidence": "AST shell=True count: 0"
+            },
+            {
+              "text": "RotatingFileHandler used for logging",
+              "passed": false,
+              "evidence": "grep for 'RotatingFileHandler' in output"
+            },
+            {
+              "text": "Atomic state write (tempfile/os.replace)",
+              "passed": false,
+              "evidence": "grep for 'os.replace' or 'tempfile'"
+            },
+            {
+              "text": "Documentation .md file produced",
+              "passed": true,
+              "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-0-job-runner/without_skill/outputs/job_runner.md"
+            }
+          ],
+          "duration_ms": 139791,
+          "total_tokens": 25398
+        },
+        {
+          "eval_id": 1,
+          "eval_name": "report-db-sql-injection-and-connection",
+          "pass_rate": 1.0,
+          "score": 5,
+          "total": 5,
+          "assertions": [
+            {
+              "text": "SQL injection via unvalidated f-string removed",
+              "passed": true,
+              "evidence": "f-string SELECT without allowlist validation check"
+            },
+            {
+              "text": "No bare except: blocks (AST-verified)",
+              "passed": true,
+              "evidence": "AST bare handler count: 0"
+            },
+            {
+              "text": "DB connection properly closed (contextmanager/finally)",
+              "passed": true,
+              "evidence": "grep for contextmanager/conn.close()/finally"
+            },
+            {
+              "text": "Docstrings with Args: present",
+              "passed": true,
+              "evidence": "grep for 'Args:' in output"
+            },
+            {
+              "text": "Documentation .md file produced",
+              "passed": true,
+              "evidence": "File exists: /sessions/epic-relaxed-noether/mnt/outputs/python-hardener-workspace/iteration-1/eval-1-report-db/without_skill/outputs/report_db.md"
+            }
+          ],
+          "duration_ms": 101033,
+          "total_tokens": 22130
+        }
+      ],
+      "summary": {
+        "mean_pass_rate": 0.8333333333333333,
+        "mean_tokens": 23764.0,
+        "mean_duration_ms": 120412.0
+      }
+    }
+  ]
+}

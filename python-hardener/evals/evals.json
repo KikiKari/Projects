@@ -1,0 +1,98 @@
+{
+  "skill_name": "python-hardener",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "This job_runner.py script is used in production cron jobs. Can you do a full review and fix — security, error handling, logging, and docstrings? It currently opens the log file on every single call and uses os.chdir() somewhere. Please fix the file and give me a documentation markdown.",
+      "expected_output": "Corrected job_runner.py: bare excepts replaced with specific exceptions, log() uses RotatingFileHandler configured once, os.chdir() removed (git -C used instead), save_state() atomic, shell=True removed from subprocess. Plus a job_runner.md documentation file.",
+      "files": ["test-inputs/job_runner.py"],
+      "assertions": [
+        {
+          "id": "no_bare_except",
+          "description": "No bare except: blocks remain in the output file",
+          "type": "not_contains",
+          "target": "with_skill",
+          "value": "except:"
+        },
+        {
+          "id": "no_os_chdir",
+          "description": "os.chdir() removed from output",
+          "type": "not_contains",
+          "target": "with_skill",
+          "value": "os.chdir("
+        },
+        {
+          "id": "no_shell_true",
+          "description": "shell=True removed from subprocess calls",
+          "type": "not_contains",
+          "target": "with_skill",
+          "value": "shell=True"
+        },
+        {
+          "id": "rotating_handler",
+          "description": "RotatingFileHandler used for logging",
+          "type": "contains",
+          "target": "with_skill",
+          "value": "RotatingFileHandler"
+        },
+        {
+          "id": "atomic_write",
+          "description": "Atomic state write via os.replace or tempfile",
+          "type": "contains_any",
+          "target": "with_skill",
+          "values": ["os.replace", "tempfile"]
+        },
+        {
+          "id": "doc_file_present",
+          "description": "Documentation .md file produced",
+          "type": "file_exists",
+          "target": "with_skill",
+          "pattern": "*.md"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Please review report_db.py — add proper error handling (no bare excepts), fix any SQL injection issues, close the database connection properly, and add docstrings. Same filename please, and produce a markdown doc.",
+      "expected_output": "Corrected report_db.py: SQL injection fixed via parameterized queries and allowlist for table names, connection managed with context manager or explicit close, bare except replaced, module-level EXPORT_DIR.mkdir() moved, docstrings added. Plus report_db.md.",
+      "files": ["test-inputs/report_db.py"],
+      "assertions": [
+        {
+          "id": "no_sql_fstring",
+          "description": "No f-string SQL interpolation in output",
+          "type": "not_contains",
+          "target": "with_skill",
+          "value": "f\"SELECT * FROM {table"
+        },
+        {
+          "id": "no_bare_except",
+          "description": "No bare except: blocks",
+          "type": "not_contains",
+          "target": "with_skill",
+          "value": "except:"
+        },
+        {
+          "id": "connection_closed",
+          "description": "Connection closed via contextmanager or finally/close()",
+          "type": "contains_any",
+          "target": "with_skill",
+          "values": ["contextmanager", "conn.close()", "finally"]
+        },
+        {
+          "id": "docstring_present",
+          "description": "At least one docstring block present",
+          "type": "contains",
+          "target": "with_skill",
+          "value": "Args:"
+        },
+        {
+          "id": "doc_file_present",
+          "description": "Documentation .md file produced",
+          "type": "file_exists",
+          "target": "with_skill",
+          "pattern": "*.md"
+        }
+      ]
+    }
+  ]
+}
