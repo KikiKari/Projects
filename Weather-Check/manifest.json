@@ -1,0 +1,25 @@
+{
+  "name": "Weather – Regen-Check",
+  "short_name": "Weather",
+  "description": "Lokaler Regen-Check für die nächsten 30, 60 und 120 Minuten",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "orientation": "portrait",
+  "permissions": ["geolocation", "camera"],
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
