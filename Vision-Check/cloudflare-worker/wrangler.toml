@@ -1,0 +1,10 @@
+name = "vision-check-proxy"
+main = "worker.js"
+compatibility_date = "2026-06-25"
+compatibility_flags = ["nodejs_compat"]
+
+# Kostenlos bis 100.000 Requests/Tag
+# workers.dev Domain wird automatisch vergeben: https://vision-check-proxy.<dein-account>.workers.dev
+
+[observability]
+enabled = true
