@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="38" fill="#0a0f1e"/>
+  <circle cx="96" cy="96" r="52" fill="none" stroke="#63b3ed" stroke-width="4" opacity="0.3"/>
+  <circle cx="96" cy="96" r="34" fill="none" stroke="#63b3ed" stroke-width="3" opacity="0.5"/>
+  <circle cx="96" cy="96" r="14" fill="#63b3ed"/>
+  <!-- Kreis-Segmente wie Objektiv -->
+  <path d="M96 44 A52 52 0 0 1 148 96" fill="none" stroke="#4fd1c5" stroke-width="4" stroke-linecap="round"/>
+  <path d="M148 96 A52 52 0 0 1 96 148" fill="none" stroke="#fbd38d" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <path d="M96 148 A52 52 0 0 1 44 96" fill="none" stroke="#68d391" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <path d="M44 96 A52 52 0 0 1 96 44" fill="none" stroke="#fc8181" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <!-- Kreuzmarkierung -->
+  <line x1="96" y1="62" x2="96" y2="130" stroke="#63b3ed" stroke-width="1.5" opacity="0.3"/>
+  <line x1="62" y1="96" x2="130" y2="96" stroke="#63b3ed" stroke-width="1.5" opacity="0.3"/>
+</svg>
