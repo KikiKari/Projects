@@ -24,6 +24,18 @@ Microphone recognition starts only after a click and runs for at most twelve sec
 
 See the [Mermaid source](../diagrams/architecture.mmd).
 
+## Reproducible project visualization
+
+![Isometric TikTok LIVE Companion platform architecture](../diagrams/tiktok-live-companion-architecture.svg)
+
+- [Open the rotating GIF](../diagrams/tiktok-live-companion-architecture.gif)
+- [SVG generator](../../assets/gen_tiktok_live_companion_flow.py)
+- [GIF generator](../../assets/gen_tiktok_live_companion_flow_gif.py)
+- [Shared data model](../../assets/flow_model.py)
+- [Visualization contract](../diagrams/tiktok-live-companion-visualization-contract.md)
+
+This view is project-specific: depth separates browser, iOS, and Android/HyperOS. Cyan denotes passive observation, coral denotes audio started only after user action, and amber denotes the short-lived Android token flow. Box size is schematic and does not measure performance or data volume.
+
 ## Text alternative
 
 In the browser, the TikTok tab supplies public DOM/metadata to the isolated content script and observed WebSocket events to the MAIN-world hook. Both forward sanitized results to the service worker. It keeps volatile per-tab state and sends it to the side panel. CDN requests are observed passively only. On mobile, the same decoder is injected at document start into the allowed TikTok WebView and forwards only validated event envelopes to native state.

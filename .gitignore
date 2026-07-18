@@ -1,4 +1,6 @@
 .tooling/
+__pycache__/
+*.py[cod]
 site/node_modules/
 site/dist/
 site/.vite/
