@@ -1,5 +1,5 @@
 export type Language = "de" | "en";
-export type PageKey = "overview" | "installation" | "features" | "architecture" | "security" | "coauthoring" | "troubleshooting" | "downloads";
+export type PageKey = "overview" | "installation" | "features" | "architecture" | "security" | "troubleshooting" | "downloads";
 
 export const pageSlugs: Record<PageKey, string> = {
   overview: "",
@@ -7,14 +7,13 @@ export const pageSlugs: Record<PageKey, string> = {
   features: "features",
   architecture: "architecture",
   security: "security",
-  coauthoring: "coauthoring-v7",
   troubleshooting: "troubleshooting",
   downloads: "downloads"
 };
 
 export const strings = {
   de: {
-    nav: { overview: "Überblick", installation: "Installation", features: "Funktionen", architecture: "Architektur", security: "Sicherheit", coauthoring: "CoAuthoring V7", troubleshooting: "Fehlerbehebung", downloads: "Downloads" },
+    nav: { overview: "Überblick", installation: "Installation", features: "Funktionen", architecture: "Architektur", security: "Sicherheit", troubleshooting: "Fehlerbehebung", downloads: "Downloads" },
     search: "Dokumentation durchsuchen", searchHint: "Titel oder Thema eingeben", noResults: "Keine passenden Inhalte gefunden.", skip: "Zum Inhalt springen",
     heroTitle: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen",
     heroBody: "Chat lesen und lokal vorlesen, native Untertitel prüfen, Player steuern und Stream-Informationen verstehen – direkt im Browser.",
@@ -26,7 +25,7 @@ export const strings = {
     independent: "Nicht mit TikTok verbunden oder von TikTok unterstützt.", language: "Sprache", close: "Schließen"
   },
   en: {
-    nav: { overview: "Overview", installation: "Installation", features: "Features", architecture: "Architecture", security: "Security", coauthoring: "CoAuthoring V7", troubleshooting: "Troubleshooting", downloads: "Downloads" },
+    nav: { overview: "Overview", installation: "Installation", features: "Features", architecture: "Architecture", security: "Security", troubleshooting: "Troubleshooting", downloads: "Downloads" },
     search: "Search documentation", searchHint: "Enter a title or topic", noResults: "No matching content found.", skip: "Skip to content",
     heroTitle: "Make public TikTok LIVE streams more accessible",
     heroBody: "Read chat and hear it locally, inspect native captions, control the player, and understand stream information – directly in your browser.",
@@ -67,7 +66,6 @@ export const searchText: Record<Language, Record<PageKey, string>> = {
     features: "Funktionen Chat Vorlesen Caption LIVE Player dBFS Qualität VLC Diagnose",
     architecture: "Architektur content WebSocket background storage session Seitenpanel Mermaid",
     security: "Sicherheit Datenschutz Cookies Telemetrie webRequest textContent Restrisiken",
-    coauthoring: "CoAuthoring V7 Bilder Designhistorie Mobile ShazamKit Mermaid Three.js 3D",
     troubleshooting: "Fehlerbehebung Caption Hook Player VLC Debug",
     downloads: "Downloads Release ZIP SHA-256 Prüfsumme 0.7.0"
   },
@@ -77,7 +75,6 @@ export const searchText: Record<Language, Record<PageKey, string>> = {
     features: "Features chat speech top chatters mute song recognition caption LIVE player dBFS quality VLC diagnostics",
     architecture: "Architecture content WebSocket background storage session side panel Mermaid",
     security: "Security privacy cookies telemetry webRequest textContent residual risks",
-    coauthoring: "CoAuthoring V7 images design history mobile ShazamKit Mermaid Three.js 3D",
     troubleshooting: "Troubleshooting caption hook player VLC debug",
     downloads: "Downloads release ZIP SHA-256 checksum 0.7.0"
   }

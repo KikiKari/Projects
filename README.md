@@ -19,12 +19,7 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
 - [Architekturdiagramm](docs/diagrams/architecture.mmd)
-- [Songerkennungssequenz](docs/diagrams/recognition-flow.mmd)
-- [Plattform-Deployment](docs/diagrams/platform-deployment.mmd)
-- [CoAuthoring V7 – freigegebene Bildquellen](docs/coauthoring-v7.md)
 - [Sicherheitsbeschreibung](plugin-source/SECURITY.md)
-
-🧊 [**Interaktive 3D-Ansicht öffnen**](https://kikikari.github.io/OpenClaw/mcp-flow.html) — drehbar und zoombar (Three.js, Branch [gh-pages](https://github.com/KikiKari/OpenClaw/tree/gh-pages)). Die Ansicht ist eine externe Interaktionsreferenz; die TikTok-LIVE-Companion-Architektur bleibt reproduzierbar in den Mermaid-Quellen. Die zugehörigen Referenzdiagramme können über [gen_mcp_flow.py](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow.py) als SVG und [gen_mcp_flow_gif.py](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow_gif.py) als GIF erzeugt werden.
 
 Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachumschaltung, Suche und geprüften Downloads. GitHub ist die technische Quelle; Notion, Linear, Canva und Vercel spiegeln den freigegebenen Stand.
 
@@ -53,7 +48,6 @@ Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachums
 ```powershell
 node plugin-source/scripts/test_extension.cjs
 node plugin-source/scripts/test_mobile_bridge.cjs
-node plugin-source/scripts/test_documentation.cjs
 cd plugin-source/companion-service
 npm test
 cd ../../site
