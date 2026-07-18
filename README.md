@@ -1,5 +1,7 @@
 # TikTok LIVE Companion 0.7.0
 
+> Plattformbranch `TikTok-Live-Companion-iOS`: enthält die native SwiftUI-/WKWebView-/ShazamKit-App. Der Android-/HyperOS-Quellstand liegt im Branch `TikTok-Live-Companion-Android`.
+
 TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chrome. Sie macht öffentliche TikTok-LIVE-Streams zugänglicher: Chatzeilen werden als bereinigter Text angezeigt und auf Wunsch lokal vorgelesen, native Untertitel werden geprüft, LIVE-Werte und Stream-Qualitäten werden sichtbar und der vorhandene Player lässt sich über ein Seitenpanel steuern.
 
 Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
@@ -40,7 +42,6 @@ Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachums
 - `plugin-source/companion-service/` – optionaler lokaler Windows-Dienst für verstärkte Sprachausgabe und manuelle Songerkennung
 - `site/` – statische React-/TypeScript-/Vite-Dokumentationssite
 - `mobile/ios/` – SwiftUI-, WKWebView- und ShazamKit-Xcode-Projekt ab iOS 15
-- `mobile/android/` – Kotlin-/Compose-/AndroidX-WebKit-Projekt ab API 21, ohne Google-Play-Services-Abhängigkeit
 - `plugin-source/mobile-shared/` – versionierte, origin-beschränkte WebView-Bridge
 
 ## Verifikation
