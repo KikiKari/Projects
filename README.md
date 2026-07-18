@@ -58,7 +58,6 @@ Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
 - [Links und Erreichbarkeiten V7](docs/Links-und-Erreichbarkeiten_v7_utf8bom.md)
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
-- [Interaktive Three.js-Architektur](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 - [Visualisierungsquellen und Reproduktion](assets/README.md)
 - [Sicherheitsbeschreibung](plugin-source/SECURITY.md)
 
