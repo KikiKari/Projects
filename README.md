@@ -6,6 +6,8 @@ TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chro
 
 Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
 
+![Mobile-Entwurf 0.7.0 für iOS und Android/HyperOS](docs/mobile/mobile-0.7.0-concept.png)
+
 [Interaktive architecture-3d](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
 ## Schnellstart
