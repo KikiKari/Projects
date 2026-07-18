@@ -10,6 +10,10 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 
 [Interaktive architecture-3d](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
+[![Vorschau der interaktiven Three.js-Architektur](docs/diagrams/tiktok-live-companion-architecture-3d-preview.png)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
+
+![Architektur-SVG für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)
+
 ## Schnellstart
 
 1. Lade `release/0.7.0/tiktok-live-companion-extension-0.7.0.zip` herunter und entpacke die Datei.
