@@ -151,7 +151,7 @@ function PageIntro({ title, lead, children }: { title: string; lead?: string; ch
 
 function Footer({ lang }: { lang: Language }) {
   const s = strings[lang];
-  return <footer><div className="page-width"><div className="brand footer-brand"><BrandMark/><span>TikTok <b>LIVE</b> Companion</span></div><p>{s.independent}</p><div><Link to={`/${lang}/troubleshooting`}>{s.nav.troubleshooting}</Link><Link to={`/${lang}/downloads`}>{s.nav.downloads}</Link></div></div></footer>;
+  return <footer><div className="page-width"><div className="brand footer-brand"><BrandMark/><span>TikTok <b>LIVE</b> Companion</span></div><p>{s.independent}</p><div><Link to={`/${lang}/troubleshooting`}>{s.nav.troubleshooting}</Link><Link to={`/${lang}/downloads`}>{s.nav.downloads}</Link><a href="https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion">GitHub</a><a href="https://linear.app/0penclaw/project/tiktok-live-companion-ed2f087b24bc">Linear</a><a href="https://app.notion.com/p/3a18d8ad3db9817f882bd79682fbbc51">Notion</a></div></div></footer>;
 }
 
 function parsePath(pathname: string): { lang: Language; page: PageKey } | null {
@@ -174,3 +174,4 @@ export default function App() {
   const components: Record<PageKey, ReactNode> = { overview: <Home lang={lang}/>, installation: <Installation lang={lang}/>, features: <Features lang={lang}/>, architecture: <Architecture lang={lang}/>, security: <Security lang={lang}/>, troubleshooting: <Troubleshooting lang={lang}/>, downloads: <Downloads lang={lang}/> };
   return <><a className="skip-link" href="#main-content">{strings[lang].skip}</a><Header lang={lang} page={page} onSearch={() => setSearchOpen(true)}/><div id="main-content" tabIndex={-1}>{components[page]}</div><Footer lang={lang}/><SearchDialog lang={lang} open={searchOpen} onClose={() => setSearchOpen(false)}/></>;
 }
+

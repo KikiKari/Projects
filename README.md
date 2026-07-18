@@ -21,6 +21,13 @@ TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chro
 
 Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachumschaltung, Suche und geprüften Downloads. GitHub ist die technische Quelle; Notion, Linear, Canva und Vercel spiegeln den freigegebenen Stand.
 
+## Projektlinks
+
+- [Dokumentationssite](https://tiktok-live-companion.vercel.app)
+- [Linear-Projekt](https://linear.app/0penclaw/project/tiktok-live-companion-ed2f087b24bc)
+- [Notion-Projektseite](https://app.notion.com/p/3a18d8ad3db9817f882bd79682fbbc51)
+- [GitHub-Branch](https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion)
+
 ## Projektstruktur
 
 - `plugin-source/` – reproduzierbarer Plugin-Quellstand einschließlich Browser-Erweiterung, Tests und Packaging-Script
@@ -40,3 +47,4 @@ npm run build
 ```
 
 Die Erweiterung liest keine Cookies und sendet keine erfassten Daten an externe Dienste. Signierte Stream-URLs sind zeitlich begrenzt und während ihrer Gültigkeit sensibel.
+
