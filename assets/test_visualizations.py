@@ -9,11 +9,13 @@ from PIL import Image
 
 from flow_model import EDGES, EDGE_COLORS, STAGES
 from gen_tiktok_live_companion_flow import build_svg
+from flow_model import as_json
 
 ROOT = Path(__file__).resolve().parents[1]
 SVG = ROOT / "docs" / "diagrams" / "tiktok-live-companion-architecture.svg"
 GIF = ROOT / "docs" / "diagrams" / "tiktok-live-companion-architecture.gif"
 MOBILE = ROOT / "docs" / "mobile" / "mobile-0.7.0-concept.png"
+PUBLIC = ROOT / "site" / "public" / "visualizations"
 EXPECTED_MOBILE_SHA256 = "d37560c4c23b1fd3fac7d0c02eea9add78a08f80b7d47e34551fda35e3db869f"
 
 ids = [stage[0] for stage in STAGES]
@@ -37,6 +39,10 @@ with Image.open(GIF) as image:
     assert image.n_frames == 36
     assert image.info.get("loop") == 0
     assert image.size == (1100, 760)
+
+assert (PUBLIC / SVG.name).read_bytes() == SVG.read_bytes(), "Öffentliches SVG ist nicht synchron"
+assert (PUBLIC / GIF.name).read_bytes() == GIF.read_bytes(), "Öffentliches GIF ist nicht synchron"
+assert (PUBLIC / "tiktok-live-companion-flow-model.json").read_text(encoding="utf-8") == as_json()
 
 mobile_hash = hashlib.sha256(MOBILE.read_bytes()).hexdigest()
 assert mobile_hash == EXPECTED_MOBILE_SHA256, "Mobile V7-Konzept entspricht nicht dem finalen Anhang"
