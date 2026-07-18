@@ -1,0 +1,46 @@
+flowchart TB
+    user(["Nutzer:in"])
+    public["Öffentliche TikTok-LIVE-Seite<br/>https://www.tiktok.com"]
+
+    subgraph browser["Edge / Chrome · Manifest V3"]
+      ext["Seitenpanel + Hook"]
+      store["storage.session / storage.local"]
+      local["Loopback-Dienst 127.0.0.1"]
+      ext --> store
+      ext -->|"manuell, ca. 12 s"| local
+    end
+
+    subgraph ios["iOS 15+ · SwiftUI"]
+      wk["WKWebView + WKUserScript"]
+      iosNative["Native Zustand + AVSpeechSynthesizer"]
+      iosShazam["ShazamKit Capability"]
+      wk -->|"Bridge v1"| iosNative
+      iosNative --> iosShazam
+    end
+
+    subgraph android["Android / HyperOS · API 21+"]
+      webkit["AndroidX WebKit"]
+      compose["Compose + DataStore + Android TTS"]
+      aar["ShazamKit AAR (nicht in Git)"]
+      webkit -->|"Bridge v1"| compose
+      compose --> aar
+    end
+
+    token["Vercel /api/shazam-token<br/>kurzlebiges ES256"]
+    audd["AudD Datei-/Audioerkennung"]
+
+    user --> ext
+    user --> wk
+    user --> webkit
+    public --> ext
+    public --> wk
+    public --> webkit
+    local --> audd
+    token --> aar
+
+    classDef local fill:#e7fbfb,stroke:#25b9c2,color:#102126
+    classDef native fill:#fff0f3,stroke:#fe2c55,color:#2b1117
+    classDef external fill:#fff8e8,stroke:#d99a24,color:#382b10
+    class ext,store,local,wk,webkit local
+    class iosNative,iosShazam,compose,aar native
+    class public,token,audd external
