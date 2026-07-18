@@ -1,4 +1,6 @@
-"""Gemeinsames, deterministisches Architekturmodell für SVG, GIF und 3D-Dokumentation."""
+"""Gemeinsames, deterministisches Architekturmodell für SVG, GIF und Three.js."""
+
+import json
 
 PALETTE = {
     "source": ("#9b87f5", "#6d5bd0", "#3f348d"),
@@ -43,3 +45,32 @@ EDGES = [
 
 EDGE_COLORS = {"observation": "#25c5d2", "audio": "#ff557a", "token": "#e9a12d"}
 LANE_LABELS = {"browser": "Browser · AudD", "ios": "iOS · ShazamKit", "android": "Android / HyperOS · ShazamKit"}
+
+
+def as_dict():
+    """Serialisierbares Modell für die gleichartige Three.js-Szene."""
+    return {
+        "version": 1,
+        "title": "TikTok LIVE Companion 0.7.0 – Plattformarchitektur",
+        "nodes": [
+            {
+                "id": sid, "x": x, "y": y, "halfWidth": half, "height": height,
+                "color": PALETTE[palette][1], "label": label, "sublabel": sublabel, "lane": lane,
+            }
+            for sid, x, y, half, height, palette, label, sublabel, lane in STAGES
+        ],
+        "edges": [
+            {"source": source, "target": target, "label": label, "role": role, "color": EDGE_COLORS[role]}
+            for source, target, label, role in EDGES
+        ],
+        "lanes": LANE_LABELS,
+        "legend": {
+            "observation": "Passive öffentliche Beobachtung",
+            "audio": "Audio ausschließlich nach Nutzeraktion",
+            "token": "Kurzlebiges Android-Developer-Token",
+        },
+    }
+
+
+def as_json():
+    return json.dumps(as_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"

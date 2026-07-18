@@ -21,5 +21,6 @@ Ausgaben:
 
 - `docs/diagrams/tiktok-live-companion-architecture.svg`
 - `docs/diagrams/tiktok-live-companion-architecture.gif`
+- `site/public/visualizations/` – dasselbe Modell und dieselben Fallback-Dateien für die interaktive Three.js-Route `/de/architecture-3d` beziehungsweise `/en/architecture-3d`.
 
 Farben bedeuten: Cyan = passive Beobachtung, Korallrot = Audio ausschließlich nach Nutzeraktion, Amber gestrichelt = kurzlebiges Android-Developer-Token.

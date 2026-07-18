@@ -141,4 +141,7 @@ if __name__ == "__main__":
         palette = frames[0].quantize(colors=192, method=Image.Quantize.MEDIANCUT)
         quantized = [frame.quantize(palette=palette, dither=Image.Dither.NONE) for frame in frames]
         quantized[0].save(output, save_all=True, append_images=quantized[1:], duration=FRAME_MS, loop=0, optimize=True, disposal=2)
+        public = project_root / "site" / "public" / "visualizations"
+        public.mkdir(parents=True, exist_ok=True)
+        (public / output.name).write_bytes(output.read_bytes())
         print(f"GIF geschrieben: {output} ({FRAMES} Frames, {output.stat().st_size / 1024:.0f} KB)")

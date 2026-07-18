@@ -1,0 +1,245 @@
+{
+  "edges": [
+    {
+      "color": "#25c5d2",
+      "label": "DOM + WebSocket",
+      "role": "observation",
+      "source": "tiktok",
+      "target": "browser_hook"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "bereinigt",
+      "role": "observation",
+      "source": "browser_hook",
+      "target": "browser_state"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "max. 50 Chatzeilen",
+      "role": "observation",
+      "source": "browser_state",
+      "target": "sidepanel"
+    },
+    {
+      "color": "#ff557a",
+      "label": "ca. 12 s Tab-Audio",
+      "role": "audio",
+      "source": "browser_hook",
+      "target": "local_service"
+    },
+    {
+      "color": "#ff557a",
+      "label": "Datei-Erkennung",
+      "role": "audio",
+      "source": "local_service",
+      "target": "audd"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "öffentliche Ereignisse",
+      "role": "observation",
+      "source": "tiktok",
+      "target": "ios_bridge"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "Bridge v1",
+      "role": "observation",
+      "source": "ios_bridge",
+      "target": "ios_native"
+    },
+    {
+      "color": "#ff557a",
+      "label": "nur Nutzeraktion",
+      "role": "audio",
+      "source": "ios_native",
+      "target": "ios_shazam"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "öffentliche Ereignisse",
+      "role": "observation",
+      "source": "tiktok",
+      "target": "android_bridge"
+    },
+    {
+      "color": "#25c5d2",
+      "label": "Bridge v1",
+      "role": "observation",
+      "source": "android_bridge",
+      "target": "android_native"
+    },
+    {
+      "color": "#ff557a",
+      "label": "nur Nutzeraktion",
+      "role": "audio",
+      "source": "android_native",
+      "target": "android_shazam"
+    },
+    {
+      "color": "#e9a12d",
+      "label": "Developer Token",
+      "role": "token",
+      "source": "token",
+      "target": "android_shazam"
+    }
+  ],
+  "lanes": {
+    "android": "Android / HyperOS · ShazamKit",
+    "browser": "Browser · AudD",
+    "ios": "iOS · ShazamKit"
+  },
+  "legend": {
+    "audio": "Audio ausschließlich nach Nutzeraktion",
+    "observation": "Passive öffentliche Beobachtung",
+    "token": "Kurzlebiges Android-Developer-Token"
+  },
+  "nodes": [
+    {
+      "color": "#6d5bd0",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "tiktok",
+      "label": "TikTok LIVE",
+      "lane": "shared",
+      "sublabel": "öffentliche Seite",
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "color": "#12aebb",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "browser_hook",
+      "label": "Content + Hook",
+      "lane": "browser",
+      "sublabel": "passiv lesen",
+      "x": 2.4,
+      "y": -2.4
+    },
+    {
+      "color": "#12aebb",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "browser_state",
+      "label": "Service Worker",
+      "lane": "browser",
+      "sublabel": "flüchtiger Zustand",
+      "x": 4.9,
+      "y": -2.4
+    },
+    {
+      "color": "#12aebb",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "sidepanel",
+      "label": "Seitenpanel",
+      "lane": "browser",
+      "sublabel": "Text · TTS · Player",
+      "x": 7.4,
+      "y": -2.4
+    },
+    {
+      "color": "#e99b24",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "local_service",
+      "label": "Loopback-Dienst",
+      "lane": "browser",
+      "sublabel": "127.0.0.1",
+      "x": 4.9,
+      "y": -4.7
+    },
+    {
+      "color": "#e99b24",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "audd",
+      "label": "AudD",
+      "lane": "browser",
+      "sublabel": "nur nach Klick",
+      "x": 7.4,
+      "y": -4.7
+    },
+    {
+      "color": "#f04d75",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "ios_bridge",
+      "label": "WKWebView Bridge",
+      "lane": "ios",
+      "sublabel": "Origin + Schema",
+      "x": 2.4,
+      "y": 0.0
+    },
+    {
+      "color": "#f04d75",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "ios_native",
+      "label": "SwiftUI",
+      "lane": "ios",
+      "sublabel": "State · TTS",
+      "x": 4.9,
+      "y": 0.0
+    },
+    {
+      "color": "#f04d75",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "ios_shazam",
+      "label": "ShazamKit",
+      "lane": "ios",
+      "sublabel": "Mikrofon / PCM",
+      "x": 7.4,
+      "y": 0.0
+    },
+    {
+      "color": "#35aa78",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "android_bridge",
+      "label": "AndroidX WebKit",
+      "lane": "android",
+      "sublabel": "Origin + Schema",
+      "x": 2.4,
+      "y": 2.4
+    },
+    {
+      "color": "#35aa78",
+      "halfWidth": 0.72,
+      "height": 0.62,
+      "id": "android_native",
+      "label": "Compose",
+      "lane": "android",
+      "sublabel": "DataStore · TTS",
+      "x": 4.9,
+      "y": 2.4
+    },
+    {
+      "color": "#35aa78",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "android_shazam",
+      "label": "ShazamKit AAR",
+      "lane": "android",
+      "sublabel": "Mikrofon / PCM",
+      "x": 7.4,
+      "y": 2.4
+    },
+    {
+      "color": "#e99b24",
+      "halfWidth": 0.72,
+      "height": 0.55,
+      "id": "token",
+      "label": "Token-Dienst",
+      "lane": "android",
+      "sublabel": "kurzlebiges ES256",
+      "x": 4.9,
+      "y": 4.7
+    }
+  ],
+  "title": "TikTok LIVE Companion 0.7.0 – Plattformarchitektur",
+  "version": 1
+}

@@ -19,6 +19,7 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
 - [Architekturdiagramm](docs/diagrams/architecture.mmd)
+- [Interaktive Three.js-Architektur](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 - [Generiertes Architektur-SVG](docs/diagrams/tiktok-live-companion-architecture.svg)
 - [Generiertes rotierendes Architektur-GIF](docs/diagrams/tiktok-live-companion-architecture.gif)
 - [Visualisierungsquellen und Reproduktion](assets/README.md)

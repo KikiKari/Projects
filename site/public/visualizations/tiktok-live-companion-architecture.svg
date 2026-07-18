@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-113.9 -156.3 730.7 480.1" width="731" height="480" role="img" aria-labelledby="title desc">
+<title id="title">TikTok LIVE Companion Plattformarchitektur</title>
+<desc id="desc">Browser verwendet AudD. iOS und Android HyperOS verwenden ShazamKit. Audio startet nur nach Nutzeraktion; Android erhält ein kurzlebiges Token.</desc>
+<defs><marker id="observation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#25c5d2"/></marker><marker id="audio" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff557a"/></marker><marker id="token" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e9a12d"/></marker></defs>
+<rect x="-113.9" y="-156.3" width="730.7" height="480.1" rx="16" fill="#0f1729"/>
+<text x="-89.9" y="-129.3" font-family="Segoe UI,Arial,sans-serif" font-size="17" font-weight="800" fill="#f8fafc">TikTok LIVE Companion 0.7.0 — Plattformarchitektur</text>
+<text x="-89.9" y="-110.3" font-family="Segoe UI,Arial,sans-serif" font-size="10" fill="#98a7bd">Tiefe trennt Browser, iOS und Android/HyperOS · schematisch, nicht maßstabsgetreu</text>
+<line x1="-89.9" y1="-99.3" x2="-61.9" y2="-99.3" stroke="#25c5d2" stroke-width="3"/>
+<text x="-54.9" y="-96.3" font-family="Segoe UI,Arial,sans-serif" font-size="9" fill="#cbd5e1">passive Beobachtung</text>
+<line x1="65.1" y1="-99.3" x2="93.1" y2="-99.3" stroke="#ff557a" stroke-width="3"/>
+<text x="100.1" y="-96.3" font-family="Segoe UI,Arial,sans-serif" font-size="9" fill="#cbd5e1">Audio nur nach Klick</text>
+<line x1="220.1" y1="-99.3" x2="248.1" y2="-99.3" stroke="#e9a12d" stroke-width="3" stroke-dasharray="6 4"/>
+<text x="255.1" y="-96.3" font-family="Segoe UI,Arial,sans-serif" font-size="9" fill="#cbd5e1">kurzlebiges ES256-Token</text>
+<polygon points="0.0,-61.0 59.9,-26.4 0.0,8.2 -59.9,-26.4" fill="#9b87f5" stroke="#121b31" stroke-width="1"/>
+<polygon points="59.9,0.0 0.0,34.6 0.0,8.2 59.9,-26.4" fill="#6d5bd0" stroke="#121b31" stroke-width="1"/>
+<polygon points="0.0,34.6 -59.9,0.0 -59.9,-26.4 0.0,8.2" fill="#3f348d" stroke="#121b31" stroke-width="1"/>
+<polygon points="199.5,-64.3 259.4,-29.8 199.5,4.8 139.7,-29.8" fill="#32d3df" stroke="#121b31" stroke-width="1"/>
+<polygon points="259.4,0.0 199.5,34.6 199.5,4.8 259.4,-29.8" fill="#12aebb" stroke="#121b31" stroke-width="1"/>
+<polygon points="199.5,34.6 139.7,0.0 139.7,-29.8 199.5,4.8" fill="#087783" stroke="#121b31" stroke-width="1"/>
+<polygon points="399.1,-59.5 458.9,-25.0 399.1,9.6 339.2,-25.0" fill="#ffc866" stroke="#121b31" stroke-width="1"/>
+<polygon points="458.9,4.8 399.1,39.4 399.1,9.6 458.9,-25.0" fill="#e99b24" stroke="#121b31" stroke-width="1"/>
+<polygon points="399.1,39.4 339.2,4.8 339.2,-25.0 399.1,9.6" fill="#925d10" stroke="#121b31" stroke-width="1"/>
+<polygon points="99.8,-6.7 159.6,27.8 99.8,62.4 39.9,27.8" fill="#ff7c9b" stroke="#121b31" stroke-width="1"/>
+<polygon points="159.6,57.6 99.8,92.2 99.8,62.4 159.6,27.8" fill="#f04d75" stroke="#121b31" stroke-width="1"/>
+<polygon points="99.8,92.2 39.9,57.6 39.9,27.8 99.8,62.4" fill="#a92750" stroke="#121b31" stroke-width="1"/>
+<polygon points="303.5,-4.3 363.3,30.2 303.5,64.8 243.6,30.2" fill="#32d3df" stroke="#121b31" stroke-width="1"/>
+<polygon points="363.3,60.0 303.5,94.6 303.5,64.8 363.3,30.2" fill="#12aebb" stroke="#121b31" stroke-width="1"/>
+<polygon points="303.5,94.6 243.6,60.0 243.6,30.2 303.5,64.8" fill="#087783" stroke="#121b31" stroke-width="1"/>
+<polygon points="503.0,3.8 562.8,38.4 503.0,73.0 443.1,38.4" fill="#ffc866" stroke="#121b31" stroke-width="1"/>
+<polygon points="562.8,64.8 503.0,99.4 503.0,73.0 562.8,38.4" fill="#e99b24" stroke="#121b31" stroke-width="1"/>
+<polygon points="503.0,99.4 443.1,64.8 443.1,38.4 503.0,73.0" fill="#925d10" stroke="#121b31" stroke-width="1"/>
+<polygon points="0.0,50.9 59.9,85.4 0.0,120.0 -59.9,85.4" fill="#68d5a4" stroke="#121b31" stroke-width="1"/>
+<polygon points="59.9,115.2 0.0,149.8 0.0,120.0 59.9,85.4" fill="#35aa78" stroke="#121b31" stroke-width="1"/>
+<polygon points="0.0,149.8 -59.9,115.2 -59.9,85.4 0.0,120.0" fill="#1e6c4d" stroke="#121b31" stroke-width="1"/>
+<polygon points="203.7,53.3 263.5,87.8 203.7,122.4 143.8,87.8" fill="#ff7c9b" stroke="#121b31" stroke-width="1"/>
+<polygon points="263.5,117.6 203.7,152.2 203.7,122.4 263.5,87.8" fill="#f04d75" stroke="#121b31" stroke-width="1"/>
+<polygon points="203.7,152.2 143.8,117.6 143.8,87.8 203.7,122.4" fill="#a92750" stroke="#121b31" stroke-width="1"/>
+<polygon points="407.4,59.0 467.2,93.6 407.4,128.2 347.5,93.6" fill="#32d3df" stroke="#121b31" stroke-width="1"/>
+<polygon points="467.2,120.0 407.4,154.6 407.4,128.2 467.2,93.6" fill="#12aebb" stroke="#121b31" stroke-width="1"/>
+<polygon points="407.4,154.6 347.5,120.0 347.5,93.6 407.4,128.2" fill="#087783" stroke="#121b31" stroke-width="1"/>
+<polygon points="103.9,110.9 163.8,145.4 103.9,180.0 44.1,145.4" fill="#68d5a4" stroke="#121b31" stroke-width="1"/>
+<polygon points="163.8,175.2 103.9,209.8 103.9,180.0 163.8,145.4" fill="#35aa78" stroke="#121b31" stroke-width="1"/>
+<polygon points="103.9,209.8 44.1,175.2 44.1,145.4 103.9,180.0" fill="#1e6c4d" stroke="#121b31" stroke-width="1"/>
+<polygon points="307.6,116.6 367.5,151.2 307.6,185.8 247.8,151.2" fill="#ff7c9b" stroke="#121b31" stroke-width="1"/>
+<polygon points="367.5,177.6 307.6,212.2 307.6,185.8 367.5,151.2" fill="#f04d75" stroke="#121b31" stroke-width="1"/>
+<polygon points="307.6,212.2 247.8,177.6 247.8,151.2 307.6,185.8" fill="#a92750" stroke="#121b31" stroke-width="1"/>
+<polygon points="8.3,169.4 68.2,204.0 8.3,238.6 -51.5,204.0" fill="#ffc866" stroke="#121b31" stroke-width="1"/>
+<polygon points="68.2,230.4 8.3,265.0 8.3,238.6 68.2,204.0" fill="#e99b24" stroke="#121b31" stroke-width="1"/>
+<polygon points="8.3,265.0 -51.5,230.4 -51.5,204.0 8.3,238.6" fill="#925d10" stroke="#121b31" stroke-width="1"/>
+<polygon points="207.8,174.2 267.7,208.8 207.8,243.4 148.0,208.8" fill="#68d5a4" stroke="#121b31" stroke-width="1"/>
+<polygon points="267.7,235.2 207.8,269.8 207.8,243.4 267.7,208.8" fill="#35aa78" stroke="#121b31" stroke-width="1"/>
+<polygon points="207.8,269.8 148.0,235.2 148.0,208.8 207.8,243.4" fill="#1e6c4d" stroke="#121b31" stroke-width="1"/>
+<line x1="35.9" y1="-30.8" x2="155.6" y2="-32.9" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="95.8" y="-36.9" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">DOM + WebSocket</text>
+<line x1="218.2" y1="-22.8" x2="280.6" y2="13.2" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="249.4" y="-9.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">bereinigt</text>
+<line x1="322.2" y1="37.8" x2="384.5" y2="75.8" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="353.3" y="51.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">max. 50 Chatzeilen</text>
+<line x1="235.4" y1="-32.7" x2="355.2" y2="-29.9" stroke="#ff557a" stroke-width="2.4" marker-end="url(#audio)"/>
+<text x="295.3" y="-36.3" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#ff557a" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">ca. 12 s Tab-Audio</text>
+<line x1="417.8" y1="-17.4" x2="480.1" y2="20.6" stroke="#ff557a" stroke-width="2.4" marker-end="url(#audio)"/>
+<text x="448.9" y="-3.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#ff557a" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">Datei-Erkennung</text>
+<line x1="18.0" y1="-20.5" x2="77.8" y2="12.1" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="47.9" y="-9.2" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">öffentliche Ereignisse</text>
+<line x1="118.5" y1="34.8" x2="180.8" y2="70.8" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="149.6" y="47.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">Bridge v1</text>
+<line x1="222.4" y1="95.4" x2="284.7" y2="133.4" stroke="#ff557a" stroke-width="2.4" marker-end="url(#audio)"/>
+<text x="253.6" y="109.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#ff557a" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">nur Nutzeraktion</text>
+<line x1="0.0" y1="-10.1" x2="0.0" y2="57.0" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="0.0" y="18.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">öffentliche Ereignisse</text>
+<line x1="18.7" y1="92.4" x2="81.1" y2="128.4" stroke="#25c5d2" stroke-width="2.4" marker-end="url(#observation)"/>
+<text x="49.9" y="105.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#25c5d2" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">Bridge v1</text>
+<line x1="122.6" y1="153.0" x2="185.0" y2="191.0" stroke="#ff557a" stroke-width="2.4" marker-end="url(#audio)"/>
+<text x="153.8" y="167.0" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#ff557a" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">nur Nutzeraktion</text>
+<line x1="44.2" y1="201.0" x2="163.9" y2="203.9" stroke="#e9a12d" stroke-width="2.4" stroke-dasharray="7 5" marker-end="url(#token)"/>
+<text x="104.1" y="197.5" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="7.5" fill="#e9a12d" style="paint-order:stroke;stroke:#0f1729;stroke-width:3px">Developer Token</text>
+<text x="0.0" y="-30.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">TikTok LIVE</text>
+<text x="0.0" y="-16.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">öffentliche Seite</text>
+<text x="199.5" y="-33.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Content + Hook</text>
+<text x="199.5" y="-19.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">passiv lesen</text>
+<text x="399.1" y="-29.0" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Loopback-Dienst</text>
+<text x="399.1" y="-15.0" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">127.0.0.1</text>
+<text x="99.8" y="23.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">WKWebView Bridge</text>
+<text x="99.8" y="37.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">Origin + Schema</text>
+<text x="303.5" y="26.2" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Service Worker</text>
+<text x="303.5" y="40.2" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">flüchtiger Zustand</text>
+<text x="503.0" y="34.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">AudD</text>
+<text x="503.0" y="48.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">nur nach Klick</text>
+<text x="0.0" y="81.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">AndroidX WebKit</text>
+<text x="0.0" y="95.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">Origin + Schema</text>
+<text x="203.7" y="83.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">SwiftUI</text>
+<text x="203.7" y="97.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">State · TTS</text>
+<text x="407.4" y="89.6" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Seitenpanel</text>
+<text x="407.4" y="103.6" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">Text · TTS · Player</text>
+<text x="103.9" y="141.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Compose</text>
+<text x="103.9" y="155.4" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">DataStore · TTS</text>
+<text x="307.6" y="147.2" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">ShazamKit</text>
+<text x="307.6" y="161.2" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">Mikrofon / PCM</text>
+<text x="8.3" y="200.0" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Token-Dienst</text>
+<text x="8.3" y="214.0" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">kurzlebiges ES256</text>
+<text x="207.8" y="204.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">ShazamKit AAR</text>
+<text x="207.8" y="218.8" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8.5" fill="#eef2f7">Mikrofon / PCM</text>
+</svg>

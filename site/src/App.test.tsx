@@ -65,6 +65,14 @@ describe("documentation site", () => {
     expect(screen.getByRole("heading", { name: "TikTok LIVE tab" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "WebSocket hook" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Side panel" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open 3D view" })).toHaveAttribute("href", "/en/architecture-3d");
+  });
+
+  it("opens the project-specific Three.js architecture route", async () => {
+    render(<MemoryRouter initialEntries={["/de/architecture-3d"]}><App/></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: "Interaktive Plattformarchitektur" })).toBeInTheDocument();
+    expect(screen.getByText(/demselben reproduzierbaren Projektmodell/)).toBeInTheDocument();
+    expect(document.querySelector('[src*="mcp-flow"], [href*="mcp-flow"]')).not.toBeInTheDocument();
   });
 
   it("provides a focusable skip-link target", () => {
