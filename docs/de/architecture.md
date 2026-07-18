@@ -22,24 +22,7 @@ Mobile Bridge-Nachrichten werden nur vom Hauptframe der Origin `https://www.tikt
 
 Die Mikrofonerkennung läuft nur nach einem Klick und höchstens zwölf Sekunden. WebView-PCM ist experimentell; bei CORS-, Codec- oder WebView-Fehlern wird die Funktion beendet und das Mikrofon angeboten.
 
-## Reproduzierbare Ansichten
-
-- [Gesamtarchitektur als Mermaid](../diagrams/architecture.mmd)
-- [Songerkennung als Mermaid-Sequenz](../diagrams/recognition-flow.mmd)
-- [Browser-/iOS-/Android-Deployment als Mermaid](../diagrams/platform-deployment.mmd)
-- [CoAuthoring V7 mit allen freigegebenen Bildquellen](../coauthoring-v7.md)
-
-```mermaid
-flowchart LR
-    TikTok["Öffentliche TikTok-LIVE-Seite"] --> Browser["Browser · AudD nach Klick"]
-    TikTok --> IOS["iOS · ShazamKit"]
-    TikTok --> Android["Android / HyperOS · ShazamKit"]
-    Android --> Token["/api/shazam-token · ES256"]
-```
-
-🧊 [**Interaktive 3D-Ansicht öffnen**](https://kikikari.github.io/OpenClaw/mcp-flow.html) — drehbar und zoombar (Three.js, Branch [gh-pages](https://github.com/KikiKari/OpenClaw/tree/gh-pages)). Die externe Ansicht ist eine Interaktionsreferenz; die Mermaid-Dateien oben bleiben die statische, barrierearme Systemquelle.
-
-Referenzgeneratoren: [SVG](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow.py) und [GIF](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow_gif.py).
+Siehe [Mermaid-Quelle](../diagrams/architecture.mmd).
 
 ## Textalternative
 

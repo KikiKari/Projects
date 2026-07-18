@@ -21,9 +21,6 @@
 |---|---|---|
 | GitHub-Repository | https://github.com/KikiKari/Projects | 🔗 |
 | GitHub-Branch | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | 🔗 |
-| GitHub-iOS-Branch | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | 🔗 |
-| GitHub-Android-/HyperOS-Branch | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | 🔗 |
-| Interaktive 3D-Referenz | https://kikikari.github.io/OpenClaw/mcp-flow.html | 🔗 |
 | GitHub-Issues offen | https://github.com/KikiKari/Projects/issues | 🔗 |
 | GitHub-Issues geschlossen | https://github.com/KikiKari/Projects/issues?q=is%3Aissue+state%3Aclosed | 🔗 |
 | Dokumentationssite | https://tiktok-live-companion.vercel.app | 🔗 |
@@ -32,7 +29,7 @@
 | Notion-Projektseite | https://app.notion.com/p/3a18d8ad3db9817f882bd79682fbbc51 | ⚠️ |
 | Canva-Ordner | https://www.canva.com/folder/FAHPt7Wvb8E | ⚠️ |
 
-**Hinweis zum Veröffentlichungsstand:** Version 0.7.0 ist auf dem gemeinsamen Branch sowie den iOS- und Android-/HyperOS-Branches veröffentlicht. Der 0.7.0-Release-Review liegt unter `security-scan/release-review-0.7.0.md`.
+**Hinweis zum Veröffentlichungsstand:** Öffentlich sichtbar ist 0.5.0. Version 0.7.0 liegt lokal fertig gebaut vor. Vor externer Veröffentlichung ist wegen des neuen Loopback-Dienstes und `tabCapture` ein neuer Security-Scan erforderlich.
 
 **Notion und Canva:** Umsetzung erfolgt durch Codex.
 
@@ -87,9 +84,7 @@ Basis: `tiktok-live-companion-project/`
 | `plugin-source/references/architecture.md` | technische Architekturreferenz |
 | `plugin-source/SECURITY.md` | Sicherheitsbeschreibung |
 | `docs/de/`, `docs/en/` | zweisprachige Dokumentation, je sieben Kapitel |
-| `docs/diagrams/*.mmd` | reproduzierbare Mermaid-Quellen für Architektur, Erkennung und Deployment |
-| `docs/coauthoring-v7.md` | alle 13 freigegebenen CoAuthoring-Bildquellen und Designhistorie |
-| `site/public/assets/coauthoring-v7/` | unveränderte PNG-Originale für die Dokumentationssite |
+| `docs/diagrams/architecture.mmd` | Mermaid-Quelle |
 | `release/0.7.0/` | aktuelle Artefakte und Prüfsummen |
 | `release/` | 0.5.0-Artefakte und Prüfsummen |
 | `security-scan/` | Threat Model, Findings, Abschlussbericht |
@@ -123,12 +118,9 @@ Basis: `tiktok-live-companion-project/`
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.0.zip` | `a3c818eb63179ad1c0d5896c5bac8263bab0c6732c8621cbcafbd847d5a50b42` |
-| `tiktok-live-companion-plugin-0.7.0.zip` | `4644ebf46bbd363edd499a16afc49b9ac7fa2c5cf03a1bae5149614ccbefb3b9` |
-| `tiktok-live-companion-service-0.7.0.zip` | `4bb5df40229c72a0e93ab822709182542d31846cc865f89962da3769e652fd1c` |
-| `tiktok-live-companion-ios-0.7.0-source.zip` | `3b833ea2969487ea9a82571478a4f273f3e678cffb6a11bde51e94ee0e5bbff3` |
-| `tiktok-live-companion-android-0.7.0-source.zip` | `62e57e5d901ffb581fc40dc8a47454fb7e46531c57ffdbd71b82b071f76ad594` |
-| `tiktok-live-companion-android-0.7.0-debug.apk` | `00f8df107107661c5bb6204f0fedb9d1f485fdbe5085f19f27e0f8089481d0f5` |
+| `tiktok-live-companion-extension-0.7.0.zip` | `40721b800a0f1aa4580ebabaa13ad82d10426ce0287eb1559749385f5850dfce` |
+| `tiktok-live-companion-plugin-0.7.0.zip` | `c8696754cc06453ad26237cb0d1d641ddeb19b7c21df7df3b06c7ac0b55f457c` |
+| `tiktok-live-companion-service-0.7.0.zip` | `617c63288976c8507d2e5cd6cfaf9eb5767f43b4c901e703f29d3aff58aa6c56` |
 
 Prüfsummendatei: `release/0.7.0/tiktok-live-companion-0.7.0-SHA256.txt`
 Verifiziert am 18.07.2026 gegen die tatsächlichen Dateien.

@@ -37,13 +37,6 @@ function ProductMockup({ lang }: { lang: Language }) {
   </div>;
 }
 
-function ApprovedFigure({ src, alt, caption, eager = false }: { src: string; alt: string; caption: string; eager?: boolean }) {
-  return <figure className="approved-figure">
-    <img src={`/assets/coauthoring-v7/${src}`} alt={alt} loading={eager ? "eager" : "lazy"}/>
-    <figcaption>{caption}</figcaption>
-  </figure>;
-}
-
 function Header({ lang, page, onSearch }: { lang: Language; page: PageKey; onSearch: () => void }) {
   const s = strings[lang];
   const other = lang === "de" ? "en" : "de";
@@ -51,7 +44,7 @@ function Header({ lang, page, onSearch }: { lang: Language; page: PageKey; onSea
   return <header className="site-header">
     <Link to={`/${lang}`} className="brand"><BrandMark /><span>TikTok <b>LIVE</b> Companion</span></Link>
     <nav aria-label={lang === "de" ? "Hauptnavigation" : "Primary navigation"}>
-      {(["overview", "installation", "features", "architecture", "security", "coauthoring"] as PageKey[]).map(key => <Link key={key} className={page === key ? "active" : ""} aria-current={page === key ? "page" : undefined} to={`/${lang}/${pageSlugs[key]}`}>{s.nav[key]}</Link>)}
+      {(["overview", "installation", "features", "architecture", "security"] as PageKey[]).map(key => <Link key={key} className={page === key ? "active" : ""} aria-current={page === key ? "page" : undefined} to={`/${lang}/${pageSlugs[key]}`}>{s.nav[key]}</Link>)}
     </nav>
     <div className="header-tools">
       <button className="search-button" onClick={onSearch} aria-label={s.search}><Icon name="search"/><span>{lang === "de" ? "Suchen" : "Search"}</span><kbd>Ctrl K</kbd></button>
@@ -81,7 +74,7 @@ function Home({ lang }: { lang: Language }) {
   return <>
     <section className="hero page-width">
       <div className="hero-copy"><h1>{s.heroTitle}</h1><p>{s.heroBody}</p><div className="hero-actions"><a className="button primary" href="/downloads/tiktok-live-companion-extension-0.7.0.zip" download><Icon name="download"/>{s.download}</a><Link className="button secondary" to={`/${lang}/installation`}><Icon name="external"/>{s.install}</Link></div><p className="compatibility"><span className="edge-dot"/><span className="chrome-dot"/>{s.compatibility}</p></div>
-      <ApprovedFigure src="coauthoring-v7-overview.png" eager alt={lang === "de" ? "Finalisierte CoAuthoring-V7-Übersichtsseite mit Download und Plattformmatrix" : "Final CoAuthoring V7 overview with download and platform matrix"} caption={lang === "de" ? "Freigegebener CoAuthoring-Entwurf für Version 0.7.0" : "Approved CoAuthoring concept for version 0.7.0"}/>
+      <ProductMockup lang={lang}/>
     </section>
     <section className="why-band"><div className="page-width"><h2>{s.why}</h2><p>{s.whyBody}</p><div className="benefit-rail"><article><Icon name="monitor"/><h3>{s.local}</h3><p>{s.localBody}</p></article><article><Icon name="pulse"/><h3>{s.observable}</h3><p>{s.observableBody}</p></article><article><Icon name="caption"/><h3>{s.accessible}</h3><p>{s.accessibleBody}</p></article></div></div></section>
     <PlatformMatrix lang={lang}/>
@@ -99,7 +92,7 @@ function PlatformMatrix({ lang }: { lang: Language }) {
     ["iOS 15+", "SwiftUI · WKWebView · ShazamKit", "Microphone is the stable recognition path; experimental WebView audio falls back transparently."],
     ["Android & HyperOS", "Compose · AndroidX WebKit · ShazamKit", "Standard Android APIs without a Google Play Services dependency; obtain the ShazamKit AAR separately."]
   ];
-  return <section className="platform-section page-width"><h2>{de ? "Version 0.7.0 auf drei Plattformen" : "Version 0.7.0 across three platforms"}</h2><p>{de ? "Eine Oberfläche, plattformspezifische und klar ausgewiesene Audiowege." : "One interface with platform-specific, clearly identified audio paths."}</p><div className="platform-grid">{platforms.map(([name, stack, body]) => <article key={name}><Icon name="monitor"/><h3>{name}</h3><strong>{stack}</strong><p>{body}</p></article>)}</div><ApprovedFigure src="mobile-shazamkit-ios-android.png" alt={de ? "iOS- und Android-App nebeneinander mit manueller ShazamKit-Songerkennung" : "iOS and Android apps side by side with manual ShazamKit recognition"} caption={de ? "Verbindliche mobile V7-UI: SwiftUI sowie Compose für Android und HyperOS" : "Binding mobile V7 UI: SwiftUI and Compose for Android and HyperOS"}/></section>;
+  return <section className="platform-section page-width"><h2>{de ? "Version 0.7.0 auf drei Plattformen" : "Version 0.7.0 across three platforms"}</h2><p>{de ? "Eine Oberfläche, plattformspezifische und klar ausgewiesene Audiowege." : "One interface with platform-specific, clearly identified audio paths."}</p><div className="platform-grid">{platforms.map(([name, stack, body]) => <article key={name}><Icon name="monitor"/><h3>{name}</h3><strong>{stack}</strong><p>{body}</p></article>)}</div></section>;
 }
 
 function Installation({ lang }: { lang: Language }) {
@@ -108,7 +101,6 @@ function Installation({ lang }: { lang: Language }) {
   return <PageIntro title={de ? "In wenigen Minuten startklar" : "Ready in a few minutes"} lead={de ? "Die Erweiterung läuft lokal in Edge oder Chrome." : "The extension runs locally in Edge or Chrome."}>
     <div className="installation-layout"><ol className="step-rail">{steps.map(([title, body], index) => <li key={title} className={index === 2 ? "current" : ""}><span>{index + 1}</span><div><h2>{title}</h2><p>{body}</p></div></li>)}</ol><div className="extension-window"><div className="extension-toolbar">←　↻　 <strong>{de ? "Erweiterungen" : "Extensions"}</strong><span>{de ? "Entwicklermodus" : "Developer mode"}　<span className="toggle on"/></span></div><div className="extension-body"><button>{de ? "Erweiterung laden" : "Load extension"}</button><button className="focused">{de ? "Entpackte Erweiterung laden" : "Load unpacked"}</button><div className="installed-extension"><BrandMark/><div><strong>TikTok LIVE Companion　0.7.0</strong><p>{de ? "Chat vorlesen, Zuschauer beobachten und LIVE-Informationen nutzen." : "Speak chat, observe participants, and use LIVE information."}</p></div><span className="toggle on"/></div></div><aside><Icon name="link"/><strong>{de ? "Hook setzen, bevor der Player verbindet" : "Set the hook before the player connects"}</strong><p>{de ? "Der aktuelle Tab wird neu geladen. Cookies und Login bleiben erhalten." : "The current tab reloads. Cookies and login remain intact."}</p></aside></div></div>
     <Workflow lang={lang}/>
-    <ApprovedFigure src="installation-browser-tiktok.png" alt={de ? "Installationsanleitung mit Edge-Erweiterungsseite und Companion-Hook" : "Installation guide with Edge extensions page and Companion hook"} caption={de ? "CoAuthoring-V7-Referenz für Installation und ersten Hook" : "CoAuthoring V7 reference for installation and the first hook"}/>
   </PageIntro>;
 }
 
@@ -122,7 +114,6 @@ function Features({ lang }: { lang: Language }) {
   const items = featureData[lang];
   return <PageIntro title={lang === "de" ? "Funktionen im Detail" : "Features in detail"}>
     <div className="feature-layout"><div className="feature-tabs" role="tablist" aria-label={lang === "de" ? "Funktionsbereiche" : "Feature areas"}>{items.map(([title], index) => <button key={title} role="tab" aria-selected={selected === index} onClick={() => setSelected(index)}><Icon name={(["sound", "pulse", "caption", "info", "monitor", "pulse", "info"] as const)[index]}/>{title}</button>)}</div><div className="feature-detail"><h2>{items[selected][0]}</h2><p>{items[selected][1]}</p>{selected === 4 && <div className="info-callout"><Icon name="info"/>{lang === "de" ? "dBFS ist kein kalibrierter dB-SPL-Wert." : "dBFS is not a calibrated dB SPL value."}</div>}</div><PlayerPanel lang={lang}/></div>
-    <ApprovedFigure src={selected === 0 ? "browser-chat-top-chatter.png" : "features-player-cyan.png"} alt={selected === 0 ? (lang === "de" ? "Bereinigte Chatzeilen, Vorleseoptionen und Top-Chatter" : "Sanitized chat lines, speech options, and top chatters") : (lang === "de" ? "Funktionsseite mit Player- und Pegelschutzdarstellung" : "Feature page with player and peak protection") } caption={lang === "de" ? "Finalisierte V7-Funktionsreferenz aus dem CoAuthoring" : "Final V7 feature reference from CoAuthoring"}/>
     <DownloadBand lang={lang}/>
   </PageIntro>;
 }
@@ -136,18 +127,8 @@ function Architecture({ lang }: { lang: Language }) {
   const nodes = de ? [["TikTok-LIVE-Tab", "öffentliche DOM-/Metadaten"], ["content.js", "isolierte passive Prüfung"], ["WebSocket-Hook", "Nachrichten nur lesen"], ["background.js", "Filterung und Streamzustand"], ["Browser-Speicher", "Streamdaten flüchtig, Einstellungen lokal"], ["Seitenpanel", "sichere Text- und Audioausgabe"]] : [["TikTok LIVE tab", "public DOM/metadata"], ["content.js", "isolated passive inspection"], ["WebSocket hook", "read messages only"], ["background.js", "filtering and stream state"], ["Browser storage", "volatile stream data, local settings"], ["Side panel", "safe text and audio output"]];
   return <PageIntro title={de ? "So bleiben Daten im Browser" : "How data stays in the browser"} lead={de ? "Beobachten statt verändern" : "Observe, never modify"}>
     <div className="architecture-flow">{nodes.map(([title, body], index) => <div className={`architecture-node node-${index}`} key={title}><Icon name={(["monitor", "info", "link", "pulse", "info", "caption"] as const)[index]}/><h2>{title}</h2><p>{body}</p>{index < nodes.length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>
-    <ApprovedFigure src="architecture-browser-tiktok.png" alt={de ? "Sicherheitsarchitektur vom TikTok-LIVE-Tab bis zum Seitenpanel" : "Security architecture from the TikTok LIVE tab to the side panel"} caption={de ? "CoAuthoring-V7-Sicherheitsansicht; die Mermaid-Quellen bilden zusätzlich Mobile und ShazamKit ab" : "CoAuthoring V7 security view; Mermaid sources additionally cover mobile and ShazamKit"}/>
-    <InteractiveDiagramLinks lang={lang}/>
     <SecurityFacts lang={lang}/><PlatformMatrix lang={lang}/><div className="risk-band"><div><strong>{de ? "Wichtiger Hinweis" : "Important note"}</strong><p>{de ? "Signierte Stream-URLs sind zeitlich begrenzt und während ihrer Gültigkeit sensibel." : "Signed stream URLs are temporary and sensitive while valid."}</p></div><div><strong>{de ? "Einschränkung" : "Limitation"}</strong><p>{de ? "Beobachtungsprotokoll, kein kryptografisch authentifizierter Nachweis." : "Observational record, not cryptographically authenticated evidence."}</p></div></div>
   </PageIntro>;
-}
-
-function InteractiveDiagramLinks({ lang }: { lang: Language }) {
-  const de = lang === "de";
-  return <section className="diagram-links" aria-labelledby="diagram-links-title">
-    <div><p className="eyebrow">MERMAID + THREE.JS</p><h2 id="diagram-links-title">{de ? "Reproduzierbare Architekturansichten" : "Reproducible architecture views"}</h2><p>{de ? "Mermaid bleibt die lesbare, statische Quelle. Die externe Three.js-Referenz zeigt das Interaktionsmuster für eine dreh- und zoombare Systemansicht." : "Mermaid remains the readable static source. The external Three.js reference demonstrates the interaction pattern for an orbitable, zoomable system view."}</p></div>
-    <div className="diagram-actions"><a className="button primary" href="https://kikikari.github.io/OpenClaw/mcp-flow.html" target="_blank" rel="noreferrer">🧊 {de ? "Interaktive 3D-Ansicht öffnen" : "Open interactive 3D view"}</a><a href="https://github.com/KikiKari/Projects/blob/TikTok-Live-Companion/docs/diagrams/architecture.mmd" target="_blank" rel="noreferrer">Mermaid: architecture.mmd</a><a href="https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow.py" target="_blank" rel="noreferrer">SVG: gen_mcp_flow.py</a><a href="https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow_gif.py" target="_blank" rel="noreferrer">GIF: gen_mcp_flow_gif.py</a></div>
-  </section>;
 }
 
 function SecurityFacts({ lang }: { lang: Language }) {
@@ -158,32 +139,7 @@ function SecurityFacts({ lang }: { lang: Language }) {
 function Security({ lang }: { lang: Language }) {
   const de = lang === "de";
   const controls = de ? [["Berechtigungen", "activeTab, scripting, sidePanel, storage, tabs, tabCapture und passives webRequest; keine Cookie- oder Blocking-Berechtigung."], ["Speicherung", "Stream-Zustand, Chat und beobachtete Personen bleiben flüchtig. Einstellungen und dauerhafte Mutes liegen lokal im Browser; AudD-Zugangsdaten nur in der Dienstkonfiguration."], ["Ausgabe", "Seitenwerte gelten als nicht vertrauenswürdig und werden ausschließlich mit textContent dargestellt."], ["Audio", "Browser-TTS bleibt lokal. Nur eine manuell gestartete zwölfsekündige Songerkennung sendet Audio über den gepaarten Loopback-Dienst an AudD."]] : [["Permissions", "activeTab, scripting, sidePanel, storage, tabs, tabCapture, and passive webRequest; no cookie or blocking permission."], ["Storage", "Stream state, chat, and observed people remain volatile. Settings and permanent mutes stay in browser-local storage; AudD credentials live only in the service configuration."], ["Output", "Page values are untrusted and rendered exclusively with textContent."], ["Audio", "Browser speech remains local. Only a manually started twelve-second recognition sends audio to AudD through the paired loopback service."]];
-  return <PageIntro title={de ? "Sicherheit und Datenschutz" : "Security and privacy"} lead={de ? "Klare Grenzen statt verdeckter Datenflüsse." : "Clear boundaries instead of hidden data flows."}><SecurityFacts lang={lang}/><ApprovedFigure src="codex-security-scan.png" alt={de ? "Abgeschlossene Codex-Sicherheitsprüfung mit zwei niedrigen Findings" : "Completed Codex security scan with two low findings"} caption={de ? "Historischer Scan-Beleg; maßgeblich für 0.7.0 ist der aktuelle Release-Review im Repository" : "Historical scan evidence; the current repository release review governs 0.7.0"}/><div className="security-list"><article><h2>{de ? "Release-Prüfung 0.7.0" : "0.7.0 release review"}</h2><p>{de ? "Die neue Prüfung umfasst zusätzlich Mobile-WebView-Bridges, ShazamKit-Audio und den Token-Endpunkt. Nicht verifizierte Plattformbuilds werden ausdrücklich gekennzeichnet." : "The new review additionally covers mobile WebView bridges, ShazamKit audio, and the token endpoint. Unverified platform builds are explicitly identified."}</p></article>{controls.map(([title, body]) => <article key={title}><h2>{title}</h2><p>{body}</p></article>)}</div><div className="risk-band"><div><strong>{de ? "Externe Übertragung" : "External transfer"}</strong><p>{de ? "AudD erhält im Browser nur nach Klick den kurzen Audioausschnitt; native Apps senden nicht das Audio, sondern ShazamKit-Signaturen an Apples Katalogdienst." : "In the browser, AudD receives the short clip only after a click; native apps use ShazamKit signatures with Apple's catalog service rather than uploading the audio."}</p></div><div><strong>{de ? "Mobile Bridge" : "Mobile bridge"}</strong><p>{de ? "Nur Hauptframe-Nachrichten von https://www.tiktok.com und bekannte Nachrichtentypen werden akzeptiert." : "Only main-frame messages from https://www.tiktok.com with known message types are accepted."}</p></div></div></PageIntro>;
-}
-
-const coauthoringImages = [
-  ["mobile-shazamkit-ios-android.png", "Mobile ShazamKit", "iOS / SwiftUI und Android / HyperOS / Compose"],
-  ["browser-observed-people.png", "Beobachtete Personen", "Zugänglicher Mute-Dialog mit Streamstatistik"],
-  ["browser-chat-top-chatter.png", "Chat und Top-Chatter", "Bereinigte Chatzeilen, TTS und Rangfolge"],
-  ["codex-security-scan.png", "Security Scan", "Abgeschlossene historische Scan-Ansicht"],
-  ["coauthoring-v7-overview.png", "Finale V7-Übersicht", "Freigegebene Plattformmatrix für 0.7.0"],
-  ["features-player-coral.png", "Player – Coral", "CoAuthoring-Funktionsentwurf"],
-  ["architecture-browser-coral.png", "Architektur – Coral", "Browserdatenfluss und Sicherheitsgrenzen"],
-  ["installation-browser-coral.png", "Installation – Coral", "Edge-/Chrome-Schnellstart"],
-  ["overview-browser-coral.png", "Übersicht – Coral", "Früher visueller Browserentwurf"],
-  ["features-player-cyan.png", "Player – Cyan", "Alternative Funktionsausarbeitung"],
-  ["overview-browser-cyan.png", "Übersicht – Cyan", "Alternative Übersichtsvariante"],
-  ["installation-browser-tiktok.png", "Installation – TikTok", "Finalisierte Installationsreferenz"],
-  ["architecture-browser-tiktok.png", "Architektur – TikTok", "Finalisierte Sicherheitsreferenz"]
-] as const;
-
-function CoAuthoringGallery({ lang }: { lang: Language }) {
-  const de = lang === "de";
-  return <PageIntro title="CoAuthoring V7" lead={de ? "Freigegebene visuelle Quellen und nachvollziehbare Designhistorie." : "Approved visual sources and traceable design history."}>
-    <p className="gallery-intro">{de ? "Alle 13 Anhänge sind unverändert übernommen. Motive mit Versionsangabe 0.5.0 dokumentieren frühere Entwurfsstufen; die V7-Übersicht und die Mobile-ShazamKit-Ansicht sind die maßgeblichen 0.7.0-Referenzen." : "All 13 attachments are preserved unchanged. Images labelled 0.5.0 document earlier design stages; the V7 overview and Mobile ShazamKit view are the governing 0.7.0 references."}</p>
-    <div className="coauthoring-gallery">{coauthoringImages.map(([src, title, caption]) => <ApprovedFigure key={src} src={src} alt={`${title}: ${caption}`} caption={`${title} — ${caption}`}/>)}</div>
-    <InteractiveDiagramLinks lang={lang}/>
-  </PageIntro>;
+  return <PageIntro title={de ? "Sicherheit und Datenschutz" : "Security and privacy"} lead={de ? "Klare Grenzen statt verdeckter Datenflüsse." : "Clear boundaries instead of hidden data flows."}><SecurityFacts lang={lang}/><div className="security-list"><article><h2>{de ? "Release-Prüfung 0.7.0" : "0.7.0 release review"}</h2><p>{de ? "Die neue Prüfung umfasst zusätzlich Mobile-WebView-Bridges, ShazamKit-Audio und den Token-Endpunkt. Nicht verifizierte Plattformbuilds werden ausdrücklich gekennzeichnet." : "The new review additionally covers mobile WebView bridges, ShazamKit audio, and the token endpoint. Unverified platform builds are explicitly identified."}</p></article>{controls.map(([title, body]) => <article key={title}><h2>{title}</h2><p>{body}</p></article>)}</div><div className="risk-band"><div><strong>{de ? "Externe Übertragung" : "External transfer"}</strong><p>{de ? "AudD erhält im Browser nur nach Klick den kurzen Audioausschnitt; native Apps senden nicht das Audio, sondern ShazamKit-Signaturen an Apples Katalogdienst." : "In the browser, AudD receives the short clip only after a click; native apps use ShazamKit signatures with Apple's catalog service rather than uploading the audio."}</p></div><div><strong>{de ? "Mobile Bridge" : "Mobile bridge"}</strong><p>{de ? "Nur Hauptframe-Nachrichten von https://www.tiktok.com und bekannte Nachrichtentypen werden akzeptiert." : "Only main-frame messages from https://www.tiktok.com with known message types are accepted."}</p></div></div></PageIntro>;
 }
 
 function Troubleshooting({ lang }: { lang: Language }) {
@@ -210,7 +166,7 @@ function PageIntro({ title, lead, children }: { title: string; lead?: string; ch
 
 function Footer({ lang }: { lang: Language }) {
   const s = strings[lang];
-  return <footer><div className="page-width"><div className="brand footer-brand"><BrandMark/><span>TikTok <b>LIVE</b> Companion</span></div><p>{s.independent}</p><div><Link to={`/${lang}/coauthoring-v7`}>CoAuthoring V7</Link><Link to={`/${lang}/troubleshooting`}>{s.nav.troubleshooting}</Link><Link to={`/${lang}/downloads`}>{s.nav.downloads}</Link><a href="https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion">GitHub</a></div></div></footer>;
+  return <footer><div className="page-width"><div className="brand footer-brand"><BrandMark/><span>TikTok <b>LIVE</b> Companion</span></div><p>{s.independent}</p><div><Link to={`/${lang}/troubleshooting`}>{s.nav.troubleshooting}</Link><Link to={`/${lang}/downloads`}>{s.nav.downloads}</Link><a href="https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion">GitHub</a><a href="https://linear.app/0penclaw/project/tiktok-live-companion-ed2f087b24bc">Linear</a><a href="https://app.notion.com/p/3a18d8ad3db9817f882bd79682fbbc51">Notion</a></div></div></footer>;
 }
 
 function parsePath(pathname: string): { lang: Language; page: PageKey } | null {
@@ -230,6 +186,6 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
   if (!parsed) return <Navigate to="/de" replace/>;
   const { lang, page } = parsed;
-  const components: Record<PageKey, ReactNode> = { overview: <Home lang={lang}/>, installation: <Installation lang={lang}/>, features: <Features lang={lang}/>, architecture: <Architecture lang={lang}/>, security: <Security lang={lang}/>, coauthoring: <CoAuthoringGallery lang={lang}/>, troubleshooting: <Troubleshooting lang={lang}/>, downloads: <Downloads lang={lang}/> };
+  const components: Record<PageKey, ReactNode> = { overview: <Home lang={lang}/>, installation: <Installation lang={lang}/>, features: <Features lang={lang}/>, architecture: <Architecture lang={lang}/>, security: <Security lang={lang}/>, troubleshooting: <Troubleshooting lang={lang}/>, downloads: <Downloads lang={lang}/> };
   return <><a className="skip-link" href="#main-content">{strings[lang].skip}</a><Header lang={lang} page={page} onSearch={() => setSearchOpen(true)}/><div id="main-content" tabIndex={-1}>{components[page]}</div><Footer lang={lang}/><SearchDialog lang={lang} open={searchOpen} onClose={() => setSearchOpen(false)}/></>;
 }

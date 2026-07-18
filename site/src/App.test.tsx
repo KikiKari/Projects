@@ -6,8 +6,8 @@ import App from "./App";
 afterEach(cleanup);
 
 const routes = [
-  "/de", "/de/installation", "/de/features", "/de/architecture", "/de/security", "/de/coauthoring-v7", "/de/troubleshooting", "/de/downloads",
-  "/en", "/en/installation", "/en/features", "/en/architecture", "/en/security", "/en/coauthoring-v7", "/en/troubleshooting", "/en/downloads"
+  "/de", "/de/installation", "/de/features", "/de/architecture", "/de/security", "/de/troubleshooting", "/de/downloads",
+  "/en", "/en/installation", "/en/features", "/en/architecture", "/en/security", "/en/troubleshooting", "/en/downloads"
 ];
 
 describe("documentation site", () => {
@@ -65,14 +65,6 @@ describe("documentation site", () => {
     expect(screen.getByRole("heading", { name: "TikTok LIVE tab" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "WebSocket hook" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Side panel" })).toBeInTheDocument();
-  });
-
-  it("publishes the CoAuthoring V7 gallery and reproducible diagram links", () => {
-    render(<MemoryRouter initialEntries={["/de/coauthoring-v7"]}><App/></MemoryRouter>);
-    expect(screen.getAllByRole("img")).toHaveLength(13);
-    expect(screen.getByRole("link", { name: /Interaktive 3D-Ansicht öffnen/ })).toHaveAttribute("href", "https://kikikari.github.io/OpenClaw/mcp-flow.html");
-    expect(screen.getByRole("link", { name: /gen_mcp_flow.py/ })).toHaveAttribute("href", "https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow.py");
-    expect(screen.getByRole("link", { name: /gen_mcp_flow_gif.py/ })).toHaveAttribute("href", "https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow_gif.py");
   });
 
   it("provides a focusable skip-link target", () => {
