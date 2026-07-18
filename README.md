@@ -6,6 +6,19 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 
 > Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
 
+## Visuelle Dokumentation 0.7.0
+
+[![TikTok LIVE Companion – Plattformarchitektur für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
+
+Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, rotierendes GIF und Three.js-Ansicht stammen aus demselben projektspezifischen Modell mit 13 Knoten und 12 Verbindungen.
+
+- [Interaktive Three.js-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
+- [Rotierendes Architektur-GIF](docs/diagrams/tiktok-live-companion-architecture.gif)
+- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.0-concept.png)
+- [Visualisierungsvertrag und Textalternative](docs/diagrams/tiktok-live-companion-visualization-contract.md)
+
+![Animierte TikTok-LIVE-Companion-Plattformarchitektur](docs/diagrams/tiktok-live-companion-architecture.gif)
+
 ## Schnellstart
 
 1. Lade `release/0.7.0/tiktok-live-companion-extension-0.7.0.zip` herunter und entpacke die Datei.
@@ -16,6 +29,8 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 
 ## Dokumentation
 
+- [Vollständige Dokumentation V7](docs/TikTok-Live-Companion_v7_utf8bom.md)
+- [Links und Erreichbarkeiten V7](docs/Links-und-Erreichbarkeiten_v7_utf8bom.md)
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
 - [Architekturdiagramm](docs/diagrams/architecture.mmd)
