@@ -19,6 +19,7 @@
         },
         aiSummaryInfo: { featureFlagPresent: true, featureEnabled: true, text: "", source: null, overviewCardFound: true, overviewCardHovered: true },
         hook: { armed: true, installed: true, connected: true, lastError: null },
+        stream: { key: "demo|123", handle: "demo", roomId: "123", teamTag: "tmm", teamEvidence: {} },
         liveStats: {
           viewerCount: "143", totalViewers: "15842", likeCount: "430200",
           followEvents: 7, shareEvents: 4, shareCount: "19", followerCount: "238800",
@@ -32,12 +33,19 @@
         },
         selectedQuality: "540p",
         chatMessages: [
-          { messageId: "1", author: "Anna", content: "Guten Abend", contentLanguage: "de-DE", source: "websocket", receivedAtUtc: new Date().toISOString() },
-          { messageId: "2", author: "Ben", content: "Welche Sorte ist das?", contentLanguage: "de-DE", source: "dom", receivedAtUtc: new Date().toISOString() },
+          { messageId: "1", participantKey: "id:1", author: "Anna", content: "Guten Abend", contentLanguage: "de-DE", source: "websocket", receivedAtUtc: new Date().toISOString() },
+          { messageId: "2", participantKey: "id:2", author: "Ben", content: "Welche Sorte ist das?", contentLanguage: "de-DE", source: "dom", receivedAtUtc: new Date().toISOString() },
           { messageId: "3", author: "Clara", content: "Danke für die Erklärung", contentLanguage: "de-DE", source: "websocket", receivedAtUtc: new Date().toISOString() },
           { messageId: "4", author: "David", content: "Bitte einmal mischen", contentLanguage: "de-DE", source: "websocket", receivedAtUtc: new Date().toISOString() },
           { messageId: "5", author: "Eva", content: "Das ist gut lesbar", contentLanguage: "de-DE", source: "websocket", receivedAtUtc: new Date().toISOString() }
         ],
+        participants: {
+          "id:1": { key: "id:1", name: "Anna", messageCount: 12, wordCount: 48, giftEventCount: 2, giftItemCount: 24, lastSeenAtUtc: new Date().toISOString() },
+          "id:2": { key: "id:2", name: "Ben", messageCount: 8, wordCount: 39, giftEventCount: 0, giftItemCount: 0, lastSeenAtUtc: new Date().toISOString() },
+          "name:clara": { key: "name:clara", name: "Clara", messageCount: 6, wordCount: 31, giftEventCount: 1, giftItemCount: 1, lastSeenAtUtc: new Date().toISOString() }
+        },
+        streamMutes: [],
+        participantsTruncated: false,
         media: [
           { url: "https://pull.example.tiktokcdn.com/live/stream_hd.flv?expire=1&sign=test", protocol: "FLV", quality: "720p", sdkKey: "hd", bitrate: 1800000, codec: "h264", width: 1280, height: 720, fps: 30, audioOnly: false, hostname: "pull.example.tiktokcdn.com", source: "metadata" },
           { url: "https://pull.example.tiktokcdn-eu.com/live/stream_720p.m3u8?sign=test", protocol: "HLS", quality: "720p", sdkKey: "hd", bitrate: 1800000, codec: "h264", width: 1280, height: 720, fps: 30, audioOnly: false, hostname: "pull.example.tiktokcdn-eu.com", source: "network" },
@@ -54,10 +62,11 @@
           query: async () => [{ id: 1, url: state.page.url, title: state.page.title }],
           onActivated: { addListener() {} }
         },
+        tabCapture: { capture(_options, callback) { callback(null); } },
         runtime: {
           sendMessage: async (message) => {
             if (message.type === "TLC_GET_STATE") return { ok: true, state };
-            if (message.type === "TLC_GET_SETTINGS") return { ok: true, settings: { autoHook: true, keepSpeechActive: true, speechVolume: 0.8 } };
+            if (message.type === "TLC_GET_SETTINGS") return { ok: true, settings: { autoHook: true, keepSpeechActive: true, speechVolume: 0.5, speechLanguage: "auto", speakNames: true, shortenNames: false, serviceUrl: "http://127.0.0.1:43117", pairingCode: "", permanentMutes: [] } };
             if (message.type === "TLC_SCAN") {
               return { ok: true, response: { captionInfo: state.captionInfo, captionControl: true, mediaCount: state.media.length } };
             }
@@ -88,7 +97,8 @@
               state.debug.entries = [];
               return { ok: true };
             }
-            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: { version: "0.5.0", debug: state.debug } };
+            if (message.type === "TLC_SET_MUTE") return { ok: true, state, settings: { permanentMutes: [] } };
+            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: { version: "0.7.0", debug: state.debug } };
             return { ok: true, response: { activated: true } };
           },
           onMessage: { addListener() {} }
@@ -103,11 +113,16 @@
       }
       const css = document.createElement("link");
       css.rel = "stylesheet";
-      css.href = "../browser-extension/sidepanel.css";
+      css.href = "../browser-extension/sidepanel.css?v=0.7.0-1";
       document.head.append(css);
-      const script = document.createElement("script");
-      script.src = "../browser-extension/sidepanel.js";
-      document.body.append(script);
+      const coreScript = document.createElement("script");
+      coreScript.src = "../browser-extension/content-core.js";
+      coreScript.onload = () => {
+        const script = document.createElement("script");
+        script.src = "../browser-extension/sidepanel.js";
+        document.body.append(script);
+      };
+      document.body.append(coreScript);
     })();
   </script>
 </body>

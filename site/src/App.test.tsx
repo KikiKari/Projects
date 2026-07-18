@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import App from "./App";
+
+afterEach(cleanup);
 
 const routes = [
   "/de", "/de/installation", "/de/features", "/de/architecture", "/de/security", "/de/troubleshooting", "/de/downloads",
@@ -12,7 +14,7 @@ describe("documentation site", () => {
   it("renders the German overview and download", () => {
     render(<MemoryRouter initialEntries={["/de"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Version 0.5.0 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.5.0.zip");
+    expect(screen.getByRole("link", { name: /Version 0.7.0 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.0.zip");
   });
 
   it("opens keyboard search and lists English architecture", () => {
@@ -40,11 +42,22 @@ describe("documentation site", () => {
     expect(screen.getByRole("link", { name: "Sprache: EN" })).toHaveAttribute("href", "/en/security");
   });
 
-  it("exposes both release downloads and the checksum action", () => {
+  it("exposes all release downloads and the checksum action", () => {
     render(<MemoryRouter initialEntries={["/en/downloads"]}><App/></MemoryRouter>);
-    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.5.0.zip");
-    expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.5.0.zip");
+    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.0.zip");
+    expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.7.0.zip");
+    expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.0.zip");
+    expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.0-source.zip");
+    expect(screen.getByRole("link", { name: /Android\/HyperOS source/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.0-source.zip");
+    expect(screen.getByRole("link", { name: /Android test APK/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.0-debug.apk");
     expect(screen.getByRole("button", { name: "Copy checksums" })).toBeInTheDocument();
+  });
+
+  it("documents the browser and native recognition split", () => {
+    render(<MemoryRouter initialEntries={["/en"]}><App/></MemoryRouter>);
+    expect(screen.getAllByText(/AudD/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ShazamKit/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Android & HyperOS")).toBeInTheDocument();
   });
 
   it("provides an accessible text alternative for the architecture", () => {

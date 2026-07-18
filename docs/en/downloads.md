@@ -1,20 +1,25 @@
-# Downloads and release 0.5.0
+# Downloads and release 0.7.0
 
 ## Artifacts
 
-- `tiktok-live-companion-extension-0.5.0.zip` – unpacked Edge/Chrome extension package
-- `tiktok-live-companion-plugin-0.5.0.zip` – Codex plugin with skill, references, and tests
-- `tiktok-live-companion-0.5.0-SHA256.txt` – integrity values
+- `tiktok-live-companion-extension-0.7.0.zip` – unpacked Edge/Chrome extension package
+- `tiktok-live-companion-plugin-0.7.0.zip` – Codex plugin with skill, references, and tests
+- `tiktok-live-companion-service-0.7.0.zip` – optional local Windows service
+- `tiktok-live-companion-ios-0.7.0-source.zip` – complete SwiftUI/Xcode source project
+- `tiktok-live-companion-android-0.7.0-source.zip` – Kotlin/Compose source project for Android and HyperOS
+- `tiktok-live-companion-android-0.7.0-debug.apk` – optional test package when the Android toolchain was available
+- `tiktok-live-companion-0.7.0-SHA256.txt` – integrity values
 
 ## SHA-256
 
 ```text
-9439e21db0e8fc2e874a478079d1243297d4c95e0dbb140795912f75eb250b02  tiktok-live-companion-extension-0.5.0.zip
-a99fdfb14cd0effac4f89468758258e073dc75ed0f59763bc9764c4c380088a0  tiktok-live-companion-plugin-0.5.0.zip
+40721b800a0f1aa4580ebabaa13ad82d10426ce0287eb1559749385f5850dfce  tiktok-live-companion-extension-0.7.0.zip
+c8696754cc06453ad26237cb0d1d641ddeb19b7c21df7df3b06c7ac0b55f457c  tiktok-live-companion-plugin-0.7.0.zip
+617c63288976c8507d2e5cd6cfaf9eb5767f43b4c901e703f29d3aff58aa6c56  tiktok-live-companion-service-0.7.0.zip
 ```
 
 ## What's new
 
-Version 0.5.0 combines accessible chat and local speech, expanded LIVE values, profile and overview metadata, player and dBFS controls, quality selection, multi-guest detection, auto-hook, full tab refresh, and sanitized diagnostics.
+Version 0.7.0 adds native iOS and Android/HyperOS apps, an origin-restricted WebView bridge, and a short-lived ShazamKit token endpoint. The browser extension retains manual AudD recognition; mobile apps use ShazamKit with the microphone as the stable path and WebView PCM as experimental.
 
-The supplied artifacts are unchanged. Installation documentation was updated from 0.1.0 to 0.5.0.
+AudD receives an approximately twelve-second audio clip in the browser only after an explicit click. Mobile recognition also never starts without a click. The proprietary ShazamKit AAR, Apple keys, and signing certificates are not included in the archives.

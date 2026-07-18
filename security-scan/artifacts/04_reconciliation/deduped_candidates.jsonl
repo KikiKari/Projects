@@ -1,0 +1,2 @@
+{"candidate_id":"TLC-BRIDGE-UNBOUNDED-001","raw_candidate_ids":["TLC-BRIDGE-UNBOUNDED-001"],"instance_key":"resource-exhaustion:content.js:696","status":"validation-pending"}
+{"candidate_id":"TLC-GZIP-EXPANSION-002","raw_candidate_ids":["TLC-GZIP-EXPANSION-002"],"instance_key":"resource-exhaustion:proto-main.js:208","status":"validation-pending"}

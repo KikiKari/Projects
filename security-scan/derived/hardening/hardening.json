@@ -1,0 +1,31 @@
+{
+  "documentType": "codex-security.hardening-analysis",
+  "schemaVersion": "1.0",
+  "analysisId": "hardening_final",
+  "sourceScan": {
+    "scanId": "5f6270cf-714a-4ecf-be64-24c9d860dab5",
+    "snapshotDigest": "codex-security-snapshot/v1:sha256:5b89ebe334f65c943b58b77979f4136950e147af9c97de54c24f8a024586957c",
+    "sourceDrift": "none"
+  },
+  "assessment": {
+    "outcome": "local_remediation_preferred",
+    "summary": "The two low-severity availability findings are independent, narrow browser-extension boundaries; focused schema and byte-budget controls are more proportionate than an architectural redesign."
+  },
+  "constraints": {
+    "profile": "balanced",
+    "changeHorizons": ["incremental"],
+    "nonNegotiables": [
+      "Do not modify the supplied 0.5.0 release artifacts silently.",
+      "Do not add backend services, analytics, cookies, or remote processing."
+    ],
+    "assumptions": [
+      "No browser-specific production memory budget was supplied.",
+      "The extension remains a local Manifest V3 product for public TikTok pages."
+    ]
+  },
+  "opportunities": [],
+  "openQuestions": [
+    "What maximum per-message, per-tab, and decompressed byte budgets should a future release enforce on low-memory systems?",
+    "Should the next release drop excess events or disable the hook after a bounded decode failure threshold?"
+  ]
+}

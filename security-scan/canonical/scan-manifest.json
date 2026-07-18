@@ -1,0 +1,42 @@
+{
+  "documentType": "codex-security.scan-manifest",
+  "schemaVersion": "1.0",
+  "scan": {
+    "id": "5f6270cf-714a-4ecf-be64-24c9d860dab5",
+    "producer": {
+      "name": "codex-security-plugin",
+      "version": "0.1.11"
+    },
+    "status": "completed",
+    "startedAt": "2026-07-17T17:54:41Z",
+    "completedAt": "2026-07-17T22:10:00Z",
+    "target": {
+      "kind": "directory_snapshot",
+      "targetId": "target_sha256_5c9433c817053e575d66d0c5c0780d7aa8bea89a35dea098a44ebcd84850f90b",
+      "displayName": "tiktok-live-companion-extension-0.5.0",
+      "snapshotDigest": "codex-security-snapshot/v1:sha256:5b89ebe334f65c943b58b77979f4136950e147af9c97de54c24f8a024586957c"
+    },
+    "scope": {
+      "includePaths": ["."],
+      "excludePaths": [],
+      "summary": "Standard full-directory review of the unchanged TikTok LIVE Companion 0.5.0 Manifest V3 extension. All nine source-like runtime files were read in full; release ZIP integrity was verified separately. Validation used complete static traces and one bounded package-API reproduction captured before the later stability pause. No further stress testing was performed.",
+      "reviewedArtifacts": ["nine extension runtime files", "extension and plugin release ZIP hashes", "generated threat model"],
+      "runtimeStatus": "Existing Node extension test passed. No live TikTok account or production stream was used.",
+      "validationMode": "static source-to-sink analysis plus one bounded local decoder check",
+      "limitations": ["Exact Chrome memory and session-storage failure thresholds vary by version and device.", "No live public target was tested."]
+    },
+    "threatModel": {
+      "summary": "TikTok page content, DOM, metadata, MAIN-world scripts and WebSocket frames are untrusted inputs crossing into an isolated content script, privileged service worker, session storage and extension-owned side panel.",
+      "assets": ["extension package integrity", "captured chat and caption content", "signed temporary media URLs", "per-tab state integrity", "local player-control integrity and availability"],
+      "trustBoundaries": ["TikTok MAIN world to isolated content script", "content script to service worker", "service worker to chrome.storage.session", "extension state to side-panel rendering and user exports"],
+      "attackerCapabilities": ["influence page data and markup", "supply malformed binary/protobuf/gzip input when controlling a page/WebSocket producer", "reproduce public page-bridge markers from the same page realm"],
+      "securityObjectives": ["keep TikTok-controlled values as data", "bind actions and state to the intended tab", "avoid remote exfiltration", "bound hostile parsing and storage work", "keep signed URL values local and user-directed"],
+      "assumptions": ["Chrome 114+ enforces Manifest V3 isolation", "the OS, browser binary and other installed extensions are not malicious", "the product has no backend, account system, analytics or cookie permission"]
+    },
+    "hardening": {
+      "portfolioPath": "hardening/hardening.md"
+    },
+    "coverageRef": "coverage.json",
+    "findingsRef": "findings.json"
+  }
+}

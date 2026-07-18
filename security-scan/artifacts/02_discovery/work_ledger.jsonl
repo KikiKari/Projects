@@ -1,0 +1,9 @@
+{"path":"background.js","status":"complete","full_file_read":true,"disposition":"candidate-relevant","evidence":"Runtime dispatch, per-tab state, session storage, hook registration and passive webRequest reviewed in full."}
+{"path":"content-core.js","status":"complete","full_file_read":true,"disposition":"controls-confirmed","evidence":"URL allowlist, bounded metadata traversal and chat normalization reviewed in full."}
+{"path":"content.js","status":"complete","full_file_read":true,"disposition":"candidate-relevant","evidence":"DOM and JSON scanning, profile fetch, player controls and page-message bridge reviewed in full."}
+{"path":"hook.js","status":"complete","full_file_read":true,"disposition":"candidate-relevant","evidence":"MAIN-world WebSocket proxy, frame handling and error containment reviewed in full."}
+{"path":"manifest.json","status":"complete","full_file_read":true,"disposition":"controls-confirmed","evidence":"MV3 permissions, host scope, content scripts and lack of externally_connectable reviewed in full."}
+{"path":"proto-main.js","status":"complete","full_file_read":true,"disposition":"candidate-relevant","evidence":"Protobuf parser, gzip path and decoder output handling reviewed in full."}
+{"path":"sidepanel.css","status":"complete","full_file_read":true,"disposition":"no-security-candidate","evidence":"Static presentation only; no URL loading or executable content."}
+{"path":"sidepanel.html","status":"complete","full_file_read":true,"disposition":"controls-confirmed","evidence":"Static extension page with only bundled script and stylesheet."}
+{"path":"sidepanel.js","status":"complete","full_file_read":true,"disposition":"controls-confirmed","evidence":"Remote values rendered with textContent; actions are explicit and fixed; exports are user-triggered."}

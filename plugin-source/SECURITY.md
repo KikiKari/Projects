@@ -1,8 +1,8 @@
 # Targeted security review
 
-Targeted review on 2026-07-15; formal Codex Security release-gate scan completed on 2026-07-17.
+Targeted review on 2026-07-15; formal Codex Security release-gate scan completed on 2026-07-17. The 0.7.0 mobile, WebView, token and audio-flow delta was threat-modeled and statically reviewed on 2026-07-18; see `../security-scan/threat_model_0.7.0.md`.
 
-The formal scan closed all nine review scopes and validated two Low/P3 resource-boundary findings. There were no critical, high, or medium findings. The supplied 0.5.0 artifacts were not modified. Recommended byte, concurrency, and storage budgets are tracked for a subsequent version.
+The earlier formal scan closed all nine review scopes and validated two Low/P3 resource-boundary findings. Version 0.7.0 adds bounded participant storage, request-body limits, a loopback-only paired service, origin-restricted native WebViews and a short-lived token endpoint. Automated delta checks and the documented static review are required before publication; native device testing remains a separate release gate.
 
 ## Permissions
 
@@ -20,9 +20,12 @@ The formal scan closed all nine review scopes and validated two Low/P3 resource-
 - UI output is created with DOM nodes and `textContent`.
 - Public chat is sanitized and limited to 50 session-only records per tab. Optional speech remains local to the browser.
 - Diagnostic exports redact signed URL query values and contain neither chat contents nor cookies or API keys.
-- Audio analysis and compression use only the local Web Audio API. The reported value is dBFS and must not be represented as a calibrated hearing-safety measurement in dB SPL.
+- Audio analysis, TTS gain and compression use local APIs. A song sample is transferred to AudD only after an explicit recognition click; the AudD token remains in the local service configuration.
+- The companion service binds to `127.0.0.1`, requires a high-entropy pairing code, rejects non-extension browser origins, caps TTS bodies at 64 KiB and recognition bodies at 10 MiB, and deletes temporary speech files in `finally` cleanup.
 - The WebSocket wrapper adds only `open`, `close`, and `message` listeners. It does not wrap or replace `send()`.
 - The report control only opens TikTok's own dialog; it never selects a category or submits a report.
+- Native WebViews accept bridge messages only from the HTTPS TikTok main frame, enforce a 64 KiB envelope limit and expose only fixed commands. Audio capture is explicit and capped at twelve seconds.
+- The token endpoint returns only a short-lived developer token and expiry. It never returns or logs the Apple private key, Team ID, Key ID or Media ID.
 
 ## Residual risks
 

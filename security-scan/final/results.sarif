@@ -1,0 +1,183 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "automationDetails": {
+        "id": "5f6270cf-714a-4ecf-be64-24c9d860dab5"
+      },
+      "properties": {
+        "codexSecuritySchemaVersion": "1.0",
+        "codexSecurityTargetKind": "directory_snapshot"
+      },
+      "results": [
+        {
+          "level": "note",
+          "locations": [
+            {
+              "message": {
+                "text": "root_control"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "proto-main.js"
+                },
+                "region": {
+                  "endLine": 227,
+                  "startLine": 208
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "The MAIN-world hook rejects binary frames larger than 16 MiB before decoding, but `proto-main.js` fully materializes gzip output through `Response.arrayBuffer()` and `hook.js` starts each decode without an in-flight budget. Small compressed inputs can therefore cause disproportionate local memory and CPU work before parser errors are contained."
+          },
+          "partialFingerprints": {
+            "codexSecurity/v1": "codex-security/v1:sha256:b63d175ba778bcad57d17997f9e61fd366bfde7108cf239dc043005d3fe26f85"
+          },
+          "properties": {
+            "candidateId": "TLC-GZIP-EXPANSION-002",
+            "category": "resource-exhaustion",
+            "confidence": "high",
+            "findingId": "csf_35e37d73e5b3b6c94a6fda7f",
+            "occurrenceId": "occ_347a0a4cb222a7d90498102c",
+            "severity": "low"
+          },
+          "relatedLocations": [
+            {
+              "id": 0,
+              "message": {
+                "text": "entrypoint"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "hook.js"
+                },
+                "region": {
+                  "endLine": 33,
+                  "startLine": 28
+                }
+              }
+            },
+            {
+              "id": 1,
+              "message": {
+                "text": "concrete_implementation"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "hook.js"
+                },
+                "region": {
+                  "endLine": 80,
+                  "startLine": 70
+                }
+              }
+            }
+          ],
+          "ruleId": "resource-exhaustion.gzip-decoder",
+          "ruleIndex": 0
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "message": {
+                "text": "root_control"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "content.js"
+                },
+                "region": {
+                  "endLine": 708,
+                  "startLine": 696
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "A script in TikTok's MAIN world can reproduce the public Companion bridge marker and forward oversized nested objects into extension runtime messaging and per-tab session state. Collection counts are bounded, but item and aggregate byte sizes are not, so the path can spoof local Companion state or exhaust extension-specific storage and processing resources."
+          },
+          "partialFingerprints": {
+            "codexSecurity/v1": "codex-security/v1:sha256:94df2051054d7b32287b7d5eb9e70076a9716645d5c2c0afb8703e57797b7fc9"
+          },
+          "properties": {
+            "candidateId": "TLC-BRIDGE-UNBOUNDED-001",
+            "category": "resource-exhaustion",
+            "confidence": "medium",
+            "findingId": "csf_d238fd2984fe1b30e12aa42a",
+            "occurrenceId": "occ_4d248d97085cac6f2d32f202",
+            "severity": "low"
+          },
+          "relatedLocations": [
+            {
+              "id": 1,
+              "message": {
+                "text": "sink"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "background.js"
+                },
+                "region": {
+                  "endLine": 120,
+                  "startLine": 118
+                }
+              }
+            },
+            {
+              "id": 2,
+              "message": {
+                "text": "concrete_implementation"
+              },
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "background.js"
+                },
+                "region": {
+                  "endLine": 255,
+                  "startLine": 190
+                }
+              }
+            }
+          ],
+          "ruleId": "resource-exhaustion.page-bridge-state",
+          "ruleIndex": 1
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "Codex Security",
+          "rules": [
+            {
+              "id": "resource-exhaustion.gzip-decoder",
+              "name": "resource-exhaustion.gzip-decoder",
+              "properties": {
+                "tags": [
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "resource-exhaustion.gzip-decoder"
+              }
+            },
+            {
+              "id": "resource-exhaustion.page-bridge-state",
+              "name": "resource-exhaustion.page-bridge-state",
+              "properties": {
+                "tags": [
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "resource-exhaustion.page-bridge-state"
+              }
+            }
+          ],
+          "version": "0.1.11"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

@@ -8,6 +8,7 @@
 - `proto-main.js`: minimal protobuf reader for TikTok push frames, captions, public chat, viewer statistics, likes, and social events
 - `hook.js`: optional MAIN-world WebSocket observer installed before page scripts after reload
 - `sidepanel.*`: local presentation and user-triggered export/copy actions
+- `companion-service/`: loopback-only Node.js service for Windows speech WAV output and explicitly initiated AudD recognition
 
 ## Hook lifecycle
 
@@ -25,10 +26,10 @@ The page-to-content bridge is not cryptographically authenticated. Its output is
 
 ## Data retention
 
-Stream state uses `chrome.storage.session`. Only `autoHook` and `keepSpeechActive` are stored persistently in `chrome.storage.local`. The extension retains at most 50 sanitized public chat messages per tab. Signed stream URLs may contain bearer-like query tokens and should not be published while still valid.
+Stream state uses `chrome.storage.session`, including at most 50 sanitized chat messages and 5,000 observed participant aggregates. Preferences and permanent mute identities use `chrome.storage.local`. The AudD token is never stored by the extension; it remains in the loopback service configuration. Signed stream URLs may contain bearer-like query tokens and should not be published while still valid.
 
 ## Accessibility and player actions
 
-The side panel renders only text nodes with `textContent`. Emoji sequences are removed from the compact chat view. Optional speech uses the browser-local Web Speech API and is off by default. A separate preference can keep it active across tab changes while the panel document remains alive. Player and report buttons only operate TikTok's existing page controls; the report action stops after opening TikTok's dialog.
+The side panel renders only text nodes with `textContent`. Emoji sequences and confidently detected per-stream team tags are removed from speech. Optional speech first tries the paired local Windows service and falls back to Web Speech. A manually initiated song-recognition action captures about twelve seconds of tab audio and sends it through the local service to AudD. Player and report buttons only operate TikTok's existing page controls; the report action stops after opening TikTok's dialog.
 
 The audio meter reports dBFS, not calibrated dB SPL. After explicit activation, `content.js` connects the primary video to a local `DynamicsCompressorNode` and analyser. The configurable threshold controls digital compression only; operating-system volume, amplifier gain and headphone sensitivity remain outside the extension's visibility.

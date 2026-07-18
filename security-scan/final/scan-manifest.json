@@ -1,0 +1,129 @@
+{
+  "documentType": "codex-security.scan-manifest",
+  "scan": {
+    "artifacts": [
+      {
+        "mediaType": "application/json",
+        "path": "findings.json",
+        "sha256": "0e6eb00d0378f8b56449d15699105a099e79bbda172cfeba97c39e35ac8fbdfc"
+      },
+      {
+        "mediaType": "application/json",
+        "path": "coverage.json",
+        "sha256": "d96d55eb8ed3df6560d15fd6d900d77c780ea895bdeacc17e27f3e11188fbf2f"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/02_discovery/work_ledger.jsonl",
+        "sha256": "98e4f1c8468bc00c48220814834f81d95056bc855f29c79107046f0e0b143493"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/03_coverage/repository_coverage_ledger.md",
+        "sha256": "7f64717262bd51db5b3d0844e4fa9085080a97ec05f53527ae6c3bf039fa89f0"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/attack_path_analysis_report.md",
+        "sha256": "142ba9cc093dd9c9623956b5eeaa4c5ae5158b344b83cb85499c4c0f4515a328"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/candidate_ledger.jsonl",
+        "sha256": "02d35e2030dbcd10880a44a17df24acab26d59e7315530140a94f58abbb639fa"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/validation_report.md",
+        "sha256": "537555cf987b035b3f77a5e04a8af2aa4acc5b2dbc1651624a4ac504acccd5f9"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-GZIP-EXPANSION-002/attack_path_analysis_report.md",
+        "sha256": "699a604b43e9c4fc832a01348377044509aa71994c38d05474390a9151e61060"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-GZIP-EXPANSION-002/candidate_ledger.jsonl",
+        "sha256": "3d5b67b916f3906de539813d73b4b40f3e07b5a28501d766c498395aa6a66aa4"
+      },
+      {
+        "mediaType": "application/octet-stream",
+        "path": "artifacts/05_findings/TLC-GZIP-EXPANSION-002/validation_report.md",
+        "sha256": "685dcb7cda7af5d9f3232da5e8f4ade9ea41e4531fcb31e0d0a1c69f48de7e1e"
+      }
+    ],
+    "completedAt": "2026-07-17T22:10:00Z",
+    "coverageRef": "coverage.json",
+    "findingsRef": "findings.json",
+    "hardening": {
+      "portfolioPath": "hardening/hardening.md"
+    },
+    "id": "5f6270cf-714a-4ecf-be64-24c9d860dab5",
+    "producer": {
+      "name": "codex-security-plugin",
+      "version": "0.1.11"
+    },
+    "scope": {
+      "excludePaths": [],
+      "includePaths": [
+        "."
+      ],
+      "limitations": [
+        "Exact Chrome memory and session-storage failure thresholds vary by version and device.",
+        "No live public target was tested."
+      ],
+      "reviewedArtifacts": [
+        "nine extension runtime files",
+        "extension and plugin release ZIP hashes",
+        "generated threat model"
+      ],
+      "runtimeStatus": "Existing Node extension test passed. No live TikTok account or production stream was used.",
+      "summary": "Standard full-directory review of the unchanged TikTok LIVE Companion 0.5.0 Manifest V3 extension. All nine source-like runtime files were read in full; release ZIP integrity was verified separately. Validation used complete static traces and one bounded package-API reproduction captured before the later stability pause. No further stress testing was performed.",
+      "validationMode": "static source-to-sink analysis plus one bounded local decoder check"
+    },
+    "sealedAt": "2026-07-17T22:10:00Z",
+    "startedAt": "2026-07-17T17:54:41Z",
+    "status": "completed",
+    "target": {
+      "displayName": "tiktok-live-companion-extension-0.5.0",
+      "kind": "directory_snapshot",
+      "snapshotDigest": "codex-security-snapshot/v1:sha256:5b89ebe334f65c943b58b77979f4136950e147af9c97de54c24f8a024586957c",
+      "targetId": "target_sha256_5c9433c817053e575d66d0c5c0780d7aa8bea89a35dea098a44ebcd84850f90b"
+    },
+    "threatModel": {
+      "assets": [
+        "extension package integrity",
+        "captured chat and caption content",
+        "signed temporary media URLs",
+        "per-tab state integrity",
+        "local player-control integrity and availability"
+      ],
+      "assumptions": [
+        "Chrome 114+ enforces Manifest V3 isolation",
+        "the OS, browser binary and other installed extensions are not malicious",
+        "the product has no backend, account system, analytics or cookie permission"
+      ],
+      "attackerCapabilities": [
+        "influence page data and markup",
+        "supply malformed binary/protobuf/gzip input when controlling a page/WebSocket producer",
+        "reproduce public page-bridge markers from the same page realm"
+      ],
+      "securityObjectives": [
+        "keep TikTok-controlled values as data",
+        "bind actions and state to the intended tab",
+        "avoid remote exfiltration",
+        "bound hostile parsing and storage work",
+        "keep signed URL values local and user-directed"
+      ],
+      "summary": "TikTok page content, DOM, metadata, MAIN-world scripts and WebSocket frames are untrusted inputs crossing into an isolated content script, privileged service worker, session storage and extension-owned side panel.",
+      "trustBoundaries": [
+        "TikTok MAIN world to isolated content script",
+        "content script to service worker",
+        "service worker to chrome.storage.session",
+        "extension state to side-panel rendering and user exports"
+      ]
+    }
+  },
+  "schemaVersion": "1.0"
+}

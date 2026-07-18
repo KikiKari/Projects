@@ -7,11 +7,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = ROOT.parent
+EXCLUDED_PARTS = {"__pycache__", ".gradle", ".kotlin", "build", "DerivedData", "xcuserdata"}
 
 
 def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
     for path in sorted(source.rglob("*")):
-        if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+        if not path.is_file() or EXCLUDED_PARTS.intersection(path.parts) or path.suffix in {".pyc", ".aar"}:
             continue
         relative = path.relative_to(source)
         archive.write(path, Path(prefix) / relative)
@@ -19,6 +21,7 @@ def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
 
 parser = argparse.ArgumentParser(description="Package TikTok LIVE Companion artifacts.")
 parser.add_argument("--output-dir", type=Path, required=True)
+parser.add_argument("--android-apk", type=Path, help="Optional verified mockDebug or shazamDebug APK")
 args = parser.parse_args()
 args.output_dir.mkdir(parents=True, exist_ok=True)
 output_dir = args.output_dir.resolve()
@@ -27,6 +30,10 @@ manifest = json.loads((ROOT / "browser-extension" / "manifest.json").read_text(e
 version = manifest["version"]
 extension_zip = args.output_dir / f"tiktok-live-companion-extension-{version}.zip"
 plugin_zip = args.output_dir / f"tiktok-live-companion-plugin-{version}.zip"
+service_zip = args.output_dir / f"tiktok-live-companion-service-{version}.zip"
+ios_source_zip = args.output_dir / f"tiktok-live-companion-ios-{version}-source.zip"
+android_source_zip = args.output_dir / f"tiktok-live-companion-android-{version}-source.zip"
+android_apk = args.output_dir / f"tiktok-live-companion-android-{version}-debug.apk"
 extension_dir = args.output_dir / f"tiktok-live-companion-extension-{version}"
 checksum_file = args.output_dir / f"tiktok-live-companion-{version}-SHA256.txt"
 
@@ -43,8 +50,26 @@ with zipfile.ZipFile(extension_zip, "w", compression=zipfile.ZIP_DEFLATED, compr
 with zipfile.ZipFile(plugin_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ROOT, "tiktok-live-companion")
 
+with zipfile.ZipFile(service_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+    add_tree(archive, ROOT / "companion-service")
+
+with zipfile.ZipFile(ios_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+    add_tree(archive, PROJECT_ROOT / "mobile" / "ios", "TikTokLiveCompanion-iOS")
+
+with zipfile.ZipFile(android_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+    add_tree(archive, PROJECT_ROOT / "mobile" / "android", "TikTokLiveCompanion-Android")
+
+if args.android_apk:
+    source_apk = args.android_apk.resolve()
+    if not source_apk.is_file() or source_apk.suffix.lower() != ".apk":
+        raise RuntimeError("--android-apk must point to an existing APK")
+    shutil.copy2(source_apk, android_apk)
+
+artifacts = [extension_zip, plugin_zip, service_zip, ios_source_zip, android_source_zip]
+if android_apk.exists():
+    artifacts.append(android_apk)
 checksums = []
-for artifact in (extension_zip, plugin_zip):
+for artifact in artifacts:
     digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
     checksums.append(f"{digest}  {artifact.name}")
 checksum_file.write_text("\n".join(checksums) + "\n", encoding="utf-8")
@@ -53,6 +78,10 @@ print(json.dumps({
     "extension_dir": str(extension_dir.resolve()),
     "extension_zip": str(extension_zip.resolve()),
     "plugin_zip": str(plugin_zip.resolve()),
+    "service_zip": str(service_zip.resolve()),
+    "ios_source_zip": str(ios_source_zip.resolve()),
+    "android_source_zip": str(android_source_zip.resolve()),
+    "android_apk": str(android_apk.resolve()) if android_apk.exists() else None,
     "checksum_file": str(checksum_file.resolve()),
     "version": version
 }, ensure_ascii=False))

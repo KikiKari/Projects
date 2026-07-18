@@ -1,0 +1,326 @@
+{
+  "documentType": "codex-security.findings",
+  "findings": [
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "bridge-entry",
+            "state-write"
+          ],
+          "outcome": "local Companion state spoofing or resource exhaustion",
+          "sink": "whole-state session-storage write",
+          "source": "same-page MAIN-world object",
+          "summary": "same-page postMessage -> content bridge -> runtime message -> per-tab state -> chrome.storage.session"
+        },
+        "evidenceRefs": [
+          "bridge-entry",
+          "state-write"
+        ],
+        "impact": {
+          "level": "medium",
+          "why": "The extension state boundary is crossed, but impact remains local and reversible."
+        },
+        "likelihood": {
+          "level": "medium",
+          "why": "The path is simple once same-page script execution exists, but that precondition is materially constraining."
+        },
+        "limitations": [
+          "No account, cookie, secret or cross-origin privilege is reached."
+        ],
+        "reachability": {
+          "attacker": "same-page script producer",
+          "entrypoint": "window.postMessage bridge",
+          "outcome": "integrity or availability loss limited to the local Companion workflow",
+          "preconditions": [
+            "matching TikTok tab",
+            "script execution in that page's MAIN world"
+          ],
+          "summary": "Triggering requires code execution in the TikTok page realm; ordinary viewers or chat participants cannot directly invoke it."
+        },
+        "summary": "A script already executing in a matching TikTok page posts a forged Companion envelope; the isolated content script forwards it and the service worker persists the resulting state."
+      },
+      "codeEvidence": [
+        {
+          "code": "window.addEventListener(\"message\", (event) => {\n  if (event.source !== window || event.origin !== location.origin) return;\n  const data = event.data;\n  if (!data || data.source !== \"tiktok-live-companion\" || data.version !== 1) return;\n  if (data.type === \"caption\") {\n    chrome.runtime.sendMessage({ type: \"TLC_CAPTION\", caption: data.caption }).catch(() => {});\n  }\n});",
+          "endLine": 708,
+          "explanation": "A same-page script can reproduce the source/version marker; the nested caption or event object is forwarded without schema or byte validation.",
+          "id": "bridge-entry",
+          "label": "Public marker forwards nested page objects",
+          "language": "javascript",
+          "path": "content.js",
+          "role": "root_control",
+          "startLine": 696
+        },
+        {
+          "code": "async function setState(tabId, state) {\n  await chrome.storage.session.set({ [stateKey(tabId)]: state });\n  chrome.runtime.sendMessage({ type: \"TLC_STATE_UPDATED\", tabId, state }).catch(() => {});\n}",
+          "endLine": 120,
+          "explanation": "Every accepted object becomes part of a structured clone and complete per-tab session-storage write.",
+          "id": "state-write",
+          "label": "Whole state is cloned and persisted",
+          "language": "javascript",
+          "path": "background.js",
+          "role": "sink",
+          "startLine": 118
+        }
+      ],
+      "confidence": {
+        "level": "medium",
+        "rationale": "The complete source-to-sink route and missing byte controls are directly visible, but the exact live Chrome failure threshold was not measured."
+      },
+      "extensions": {
+        "candidateId": "TLC-BRIDGE-UNBOUNDED-001",
+        "ledgerRowId": "COV-01"
+      },
+      "findingId": "csf_d238fd2984fe1b30e12aa42a",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:94df2051054d7b32287b7d5eb9e70076a9716645d5c2c0afb8703e57797b7fc9"
+      },
+      "identity": {
+        "anchor": "page-bridge-object-enters-byte-unbounded-tab-state",
+        "instance": "postmessage-to-session-storage"
+      },
+      "locations": [
+        {
+          "endLine": 708,
+          "path": "content.js",
+          "role": "root_control",
+          "startLine": 696
+        },
+        {
+          "endLine": 120,
+          "path": "background.js",
+          "role": "sink",
+          "startLine": 118
+        },
+        {
+          "endLine": 255,
+          "path": "background.js",
+          "role": "concrete_implementation",
+          "startLine": 190
+        }
+      ],
+      "occurrenceId": "occ_4d248d97085cac6f2d32f202",
+      "preventiveControls": [
+        "central bridge schema validators",
+        "per-tab byte accounting",
+        "bounded diagnostic counters for rejected messages"
+      ],
+      "provenance": {
+        "source": "local_plugin"
+      },
+      "remediation": "Validate a fixed per-type schema and maximum primitive, string, array and object sizes in content.js before runtime messaging, then enforce a per-message and per-tab serialized-byte budget before persistence.",
+      "remediationTests": [
+        "Reject a caption whose text exceeds the configured limit.",
+        "Reject nested or wrong-type fields for every bridge message type.",
+        "Keep tab state below a fixed serialized-byte budget while preserving valid messages.",
+        "Verify the side panel recovers after an oversized message is dropped."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "bridge-entry",
+          "state-write"
+        ],
+        "summary": "The violated invariant is that page-realm data must be validated and byte-bounded before it crosses into extension state. The bridge checks routing metadata but treats that public marker as sufficient to pass arbitrary nested values to count-capped, byte-unbounded storage."
+      },
+      "ruleId": "resource-exhaustion.page-bridge-state",
+      "severity": {
+        "changeConditions": "Raise severity only if ordinary remote content can trigger the path without page-script execution or if testing proves durable cross-tab, secret, or account impact; lower it if strict browser quotas reject the message before meaningful extension impact.",
+        "level": "low",
+        "rationale": "The path crosses a real page-to-extension boundary, but requires script execution in the TikTok page realm and affects only one user's local Companion state and availability. It does not grant account, cookie, cross-origin or code-execution capability.",
+        "score": 3.1,
+        "scoringSystem": "CVSS:3.1"
+      },
+      "summary": "A script in TikTok's MAIN world can reproduce the public Companion bridge marker and forward oversized nested objects into extension runtime messaging and per-tab session state. Collection counts are bounded, but item and aggregate byte sizes are not, so the path can spoof local Companion state or exhaust extension-specific storage and processing resources.",
+      "taxonomy": {
+        "category": "resource-exhaustion",
+        "cwe": [
+          "CWE-20",
+          "CWE-400"
+        ]
+      },
+      "title": "Page bridge accepts byte-unbounded event payloads",
+      "validation": {
+        "assertions": [
+          "Same-page MAIN-world scripts satisfy every bridge routing check.",
+          "No per-object, string or aggregate byte limit runs before session persistence."
+        ],
+        "evidenceRefs": [
+          "bridge-entry",
+          "state-write"
+        ],
+        "limitations": [
+          "No live Chrome quota or UI-freeze threshold was measured after the stability incident."
+        ],
+        "method": "complete static source-to-sink trace",
+        "summary": "Source review confirmed a reproducible same-page marker, unchanged nested-object forwarding, count-only collection caps and whole-state persistence."
+      },
+      "writeup": {
+        "reportPath": "findings/unbounded-page-bridge/unbounded-page-bridge.md"
+      }
+    },
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "hook-input-cap",
+            "gzip-materialize"
+          ],
+          "outcome": "local tab or Companion availability loss",
+          "sink": "unbounded decompressed ArrayBuffer allocation",
+          "source": "page/WebSocket-controlled binary frame",
+          "summary": "binary message -> compressed-size check -> async decoder -> DecompressionStream -> Response.arrayBuffer -> protobuf parser"
+        },
+        "evidenceRefs": [
+          "hook-input-cap",
+          "gzip-materialize"
+        ],
+        "impact": {
+          "level": "medium",
+          "why": "The primitive can disrupt local availability but has no confidentiality or authorization effect."
+        },
+        "likelihood": {
+          "level": "medium",
+          "why": "Delivery is straightforward for a controllable producer but unavailable to an ordinary viewer/chat participant."
+        },
+        "limitations": [
+          "Browser-specific crash or termination thresholds were not measured."
+        ],
+        "reachability": {
+          "attacker": "controllable page or WebSocket producer",
+          "entrypoint": "wrapped WebSocket message listener",
+          "outcome": "CPU and memory pressure in one victim browser workflow",
+          "preconditions": [
+            "hook enabled",
+            "binary frame at or below the compressed-size cap"
+          ],
+          "summary": "The hook must be installed and a page/WebSocket producer must control or dispatch a binary frame; ordinary chat input is insufficient."
+        },
+        "summary": "A controllable binary WebSocket message below the compressed cap reaches an unbounded gzip materialization step and can consume disproportionate local resources."
+      },
+      "codeEvidence": [
+        {
+          "code": "async function inspectMessage(event, endpoint) {\n  if (typeof event.data === \"string\") return;\n  const size = event.data?.size ?? event.data?.byteLength ?? 0;\n  if (size > 16 * 1024 * 1024) return;\n  const decoded = await proto.decodeWebSocketPayload(event.data);\n}",
+          "endLine": 33,
+          "explanation": "The guard measures bytes before decompression and starts a new asynchronous decode for every accepted frame.",
+          "id": "hook-input-cap",
+          "label": "Only compressed/input bytes are capped",
+          "language": "javascript",
+          "path": "hook.js",
+          "role": "entrypoint",
+          "startLine": 28
+        },
+        {
+          "code": "async function gunzip(bytes) {\n  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(\"gzip\"));\n  return new Uint8Array(await new Response(stream).arrayBuffer());\n}\n// ...\npayload = await gunzip(payload);",
+          "endLine": 225,
+          "explanation": "The decoder consumes the complete decompressed stream without a byte ceiling or cancellation point before protobuf parsing.",
+          "id": "gzip-materialize",
+          "label": "Decompressed output is fully materialized",
+          "language": "javascript",
+          "path": "proto-main.js",
+          "role": "root_control",
+          "startLine": 208
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Direct source evidence plus a bounded local package-API check demonstrated a 32 KiB compressed input expanding to 32 MiB with substantial process-memory growth."
+      },
+      "extensions": {
+        "candidateId": "TLC-GZIP-EXPANSION-002",
+        "ledgerRowId": "COV-02"
+      },
+      "findingId": "csf_35e37d73e5b3b6c94a6fda7f",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:b63d175ba778bcad57d17997f9e61fd366bfde7108cf239dc043005d3fe26f85"
+      },
+      "identity": {
+        "anchor": "compressed-websocket-output-materialized-without-bound",
+        "instance": "gzip-response-arraybuffer"
+      },
+      "locations": [
+        {
+          "endLine": 33,
+          "path": "hook.js",
+          "role": "entrypoint",
+          "startLine": 28
+        },
+        {
+          "endLine": 80,
+          "path": "hook.js",
+          "role": "concrete_implementation",
+          "startLine": 70
+        },
+        {
+          "endLine": 227,
+          "path": "proto-main.js",
+          "role": "root_control",
+          "startLine": 208
+        }
+      ],
+      "occurrenceId": "occ_347a0a4cb222a7d90498102c",
+      "preventiveControls": [
+        "streaming decompressed-byte counter",
+        "decode concurrency semaphore",
+        "aggregate in-flight byte accounting",
+        "bounded recovery telemetry"
+      ],
+      "provenance": {
+        "source": "local_plugin"
+      },
+      "remediation": "Count decompressed bytes while streaming, abort and discard output at a fixed ceiling, then add a small semaphore and aggregate in-flight byte budget around hook decodes.",
+      "remediationTests": [
+        "Reject a high-ratio gzip stream before the decompressed ceiling is exceeded.",
+        "Limit simultaneous decodes and queued bytes under a burst of valid frames.",
+        "Verify normal Caption and LIVE messages still decode.",
+        "Verify overflow produces one sanitized status event and the hook continues safely."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "hook-input-cap",
+          "gzip-materialize"
+        ],
+        "summary": "The violated invariant is that hostile compressed input must be bounded by decompressed and aggregate work, not only by transport size. The hook checks compressed bytes while the decoder materializes all output and the caller lacks concurrency/backpressure accounting."
+      },
+      "ruleId": "resource-exhaustion.gzip-decoder",
+      "severity": {
+        "changeConditions": "Raise severity if an ordinary remote participant can reliably deliver frames or if repeatable browser/profile-wide denial of service is shown; lower it if Chrome enforces a smaller output bound before significant allocation.",
+        "level": "low",
+        "rationale": "The resource primitive is directly demonstrated and crosses an untrusted decoder boundary, but exploitation requires a controllable WebSocket/page-script producer and remains limited to one local browser workflow. There is no code execution, secret exposure or durable account effect.",
+        "score": 3.7,
+        "scoringSystem": "CVSS:3.1"
+      },
+      "summary": "The MAIN-world hook rejects binary frames larger than 16 MiB before decoding, but `proto-main.js` fully materializes gzip output through `Response.arrayBuffer()` and `hook.js` starts each decode without an in-flight budget. Small compressed inputs can therefore cause disproportionate local memory and CPU work before parser errors are contained.",
+      "taxonomy": {
+        "category": "resource-exhaustion",
+        "cwe": [
+          "CWE-409",
+          "CWE-400"
+        ]
+      },
+      "title": "Compressed WebSocket output and concurrent decodes are unbounded",
+      "validation": {
+        "assertions": [
+          "The 16 MiB guard does not constrain decompressed output.",
+          "Allocation completes before parser error containment."
+        ],
+        "evidenceRefs": [
+          "hook-input-cap",
+          "gzip-materialize"
+        ],
+        "limitations": [
+          "No additional stress test or Chrome termination-threshold test was performed after the Codex stability incident."
+        ],
+        "method": "bounded package-API reproduction plus static source trace",
+        "summary": "The unchanged module expanded 32,635 compressed bytes to 33,554,432 bytes, increased process RSS by approximately 120 MiB and then reached the expected inner-parser rejection."
+      },
+      "writeup": {
+        "reportPath": "findings/unbounded-gzip-expansion/unbounded-gzip-expansion.md"
+      }
+    }
+  ],
+  "scanId": "5f6270cf-714a-4ecf-be64-24c9d860dab5",
+  "schemaVersion": "1.0"
+}

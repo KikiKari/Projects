@@ -5,6 +5,11 @@ flowchart LR
     bg["background.js<br/>Filterung und Tab-Zustand"]
     session[("storage.session<br/>flüchtig")]
     panel["Seitenpanel<br/>textContent-Ausgabe"]
+    mobilePage["TikTok-WebView<br/>www.tiktok.com Hauptframe"]
+    bridge["Mobile Bridge v1<br/>Origin-, Typ- und Größenprüfung"]
+    native["SwiftUI / Compose<br/>flüchtiger Streamzustand"]
+    shazam["ShazamKit<br/>nur nach Nutzeraktion"]
+    token["Vercel Token-Endpunkt<br/>kurzlebiges ES256"]
 
     page -->|"DOM / eingebettete Metadaten"| content
     page -->|"Caption-, Chat- und LIVE-Ereignisse"| hook
@@ -13,10 +18,14 @@ flowchart LR
     hook -->|"gelesen, niemals gesendet"| bg
     bg --> session
     session --> panel
+    mobilePage -->|"DOM / gelesene WebSocket-Ereignisse"| bridge
+    bridge -->|"validierter Ereignisumschlag"| native
+    native -->|"Mikrofon oder experimentelles PCM"| shazam
+    token -->|"Android Developer Token"| shazam
 
     classDef observation fill:#e7fbfb,stroke:#25b9c2,color:#102126
     classDef action fill:#fff0f3,stroke:#fe2c55,color:#2b1117
     classDef storage fill:#f5f6f8,stroke:#667085,color:#101828
-    class page,content,hook observation
-    class bg,panel action
+    class page,content,hook,mobilePage,bridge observation
+    class bg,panel,native,shazam,token action
     class session storage

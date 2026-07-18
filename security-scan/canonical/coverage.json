@@ -1,0 +1,24 @@
+{
+  "documentType": "codex-security.coverage",
+  "schemaVersion": "1.0",
+  "scanId": "5f6270cf-714a-4ecf-be64-24c9d860dab5",
+  "mode": "repository",
+  "completeness": "complete",
+  "inventoryStrategy": "directory",
+  "includePaths": ["."],
+  "excludePaths": [],
+  "surfaces": [
+    {"id":"surface_page_bridge","label":"Page MAIN world to extension state","riskArea":"Input validation and resource exhaustion","disposition":"reported","notes":"Public marker and unbounded nested objects cross into session state.","receiptRefs":["artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/candidate_ledger.jsonl","artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/validation_report.md","artifacts/05_findings/TLC-BRIDGE-UNBOUNDED-001/attack_path_analysis_report.md"]},
+    {"id":"surface_websocket_decoder","label":"WebSocket gzip and protobuf decoder","riskArea":"Compressed-input and parser resource exhaustion","disposition":"reported","notes":"Compressed bytes are capped, decompressed and concurrent work are not.","receiptRefs":["artifacts/05_findings/TLC-GZIP-EXPANSION-002/candidate_ledger.jsonl","artifacts/05_findings/TLC-GZIP-EXPANSION-002/validation_report.md","artifacts/05_findings/TLC-GZIP-EXPANSION-002/attack_path_analysis_report.md"]},
+    {"id":"surface_extension_ui","label":"Captured values to extension-owned side panel","riskArea":"Extension-context XSS","disposition":"rejected","notes":"All reviewed remote values use textContent; no innerHTML, eval or remote script sink survived.","receiptRefs":["artifacts/03_coverage/repository_coverage_ledger.md"]},
+    {"id":"surface_profile_fetch","label":"Public profile fallback request","riskArea":"SSRF and credential leakage","disposition":"rejected","notes":"The HTTPS origin is fixed, the handle is encoded and credentials are omitted.","receiptRefs":["artifacts/03_coverage/repository_coverage_ledger.md"]},
+    {"id":"surface_media_discovery","label":"DOM and webRequest media URL discovery","riskArea":"Origin allowlist bypass and signed URL exposure","disposition":"rejected","notes":"Exact/dot-suffix CDN allowlisting and media classification apply before storage; debug export redacts query values.","receiptRefs":["artifacts/03_coverage/repository_coverage_ledger.md"]},
+    {"id":"surface_privileged_actions","label":"Side-panel commands to player and hook operations","riskArea":"Authorization and confused deputy","disposition":"rejected","notes":"No externally connectable runtime API exists; active TikTok-tab checks and fixed action allowlists constrain operations.","receiptRefs":["artifacts/03_coverage/repository_coverage_ledger.md"]},
+    {"id":"surface_package_integrity","label":"Manifest and bundled executable code","riskArea":"Supply chain and remote code execution","disposition":"no_issue_found","notes":"All scripts are local; no eval, native messaging, cookie or all-sites permission is declared. ZIP hashes are handled by release QA.","receiptRefs":["artifacts/02_discovery/work_ledger.jsonl"]}
+  ],
+  "explicitExclusions": [],
+  "deferred": [],
+  "openQuestions": [
+    {"question":"Which per-message, per-tab, decompressed and in-flight byte budgets fit low-memory Chrome and Edge systems?","followUpPrompt":"Benchmark only the future fixed build with bounded synthetic messages on a disposable local browser profile; record peak RSS and recovery behavior without using a live TikTok stream."}
+  ]
+}

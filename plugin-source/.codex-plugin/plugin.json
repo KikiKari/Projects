@@ -1,0 +1,27 @@
+{
+  "name": "tiktok-live-companion",
+  "version": "0.5.0+codex.20260716035917",
+  "description": "Build, install, and operate the local TikTok LIVE Companion browser extension with accessible chat, captions, player controls, diagnostics, LIVE statistics, stream qualities, and media links.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "TikTok LIVE Companion",
+    "shortDescription": "Accessible LIVE chat, captions, controls, metrics, and links.",
+    "longDescription": "Creates and operates a local Edge or Chrome extension that presents sanitized chat, checks caption availability, captures native caption and statistics events, controls local playback and audio protection, reads public profile and overview metadata, lists FLV or HLS stream variants, switches TikTok player quality, and exports redacted diagnostics.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "defaultPrompt": [
+      "Pr\u00fcfe diesen TikTok-LIVE-Stream auf Untertitel.",
+      "Zeige Zuschauerzahl, Likes, Follows, Teilungen und Bildqualit\u00e4ten.",
+      "Ermittle die FLV- und HLS-Links dieses Streams.",
+      "Hilf mir, die Browsererweiterung zu installieren."
+    ],
+    "brandColor": "#FE2C55"
+  }
+}

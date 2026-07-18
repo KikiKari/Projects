@@ -10,6 +10,7 @@ const extension = path.join(root, "browser-extension");
 const manifest = JSON.parse(fs.readFileSync(path.join(extension, "manifest.json"), "utf8"));
 const core = require(path.join(extension, "content-core.js"));
 const proto = require(path.join(extension, "proto-main.js"));
+const mobileBridge = fs.readFileSync(path.join(root, "mobile-shared", "webview-bridge.js"), "utf8");
 
 function concat(...chunks) {
   const size = chunks.reduce((total, chunk) => total + chunk.length, 0);
@@ -41,11 +42,16 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.5.0");
+assert.strictEqual(manifest.version, "0.7.0");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
+assert.ok(manifest.permissions.includes("tabCapture"));
+assert.ok(manifest.host_permissions.includes("http://127.0.0.1/*"));
+assert.ok(manifest.host_permissions.includes("http://localhost/*"));
 assert.ok(!manifest.permissions.includes("cookies"));
 assert.ok(!manifest.permissions.includes("webRequestBlocking"));
+assert.ok(mobileBridge.includes('location.hostname !== "www.tiktok.com"'));
+assert.ok(!mobileBridge.includes("document.cookie"));
 
 for (const relative of [
   manifest.background.service_worker,
@@ -81,6 +87,58 @@ assert.strictEqual(core.classifyMediaUrl("https://evil.example/stream.flv"), nul
 assert.strictEqual(core.QUALITY_LABELS.auto, "Automatisch");
 assert.strictEqual(core.sanitizeChatText("Hallo 😊 Welt ❤️"), "Hallo Welt");
 assert.strictEqual(core.sanitizeChatText("@Nutzer 👍🏽 bleibt hier"), "@Nutzer bleibt hier");
+assert.strictEqual(core.wordCount("Hallo 😊 schöne Welt"), 3);
+assert.strictEqual(core.teamSuffixCandidate("Miimii tmm"), "tmm");
+assert.strictEqual(core.teamSuffixCandidate("Ben"), "");
+assert.strictEqual(core.teamSuffixCandidate("das ist gut"), "gut");
+assert.strictEqual(core.contentHasToken("@Honey tmm wo is mein Tee?", "tmm"), true);
+assert.strictEqual(core.stripTeamTag("@Honey tmm wo is mein Tee?", "tmm"), "@Honey wo is mein Tee?");
+assert.strictEqual(core.stripTeamTag("das ist gut", "tmm"), "das ist gut");
+assert.strictEqual(core.shortenNickname("Anja Schaarschmidt89"), "Anja");
+assert.strictEqual(core.shortenNickname("Team Kimm"), "Team Kimm");
+assert.strictEqual(core.shortenNickname("Blitzerbiest"), "Blitzerbiest");
+assert.strictEqual(core.shortenNickname("Traumtänzer.der.Nächte"), "Traumtänzer");
+assert.strictEqual(core.shortenNickname("Vanny_GioPrimetv"), "Vanny");
+assert.strictEqual(core.shortenNickname("Die Löwin"), "Löwin");
+assert.strictEqual(core.shortenNickname("liane15"), "liane");
+assert.strictEqual(core.shortenNickname("MKU Maskenaufsicht"), "Maskenaufsicht");
+assert.strictEqual(core.shortenNickname("Butterfly 004"), "Butterfly");
+assert.strictEqual(core.spokenNickname("user572838499281727393816181"), "user572");
+assert.strictEqual(core.spokenNickname("Rebecca № 2 💕"), "Rebecca");
+assert.strictEqual(core.collapseLaughter("hahahahahahhhhahhhaaaa Gott du Plemmi"), "haha Gott du Plemmi");
+assert.strictEqual(core.resolveSpeechLanguage("auto", "de"), "de-DE");
+assert.strictEqual(core.resolveSpeechLanguage("en-US", "de"), "en-US");
+assert.strictEqual(core.composeSpeechText({ author: "Miimii tmm", content: "@Stivinho danke" }, { teamTag: "tmm" }), "Miimii sagt zu Stivinho danke");
+assert.strictEqual(core.composeSpeechText({ author: "Blitzerbiest", content: "@Honey tmm wo is mein Tee ?" }, { teamTag: "tmm" }), "Blitzerbiest fragt Honey wo is mein Tee");
+assert.strictEqual(core.composeSpeechText({ author: "Miimii", content: "@ Stivinho danke" }, { speakNames: false }), "Stivinho danke");
+assert.strictEqual(core.composeSpeechText({ author: "Anja Schaarschmidt89", content: "Guten Morgen" }, { shortenNames: true }), "Anja sagt Guten Morgen");
+assert.strictEqual(core.composeSpeechText({ author: "Mia", content: "Hallo @" }), "Mia sagt Hallo @");
+assert.strictEqual(core.composeSpeechText({ author: "user572838499281727393816181", content: "hahahahahahhhhahhhaaaa bald" }), "user572 sagt haha bald");
+assert.strictEqual(core.composeSpeechText({ author: "deroy", content: "@user572838499281727393816181 bald bist du nur noch ein sohn" }), "deroy sagt zu user572 bald bist du nur noch ein sohn");
+assert.strictEqual(core.composeSpeechText({ author: "Rebecca № 2 💕", content: "@Vanny_GioPrimetv hallo" }, { shortenNames: true }), "Rebecca sagt zu Vanny hallo");
+let team = core.accumulateTeamEvidence({}, "Miimii tmm", "Teilt den Stream", []);
+assert.strictEqual(team.teamTag, "");
+team = core.accumulateTeamEvidence(team.evidence, "Honey tmm", "wo ist mein Tee?", ["Teilt den Stream"]);
+assert.strictEqual(team.teamTag, "tmm");
+team = core.accumulateTeamEvidence({}, "Miimii tmm", "danke", []);
+team = core.accumulateTeamEvidence(team.evidence, "Stivinho", "tmm hilft", ["danke"]);
+assert.strictEqual(team.teamTag, "tmm");
+assert.strictEqual(core.accumulateTeamEvidence({}, "Miimii tmm", "tmm danke", []).teamTag, "tmm");
+assert.strictEqual(core.accumulateTeamEvidence({}, "Ben", "Ben ist da", []).teamTag, "");
+assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "1" }, { handle: "demo", roomId: "1" }), false);
+assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "1" }, { handle: "demo", roomId: "2" }), true);
+assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "" }, { handle: "other", roomId: "" }), true);
+assert.strictEqual(core.sameParticipant({ name: "Anja Schaarschmidt89" }, { nickname: "Anja Schaarschmidt89" }), true);
+assert.strictEqual(core.sameParticipant({ userId: "42", name: "Anja" }, { userId: "42", name: "A. Schaarschmidt" }), true);
+assert.deepStrictEqual(core.sortParticipants([
+  { name: "Zed", messageCount: 2, wordCount: 7 },
+  { name: "Ada", messageCount: 3, wordCount: 2 },
+  { name: "Ben", messageCount: 2, wordCount: 9 }
+]).map((item) => item.name), ["Ada", "Ben", "Zed"]);
+assert.deepStrictEqual(
+  core.mergeParticipantRecord({ userId: null, displayId: "", name: "Anna", messageCount: 2 }, { userId: "42", displayId: "anna_live", receivedAtUtc: "2026-07-18T10:00:00.000Z" }, "Anna", { wordCount: 7 }),
+  { userId: "42", displayId: "anna_live", name: "Anna", messageCount: 2, wordCount: 7, giftEventCount: 0, giftItemCount: 0, lastSeenAtUtc: "2026-07-18T10:00:00.000Z" }
+);
 
 const profileAndSummary = core.inspectMetadata({
   live_ai_summary_ui: { vid: "v2" },
@@ -157,6 +215,19 @@ assert.strictEqual(chatDecoded[0].displayId, "demo_user");
 assert.strictEqual(chatDecoded[0].content, "Guten Abend ❤️");
 assert.strictEqual(chatDecoded[0].contentLanguage, "de");
 
+const giftPayload = concat(
+  bytesField(1, concat(intField(2, 9020))),
+  intField(2, 777),
+  intField(5, 23),
+  bytesField(7, chatUser),
+  intField(9, 1)
+);
+const giftFetch = bytesField(1, concat(bytesField(1, "WebcastGiftMessage"), bytesField(2, giftPayload)));
+const giftDecoded = proto.decodeFetchResult(giftFetch).giftMessages;
+assert.strictEqual(giftDecoded.length, 1);
+assert.strictEqual(giftDecoded[0].nickname, "Demo 😊");
+assert.strictEqual(giftDecoded[0].repeatCount, "23");
+
 const common = concat(intField(2, 9001), bytesField(8, bytesField(1, "pm_mt_msg_viewer")));
 const roomUsers = concat(bytesField(1, common), intField(3, 143), intField(7, 15842));
 const likes = concat(bytesField(1, common), intField(2, 10), intField(3, 430200));
@@ -183,6 +254,9 @@ assert.ok(backgroundSource.includes('case "TLC_CHAT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_PLAYER_STATE"'));
 assert.ok(backgroundSource.includes('case "TLC_CLEAR_CHAT"'));
 assert.ok(backgroundSource.includes('case "TLC_REFRESH_PAGE_INFO"'));
+assert.ok(backgroundSource.includes('case "TLC_FORCE_PROFILE"'));
+assert.ok(backgroundSource.includes('case "TLC_SET_MUTE"'));
+assert.ok(backgroundSource.includes('case "TLC_GIFT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_AUTOSTART"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_DEBUG_REPORT"'));
 assert.ok(backgroundSource.includes('const PROFILE_PREFIX = "tlc-profile-"'));
@@ -206,6 +280,13 @@ assert.ok(panelHtml.includes('id="speech-volume"'));
 assert.ok(panelHtml.includes('id="hook-led"'));
 assert.ok(panelHtml.includes('id="limiter-enabled"'));
 assert.ok(panelHtml.includes('id="refresh-page-info"'));
+assert.ok(panelHtml.includes('id="force-page-info"'));
+assert.ok(panelHtml.includes('id="top-chatters"'));
+assert.ok(panelHtml.includes('id="audience-modal"'));
+assert.ok(panelHtml.includes('id="speech-language"'));
+assert.ok(panelHtml.includes('id="speak-names"'));
+assert.ok(panelHtml.includes('id="shorten-names"'));
+assert.ok(panelHtml.includes('id="recognize-song"'));
 assert.ok(panelHtml.includes('id="hook-autostart"'));
 assert.ok(panelHtml.includes('id="debug-enabled"'));
 assert.ok(panelHtml.includes('id="export-debug"'));
@@ -216,4 +297,4 @@ assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 
-console.log(`PASS: manifest 0.5.0, ${scripts.length} scripts, metadata, profile cache, LIVE overview summaries, audio fallback, diagnostics, chat/caption/statistics decoders and security guards`);
+console.log(`PASS: manifest 0.7.0, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
