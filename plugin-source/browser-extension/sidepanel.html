@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TikTok LIVE Companion</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <p id="page-title" class="muted">Kein TikTok-Tab ausgewählt</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="chat-heading">
+      <div class="section-title">
+        <h2 id="chat-heading">Chatzeilen</h2>
+        <div class="title-actions">
+          <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
+          <span id="chat-count" class="count">0</span>
+          <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Refresh</button>
+          <button id="toggle-speech" class="secondary compact" aria-pressed="false">Vorlesen an</button>
+          <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
+        </div>
+      </div>
+      <div id="chat-list" class="chat-list empty" role="log" aria-live="polite" aria-relevant="additions" aria-label="Die letzten fünf bereinigten Chatnachrichten">Noch keine Chatnachrichten erkannt.</div>
+      <p id="speech-status" role="status" class="inline-status">Vorlesen ist ausgeschaltet.</p>
+      <div class="control-label"><label for="speech-volume">Vorleselautstärke</label><output id="speech-volume-output" for="speech-volume">100%</output></div>
+      <input id="speech-volume" type="range" min="0" max="100" step="5" value="100">
+      <label class="option-row"><input id="keep-speech-active" type="checkbox"> Vorlesen bei Tabwechsel oder Minimieren aktiv lassen</label>
+    </section>
+
+    <section aria-labelledby="caption-heading">
+      <div class="section-title">
+        <h2 id="caption-heading">Untertitel</h2>
+        <button id="scan" class="secondary">Seite prüfen</button>
+      </div>
+      <div id="caption-status" class="status-grid"></div>
+      <button id="enable-captions" class="primary">Untertitel aktivieren</button>
+      <p id="caption-action-status" role="status" class="inline-status action-status">Noch keine manuelle Prüfung ausgeführt.</p>
+    </section>
+
+    <section aria-labelledby="hook-heading">
+      <div class="section-title">
+        <h2 id="hook-heading">WebSocket-Hook</h2>
+        <span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span>
+      </div>
+      <p class="muted small">Der Hook wird vor dem Player-Code gesetzt. Der aktuelle Tab wird danach neu geladen.</p>
+      <div class="button-row">
+        <button id="enable-hook" class="primary">Hook setzen</button>
+        <button id="disable-hook" class="secondary">Hook deaktivieren</button>
+        <button id="reset-tab" class="secondary danger-outline">Refresh</button>
+      </div>
+      <p id="hook-status" class="inline-status"></p>
+      <label class="option-row"><input id="hook-autostart" type="checkbox"> Hook beim Öffnen von TikTok automatisch starten</label>
+      <p class="muted small reset-note">Refresh leert nur die flüchtigen Daten dieses Tabs, aktiviert den Hook erneut und lädt TikTok ohne Seitencache. Cookies bleiben unverändert.</p>
+    </section>
+
+    <section aria-labelledby="stats-heading">
+      <div class="section-title">
+        <h2 id="stats-heading">LIVE-Informationen</h2>
+        <span id="stats-live" class="live-indicator">warte</span>
+      </div>
+      <div id="live-stats" class="status-grid stats-grid"></div>
+      <p id="stats-status" class="inline-status">Der WebSocket-Hook liefert die Werte nach dem Neuladen des Streams.</p>
+    </section>
+
+    <section aria-labelledby="player-heading">
+      <div class="section-title">
+        <h2 id="player-heading">Playersteuerung</h2>
+        <span id="player-time" class="player-time">–</span>
+      </div>
+      <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
+        <button id="player-play" class="secondary compact">Pause</button>
+        <button id="player-replay" class="secondary compact">Neu laden</button>
+        <button id="player-mute" class="secondary compact">Stumm</button>
+        <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
+        <button id="player-fullscreen" class="secondary compact">Vollbild</button>
+        <button id="player-report" class="secondary compact danger-outline">Melden öffnen</button>
+      </div>
+      <div class="audio-controls">
+        <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
+        <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
+        <div class="audio-meter-row"><span>Digitaler Spitzenpegel</span><strong id="player-peak">– dBFS</strong></div>
+        <label class="option-row"><input id="limiter-enabled" type="checkbox"> Digitalen Pegelschutz aktivieren</label>
+        <div class="control-label"><label for="limiter-threshold">Grenzwert</label><output id="limiter-threshold-output" for="limiter-threshold">−6 dBFS</output></div>
+        <input id="limiter-threshold" type="range" min="-30" max="-1" step="1" value="-6">
+        <p class="muted small audio-note">dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im Browser.</p>
+      </div>
+      <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
+      <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
+    </section>
+
+    <section id="page-info-section" aria-labelledby="page-info-heading">
+      <div class="section-title">
+        <h2 id="page-info-heading">Seiteninformationen</h2>
+        <div class="title-actions">
+          <span id="page-info-source" class="live-indicator">Metadaten</span>
+          <button id="refresh-page-info" class="secondary compact">Refresh</button>
+        </div>
+      </div>
+      <div id="profile-info" class="profile-info" hidden></div>
+      <div id="summary-info" class="summary-info"></div>
+    </section>
+
+    <section aria-labelledby="quality-heading">
+      <div class="section-title">
+        <h2 id="quality-heading">Verfügbare Bildqualitäten</h2>
+        <span id="quality-count" class="count">0</span>
+      </div>
+      <div id="quality-list" class="list empty">Noch keine Qualitätsstufen aus den Stream-Metadaten erkannt.</div>
+      <p id="quality-action-status" role="status" class="inline-status"></p>
+    </section>
+
+    <section aria-labelledby="links-heading">
+      <div class="section-title">
+        <h2 id="links-heading">VLC-Links</h2>
+        <span id="media-count" class="count">0</span>
+      </div>
+      <div id="media-list" class="list empty">Noch keine FLV-/HLS-Links erkannt.</div>
+    </section>
+
+    <section aria-labelledby="log-heading">
+      <div class="section-title">
+        <h2 id="log-heading">Caption-Protokoll</h2>
+        <span id="caption-count" class="count">0</span>
+      </div>
+      <div class="button-row">
+        <button id="export-log" class="secondary">JSONL exportieren</button>
+        <button id="clear" class="ghost">Anzeige leeren</button>
+      </div>
+      <div id="caption-list" class="list empty">Noch keine CaptionMessages empfangen.</div>
+    </section>
+
+    <section aria-labelledby="debug-heading">
+      <div class="section-title">
+        <h2 id="debug-heading">Debugmodus</h2>
+        <span id="debug-count" class="count">0</span>
+      </div>
+      <label class="option-row"><input id="debug-enabled" type="checkbox"> Diagnoseereignisse für diesen Tab protokollieren</label>
+      <div class="button-row">
+        <button id="export-debug" class="secondary">Debug exportieren</button>
+        <button id="clear-debug" class="ghost">Debug leeren</button>
+      </div>
+      <p class="muted small">Der Export entfernt Werte signierter URL-Parameter und enthält keine Cookies oder API-Keys.</p>
+    </section>
+
+    <p id="notice" role="alert" class="notice"></p>
+  </main>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

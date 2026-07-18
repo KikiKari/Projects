@@ -1,84 +1,42 @@
-<div align="center">
+# TikTok LIVE Companion 0.5.0
 
-# 🗂️ Projects
+TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chrome. Sie macht öffentliche TikTok-LIVE-Streams zugänglicher: Chatzeilen werden als bereinigter Text angezeigt und auf Wunsch lokal vorgelesen, native Untertitel werden geprüft, LIVE-Werte und Stream-Qualitäten werden sichtbar und der vorhandene Player lässt sich über ein Seitenpanel steuern.
 
-**Branch-basiertes Mono-Repository — jeder Branch ist ein eigenständiges Projekt einer KI-Plattform.**
-Der Default-Branch `main` enthält ausschließlich diesen Index.
+> Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
 
-[![Projekte](https://img.shields.io/badge/Projekte-9-1f6feb)](https://github.com/KikiKari/Projects/branches)
-[![Plattformen](https://img.shields.io/badge/Plattformen-Claude_%26_Perplexity-8957e5)](#-übersicht)
-[![Branch-Modell](https://img.shields.io/badge/Modell-1_Projekt_%3D_1_Branch-2ea043)](#-übersicht)
-[![main](https://img.shields.io/badge/main-nur_Index-8b949e)](https://github.com/KikiKari/Projects/tree/main)
+## Schnellstart
 
-</div>
+1. Lade `release/tiktok-live-companion-extension-0.5.0.zip` herunter und entpacke die Datei.
+2. Öffne `edge://extensions` oder `chrome://extensions` und aktiviere den Entwicklermodus.
+3. Wähle **Entpackte Erweiterung laden** und den Ordner mit `manifest.json`.
+4. Öffne einen öffentlichen TikTok-LIVE-Tab und klicke auf **TikTok LIVE Companion**.
+5. Nutze **Hook setzen**, bevor der Player seine WebSocket-Verbindung aufbaut.
 
----
+## Dokumentation
 
-## 📖 Übersicht
+- [Deutsch](docs/de/overview.md)
+- [English](docs/en/overview.md)
+- [Architekturdiagramm](docs/diagrams/architecture.mmd)
+- [Sicherheitsbeschreibung](plugin-source/SECURITY.md)
 
-Dieses Repository folgt einem **Branch-pro-Projekt**-Modell: Statt einer verschachtelten
-Ordnerstruktur lebt jedes Projekt vollständig in seinem eigenen Branch. Der Default-Branch
-`main` trägt keinen Projektcode, sondern dient als reine Landing-Page und führt — gruppiert
-nach der zugrunde liegenden KI-Plattform (**Claude** bzw. **Perplexity**) — auf die
-einzelnen Projekt-Branches.
+Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachumschaltung, Suche und geprüften Downloads. GitHub ist die technische Quelle; Notion, Linear, Canva und Vercel spiegeln den freigegebenen Stand.
 
-Die Kurzbeschreibungen unten sind aus dem tatsächlichen Branch-Inhalt abgeleitet
-(`SKILL.md`, `ARCHITECTURE.md`, Quellcode), nicht aus den noch leeren Projekt-READMEs.
+## Projektstruktur
 
-```mermaid
-flowchart TD
-    MAIN["🗂️ main<br/>nur Index"]
-    MAIN --> CL["🟣 Claude"]
-    MAIN --> PX["🔵 Perplexity"]
+- `plugin-source/` – reproduzierbarer Plugin-Quellstand einschließlich Browser-Erweiterung, Tests und Packaging-Script
+- `docs/` – deutsche und englische Dokumentation sowie Mermaid-Quellen
+- `release/` – unveränderte 0.5.0-Artefakte und SHA-256-Prüfsummen
+- `site/` – statische React-/TypeScript-/Vite-Dokumentationssite
 
-    CL --> A["abstractions"]
-    CL --> B["clawhub"]
-    CL --> C["python-hardener"]
-    CL --> D["secret-vault-public"]
-    CL --> E["tagesstatus-live-public"]
-    CL --> F["tiktok-monitor"]
+## Verifikation
 
-    PX --> G["Program-Derivation"]
-    PX --> H["Vision-Check"]
-    PX --> I["Weather-Check"]
+```powershell
+node plugin-source/scripts/test_extension.cjs
+cd site
+npm ci
+npm run typecheck
+npm test
+npm run build
 ```
 
----
-
-## 🟣 Claude
-
-Skills, Agents und Browser-Artefakte rund um die OpenClaw-/Claude-Code-Umgebung.
-
-| Projekt | Beschreibung | Branch |
-| --- | --- | --- |
-| **abstractions** | Automatisierter Multi-Node Abstraction Manager, der OpenClaw-Scripts per Cron in 10 Zielsprachen portiert und dazu Status-Report sowie Dokumentations-Datenbanken pflegt. | [`abstractions`](https://github.com/KikiKari/Projects/tree/abstractions) |
-| **clawhub** | Bidirektionaler Sync- und Publish-Agent, der OpenClaw-Skills zwischen ClawHub und Git abgleicht und Commits, Versionierung sowie Veröffentlichung automatisiert. | [`clawhub`](https://github.com/KikiKari/Projects/tree/clawhub) |
-| **python-hardener** | Skill samt Eval-Suite, der bestehende Python-Scripts automatisch absichert (Shell-Injection, Logging, atomare Writes, Docstrings) und die Änderungen als Markdown dokumentiert. | [`python-hardener`](https://github.com/KikiKari/Projects/tree/python-hardener) |
-| **secret-vault-public** | Vollständig client-seitiges Browser-Artefakt für einen verschlüsselten Secret-Container (WebCrypto, AES-256-GCM + PBKDF2) zum Anlegen, Rotieren und Exportieren von Secrets — ohne eingebettete Schlüssel. | [`secret-vault-public`](https://github.com/KikiKari/Projects/tree/secret-vault-public) |
-| **tagesstatus-live-public** | Umgebungs-unabhängige Status-Seite, die Live-Daten mehrerer Dienste (GitHub, OpenRouter, OpenAI, Anthropic, Tailscale, ClawHub) per direktem Browser-Abruf anzeigt; Tokens liegen nur im localStorage. | [`tagesstatus-live-public`](https://github.com/KikiKari/Projects/tree/tagesstatus-live-public) |
-| **tiktok-monitor** | TikTok-LIVE-Monitor (`tt-live`), der den Live-Status eines Users prüft, die m3u8-Stream-URL auflöst und per Daemon `go_live` / `go_offline` / `rename`-Events als reiner Datenprovider meldet. | [`tiktok-monitor`](https://github.com/KikiKari/Projects/tree/tiktok-monitor) |
-
----
-
-## 🔵 Perplexity
-
-Skills und Apps für die Perplexity-Plattform (Computer-Prompts, On-Device-KI, Analyse).
-
-| Projekt | Beschreibung | Branch |
-| --- | --- | --- |
-| **Program-Derivation** | Skill für formale Programmableitung: Architekturanalyse, Abstraktionsschichten und Code-Metriken (CC, LCOM, Kopplung, Kohäsion, Vendor Lock-in) mit deutsch-/englischsprachigen Referenzen. | [`Program-Derivation`](https://github.com/KikiKari/Projects/tree/Program-Derivation) |
-| **Vision-Check** | Browser-App zur KI-Objekt-/Biodiversitätserkennung über die Smartphone-Kamera (bis 4K) mit On-Device-KI (TensorFlow.js / COCO-SSD) und einer Canvas-Bildverbesserungs-Pipeline. | [`Vision-Check`](https://github.com/KikiKari/Projects/tree/Vision-Check) |
-| **Weather-Check** | Lokaler Regen-Check als PWA plus Perplexity-Computer-Prompt: Niederschlagseinschätzung für die nächsten 30 / 60 / 120 Minuten aus DWD-Radar, Messstationen, Open-Meteo, Satellit, Webcams und optionalem Handyfoto. | [`Weather-Check`](https://github.com/KikiKari/Projects/tree/Weather-Check) |
-
----
-
-<details>
-<summary>ℹ️ Hinweise zur Struktur</summary>
-
-- **`main`** enthält nur diese Übersicht — keinen Projektcode.
-- Jedes Projekt wird in **seinem eigenen Branch** entwickelt und gepflegt; es gibt keine
-  projektübergreifenden Merges in `main`.
-- Die einzelnen Projekt-READMEs sind aktuell leer; die Kurzbeschreibungen hier sind aus
-  dem jeweiligen Branch-Inhalt abgeleitet und werden bei Bedarf aktualisiert.
-
-</details>
+Die Erweiterung liest keine Cookies und sendet keine erfassten Daten an externe Dienste. Signierte Stream-URLs sind zeitlich begrenzt und während ihrer Gültigkeit sensibel.

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "TikTok LIVE Companion",
+  "version": "0.5.0",
+  "description": "Shows accessible TikTok LIVE chat, local audio protection, player controls, statistics, captions and FLV/HLS stream links.",
+  "minimum_chrome_version": "114",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage",
+    "tabs",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "https://www.tiktok.com/*",
+    "*://*.tiktokcdn.com/*",
+    "*://*.tiktokcdn-eu.com/*",
+    "*://*.tiktokcdn-us.com/*",
+    "*://*.tiktokcdn-in.com/*",
+    "*://*.ttlivecdn.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "TikTok LIVE Companion öffnen"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["content-core.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
