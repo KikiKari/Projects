@@ -4,11 +4,7 @@ TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chro
 
 Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
 
-[Interaktive architecture-3d](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-
-[![Vorschau der interaktiven Three.js-Architektur](docs/diagrams/tiktok-live-companion-architecture-3d-preview.png)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-
-![Architektur-SVG für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)
+[![TikTok LIVE Companion – Plattformarchitektur für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
 Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, Mermaid-Diagramm und Three.js-Ansicht bilden denselben projektspezifischen Datenfluss ab.
 
