@@ -5,8 +5,8 @@
 **Branch-basiertes Mono-Repository — jeder Branch ist ein eigenständiges Projekt einer KI-Plattform.**
 Der Default-Branch `main` enthält ausschließlich diesen Index.
 
-[![Projekte](https://img.shields.io/badge/Projekte-9-1f6feb)](https://github.com/KikiKari/Projects/branches)
-[![Plattformen](https://img.shields.io/badge/Plattformen-Claude_%26_Perplexity-8957e5)](#-übersicht)
+[![Projekte](https://img.shields.io/badge/Projekte-10-1f6feb)](https://github.com/KikiKari/Projects/branches)
+[![Plattformen](https://img.shields.io/badge/Plattformen-Claude_%2C_Codex_%26_Perplexity-8957e5)](#-übersicht)
 [![Branch-Modell](https://img.shields.io/badge/Modell-1_Projekt_%3D_1_Branch-2ea043)](#-übersicht)
 [![main](https://img.shields.io/badge/main-nur_Index-8b949e)](https://github.com/KikiKari/Projects/tree/main)
 
@@ -19,7 +19,7 @@ Der Default-Branch `main` enthält ausschließlich diesen Index.
 Dieses Repository folgt einem **Branch-pro-Projekt**-Modell: Statt einer verschachtelten
 Ordnerstruktur lebt jedes Projekt vollständig in seinem eigenen Branch. Der Default-Branch
 `main` trägt keinen Projektcode, sondern dient als reine Landing-Page und führt — gruppiert
-nach der zugrunde liegenden KI-Plattform (**Claude** bzw. **Perplexity**) — auf die
+nach der zugrunde liegenden KI-Plattform (**Claude**, **Codex** bzw. **Perplexity**) — auf die
 einzelnen Projekt-Branches.
 
 Die Kurzbeschreibungen unten sind aus dem tatsächlichen Branch-Inhalt abgeleitet
@@ -29,6 +29,7 @@ Die Kurzbeschreibungen unten sind aus dem tatsächlichen Branch-Inhalt abgeleite
 flowchart TD
     MAIN["🗂️ main<br/>nur Index"]
     MAIN --> CL["🟣 Claude"]
+    MAIN --> CX["🟢 Codex"]
     MAIN --> PX["🔵 Perplexity"]
 
     CL --> A["abstractions"]
@@ -37,6 +38,8 @@ flowchart TD
     CL --> D["secret-vault-public"]
     CL --> E["tagesstatus-live-public"]
     CL --> F["tiktok-monitor"]
+
+    CX --> J["TikTok-Live-Companion"]
 
     PX --> G["Program-Derivation"]
     PX --> H["Vision-Check"]
@@ -57,6 +60,16 @@ Skills, Agents und Browser-Artefakte rund um die OpenClaw-/Claude-Code-Umgebung.
 | **secret-vault-public** | Vollständig client-seitiges Browser-Artefakt für einen verschlüsselten Secret-Container (WebCrypto, AES-256-GCM + PBKDF2) zum Anlegen, Rotieren und Exportieren von Secrets — ohne eingebettete Schlüssel. | [`secret-vault-public`](https://github.com/KikiKari/Projects/tree/secret-vault-public) |
 | **tagesstatus-live-public** | Umgebungs-unabhängige Status-Seite, die Live-Daten mehrerer Dienste (GitHub, OpenRouter, OpenAI, Anthropic, Tailscale, ClawHub) per direktem Browser-Abruf anzeigt; Tokens liegen nur im localStorage. | [`tagesstatus-live-public`](https://github.com/KikiKari/Projects/tree/tagesstatus-live-public) |
 | **tiktok-monitor** | TikTok-LIVE-Monitor (`tt-live`), der den Live-Status eines Users prüft, die m3u8-Stream-URL auflöst und per Daemon `go_live` / `go_offline` / `rename`-Events als reiner Datenprovider meldet. | [`tiktok-monitor`](https://github.com/KikiKari/Projects/tree/tiktok-monitor) |
+
+---
+
+## 🟢 Codex
+
+Browser-Erweiterungen, Skills und Dokumentationsprojekte aus der Codex-Umgebung.
+
+| Projekt | Beschreibung | Branch |
+| --- | --- | --- |
+| **TikTok-Live-Companion** | Lokale Manifest-V3-Erweiterung mit zugänglichem LIVE-Chat, Untertitelprüfung, Playersteuerung, passiver Ereignisbeobachtung sowie zweisprachiger, statischer Dokumentationssite. | [`TikTok-Live-Companion`](https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion) |
 
 ---
 
