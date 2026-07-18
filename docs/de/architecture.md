@@ -28,6 +28,7 @@ Siehe [Mermaid-Quelle](../diagrams/architecture.mmd).
 
 ![Isometrische Plattformarchitektur von TikTok LIVE Companion](../diagrams/tiktok-live-companion-architecture.svg)
 
+- [Interaktive Three.js-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 - [Rotierendes GIF öffnen](../diagrams/tiktok-live-companion-architecture.gif)
 - [SVG-Generator](../../assets/gen_tiktok_live_companion_flow.py)
 - [GIF-Generator](../../assets/gen_tiktok_live_companion_flow_gif.py)

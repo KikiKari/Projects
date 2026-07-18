@@ -164,6 +164,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .security-facts span { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; background: var(--wash); border: 1px solid #bfe6ee; border-radius: 999px; font-size: .85rem; font-weight: 700; }
 .security-facts b { color: #15864d; }
 .risk-band { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 38px; border-radius: 10px; overflow: hidden; }
+.architecture-visualization { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr); gap: 28px; align-items: center; margin: 40px 0; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: #f5f9fb; }
+.architecture-visualization img { width: 100%; min-width: 0; border-radius: 9px; background: #0f1729; }
+.architecture-visualization h2 { margin: 7px 0 10px; }
+.architecture-visualization p { color: var(--muted); line-height: 1.65; }
+.architecture-visualization .button { margin-top: 8px; }
+.architecture-gif-link { display: inline-block; margin-left: 15px; font-weight: 800; color: var(--navy); }
 .risk-band > div { padding: 24px; background: #fff3dc; border-left: 4px solid #e0a131; }
 .risk-band > div:last-child { background: #eaf8fb; border-left-color: var(--cyan); }
 .risk-band p { margin-bottom: 0; color: #5e6472; line-height: 1.55; }
@@ -228,7 +234,7 @@ footer div > div:last-child { display: flex; gap: 18px; }
   .browser-content { height: 320px; grid-template-columns: 1fr; }
   .chat-ghost { display: none; }
   .panel-mockup { width: 62%; top: 62px; }
-  .benefit-rail, .platform-grid, .installation-layout, .feature-layout, .architecture-flow, .security-list, .risk-band { grid-template-columns: 1fr; }
+  .benefit-rail, .platform-grid, .installation-layout, .feature-layout, .architecture-flow, .architecture-visualization, .security-list, .risk-band { grid-template-columns: 1fr; }
   .extension-window aside { position: static; width: auto; margin: 15px; }
   .workflow { margin-top: 55px; grid-template-columns: 1fr; }
   .workflow > div { grid-template-columns: 34px 1fr; justify-items: start; align-items: center; text-align: left; }

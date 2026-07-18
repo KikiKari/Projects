@@ -9,7 +9,7 @@ from html import escape
 from pathlib import Path
 import math
 
-from flow_model import EDGE_COLORS, EDGES, LANE_LABELS, PALETTE, STAGES
+from flow_model import EDGE_COLORS, EDGES, LANE_LABELS, PALETTE, STAGES, as_json
 
 C = math.cos(math.radians(30))
 S = 0.5
@@ -124,6 +124,11 @@ def build_svg():
 if __name__ == "__main__":
     project = Path(__file__).resolve().parents[1]
     output = project / "docs" / "diagrams" / "tiktok-live-companion-architecture.svg"
+    public = project / "site" / "public" / "visualizations"
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(build_svg(), encoding="utf-8")
+    public.mkdir(parents=True, exist_ok=True)
+    svg = build_svg()
+    output.write_text(svg, encoding="utf-8")
+    (public / output.name).write_text(svg, encoding="utf-8")
+    (public / "tiktok-live-companion-flow-model.json").write_text(as_json(), encoding="utf-8")
     print(f"SVG geschrieben: {output} ({len(STAGES)} Knoten, {len(EDGES)} Kanten)")

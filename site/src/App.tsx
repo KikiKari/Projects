@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { featureData, pageSlugs, searchText, strings, type Language, type PageKey } from "./content";
 
 const pageOrder = Object.keys(pageSlugs) as PageKey[];
+const Architecture3D = lazy(() => import("./Architecture3D"));
 
 function BrandMark() {
   return <span className="brand-mark" aria-hidden="true"><span /><span /></span>;
@@ -127,6 +128,7 @@ function Architecture({ lang }: { lang: Language }) {
   const nodes = de ? [["TikTok-LIVE-Tab", "öffentliche DOM-/Metadaten"], ["content.js", "isolierte passive Prüfung"], ["WebSocket-Hook", "Nachrichten nur lesen"], ["background.js", "Filterung und Streamzustand"], ["Browser-Speicher", "Streamdaten flüchtig, Einstellungen lokal"], ["Seitenpanel", "sichere Text- und Audioausgabe"]] : [["TikTok LIVE tab", "public DOM/metadata"], ["content.js", "isolated passive inspection"], ["WebSocket hook", "read messages only"], ["background.js", "filtering and stream state"], ["Browser storage", "volatile stream data, local settings"], ["Side panel", "safe text and audio output"]];
   return <PageIntro title={de ? "So bleiben Daten im Browser" : "How data stays in the browser"} lead={de ? "Beobachten statt verändern" : "Observe, never modify"}>
     <div className="architecture-flow">{nodes.map(([title, body], index) => <div className={`architecture-node node-${index}`} key={title}><Icon name={(["monitor", "info", "link", "pulse", "info", "caption"] as const)[index]}/><h2>{title}</h2><p>{body}</p>{index < nodes.length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>
+    <section className="architecture-visualization"><img src="/visualizations/tiktok-live-companion-architecture.svg" alt={de ? "Plattformarchitektur für Browser, iOS und Android/HyperOS" : "Platform architecture for browser, iOS, and Android/HyperOS"}/><div><p className="eyebrow">THREE.JS · SVG · GIF</p><h2>{de ? "Architektur interaktiv erkunden" : "Explore the architecture interactively"}</h2><p>{de ? "Die 3D-Ansicht, das SVG und das GIF werden aus demselben projektspezifischen Datenmodell erzeugt." : "The 3D view, SVG, and GIF are generated from the same project-specific data model."}</p><Link className="button primary" to={`/${lang}/architecture-3d`}>{de ? "3D-Ansicht öffnen" : "Open 3D view"}</Link><a className="architecture-gif-link" href="/visualizations/tiktok-live-companion-architecture.gif">GIF</a></div></section>
     <SecurityFacts lang={lang}/><PlatformMatrix lang={lang}/><div className="risk-band"><div><strong>{de ? "Wichtiger Hinweis" : "Important note"}</strong><p>{de ? "Signierte Stream-URLs sind zeitlich begrenzt und während ihrer Gültigkeit sensibel." : "Signed stream URLs are temporary and sensitive while valid."}</p></div><div><strong>{de ? "Einschränkung" : "Limitation"}</strong><p>{de ? "Beobachtungsprotokoll, kein kryptografisch authentifizierter Nachweis." : "Observational record, not cryptographically authenticated evidence."}</p></div></div>
   </PageIntro>;
 }
@@ -181,9 +183,14 @@ function parsePath(pathname: string): { lang: Language; page: PageKey } | null {
 export default function App() {
   const location = useLocation();
   const parsed = parsePath(location.pathname);
+  const architecture3DMatch = location.pathname.match(/^\/(de|en)\/architecture-3d\/?$/);
   const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => { const onKey = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); } if (event.key === "Escape") setSearchOpen(false); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
+  if (architecture3DMatch) {
+    const lang = architecture3DMatch[1] as Language;
+    return <Suspense fallback={<main className="page-width content-page"><h1>{lang === "de" ? "3D-Architektur wird geladen" : "Loading 3D architecture"}</h1></main>}><Architecture3D lang={lang}/></Suspense>;
+  }
   if (!parsed) return <Navigate to="/de" replace/>;
   const { lang, page } = parsed;
   const components: Record<PageKey, ReactNode> = { overview: <Home lang={lang}/>, installation: <Installation lang={lang}/>, features: <Features lang={lang}/>, architecture: <Architecture lang={lang}/>, security: <Security lang={lang}/>, troubleshooting: <Troubleshooting lang={lang}/>, downloads: <Downloads lang={lang}/> };
