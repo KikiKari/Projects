@@ -17,7 +17,7 @@
 
 ## 1. Veröffentlichte Branches ✅
 
-| Branch | Adresse | Commit |
+| Branch | Adresse | Visualisierungscommit |
 |---|---|---|
 | `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `18ef6cf` |
 | `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `9ac0a20` |

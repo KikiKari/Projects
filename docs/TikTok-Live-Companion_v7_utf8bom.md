@@ -30,7 +30,7 @@ Mit 0.7.0 läuft das Projekt auf drei Plattformen.
 
 ### Plattformmatrix
 
-| Plattform | Technik | Songerkennung | Branch | Commit |
+| Plattform | Technik | Songerkennung | Branch | Visualisierungscommit |
 |---|---|---|---|---|
 | Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `18ef6cf` |
 | iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `9ac0a20` |
