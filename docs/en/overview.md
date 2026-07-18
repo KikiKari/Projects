@@ -4,6 +4,8 @@ TikTok LIVE Companion 0.7.0 is a local browser extension for public TikTok LIVE 
 
 Version 0.7.0 also includes native source projects for iOS 15+ and Android/HyperOS API 21+. They reproduce companion functions in a restricted TikTok WebView and use ShazamKit only for explicitly initiated song recognition. The browser continues to use AudD.
 
+The [final CoAuthoring V7 record](../coauthoring-v7.md) documents the governing mobile UI, the 0.7.0 platform matrix, and every approved browser, installation, and security image. Images visibly labelled 0.5.0 remain preserved as design history.
+
 ## What it does
 
 - displays the five latest sanitized public chat lines and keeps at most 50 session records per tab;

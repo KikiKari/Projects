@@ -98,6 +98,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .platform-grid strong { color: var(--coral-dark); font-size: .82rem; }
 .platform-grid p { color: var(--muted); line-height: 1.6; margin-bottom: 0; }
 
+.approved-figure { margin: 38px 0 0; border: 1px solid var(--line); border-radius: 14px; background: white; overflow: hidden; box-shadow: 0 14px 36px rgba(20, 50, 70, .09); }
+.approved-figure img { display: block; width: 100%; height: auto; object-fit: contain; background: #f7f8fa; }
+.approved-figure figcaption { padding: 12px 16px; color: var(--muted); font-size: .82rem; line-height: 1.5; border-top: 1px solid var(--line); }
+.hero > .approved-figure { margin: 0; align-self: center; }
+.hero > .approved-figure img { aspect-ratio: 1.45 / 1; object-fit: contain; }
+.platform-section > .approved-figure { max-width: 1080px; margin-inline: auto; }
+
 .content-page { padding-block: 72px 100px; min-height: 680px; }
 .content-page > h1 { font-size: clamp(2.4rem, 5vw, 4rem); }
 .page-lead { font-size: 1.24rem; color: var(--coral-dark); font-weight: 750; margin: 15px 0 40px; }
@@ -160,6 +167,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .architecture-node h2 { font-size: 1.05rem; }
 .architecture-node p { color: var(--muted); margin-bottom: 0; }
 .architecture-node > b { position: absolute; right: -31px; top: 48%; color: var(--cyan-dark); font-size: 1.4rem; }
+.diagram-links { display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: center; margin: 42px 0; padding: 28px; border: 1px solid #bfe6ee; border-radius: 14px; background: linear-gradient(135deg, #f1fbfd, #fff8f4); }
+.diagram-links h2 { margin: 3px 0 10px; }
+.diagram-links p { color: var(--muted); line-height: 1.65; }
+.diagram-links .eyebrow { color: var(--cyan-dark); font-size: .72rem; font-weight: 900; letter-spacing: .14em; }
+.diagram-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.diagram-actions > a:not(.button) { padding: 8px 4px; overflow-wrap: anywhere; }
 .security-facts { display: flex; gap: 10px; flex-wrap: wrap; margin: 35px 0; }
 .security-facts span { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; background: var(--wash); border: 1px solid #bfe6ee; border-radius: 999px; font-size: .85rem; font-weight: 700; }
 .security-facts b { color: #15864d; }
@@ -184,6 +197,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .hash-block pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 20px; color: #344158; font-size: .8rem; }
 .release-notes { margin-top: 35px; max-width: 850px; }
 .release-notes p { color: var(--muted); line-height: 1.75; }
+.gallery-intro { max-width: 900px; color: var(--muted); line-height: 1.75; }
+.coauthoring-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.coauthoring-gallery .approved-figure { margin-top: 0; }
+.coauthoring-gallery .approved-figure:first-child, .coauthoring-gallery .approved-figure:nth-child(5), .coauthoring-gallery .approved-figure:nth-child(13) { grid-column: 1 / -1; }
 
 .dialog-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(6, 15, 30, .56); display: grid; place-items: start center; padding-top: 12vh; }
 .search-dialog { width: min(650px, calc(100% - 30px)); max-height: 70vh; overflow: auto; border-radius: 14px; background: white; box-shadow: 0 25px 80px rgba(0,0,0,.35); }
@@ -228,7 +245,8 @@ footer div > div:last-child { display: flex; gap: 18px; }
   .browser-content { height: 320px; grid-template-columns: 1fr; }
   .chat-ghost { display: none; }
   .panel-mockup { width: 62%; top: 62px; }
-  .benefit-rail, .platform-grid, .installation-layout, .feature-layout, .architecture-flow, .security-list, .risk-band { grid-template-columns: 1fr; }
+  .benefit-rail, .platform-grid, .installation-layout, .feature-layout, .architecture-flow, .security-list, .risk-band, .diagram-links, .coauthoring-gallery { grid-template-columns: 1fr; }
+  .coauthoring-gallery .approved-figure:first-child, .coauthoring-gallery .approved-figure:nth-child(5), .coauthoring-gallery .approved-figure:nth-child(13) { grid-column: auto; }
   .extension-window aside { position: static; width: auto; margin: 15px; }
   .workflow { margin-top: 55px; grid-template-columns: 1fr; }
   .workflow > div { grid-template-columns: 34px 1fr; justify-items: start; align-items: center; text-align: left; }
