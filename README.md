@@ -19,6 +19,9 @@ Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die 
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
 - [Architekturdiagramm](docs/diagrams/architecture.mmd)
+- [Generiertes Architektur-SVG](docs/diagrams/tiktok-live-companion-architecture.svg)
+- [Generiertes rotierendes Architektur-GIF](docs/diagrams/tiktok-live-companion-architecture.gif)
+- [Visualisierungsquellen und Reproduktion](assets/README.md)
 - [Sicherheitsbeschreibung](plugin-source/SECURITY.md)
 
 Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachumschaltung, Suche und geprüften Downloads. GitHub ist die technische Quelle; Notion, Linear, Canva und Vercel spiegeln den freigegebenen Stand.
@@ -48,6 +51,7 @@ Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachums
 ```powershell
 node plugin-source/scripts/test_extension.cjs
 node plugin-source/scripts/test_mobile_bridge.cjs
+python assets/test_visualizations.py
 cd plugin-source/companion-service
 npm test
 cd ../../site
