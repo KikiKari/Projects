@@ -3,7 +3,6 @@
 ## Zweck und Evidenz
 
 - **Zweck:** Browser-, iOS- und Android-/HyperOS-Laufzeitpfade sowie die getrennten Songerkennungswege in einer gemeinsamen Architekturansicht erklären.
-- **Primäre Zielgruppe:** Anwender:innen, Entwickler:innen und Security-Reviewer.
 - **Quelle:** Versionierte Projektquellen unter `plugin-source/`, `mobile/` und `site/api/`.
 - **Wahrheitsinvarianten:** Browser verwendet AudD; iOS und Android/HyperOS verwenden ShazamKit; Audio startet nur nach Nutzeraktion; Android erhält ein kurzlebiges ES256-Token; WebView-Bridges akzeptieren nur den erlaubten TikTok-Hauptframe.
 - **Schematische Ebene:** Position und Höhe der Boxen sind erklärend, keine gemessenen Größen oder Laufzeiten.

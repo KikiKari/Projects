@@ -4,20 +4,7 @@ TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chro
 
 Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
 
-> Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
-
-## Visuelle Dokumentation 0.7.0
-
-[![TikTok LIVE Companion – Plattformarchitektur für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-
-Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, rotierendes GIF und Three.js-Ansicht stammen aus demselben projektspezifischen Modell mit 13 Knoten und 12 Verbindungen.
-
-- [Interaktive Three.js-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-- [Rotierendes Architektur-GIF](docs/diagrams/tiktok-live-companion-architecture.gif)
-- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.0-concept.png)
-- [Visualisierungsvertrag und Textalternative](docs/diagrams/tiktok-live-companion-visualization-contract.md)
-
-![Animierte TikTok-LIVE-Companion-Plattformarchitektur](docs/diagrams/tiktok-live-companion-architecture.gif)
+[Interaktive architecture-3d](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
 ## Schnellstart
 
@@ -27,16 +14,51 @@ Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkenn
 4. Öffne einen öffentlichen TikTok-LIVE-Tab und klicke auf **TikTok LIVE Companion**.
 5. Nutze **Hook setzen**, bevor der Player seine WebSocket-Verbindung aufbaut.
 
+## Architektur
+
+```mermaid
+flowchart LR
+    page["TikTok-LIVE-Tab<br/>öffentliche DOM- und Metadaten"]
+    content["content.js<br/>isolierte DOM-Prüfung"]
+    hook["WebSocket-Hook<br/>passive Nachrichtenbeobachtung"]
+    bg["background.js<br/>Filterung und Tab-Zustand"]
+    session[("storage.session<br/>flüchtig")]
+    panel["Seitenpanel<br/>textContent-Ausgabe"]
+    mobilePage["TikTok-WebView<br/>www.tiktok.com Hauptframe"]
+    bridge["Mobile Bridge v1<br/>Origin-, Typ- und Größenprüfung"]
+    native["SwiftUI / Compose<br/>flüchtiger Streamzustand"]
+    shazam["ShazamKit<br/>nur nach Nutzeraktion"]
+    token["Vercel Token-Endpunkt<br/>kurzlebiges ES256"]
+
+    page -->|"DOM / eingebettete Metadaten"| content
+    page -->|"Caption-, Chat- und LIVE-Ereignisse"| hook
+    page -.->|"passive CDN-Beobachtung"| bg
+    content -->|"bereinigte Ergebnisse"| bg
+    hook -->|"gelesen, niemals gesendet"| bg
+    bg --> session
+    session --> panel
+    mobilePage -->|"DOM / gelesene WebSocket-Ereignisse"| bridge
+    bridge -->|"validierter Ereignisumschlag"| native
+    native -->|"Mikrofon oder experimentelles PCM"| shazam
+    token -->|"Android Developer Token"| shazam
+
+    classDef observation fill:#e7fbfb,stroke:#25b9c2,color:#102126
+    classDef action fill:#fff0f3,stroke:#fe2c55,color:#2b1117
+    classDef storage fill:#f5f6f8,stroke:#667085,color:#101828
+    class page,content,hook,mobilePage,bridge observation
+    class bg,panel,native,shazam,token action
+    class session storage
+```
+
+Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
+
 ## Dokumentation
 
 - [Vollständige Dokumentation V7](docs/TikTok-Live-Companion_v7_utf8bom.md)
 - [Links und Erreichbarkeiten V7](docs/Links-und-Erreichbarkeiten_v7_utf8bom.md)
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
-- [Architekturdiagramm](docs/diagrams/architecture.mmd)
 - [Interaktive Three.js-Architektur](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-- [Generiertes Architektur-SVG](docs/diagrams/tiktok-live-companion-architecture.svg)
-- [Generiertes rotierendes Architektur-GIF](docs/diagrams/tiktok-live-companion-architecture.gif)
 - [Visualisierungsquellen und Reproduktion](assets/README.md)
 - [Sicherheitsbeschreibung](plugin-source/SECURITY.md)
 
