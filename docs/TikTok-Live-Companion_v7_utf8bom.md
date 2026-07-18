@@ -160,15 +160,7 @@ Die Erweiterung besteht aus sechs Laufzeitbereichen:
 
 Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertrauenswürdig und werden mit `textContent` ausgegeben. Stream-Daten, Captions, Chat und Diagnosen liegen in `storage.session`; `storage.local` enthält nur Autostart-, Vorlese- und Lautstärkepräferenzen sowie dauerhafte Mute-Identitäten.
 
-Reproduzierbare Mermaid-Quellen:
-
-- `docs/diagrams/architecture.mmd` – Gesamtarchitektur;
-- `docs/diagrams/recognition-flow.mmd` – Browser-AudD- und Native-ShazamKit-Sequenz;
-- `docs/diagrams/platform-deployment.mmd` – Browser-, iOS- und Android-/HyperOS-Deployment.
-
-Die 13 vom Nutzer freigegebenen CoAuthoring-Anhänge sind unverändert dokumentiert unter [`docs/coauthoring-v7.md`](coauthoring-v7.md). Sichtbare 0.5.0-Angaben kennzeichnen historische Entwurfsstufen; die V7-Übersicht und die Mobile-ShazamKit-Ansicht sind die verbindlichen 0.7.0-Referenzen.
-
-🧊 [**Interaktive 3D-Ansicht öffnen**](https://kikikari.github.io/OpenClaw/mcp-flow.html) — drehbar und zoombar (Three.js, Branch [gh-pages](https://github.com/KikiKari/OpenClaw/tree/gh-pages)). Die externe Ansicht dient als Interaktionsreferenz; die Mermaid-Dateien bleiben die statische, barrierearme Systemquelle. Reproduktion der Referenz: [SVG](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow.py) und [GIF](https://github.com/KikiKari/OpenClaw/blob/main/assets/gen_mcp_flow_gif.py).
+Mermaid-Quelle: `docs/diagrams/architecture.mmd`
 
 ### Textalternative zum Diagramm
 
