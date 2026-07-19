@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -21,7 +22,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -52,24 +57,43 @@ class MainActivity : ComponentActivity() {
     val tts = remember { TextToSpeech(context) { } }
     DisposableEffect(tts) { onDispose { tts.shutdown() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed -> if (allowed) model.recognize() else model.reportError("Mikrofonzugriff wurde abgelehnt") }
-    Scaffold(topBar = { TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.GraphicEq, null, tint = Color.White, modifier = Modifier.background(Accent, RoundedCornerShape(8.dp)).padding(7.dp)); Spacer(Modifier.width(10.dp)); Text("TikTok LIVE Companion", fontWeight = FontWeight.Bold) } }, actions = { Icon(Icons.Default.Circle, null, tint = Accent, modifier = Modifier.size(9.dp)); Text(" LIVE", fontSize = 12.sp); Spacer(Modifier.width(14.dp)) }) }) { insets ->
+    BackHandler(enabled = state.videoExpanded) { model.toggleVideoExpanded() }
+    val videoHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    Scaffold(topBar = { if (!state.videoExpanded) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.GraphicEq, null, tint = Color.White, modifier = Modifier.background(Accent, RoundedCornerShape(8.dp)).padding(7.dp)); Spacer(Modifier.width(10.dp)); Text("TikTok LIVE Companion", fontWeight = FontWeight.Bold) } }, actions = { Icon(Icons.Default.Circle, null, tint = Accent, modifier = Modifier.size(9.dp)); Text(" LIVE", fontSize = 12.sp); Spacer(Modifier.width(14.dp)) }) }) { insets ->
         Column(Modifier.padding(insets).fillMaxSize()) {
-            CompanionWebView(model, Modifier.fillMaxWidth().height(225.dp))
-            PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { CompanionTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { model.selectTab(tab) }, text = { Text(tab.label) }) } }
-            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                when (state.tab) {
-                    CompanionTab.SONG -> SongTab(state, model) {
-                        if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
+            if (!state.videoExpanded) StreamNameField(state, model)
+            CompanionWebView(model, if (state.videoExpanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(videoHeight), onTap = model::toggleVideoExpanded)
+            if (!state.videoExpanded) {
+                PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { CompanionTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { model.selectTab(tab) }, text = { Text(tab.label) }) } }
+                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                    when (state.tab) {
+                        CompanionTab.SONG -> SongTab(state, model) {
+                            if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
+                        }
+                        CompanionTab.CHAT -> ChatTab(state, model::muteAuthor) { line -> tts.language = Locale.GERMAN; tts.speak(line.take(1_000), TextToSpeech.QUEUE_FLUSH, null, "tlc-chat") }
+                        CompanionTab.LIVE -> LiveTab(state)
+                        CompanionTab.PLAYER -> PlayerTab(model)
+                        CompanionTab.MORE -> MoreTab(model)
                     }
-                    CompanionTab.CHAT -> ChatTab(state, model::muteAuthor) { line -> tts.language = Locale.GERMAN; tts.speak(line.take(1_000), TextToSpeech.QUEUE_FLUSH, null, "tlc-chat") }
-                    CompanionTab.LIVE -> LiveTab(state)
-                    CompanionTab.PLAYER -> PlayerTab(model)
-                    CompanionTab.MORE -> MoreTab(model)
                 }
             }
         }
     }
     state.error?.let { AlertDialog(onDismissRequest = model::clearError, confirmButton = { TextButton(onClick = model::clearError) { Text("OK") } }, title = { Text("Hinweis") }, text = { Text(it) }) }
+}
+
+@Composable private fun StreamNameField(state: CompanionUiState, model: CompanionViewModel) {
+    OutlinedTextField(
+        value = state.streamName,
+        onValueChange = model::setStreamName,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).semantics { contentDescription = "Streamname, mit oder ohne At-Zeichen" },
+        singleLine = true,
+        label = { Text("Streamname (@creator oder creator)") },
+        placeholder = { Text("@creator") },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+        keyboardActions = KeyboardActions(onGo = { model.openStream() }),
+        trailingIcon = { IconButton(onClick = model::openStream, enabled = state.streamName.isNotBlank()) { Icon(Icons.Default.PlayArrow, "Stream öffnen") } }
+    )
 }
 
 @Composable private fun SongTab(state: CompanionUiState, model: CompanionViewModel, recognize: () -> Unit) {
