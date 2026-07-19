@@ -11,12 +11,37 @@ struct ContentView: View {
     init(state: CompanionState = CompanionState()) { _state = StateObject(wrappedValue: state) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack { Image(systemName: "waveform").foregroundStyle(.white).padding(8).background(Design.accent).clipShape(RoundedRectangle(cornerRadius: 8)); Text("TikTok LIVE Companion").font(.headline); Spacer(); Circle().fill(Design.accent).frame(width: 8); Text("LIVE").font(.caption.bold()) }.padding()
-            CompanionWebView(state: state).frame(height: 230).clipped()
-            Picker("Bereich", selection: $state.selectedTab) { ForEach(CompanionTab.allCases) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented).padding([.horizontal, .top])
-            ScrollView { tabContent.padding() }
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                if !state.videoExpanded {
+                    HStack { Image(systemName: "waveform").foregroundStyle(.white).padding(8).background(Design.accent).clipShape(RoundedRectangle(cornerRadius: 8)); Text("TikTok LIVE Companion").font(.headline); Spacer(); Circle().fill(Design.accent).frame(width: 8); Text("LIVE").font(.caption.bold()) }.padding()
+                    streamNameField
+                }
+                CompanionWebView(state: state)
+                    .frame(height: state.videoExpanded ? proxy.size.height : proxy.size.height * 0.5)
+                    .clipped()
+                if !state.videoExpanded {
+                    Picker("Bereich", selection: $state.selectedTab) { ForEach(CompanionTab.allCases) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented).padding([.horizontal, .top])
+                    ScrollView { tabContent.padding() }
+                }
+            }
         }.tint(Design.accent).background(Color(uiColor: .systemBackground)).alert("Hinweis", isPresented: Binding(get: { state.lastError != nil }, set: { if !$0 { state.lastError = nil } })) { Button("OK") {} } message: { Text(state.lastError ?? "") }
+    }
+
+    private var streamNameField: some View {
+        HStack {
+            TextField("@creator oder creator", text: $state.streamName)
+                .textFieldStyle(.roundedBorder)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.go)
+                .onSubmit(state.openStream)
+                .accessibilityLabel("Streamname, mit oder ohne At-Zeichen")
+            Button(action: state.openStream) { Image(systemName: "play.fill") }
+                .buttonStyle(.borderedProminent)
+                .disabled(state.streamName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .accessibilityLabel("Stream öffnen")
+        }.padding(.horizontal).padding(.bottom, 6)
     }
 
     @ViewBuilder private var tabContent: some View {

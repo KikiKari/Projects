@@ -32,16 +32,28 @@ struct CompanionWebView: UIViewRepresentable {
                   let quoted = String(data: commandData, encoding: .utf8) else { return }
             view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command(\(quoted), \(json))")
         }
+        state.loadURL = { [weak view] target in
+            guard target.scheme == "https", target.host == "www.tiktok.com" else { return }
+            view?.load(URLRequest(url: target, cachePolicy: .reloadIgnoringLocalCacheData))
+        }
+        // Tap-Erkennung ohne die WebView-Bedienung zu stören: Events werden nicht konsumiert.
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
+        tap.cancelsTouchesInView = false
+        tap.delegate = context.coordinator
+        view.addGestureRecognizer(tap)
         view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
         return view
     }
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, UIGestureRecognizerDelegate {
         let state: CompanionState
         weak var webView: WKWebView?
         init(state: CompanionState) { self.state = state }
+
+        @objc func handleTap() { Task { @MainActor in state.toggleVideoExpanded() } }
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.frameInfo.isMainFrame,
