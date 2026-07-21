@@ -53,6 +53,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     val state: StateFlow<CompanionUiState> = mutable
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
     var loadUrl: ((String) -> Unit)? = null
+    var backgroundPlaybackChanged: ((Boolean) -> Unit)? = null
     private var speechSequence = 0L
     private var forceWatchdog: Job? = null
 
@@ -112,6 +113,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
         mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList()) }
+        backgroundPlaybackChanged?.invoke(true)
         loadUrl?.invoke(url)
     }
     fun enableStreamSound() {
@@ -179,7 +181,6 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val info = buildMap {
                     (envelope.payload["title"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Titel", it) }
                     (envelope.payload["url"] as? String)?.takeIf { it.isNotBlank() }?.let { put("URL", it) }
-                    (envelope.payload["canonicalUrl"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Kanonische URL", it) }
                     (envelope.payload["description"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Beschreibung", it) }
                     (envelope.payload["creatorName"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Creator", it) }
                     (envelope.payload["creatorHandle"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Handle", it) }
