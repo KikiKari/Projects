@@ -34,6 +34,25 @@ class CompanionViewModelTest {
         assertEquals(listOf("Ben" to 1), model.state.value.topChatters)
     }
 
+    @Test fun chatIsCappedAndSpeechQueueKeepsOnlyFiveNewMessages() {
+        val model = CompanionViewModel(FakeEngine())
+        model.setTtsEnabled(true)
+        repeat(60) { model.handle(envelope("chat", mapOf("nickname" to "A-very-long-chat-name-$it", "content" to "hello $it", "language" to "en"))) }
+        assertEquals(50, model.state.value.chatEntries.size)
+        assertEquals(5, model.state.value.speechQueue.size)
+        assertEquals("en-US", model.state.value.speechQueue.last().languageTag)
+        assertEquals(true, model.state.value.speechQueue.last().text.startsWith("A-very-long-chat-name"))
+    }
+
+    @Test fun manualSpeechHonorsNameAndLanguageSettings() {
+        val model = CompanionViewModel(FakeEngine())
+        model.setTtsSpeakNames(false)
+        model.setTtsLanguage(TtsLanguage.GERMAN)
+        model.requestSpeak(ChatLine("Anna", "danke", "en"))
+        assertEquals("danke", model.state.value.speechQueue.single().text)
+        assertEquals("de-DE", model.state.value.speechQueue.single().languageTag)
+    }
+
     @Test fun inspectionFillsPageInfo() {
         val model = CompanionViewModel(FakeEngine())
         model.handle(envelope("inspection", mapOf("title" to "Stream", "url" to "https://www.tiktok.com/@x/live", "videoPresent" to true, "captionsControlPresent" to false)))

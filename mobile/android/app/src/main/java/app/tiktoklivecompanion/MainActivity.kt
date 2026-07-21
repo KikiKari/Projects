@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.Locale
+import android.os.Bundle
 
 private val Accent = Color(0xFFFF1C50)
 
@@ -56,6 +57,15 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     val tts = remember { TextToSpeech(context) { } }
     DisposableEffect(tts) { onDispose { tts.shutdown() } }
+    val nextSpeech = state.speechQueue.firstOrNull()
+    LaunchedEffect(nextSpeech?.id) {
+        nextSpeech?.let { request ->
+            request.languageTag?.let { tts.language = Locale.forLanguageTag(it) }
+            val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, state.ttsVolume / 100f) }
+            tts.speak(request.text, TextToSpeech.QUEUE_ADD, params, "tlc-chat-${request.id}")
+            model.consumeSpeech(request.id)
+        }
+    }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed -> if (allowed) model.recognize() else model.reportError("Mikrofonzugriff wurde abgelehnt") }
     BackHandler(enabled = state.videoExpanded) { model.toggleVideoExpanded() }
     val configuration = LocalConfiguration.current
@@ -73,7 +83,7 @@ class MainActivity : ComponentActivity() {
                         CompanionTab.SONG -> SongTab(state, model) {
                             if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
                         }
-                        CompanionTab.CHAT -> ChatTab(state, model::muteAuthor) { line -> tts.language = Locale.GERMAN; tts.speak(line.take(1_000), TextToSpeech.QUEUE_FLUSH, null, "tlc-chat") }
+                        CompanionTab.CHAT -> ChatTab(state, model)
                         CompanionTab.LIVE -> LiveTab(state)
                         CompanionTab.PLAYER -> PlayerTab(state, model)
                         CompanionTab.MORE -> MoreTab(model)
@@ -112,7 +122,21 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("WebSocket-Hook", state.hookAvailable); HorizontalDivider(); Capability("Untertitel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
 @Composable private fun Capability(label: String, available: Boolean) { Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label); Spacer(Modifier.weight(1f)); Icon(Icons.Default.Circle, null, tint = if (available) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp)) } }
-@Composable private fun ChatTab(state: CompanionUiState, mute: (String) -> Unit, speak: (String) -> Unit) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); if (state.chats.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray); state.chats.forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line, Modifier.weight(1f)); IconButton(onClick = { speak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") }; line.substringBefore(':', "").takeIf { it.isNotBlank() }?.let { author -> IconButton(onClick = { mute(author) }) { Icon(Icons.Default.VolumeOff, "Autor dauerhaft stummschalten") } } } } } } }
+@Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Neue Nachrichten automatisch vorlesen", Modifier.weight(1f)); Switch(state.ttsEnabled, model::setTtsEnabled) }
+            Text("Lautstärke ${state.ttsVolume} %", style = MaterialTheme.typography.labelMedium)
+            Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { TtsLanguage.entries.forEachIndexed { index, language -> SegmentedButton(state.ttsLanguage == language, { model.setTtsLanguage(language) }, SegmentedButtonDefaults.itemShape(index, TtsLanguage.entries.size)) { Text(language.label) } } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen vorlesen", Modifier.weight(1f)); Switch(state.ttsSpeakNames, model::setTtsSpeakNames) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Lange Namen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
+        } }
+        if (state.chatEntries.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray)
+        state.chatEntries.forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line.visibleText, Modifier.weight(1f)); IconButton(onClick = { model.requestSpeak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") }; line.author.takeIf { it.isNotBlank() }?.let { author -> IconButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, "Autor dauerhaft stummschalten") } } } } }
+    }
+}
 @Composable private fun LiveTab(state: CompanionUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("LIVE-Informationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
