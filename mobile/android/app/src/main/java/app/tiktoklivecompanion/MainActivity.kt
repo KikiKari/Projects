@@ -160,6 +160,7 @@ class MainActivity : ComponentActivity() {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         listOf("play" to "Play", "pause" to "Pause", "mute" to "Stumm").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f)) { Text(label) } } } }
+        if (state.playerMuted != false || state.audibleStartBlocked) Button(onClick = model::enableStreamSound, modifier = Modifier.fillMaxWidth()) { Text("Ton aktivieren") }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Vollbild nativ: Bridge-„fullscreen" greift im mobilen WebView nicht (0PE-54); PiP ist Nicht-Ziel.
             OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { Text("Vollbild") }

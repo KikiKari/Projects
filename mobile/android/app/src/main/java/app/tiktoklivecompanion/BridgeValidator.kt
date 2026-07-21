@@ -6,7 +6,7 @@ import org.json.JSONObject
 object BridgeValidator {
     const val ALLOWED_ORIGIN = "https://www.tiktok.com"
     const val MAX_BYTES = 64 * 1024
-    private val allowedTypes = setOf("bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift", "bridge-error", "command-result", "audio-chunk", "audio-complete", "socket-open", "force-start", "force-return")
+    private val allowedTypes = setOf("bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift", "bridge-error", "command-result", "audio-chunk", "audio-complete", "socket-open", "force-start", "force-return", "player-state")
 
     // Subframes derselben Origin sind erlaubt: TikTok kann den Webcast-WebSocket in einem Same-Origin-Iframe öffnen (0PE-52).
     fun decode(raw: String, origin: String, isMainFrame: Boolean = true): BridgeEnvelope? {

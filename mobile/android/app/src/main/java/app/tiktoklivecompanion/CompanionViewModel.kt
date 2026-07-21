@@ -38,6 +38,9 @@ data class CompanionUiState(
     val videoExpanded: Boolean = false,
     val forceInProgress: Boolean = false,
     val forceRecoveryUrl: String? = null,
+    val audibleStartRequested: Boolean = false,
+    val playerMuted: Boolean? = null,
+    val audibleStartBlocked: Boolean = false,
     val streamName: String = ""
 ) {
     val topChatters: List<TopChatter>
@@ -107,8 +110,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
-        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap()) }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false) }
         loadUrl?.invoke(url)
+    }
+    fun enableStreamSound() {
+        mutable.update { it.copy(audibleStartRequested = true, audibleStartBlocked = false) }
+        sendCommand?.invoke("start-audible", emptyMap())
     }
     fun reportError(message: String) = mutable.update { it.copy(error = message, recognitionStatus = message) }
     fun muteAuthor(author: String) {
@@ -157,7 +164,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun handle(envelope: BridgeEnvelope) {
         mutable.update { it.copy(connected = true) }
         when (envelope.type) {
-            "bridge-ready" -> pushLimiter()
+            "bridge-ready" -> { pushLimiter(); if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap()) }
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false
@@ -231,6 +238,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 if (ok == false) recoverForce("Bridge-Rückkehr fehlgeschlagen")
             }
             "force-start" -> mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = (envelope.payload["url"] as? String) ?: it.forceRecoveryUrl) }
+            "player-state" -> mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
     }

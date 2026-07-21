@@ -54,7 +54,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             settings.userAgentString = settings.userAgentString.replace("; wv", "").replace(Regex("Android [^;]+; [^)]+\\)"), "Windows NT 10.0; Win64; x64)").replace(Regex("Mobile Safari"), "Safari")
             settings.useWideViewPort = true
             settings.loadWithOverviewMode = true
-            settings.mediaPlaybackRequiresUserGesture = true
+            settings.mediaPlaybackRequiresUserGesture = false
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.setSupportMultipleWindows(false)
