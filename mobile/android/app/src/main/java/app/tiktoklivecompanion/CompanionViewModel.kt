@@ -42,6 +42,8 @@ data class CompanionUiState(
     val playerMuted: Boolean? = null,
     val audibleStartBlocked: Boolean = false,
     val mediaUrls: List<StreamMediaUrl> = emptyList(),
+    val debugEnabled: Boolean = false,
+    val debugEvents: List<String> = emptyList(),
     val streamName: String = ""
 ) {
     val topChatters: List<TopChatter>
@@ -89,6 +91,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         preferences?.let { stored -> viewModelScope.launch { stored.setSource(source) } }
     }
     fun clearError() = mutable.update { it.copy(error = null) }
+    fun setDebugEnabled(enabled: Boolean) = mutable.update { it.copy(debugEnabled = enabled) }
+    fun clearDebugEvents() = mutable.update { it.copy(debugEvents = emptyList()) }
     fun toggleVideoExpanded() = mutable.update { it.copy(videoExpanded = !it.videoExpanded) }
     fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
     fun startForce() {
@@ -165,7 +169,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     fun handle(envelope: BridgeEnvelope) {
-        mutable.update { it.copy(connected = true) }
+        mutable.update {
+            val events = if (it.debugEnabled) (it.debugEvents + "${envelope.timestamp.take(19)} · ${envelope.type}").takeLast(200) else it.debugEvents
+            it.copy(connected = true, debugEvents = events)
+        }
         when (envelope.type) {
             "bridge-ready" -> { pushLimiter(); if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap()) }
             "capability" -> {
