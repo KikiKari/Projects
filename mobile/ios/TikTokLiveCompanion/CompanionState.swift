@@ -137,6 +137,7 @@ import Foundation
         connected = false; hookAvailable = false; captionsAvailable = false
         chatLines = []; liveValues = [:]; liveNumbers = [:]; chatterCounts = [:]; chatterWords = [:]; pageInfo = [:]
         audibleStartRequested = true; playerMuted = nil; audibleStartBlocked = false; mediaURLs = []
+        BackgroundAudioController.shared.activatePlayback()
         loadURL?(url)
     }
 

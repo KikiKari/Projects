@@ -69,6 +69,7 @@ final class ShazamRecognitionService: NSObject, RecognitionService, SHSessionDel
         audioEngine?.stop()
         audioEngine = nil
         try? AVAudioSession.sharedInstance().setActive(false)
+        BackgroundAudioController.shared.restoreIfNeeded()
     }
 
     func session(_ session: SHSession, didFind match: SHMatch) {
