@@ -180,7 +180,6 @@ import Foundation
             var info: [String: String] = [:]
             if let title = envelope.payload["title"]?.stringValue, !title.isEmpty { info["Titel"] = title }
             if let url = envelope.payload["url"]?.stringValue, !url.isEmpty { info["URL"] = url }
-            if let value = envelope.payload["canonicalUrl"]?.stringValue, !value.isEmpty { info["Kanonische URL"] = value }
             if let value = envelope.payload["description"]?.stringValue, !value.isEmpty { info["Beschreibung"] = value }
             if let value = envelope.payload["creatorName"]?.stringValue, !value.isEmpty { info["Creator"] = value }
             if let value = envelope.payload["creatorHandle"]?.stringValue, !value.isEmpty { info["Handle"] = value }

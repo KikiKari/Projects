@@ -139,7 +139,6 @@
     emit("inspection", {
       title: text(document.title, 256),
       url: `${location.origin}${location.pathname}`,
-      canonicalUrl: text(document.querySelector('link[rel="canonical"]')?.href || "", 1000),
       description: metaValue("description") || metaValue("og:description", true),
       imageUrl: metaValue("og:image", true),
       language: text(document.documentElement.lang, 24),
