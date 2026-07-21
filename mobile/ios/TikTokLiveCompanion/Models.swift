@@ -31,6 +31,12 @@ struct SpeechRequest: Equatable, Identifiable {
     let languageTag: String?
 }
 
+struct StreamMediaURL: Equatable, Identifiable {
+    let url: URL
+    let kind: String
+    var id: String { url.absoluteString }
+}
+
 struct RecognitionResult: Equatable, Codable {
     let matched: Bool
     let title: String

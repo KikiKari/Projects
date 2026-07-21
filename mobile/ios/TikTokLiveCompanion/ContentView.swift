@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private enum Design {
     static let accent = Color(red: 1.0, green: 0.11, blue: 0.31)
@@ -119,6 +120,11 @@ struct ContentView: View {
             HStack { Text("Grenzwert"); Spacer(); Text("\(state.limiterThreshold) dBFS").bold().monospacedDigit() }
             Slider(value: Binding(get: { Double(state.limiterThreshold) }, set: { state.limiterThreshold = Int($0) }), in: -30 ... -1, step: 1).disabled(!state.limiterEnabled)
             Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.").font(.footnote).foregroundStyle(.secondary)
+            Text("Media-/VLC-URLs").font(.headline)
+            if state.mediaURLs.isEmpty { Text("Noch keine direkte Media-URL erkannt. Sie erscheint, sobald TikTok den Player lädt.").font(.footnote).foregroundStyle(.secondary) }
+            ForEach(state.mediaURLs) { media in HStack { VStack(alignment: .leading, spacing: 3) { Text(media.kind).font(.caption).foregroundStyle(.secondary); Text(media.url.absoluteString).font(.footnote).lineLimit(2) }; Spacer(); Button("Kopieren") { UIPasteboard.general.string = media.url.absoluteString } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            if !state.mediaURLs.isEmpty { Button("Alle kopieren") { UIPasteboard.general.string = state.mediaURLs.map { $0.url.absoluteString }.joined(separator: "\n") }.buttonStyle(.bordered).frame(maxWidth: .infinity) }
+            Text("Direkte TikTok-Media-URLs sind temporär, können ablaufen und funktionieren in VLC nicht in jedem Fall.").font(.footnote).foregroundStyle(.secondary)
         }
     }
     private func commandButton(_ label: String, _ command: String, _ icon: String) -> some View { Button { state.sendCommand?(command, [:]) } label: { Label(label, systemImage: icon).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered) }

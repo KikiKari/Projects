@@ -43,6 +43,7 @@ import Foundation
     @Published var audibleStartRequested = false
     @Published var playerMuted: Bool?
     @Published var audibleStartBlocked = false
+    @Published var mediaURLs: [StreamMediaURL] = []
     @Published var streamName = ""
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
@@ -135,7 +136,7 @@ import Foundation
         }
         connected = false; hookAvailable = false; captionsAvailable = false
         chatLines = []; liveValues = [:]; liveNumbers = [:]; chatterCounts = [:]; chatterWords = [:]; pageInfo = [:]
-        audibleStartRequested = true; playerMuted = nil; audibleStartBlocked = false
+        audibleStartRequested = true; playerMuted = nil; audibleStartBlocked = false; mediaURLs = []
         loadURL?(url)
     }
 
@@ -227,6 +228,12 @@ import Foundation
         case "player-state":
             playerMuted = envelope.payload["muted"]?.boolValue
             audibleStartBlocked = envelope.payload["reason"]?.stringValue == "autoplay-blocked"
+        case "media-url":
+            guard let url = BridgeValidator.validatedHTTPS(envelope.payload["url"]?.stringValue) else { return }
+            let kind = String((envelope.payload["kind"]?.stringValue ?? "media").prefix(24))
+            mediaURLs.removeAll { $0.url == url }
+            mediaURLs.append(StreamMediaURL(url: url, kind: kind))
+            if mediaURLs.count > 12 { mediaURLs.removeFirst(mediaURLs.count - 12) }
         case "audio-chunk":
             guard let encoded = envelope.payload["data"]?.stringValue,
                   let bytes = Data(base64Encoded: encoded) else { return }
