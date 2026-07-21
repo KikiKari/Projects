@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity() {
         state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
         Text("Top-Chatter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.topChatters.isEmpty()) Text("Noch keine Personen im Chat beobachtet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        state.topChatters.forEach { (author, count) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(author); Spacer(Modifier.weight(1f)); Text("$count", fontWeight = FontWeight.Bold) } } }
+        state.topChatters.forEach { chatter -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(chatter.author); Spacer(Modifier.weight(1f)); Text("${chatter.messages} Nachrichten · ${chatter.words} Wörter", fontWeight = FontWeight.Bold) } } }
         Text("Seiteninformationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.pageInfo.isEmpty()) Text("Noch keine Seitenprüfung ausgeführt · „Seite prüfen“ im Tab Mehr.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.pageInfo.forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) { Text(key, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(value, fontWeight = FontWeight.Bold) } } }

@@ -22,7 +22,8 @@ data class CompanionUiState(
     val chats: List<String> = emptyList(),
     val chatEntries: List<ChatLine> = emptyList(),
     val liveValues: Map<String, String> = emptyMap(),
-    val chatterCounts: Map<String, Int> = emptyMap(),
+    val participants: Map<String, ParticipantStats> = emptyMap(),
+    val liveNumbers: Map<String, Long> = emptyMap(),
     val pageInfo: Map<String, String> = emptyMap(),
     val mutedAuthors: Set<String> = emptySet(),
     val limiterEnabled: Boolean = false,
@@ -39,8 +40,8 @@ data class CompanionUiState(
     val forceRecoveryUrl: String? = null,
     val streamName: String = ""
 ) {
-    val topChatters: List<Pair<String, Int>>
-        get() = chatterCounts.entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key }).take(5).map { it.key to it.value }
+    val topChatters: List<TopChatter>
+        get() = participants.entries.sortedWith(compareByDescending<Map.Entry<String, ParticipantStats>> { it.value.messages }.thenByDescending { it.value.words }.thenBy { it.key.lowercase() }).take(5).map { TopChatter(it.key, it.value.messages, it.value.words) }
 }
 
 class CompanionViewModel(private val recognizer: RecognitionEngine, private val preferences: CompanionPreferences? = null) : ViewModel() {
@@ -106,7 +107,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
-        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), chatterCounts = emptyMap(), pageInfo = emptyMap()) }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap()) }
         loadUrl?.invoke(url)
     }
     fun reportError(message: String) = mutable.update { it.copy(error = message, recognitionStatus = message) }
@@ -114,7 +115,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val normalized = author.trim().take(80)
         if (normalized.isEmpty()) return
         val updated = mutable.value.mutedAuthors + normalized
-        mutable.update { it.copy(mutedAuthors = updated, chats = it.chats.filterNot { line -> line.startsWith("$normalized:") }, chatEntries = it.chatEntries.filterNot { line -> line.author == normalized }, chatterCounts = it.chatterCounts - normalized) }
+        mutable.update { it.copy(mutedAuthors = updated, chats = it.chats.filterNot { line -> line.startsWith("$normalized:") }, chatEntries = it.chatEntries.filterNot { line -> line.author == normalized }, participants = it.participants - normalized) }
         preferences?.let { stored -> viewModelScope.launch { stored.setMutedAuthors(updated) } }
     }
     fun setLimiterEnabled(enabled: Boolean) {
@@ -170,6 +171,16 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val info = buildMap {
                     (envelope.payload["title"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Titel", it) }
                     (envelope.payload["url"] as? String)?.takeIf { it.isNotBlank() }?.let { put("URL", it) }
+                    (envelope.payload["canonicalUrl"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Kanonische URL", it) }
+                    (envelope.payload["description"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Beschreibung", it) }
+                    (envelope.payload["creatorName"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Creator", it) }
+                    (envelope.payload["creatorHandle"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Handle", it) }
+                    (envelope.payload["followerText"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Follower", it) }
+                    (envelope.payload["followingText"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Gefolgt", it) }
+                    (envelope.payload["profileLikesText"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Profil-Likes", it) }
+                    (envelope.payload["signature"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Bio", it) }
+                    (envelope.payload["language"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Seitensprache", it) }
+                    put("Verifiziert", if (envelope.payload["verified"] as? Boolean == true) "ja" else "nein")
                     put("Video vorhanden", if (envelope.payload["videoPresent"] as? Boolean == true) "ja" else "nein")
                     put("Untertitel-Steuerung", if (envelope.payload["captionsControlPresent"] as? Boolean == true) "ja" else "nein")
                 }
@@ -183,21 +194,30 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val entry = ChatLine(author.take(128), content.take(1_000), language.take(24))
                 val line = entry.visibleText
                 mutable.update { current ->
-                    val counts = if (author.isBlank()) current.chatterCounts else current.chatterCounts + (author to (current.chatterCounts[author] ?: 0) + 1)
-                    current.copy(chats = (current.chats + line).takeLast(50), chatEntries = (current.chatEntries + entry).takeLast(50), chatterCounts = counts)
+                    val people = LinkedHashMap(current.participants)
+                    if (author.isNotBlank() && (people.containsKey(author) || people.size < 5_000)) {
+                        val prior = people[author] ?: ParticipantStats()
+                        people[author] = prior.copy(messages = prior.messages + 1, words = prior.words + content.trim().split(Regex("\\s+")).count { it.isNotBlank() })
+                    }
+                    current.copy(chats = (current.chats + line).takeLast(50), chatEntries = (current.chatEntries + entry).takeLast(50), participants = people)
                 }
                 if (mutable.value.ttsEnabled) enqueueSpeech(entry)
             }
             "live-stats" -> mutable.update { current ->
-                val mapped = buildMap {
+                val numbers = current.liveNumbers.toMutableMap()
+                val mapped = buildMap<String, String> {
                     for ((key, label) in liveStatLabels) {
                         val value = envelope.payload[key] ?: continue
-                        val textValue = value.toString().takeIf { it.isNotBlank() } ?: continue
-                        put(label, textValue)
+                        val number = value.toString().toDoubleOrNull()?.toLong()
+                        if (number != null) {
+                            val effective = if (key == "viewerCount") number else maxOf(number, numbers[key] ?: 0)
+                            numbers[key] = effective
+                            put(label, effective.toString())
+                        }
                     }
-                    if ((envelope.payload["kind"] as? String) == "follow") put("Follows seit Start", ((current.liveValues["Follows seit Start"]?.toIntOrNull() ?: 0) + 1).toString())
+                    if ((envelope.payload["kind"] as? String) == "follow") put("Follows seit Hook", ((current.liveValues["Follows seit Hook"]?.toIntOrNull() ?: 0) + 1).toString())
                 }
-                current.copy(liveValues = current.liveValues + mapped)
+                current.copy(liveValues = current.liveValues + mapped, liveNumbers = numbers)
             }
             "audio-chunk" -> {
                 val encoded = envelope.payload["data"] as? String ?: return

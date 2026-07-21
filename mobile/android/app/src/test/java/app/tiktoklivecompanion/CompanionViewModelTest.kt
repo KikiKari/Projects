@@ -29,9 +29,10 @@ class CompanionViewModelTest {
         repeat(3) { model.handle(envelope("chat", mapOf("nickname" to "Anna", "content" to "hi $it"))) }
         model.handle(envelope("chat", mapOf("nickname" to "Ben", "content" to "hallo")))
         assertEquals(4, model.state.value.chats.size)
-        assertEquals(listOf("Anna" to 3, "Ben" to 1), model.state.value.topChatters)
+        assertEquals(listOf("Anna", "Ben"), model.state.value.topChatters.map { it.author })
+        assertEquals(6, model.state.value.topChatters.first().words)
         model.muteAuthor("Anna")
-        assertEquals(listOf("Ben" to 1), model.state.value.topChatters)
+        assertEquals(listOf("Ben"), model.state.value.topChatters.map { it.author })
     }
 
     @Test fun chatIsCappedAndSpeechQueueKeepsOnlyFiveNewMessages() {
@@ -55,12 +56,16 @@ class CompanionViewModelTest {
 
     @Test fun inspectionFillsPageInfo() {
         val model = CompanionViewModel(FakeEngine())
-        model.handle(envelope("inspection", mapOf("title" to "Stream", "url" to "https://www.tiktok.com/@x/live", "videoPresent" to true, "captionsControlPresent" to false)))
+        model.handle(envelope("inspection", mapOf("title" to "Stream", "url" to "https://www.tiktok.com/@x/live", "creatorHandle" to "@x", "signature" to "Bio", "followerText" to "12K", "verified" to true, "videoPresent" to true, "captionsControlPresent" to false)))
         val info = model.state.value.pageInfo
         assertEquals("Stream", info["Titel"])
         assertEquals("https://www.tiktok.com/@x/live", info["URL"])
         assertEquals("ja", info["Video vorhanden"])
         assertEquals("nein", info["Untertitel-Steuerung"])
+        assertEquals("@x", info["Handle"])
+        assertEquals("Bio", info["Bio"])
+        assertEquals("12K", info["Follower"])
+        assertEquals("ja", info["Verifiziert"])
     }
 
     @Test fun liveStatsMapToGermanLabelsAndCountFollows() {
@@ -71,7 +76,24 @@ class CompanionViewModelTest {
         val values = model.state.value.liveValues
         assertEquals("42", values["Zuschauer*innen"])
         assertEquals("7", values["Likes"])
-        assertEquals("2", values["Follows seit Start"])
+        assertEquals("2", values["Follows seit Hook"])
+    }
+
+    @Test fun participantsAreBoundedAndRankByMessagesWordsThenName() {
+        val model = CompanionViewModel(FakeEngine())
+        repeat(5_001) { model.handle(envelope("chat", mapOf("nickname" to "user$it", "content" to "one two"))) }
+        model.handle(envelope("chat", mapOf("nickname" to "user2", "content" to "one two three")))
+        model.handle(envelope("chat", mapOf("nickname" to "user1", "content" to "one")))
+        assertEquals(5_000, model.state.value.participants.size)
+        assertEquals("user2", model.state.value.topChatters.first().author)
+    }
+
+    @Test fun cumulativeLiveValuesNeverDecrease() {
+        val model = CompanionViewModel(FakeEngine())
+        model.handle(envelope("live-stats", mapOf("likeCount" to 100, "viewerCount" to 42)))
+        model.handle(envelope("live-stats", mapOf("likeCount" to 80, "viewerCount" to 30)))
+        assertEquals("100", model.state.value.liveValues["Likes"])
+        assertEquals("30", model.state.value.liveValues["Zuschauer*innen"])
     }
 
     @Test fun limiterSettingsAreClampedAndSentToBridge() {

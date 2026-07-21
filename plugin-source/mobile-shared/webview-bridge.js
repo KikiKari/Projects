@@ -21,6 +21,7 @@
   let audioGraph = null;
   const limiter = { enabled: false, threshold: -6 };
   const chat = [];
+  const seenLiveEventIds = new Set();
 
   function nativePost(message) {
     const serialized = JSON.stringify(message);
@@ -41,12 +42,31 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function metaValue(name, property = false) {
+    return text(document.querySelector(`meta[${property ? "property" : "name"}="${name}"]`)?.content || "", 1000);
+  }
+
   function inspect() {
     const video = primaryVideo();
     const captionButtons = [...document.querySelectorAll("button,[role=menuitem]")].filter((node) => /caption|untertitel/i.test(node.textContent || ""));
+    const creatorHandle = decodeURIComponent((location.pathname.match(/^\/@([^/]+)/) || [])[1] || "");
+    const creatorName = metaValue("og:title", true).replace(/\s*[|·-]\s*TikTok.*$/i, "");
+    const followerNode = document.querySelector('[data-e2e="followers-count"]');
     emit("inspection", {
       title: text(document.title, 256),
       url: `${location.origin}${location.pathname}`,
+      canonicalUrl: text(document.querySelector('link[rel="canonical"]')?.href || "", 1000),
+      description: metaValue("description") || metaValue("og:description", true),
+      imageUrl: metaValue("og:image", true),
+      language: text(document.documentElement.lang, 24),
+      creatorName,
+      creatorHandle: creatorHandle ? `@${creatorHandle}` : "",
+      followerText: text(followerNode?.textContent || "", 128),
+      followingText: text(document.querySelector('[data-e2e="following-count"]')?.textContent || "", 128),
+      profileLikesText: text(document.querySelector('[data-e2e="likes-count"]')?.textContent || "", 128),
+      signature: text(document.querySelector('[data-e2e="user-bio"], [data-e2e="user-signature"]')?.textContent || "", 1000),
+      verified: Boolean(document.querySelector('[data-e2e*="verified"], [aria-label*="Verified" i], [aria-label*="Verifiziert" i]')),
+      livePage: /^\/@[^/]+\/live(?:\/|$)/.test(location.pathname),
       videoPresent: Boolean(video),
       captionsControlPresent: captionButtons.length > 0,
       player: video ? { paused: video.paused, muted: video.muted, volume: video.volume, duration: Number.isFinite(video.duration) ? video.duration : null } : null
@@ -61,7 +81,15 @@
       emit("chat", entry);
     }
     for (const item of decoded.captions || []) emit("caption", { sentenceId: text(item.sentenceId, 64), definite: Boolean(item.definite), contents: (item.contents || []).slice(0, 8).map((part) => ({ lang: text(part.lang, 24), text: text(part.text, 2000) })) });
-    for (const item of decoded.liveEvents || []) emit("live-stats", item);
+    for (const item of decoded.liveEvents || []) {
+      const eventId = text(item.eventId || item.messageId || item.msgId || "", 128);
+      if (eventId && seenLiveEventIds.has(eventId)) continue;
+      if (eventId) {
+        seenLiveEventIds.add(eventId);
+        if (seenLiveEventIds.size > 5_000) seenLiveEventIds.delete(seenLiveEventIds.values().next().value);
+      }
+      emit("live-stats", item);
+    }
     for (const item of decoded.giftMessages || []) emit("gift", { nickname: text(item.nickname, 128), displayId: text(item.displayId, 128), repeatCount: text(item.repeatCount, 32), giftId: text(item.giftId, 64) });
   }
 

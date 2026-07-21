@@ -31,6 +31,8 @@ assert.ok(source.includes("FORCE_RETURN_MAX_ATTEMPTS = 2"));
 assert.ok(source.includes('emit("force-start"'));
 assert.ok(source.includes("dismissOverlays"));
 assert.ok(source.includes("validatedLiveUrl"));
+assert.ok(source.includes("seenLiveEventIds.size > 5_000"));
+for (const field of ["canonicalUrl", "description", "creatorName", "creatorHandle", "followerText", "followingText", "profileLikesText", "signature", "verified", "livePage"]) assert.ok(source.includes(field));
 assert.ok(!source.includes("innerHTML"));
 
 for (const copy of [
