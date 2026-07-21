@@ -40,6 +40,9 @@ import Foundation
     @Published var videoExpanded = false
     @Published var forceInProgress = false
     @Published var forceRecoveryURL: URL?
+    @Published var audibleStartRequested = false
+    @Published var playerMuted: Bool?
+    @Published var audibleStartBlocked = false
     @Published var streamName = ""
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
@@ -132,7 +135,14 @@ import Foundation
         }
         connected = false; hookAvailable = false; captionsAvailable = false
         chatLines = []; liveValues = [:]; liveNumbers = [:]; chatterCounts = [:]; chatterWords = [:]; pageInfo = [:]
+        audibleStartRequested = true; playerMuted = nil; audibleStartBlocked = false
         loadURL?(url)
+    }
+
+    func enableStreamSound() {
+        audibleStartRequested = true
+        audibleStartBlocked = false
+        sendCommand?("start-audible", [:])
     }
 
     func pushLimiter() {
@@ -154,7 +164,7 @@ import Foundation
     func handle(_ envelope: BridgeEnvelope) {
         connected = true
         switch envelope.type {
-        case "bridge-ready": pushLimiter()
+        case "bridge-ready": pushLimiter(); if audibleStartRequested { sendCommand?("start-audible", [:]) }
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
@@ -214,6 +224,9 @@ import Foundation
         case "force-start":
             forceInProgress = true
             if let value = envelope.payload["url"]?.stringValue, let url = URL(string: value), let valid = Self.validatedLiveURL(url) { forceRecoveryURL = valid }
+        case "player-state":
+            playerMuted = envelope.payload["muted"]?.boolValue
+            audibleStartBlocked = envelope.payload["reason"]?.stringValue == "autoplay-blocked"
         case "audio-chunk":
             guard let encoded = envelope.payload["data"]?.stringValue,
                   let bytes = Data(base64Encoded: encoded) else { return }

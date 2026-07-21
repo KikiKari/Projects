@@ -7,7 +7,7 @@ struct BridgeValidator {
     static let maximumBytes = 64 * 1024
     static let allowedTypes: Set<String> = [
         "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift",
-        "bridge-error", "command-result", "audio-chunk", "audio-complete", "socket-open", "force-start", "force-return"
+        "bridge-error", "command-result", "audio-chunk", "audio-complete", "socket-open", "force-start", "force-return", "player-state"
     ]
 
     // Subframes derselben Origin sind erlaubt: TikTok kann den Webcast-WebSocket in einem Same-Origin-Iframe öffnen (0PE-52).

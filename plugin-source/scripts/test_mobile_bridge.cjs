@@ -37,6 +37,9 @@ assert.ok(source.includes('data-tlc-mobile-player'));
 assert.ok(source.includes('object-fit:contain'));
 assert.ok(source.includes('feature: "player-focus"'));
 assert.ok(!source.includes('document.body.innerHTML'));
+assert.ok(source.includes('"start-audible"'));
+assert.ok(source.includes('video.defaultMuted = false'));
+assert.ok(source.includes('reason: "autoplay-blocked"'));
 assert.ok(!source.includes("innerHTML"));
 
 for (const copy of [

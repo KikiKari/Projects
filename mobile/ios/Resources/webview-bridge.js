@@ -13,7 +13,7 @@
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "reload-player", "captions", "refresh",
-    "force-profile", "open-report", "start-webview-audio", "stop-webview-audio", "set-limiter"
+    "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter"
   ]);
   let sequence = 0;
   let streamId = "";
@@ -23,6 +23,7 @@
   const chat = [];
   const seenLiveEventIds = new Set();
   let focusedPlayer = null;
+  let audibleStartRequested = false;
 
   function nativePost(message) {
     const serialized = JSON.stringify(message);
@@ -76,7 +77,23 @@
       (document.head || document.documentElement).appendChild(style);
     }
     emit("capability", { feature: "player-focus", available: true });
+    if (audibleStartRequested) void attemptAudibleStart();
     return true;
+  }
+
+  async function attemptAudibleStart() {
+    const video = primaryVideo();
+    if (!video) return emit("player-state", { available: false, muted: true, paused: true, reason: "video-unavailable" });
+    audibleStartRequested = true;
+    video.muted = false;
+    video.defaultMuted = false;
+    if (video.volume <= 0) video.volume = 1;
+    try {
+      await video.play();
+      emit("player-state", { available: true, muted: video.muted, paused: video.paused, volume: video.volume, audible: !video.muted && video.volume > 0 });
+    } catch (error) {
+      emit("player-state", { available: true, muted: video.muted, paused: video.paused, volume: video.volume, audible: false, reason: "autoplay-blocked", message: text(error?.message || error, 256) });
+    }
   }
 
   function metaValue(name, property = false) {
@@ -312,6 +329,7 @@
       else if (name === "pause") video?.pause();
       else if (name === "mute" && video) video.muted = true;
       else if (name === "unmute" && video) video.muted = false;
+      else if (name === "start-audible") await attemptAudibleStart();
       else if (name === "set-volume" && video) video.volume = Math.max(0, Math.min(1, Number(payload.value) || 0));
       else if (name === "reload-player" && video) video.load();
       else if (name === "captions") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /caption|untertitel/i.test(node.textContent || ""))?.click();

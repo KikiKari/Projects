@@ -108,6 +108,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Player").font(.headline)
             HStack { commandButton("Play", "play", "play.fill"); commandButton("Pause", "pause", "pause.fill"); commandButton("Stumm", "mute", "speaker.slash.fill") }
+            if state.playerMuted != false || state.audibleStartBlocked { Button("Ton aktivieren") { state.enableStreamSound() }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity) }
             HStack {
                 // Vollbild nativ: Bridge-„fullscreen" greift im mobilen WebView nicht (0PE-54); PiP ist Nicht-Ziel.
                 Button { state.toggleVideoExpanded() } label: { Label("Vollbild", systemImage: "arrow.up.left.and.arrow.down.right").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered)
