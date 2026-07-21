@@ -5,6 +5,10 @@ private enum Design {
     static let surface = Color(uiColor: .secondarySystemBackground)
 }
 
+func mobileVideoHeight(totalHeight: CGFloat, landscape: Bool) -> CGFloat {
+    landscape ? min(220, max(0, totalHeight - 160 - 96)) : totalHeight * 0.5
+}
+
 struct ContentView: View {
     @StateObject var state: CompanionState
 
@@ -19,7 +23,7 @@ struct ContentView: View {
                 }
                 // Querformat: Video kleiner halten, damit Inhalt unter dem Menüband sichtbar und scrollbar bleibt (0PE-56).
                 let landscape = proxy.size.width > proxy.size.height
-                let videoHeight = landscape ? min(proxy.size.height * 0.35, 220) : proxy.size.height * 0.5
+                let videoHeight = mobileVideoHeight(totalHeight: proxy.size.height, landscape: landscape)
                 CompanionWebView(state: state)
                     .frame(height: state.videoExpanded ? proxy.size.height : videoHeight)
                     .clipped()

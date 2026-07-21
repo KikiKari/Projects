@@ -2,6 +2,11 @@ import XCTest
 @testable import TikTokLiveCompanion
 
 final class MobileUIStructureTests: XCTestCase {
+    func testLandscapeVideoReservesScrollableContentHeight() {
+        XCTAssertLessThanOrEqual(mobileVideoHeight(totalHeight: 360, landscape: true), 104)
+        XCTAssertGreaterThanOrEqual(360 - 160 - mobileVideoHeight(totalHeight: 360, landscape: true), 96)
+        XCTAssertEqual(mobileVideoHeight(totalHeight: 800, landscape: false), 400)
+    }
     func testCapabilityRowsAreRenderedOnlyByLiveTab() throws {
         let testURL = URL(fileURLWithPath: #filePath)
         let sourceURL = testURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("TikTokLiveCompanion/ContentView.swift")
