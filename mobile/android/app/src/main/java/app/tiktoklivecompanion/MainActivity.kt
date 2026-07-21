@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                             if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
                         }
                         CompanionTab.CHAT -> ChatTab(state, model)
-                        CompanionTab.LIVE -> LiveTab(state)
+                        CompanionTab.LIVE -> LiveTab(state, model)
                         CompanionTab.PLAYER -> PlayerTab(state, model)
                         CompanionTab.MORE -> MoreTab(state, model)
                     }
@@ -149,19 +149,24 @@ class MainActivity : ComponentActivity() {
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen vorlesen", Modifier.weight(1f)); Switch(state.ttsSpeakNames, model::setTtsSpeakNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Lange Namen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
         } }
+        Text("Letzte Chatnachrichten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.chatEntries.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray)
-        state.chatEntries.forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line.visibleText, Modifier.weight(1f)); IconButton(onClick = { model.requestSpeak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") }; line.author.takeIf { it.isNotBlank() }?.let { author -> IconButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, "Autor dauerhaft stummschalten") } } } } }
+        state.chatEntries.takeLast(5).forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line.visibleText, Modifier.weight(1f)); IconButton(onClick = { model.requestSpeak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") } } } }
+        Text("Top-Chatter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (state.topChatters.isEmpty()) Text("Noch keine Personen im Chat beobachtet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.topChatters.forEach { chatter -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(chatter.author); Spacer(Modifier.weight(1f)); Text("${chatter.messages} Nachrichten · ${chatter.words} Wörter", fontWeight = FontWeight.Bold) } } }
     }
 }
-@Composable private fun LiveTab(state: CompanionUiState) {
+@Composable private fun LiveTab(state: CompanionUiState, model: CompanionViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("LIVE-Informationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         CapabilityRows(state)
         if (state.liveValues.isEmpty()) Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
-        Text("Top-Chatter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        if (state.topChatters.isEmpty()) Text("Noch keine Personen im Chat beobachtet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        state.topChatters.forEach { chatter -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(chatter.author); Spacer(Modifier.weight(1f)); Text("${chatter.messages} Nachrichten · ${chatter.words} Wörter", fontWeight = FontWeight.Bold) } } }
+        Text("Personen stummschalten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        val activeAuthors = state.chatEntries.map { it.author }.filter { it.isNotBlank() }.distinct().takeLast(20)
+        if (activeAuthors.isEmpty()) Text("Noch keine Personen aus dem LIVE-Chat verfügbar.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        activeAuthors.forEach { author -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(author, Modifier.weight(1f)); TextButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, null); Spacer(Modifier.width(6.dp)); Text("Stumm") } } } }
         Text("Seiteninformationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.pageInfo.isEmpty()) Text("Noch keine Seitenprüfung ausgeführt · „Seite prüfen“ im Tab Mehr.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.pageInfo.forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) { Text(key, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(value, fontWeight = FontWeight.Bold) } } }
