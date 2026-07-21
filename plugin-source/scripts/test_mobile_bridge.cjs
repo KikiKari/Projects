@@ -33,6 +33,10 @@ assert.ok(source.includes("dismissOverlays"));
 assert.ok(source.includes("validatedLiveUrl"));
 assert.ok(source.includes("seenLiveEventIds.size > 5_000"));
 for (const field of ["canonicalUrl", "description", "creatorName", "creatorHandle", "followerText", "followingText", "profileLikesText", "signature", "verified", "livePage"]) assert.ok(source.includes(field));
+assert.ok(source.includes('data-tlc-mobile-player'));
+assert.ok(source.includes('object-fit:contain'));
+assert.ok(source.includes('feature: "player-focus"'));
+assert.ok(!source.includes('document.body.innerHTML'));
 assert.ok(!source.includes("innerHTML"));
 
 for (const copy of [
