@@ -12,7 +12,7 @@
   const FORCE_RETURN_MAX_ATTEMPTS = 2;
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
-    "fullscreen", "picture-in-picture", "reload-player", "captions", "refresh",
+    "reload-player", "captions", "refresh",
     "force-profile", "open-report", "start-webview-audio", "stop-webview-audio", "set-limiter"
   ]);
   let sequence = 0;
@@ -116,11 +116,14 @@
       await context.resume();
       const source = context.createMediaElementSource(video);
       const compressor = context.createDynamicsCompressor();
+      const silentSink = context.createGain();
+      silentSink.gain.value = 0;
+      silentSink.connect(context.destination);
       compressor.ratio.value = 20;
       compressor.knee.value = 0;
       compressor.attack.value = 0.003;
       compressor.release.value = 0.25;
-      audioGraph = { context, source, compressor, video };
+      audioGraph = { context, source, compressor, silentSink, video };
       rewireAudioGraph();
       return audioGraph;
     } catch (error) {
@@ -131,7 +134,7 @@
 
   function rewireAudioGraph() {
     if (!audioGraph) return;
-    const { context, source, compressor } = audioGraph;
+    const { context, source, compressor, silentSink } = audioGraph;
     try { source.disconnect(); } catch (_) {}
     try { compressor.disconnect(); } catch (_) {}
     if (limiter.enabled) {
@@ -140,7 +143,7 @@
     } else {
       source.connect(context.destination);
     }
-    if (audioCapture) { source.connect(audioCapture.processor); audioCapture.processor.connect(context.destination); }
+    if (audioCapture) { source.connect(audioCapture.processor); audioCapture.processor.connect(silentSink); }
   }
 
   async function applyLimiter(payload) {
@@ -174,7 +177,7 @@
         const elapsed = (performance.now() - startedAt) / 1000;
         if (elapsed >= MAX_AUDIO_SECONDS) return void stopAudioCapture("completed");
         const input = event.inputBuffer.getChannelData(0);
-        event.outputBuffer.getChannelData(0).set(input);
+        event.outputBuffer.getChannelData(0).fill(0);
         emit("audio-chunk", { encoding: "pcm_s16le", channels: 1, sampleRate: graph.context.sampleRate, elapsed, data: pcm16Base64(input) });
       };
       audioCapture = { processor };
@@ -237,8 +240,6 @@
       else if (name === "mute" && video) video.muted = true;
       else if (name === "unmute" && video) video.muted = false;
       else if (name === "set-volume" && video) video.volume = Math.max(0, Math.min(1, Number(payload.value) || 0));
-      else if (name === "fullscreen") await video?.requestFullscreen?.();
-      else if (name === "picture-in-picture") await video?.requestPictureInPicture?.();
       else if (name === "reload-player" && video) video.load();
       else if (name === "captions") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /caption|untertitel/i.test(node.textContent || ""))?.click();
       else if (name === "refresh") location.reload();

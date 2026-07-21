@@ -141,6 +141,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
                 }
+                if (feature == "limiter" && !available) mutable.update { it.copy(error = "Pegelschutz nicht verfügbar · Player oder Web Audio fehlt") }
             }
             "inspection" -> {
                 val info = buildMap {
