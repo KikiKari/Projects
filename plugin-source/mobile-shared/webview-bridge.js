@@ -22,6 +22,7 @@
   const limiter = { enabled: false, threshold: -6 };
   const chat = [];
   const seenLiveEventIds = new Set();
+  let focusedPlayer = null;
 
   function nativePost(message) {
     const serialized = JSON.stringify(message);
@@ -42,12 +43,49 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function playerContainer(video) {
+    if (!video) return null;
+    const videoArea = Math.max(1, video.clientWidth * video.clientHeight);
+    let fallback = video.parentElement || video;
+    for (let node = video.parentElement, depth = 0; node && node !== document.body && depth < 8; node = node.parentElement, depth += 1) {
+      const rect = node.getBoundingClientRect();
+      const controls = node.querySelectorAll('button,[role="button"],[role="slider"],input[type="range"]');
+      if (rect.width * rect.height <= videoArea * 3.5) fallback = node;
+      if (controls.length && rect.width * rect.height <= videoArea * 3.5) return node;
+    }
+    return fallback;
+  }
+
+  function applyPlayerFocus() {
+    if (!isTop) return false;
+    const video = primaryVideo();
+    const container = playerContainer(video);
+    if (!video || !container) return false;
+    if (focusedPlayer && focusedPlayer !== container) focusedPlayer.removeAttribute("data-tlc-mobile-player");
+    focusedPlayer = container;
+    document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
+    container.setAttribute("data-tlc-mobile-player", "true");
+    if (!document.getElementById("tlc-mobile-player-style")) {
+      const style = document.createElement("style");
+      style.id = "tlc-mobile-player-style";
+      style.textContent = `
+        html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{overflow:hidden!important;background:#000!important}
+        [data-tlc-mobile-player="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;z-index:2147483646!important;background:#000!important;overflow:hidden!important}
+        [data-tlc-mobile-player="true"] video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;background:#000!important}
+      `;
+      (document.head || document.documentElement).appendChild(style);
+    }
+    emit("capability", { feature: "player-focus", available: true });
+    return true;
+  }
+
   function metaValue(name, property = false) {
     return text(document.querySelector(`meta[${property ? "property" : "name"}="${name}"]`)?.content || "", 1000);
   }
 
   function inspect() {
     const video = primaryVideo();
+    applyPlayerFocus();
     const captionButtons = [...document.querySelectorAll("button,[role=menuitem]")].filter((node) => /caption|untertitel/i.test(node.textContent || ""));
     const creatorHandle = decodeURIComponent((location.pathname.match(/^\/@([^/]+)/) || [])[1] || "");
     const creatorName = metaValue("og:title", true).replace(/\s*[|·-]\s*TikTok.*$/i, "");
@@ -299,6 +337,12 @@
   installWebSocketHook();
   if (!isTop) return; // Subframes liefern nur dekodierte WebSocket-Daten.
   root.TLC_MOBILE_BRIDGE = Object.freeze({ command, inspect });
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { inspect(); handleForceReturn(); }, { once: true }); else { inspect(); handleForceReturn(); }
+  const startTopFrame = () => {
+    inspect();
+    handleForceReturn();
+    const observer = new MutationObserver(() => { if (!focusedPlayer?.isConnected || primaryVideo() !== focusedPlayer?.querySelector("video")) applyPlayerFocus(); });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
   emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true });
 })(globalThis);
