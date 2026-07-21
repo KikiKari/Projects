@@ -6,6 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MobileUiStructureTest {
+    private fun bridgeSource(): String = listOf(
+        File("src/main/res/raw/webview_bridge.js"),
+        File("app/src/main/res/raw/webview_bridge.js")
+    ).first { it.isFile }.readText()
+
     @Test fun landscapeVideoReservesScrollableContentHeight() {
         assertTrue(mobileVideoHeightDp(360, true) <= 104)
         assertTrue(360 - 160 - mobileVideoHeightDp(360, true) >= 96)
@@ -19,5 +24,14 @@ class MobileUiStructureTest {
         assertFalse(song.contains("CapabilityRows(state)"))
         assertTrue(live.contains("CapabilityRows(state)"))
         assertTrue(source.split("CapabilityRows(state)").size - 1 == 1)
+    }
+
+    @Test fun mobilePlayerFocusExcludesTikTokChatAndTargetsOnlyPrimaryVideo() {
+        val source = bridgeSource()
+        assertTrue(source.contains("function containsChatSurface"))
+        assertTrue(source.contains("data-tlc-mobile-primary-video"))
+        assertTrue(source.contains("data-tlc-mobile-video-layer"))
+        assertFalse(source.contains("[data-tlc-mobile-player=\"true\"] video"))
+        assertFalse(source.contains("videoArea * 3.5"))
     }
 }
