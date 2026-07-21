@@ -11,7 +11,13 @@ import Foundation
     @Published var hookAvailable = false
     @Published var captionsAvailable = false
     @Published var connected = false
-    @Published var chatLines: [String] = []
+    @Published var chatLines: [ChatLine] = []
+    @Published var speechQueue: [SpeechRequest] = []
+    @Published var ttsEnabled = false { didSet { defaults.set(ttsEnabled, forKey: Self.ttsEnabledKey) } }
+    @Published var ttsVolume = 1.0 { didSet { ttsVolume = min(1, max(0, ttsVolume)); defaults.set(ttsVolume, forKey: Self.ttsVolumeKey) } }
+    @Published var ttsLanguage: TTSLanguage = .automatic { didSet { defaults.set(ttsLanguage.rawValue, forKey: Self.ttsLanguageKey) } }
+    @Published var ttsSpeakNames = true { didSet { defaults.set(ttsSpeakNames, forKey: Self.ttsSpeakNamesKey) } }
+    @Published var ttsShortenNames = true { didSet { defaults.set(ttsShortenNames, forKey: Self.ttsShortenNamesKey) } }
     @Published var liveValues: [String: String] = [:]
     @Published var chatterCounts: [String: Int] = [:]
     @Published var pageInfo: [String: String] = [:]
@@ -36,10 +42,16 @@ import Foundation
     let recognizer: RecognitionService
     private let speaker = AVSpeechSynthesizer()
     private let defaults: UserDefaults
+    private var speechSequence = 0
     private static let sourceKey = "recognitionSource"
     private static let mutedAuthorsKey = "mutedAuthors"
     private static let limiterEnabledKey = "limiterEnabled"
     private static let limiterThresholdKey = "limiterThreshold"
+    private static let ttsEnabledKey = "ttsEnabled"
+    private static let ttsVolumeKey = "ttsVolume"
+    private static let ttsLanguageKey = "ttsLanguage"
+    private static let ttsSpeakNamesKey = "ttsSpeakNames"
+    private static let ttsShortenNamesKey = "ttsShortenNames"
     private static let liveStatLabels: [String: String] = [
         "viewerCount": "Zuschauer*innen",
         "totalViewers": "Aufrufe gesamt",
@@ -60,6 +72,11 @@ import Foundation
         self.limiterEnabled = defaults.bool(forKey: Self.limiterEnabledKey)
         let storedThreshold = defaults.object(forKey: Self.limiterThresholdKey) as? Int ?? -6
         self.limiterThreshold = min(-1, max(-30, storedThreshold))
+        self.ttsEnabled = defaults.bool(forKey: Self.ttsEnabledKey)
+        self.ttsVolume = defaults.object(forKey: Self.ttsVolumeKey) as? Double ?? 1
+        self.ttsLanguage = defaults.string(forKey: Self.ttsLanguageKey).flatMap(TTSLanguage.init(rawValue:)) ?? .automatic
+        self.ttsSpeakNames = defaults.object(forKey: Self.ttsSpeakNamesKey) as? Bool ?? true
+        self.ttsShortenNames = defaults.object(forKey: Self.ttsShortenNamesKey) as? Bool ?? true
         recognizer.onResult = { [weak self] result in Task { @MainActor in
             self?.recognitionResult = result
             self?.recognitionStatus = result.matched ? "Song erkannt" : "Kein passender Song erkannt"
@@ -122,9 +139,13 @@ import Foundation
             let author = envelope.payload["nickname"]?.stringValue ?? ""
             let content = envelope.payload["content"]?.stringValue ?? ""
             guard !mutedAuthors.contains(author) else { return }
-            chatLines.append(author.isEmpty ? content : "\(author): \(content)")
+            let language = envelope.payload["language"]?.stringValue ?? ""
+            speechSequence += 1
+            let line = ChatLine(id: speechSequence, author: String(author.prefix(128)), content: String(content.prefix(1_000)), language: String(language.prefix(24)))
+            chatLines.append(line)
             if chatLines.count > 50 { chatLines.removeFirst(chatLines.count - 50) }
             if !author.isEmpty { chatterCounts[author, default: 0] += 1 }
+            if ttsEnabled { enqueueSpeech(line) }
         case "live-stats":
             for (key, label) in Self.liveStatLabels {
                 if let text = envelope.payload[key]?.stringValue, !text.isEmpty { liveValues[label] = text }
@@ -148,11 +169,24 @@ import Foundation
         }
     }
 
-    func speak(_ text: String) {
-        guard !text.isEmpty else { return }
+    func speak(_ line: ChatLine) { enqueueSpeech(line) }
+
+    private func enqueueSpeech(_ line: ChatLine) {
+        let spokenAuthor = ttsShortenNames ? String(line.author.prefix(24)) : line.author
+        let text = ttsSpeakNames && !spokenAuthor.isEmpty ? "\(spokenAuthor) sagt \(line.content)" : line.content
+        let detected = line.language.lowercased().hasPrefix("de") ? "de-DE" : line.language.lowercased().hasPrefix("en") ? "en-US" : nil
+        let request = SpeechRequest(id: speechSequence + speechQueue.count + 1, text: String(text.prefix(1_000)), languageTag: ttsLanguage.voiceTag ?? detected)
+        speechQueue.append(request)
+        if speechQueue.count > 5 { speechQueue.removeFirst(speechQueue.count - 5) }
+        speak(request)
+    }
+
+    private func speak(_ request: SpeechRequest) {
+        guard !request.text.isEmpty else { return }
         speaker.stopSpeaking(at: .immediate)
-        let utterance = AVSpeechUtterance(string: String(text.prefix(1_000)))
-        utterance.voice = AVSpeechSynthesisVoice(language: "de-DE")
+        let utterance = AVSpeechUtterance(string: request.text)
+        utterance.volume = Float(ttsVolume)
+        if let tag = request.languageTag { utterance.voice = AVSpeechSynthesisVoice(language: tag) }
         speaker.speak(utterance)
     }
 
@@ -160,7 +194,7 @@ import Foundation
         let normalized = String(author.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
         guard !normalized.isEmpty else { return }
         mutedAuthors.insert(normalized)
-        chatLines.removeAll { $0.hasPrefix("\(normalized):") }
+        chatLines.removeAll { $0.author == normalized }
         defaults.set(Array(mutedAuthors).sorted(), forKey: Self.mutedAuthorsKey)
     }
 }

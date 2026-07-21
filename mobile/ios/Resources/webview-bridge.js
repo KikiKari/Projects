@@ -30,7 +30,7 @@
   }
 
   function emit(type, payload = {}) {
-    nativePost({ version: 1, type, streamId, sequence: ++sequence, timestamp: new Date().toISOString(), payload });
+    nativePost({ version: 1, type, streamId, sequence: ++sequence, timestamp: new Date().toISOString(), payload: { ...payload, frameOrigin: location.origin, frameKind: isTop ? "top" : "sub" } });
   }
 
   function text(value, max = 2048) {
@@ -262,5 +262,5 @@
   if (!isTop) return; // Subframes liefern nur dekodierte WebSocket-Daten.
   root.TLC_MOBILE_BRIDGE = Object.freeze({ command, inspect });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { inspect(); handleForceReturn(); }, { once: true }); else { inspect(); handleForceReturn(); }
-  emit("bridge-ready", { version: "0.8.0", origin: location.origin });
+  emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true });
 })(globalThis);

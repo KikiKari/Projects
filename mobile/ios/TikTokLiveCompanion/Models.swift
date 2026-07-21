@@ -11,6 +11,26 @@ enum RecognitionSource: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
 }
 
+enum TTSLanguage: String, CaseIterable, Identifiable {
+    case automatic = "Auto", german = "Deutsch", english = "Englisch"
+    var id: String { rawValue }
+    var voiceTag: String? { self == .german ? "de-DE" : self == .english ? "en-US" : nil }
+}
+
+struct ChatLine: Equatable, Identifiable {
+    let id: Int
+    let author: String
+    let content: String
+    let language: String
+    var visibleText: String { author.isEmpty ? content : "\(author): \(content)" }
+}
+
+struct SpeechRequest: Equatable, Identifiable {
+    let id: Int
+    let text: String
+    let languageTag: String?
+}
+
 struct RecognitionResult: Equatable, Codable {
     let matched: Bool
     let title: String

@@ -57,7 +57,27 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(state.chatLines.count, 4)
         XCTAssertEqual(state.topChatters.map { $0.0 }, ["Anna", "Ben"])
         state.muteAuthor("Anna")
-        XCTAssertFalse(state.chatLines.contains { $0.hasPrefix("Anna:") })
+        XCTAssertFalse(state.chatLines.contains { $0.author == "Anna" })
+    }
+
+    func testChatCapAndPersistentTTSCoreSettings() throws {
+        let suite = #function
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        state.ttsEnabled = true
+        state.ttsLanguage = .english
+        state.ttsSpeakNames = false
+        state.ttsVolume = 0.4
+        for index in 0 ..< 60 { state.handle(try envelope("chat", #"{"nickname":"Anna","content":"hello \#(index)","language":"de"}"#)) }
+        XCTAssertEqual(state.chatLines.count, 50)
+        XCTAssertEqual(state.speechQueue.count, 5)
+        XCTAssertEqual(state.speechQueue.last?.languageTag, "en-US")
+        XCTAssertEqual(state.speechQueue.last?.text, "hello 59")
+        let restored = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertTrue(restored.ttsEnabled)
+        XCTAssertEqual(restored.ttsLanguage, .english)
+        XCTAssertEqual(restored.ttsVolume, 0.4, accuracy: 0.001)
     }
 
     func testInspectionFillsPageInfo() throws {

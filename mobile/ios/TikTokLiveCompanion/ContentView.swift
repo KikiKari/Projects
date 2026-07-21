@@ -71,7 +71,21 @@ struct ContentView: View {
 
     private var capabilityRows: some View { VStack(spacing: 0) { capability("WebSocket-Hook", state.hookAvailable); Divider(); capability("Untertitel", state.captionsAvailable); Divider(); capability("Verbindung", state.connected) }.padding(.horizontal).background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 12)) }
     private func capability(_ label: String, _ available: Bool) -> some View { HStack { Text(label); Spacer(); Circle().fill(available ? Color.green : Color.red).frame(width: 10, height: 10) }.frame(minHeight: 46) }
-    private var chatView: some View { VStack(alignment: .leading, spacing: 10) { Text("Chat").font(.headline); ForEach(Array(state.chatLines.suffix(50).enumerated()), id: \.offset) { _, line in HStack { Text(line); Spacer(); Button { state.speak(line) } label: { Image(systemName: "speaker.wave.2") }; if let author = line.split(separator: ":", maxSplits: 1).first { Button { state.muteAuthor(String(author)) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }; if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) } } }
+    private var chatView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Chat").font(.headline)
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Neue Nachrichten automatisch vorlesen", isOn: $state.ttsEnabled)
+                Text("Lautstärke \(Int(state.ttsVolume * 100)) %").font(.caption)
+                Slider(value: $state.ttsVolume, in: 0 ... 1)
+                Picker("Sprache", selection: $state.ttsLanguage) { ForEach(TTSLanguage.allCases) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented)
+                Toggle("Chatnamen vorlesen", isOn: $state.ttsSpeakNames)
+                Toggle("Lange Namen kürzen", isOn: $state.ttsShortenNames)
+            }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 12))
+            ForEach(state.chatLines.suffix(50)) { line in HStack { Text(line.visibleText); Spacer(); Button { state.speak(line) } label: { Image(systemName: "speaker.wave.2") }; if !line.author.isEmpty { Button { state.muteAuthor(line.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
+        }
+    }
     private var statusView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("LIVE-Informationen").font(.headline)
