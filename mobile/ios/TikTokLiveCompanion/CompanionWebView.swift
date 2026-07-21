@@ -12,7 +12,8 @@ struct CompanionWebView: UIViewRepresentable {
         let controller = WKUserContentController()
         for resource in ["content-core", "proto-main", "webview-bridge"] {
             if let path = Bundle.main.path(forResource: resource, ofType: "js"), let script = try? String(contentsOfFile: path) {
-                controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                // Auch Subframes injizieren: Der Webcast-WebSocket kann in einem Same-Origin-Iframe laufen (0PE-52).
+                controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false))
             }
         }
         controller.add(context.coordinator, name: "tlcBridge")
@@ -21,6 +22,8 @@ struct CompanionWebView: UIViewRepresentable {
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         let view = WKWebView(frame: .zero, configuration: configuration)
+        // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
+        view.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
         view.navigationDelegate = context.coordinator
         view.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = view
@@ -56,12 +59,11 @@ struct CompanionWebView: UIViewRepresentable {
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard message.frameInfo.isMainFrame,
-                  message.frameInfo.securityOrigin.protocol == "https",
+            guard message.frameInfo.securityOrigin.protocol == "https",
                   message.frameInfo.securityOrigin.host == "www.tiktok.com",
                   JSONSerialization.isValidJSONObject(message.body),
                   let data = try? JSONSerialization.data(withJSONObject: message.body),
-                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: true) else { return }
+                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: message.frameInfo.isMainFrame) else { return }
             Task { @MainActor in state.handle(envelope) }
         }
 
