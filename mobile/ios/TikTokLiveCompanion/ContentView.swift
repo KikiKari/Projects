@@ -87,8 +87,12 @@ struct ContentView: View {
                 Toggle("Chatnamen vorlesen", isOn: $state.ttsSpeakNames)
                 Toggle("Lange Namen kürzen", isOn: $state.ttsShortenNames)
             }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 12))
-            ForEach(state.chatLines.suffix(50)) { line in HStack { Text(line.visibleText); Spacer(); Button { state.speak(line) } label: { Image(systemName: "speaker.wave.2") }; if !line.author.isEmpty { Button { state.muteAuthor(line.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            Text("Letzte Chatnachrichten").font(.headline)
+            ForEach(state.chatLines.suffix(5)) { line in HStack { Text(line.visibleText); Spacer(); Button { state.speak(line) } label: { Image(systemName: "speaker.wave.2") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
+            Text("Top-Chatter").font(.headline)
+            if state.topChatters.isEmpty { Text("Noch keine Personen im Chat beobachtet.").font(.footnote).foregroundStyle(.secondary) }
+            ForEach(state.topChatters, id: \.author) { entry in HStack { Text(entry.author); Spacer(); Text("\(entry.messages) Nachrichten · \(entry.words) Wörter").monospacedDigit().bold() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
         }
     }
     private var statusView: some View {
@@ -97,9 +101,10 @@ struct ContentView: View {
             capabilityRows
             if state.liveValues.isEmpty { Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.").font(.footnote).foregroundStyle(.secondary) }
             ForEach(state.liveValues.keys.sorted(), id: \.self) { key in HStack { Text(key); Spacer(); Text(state.liveValues[key] ?? "–").monospacedDigit() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
-            Text("Top-Chatter").font(.headline)
-            if state.topChatters.isEmpty { Text("Noch keine Personen im Chat beobachtet.").font(.footnote).foregroundStyle(.secondary) }
-            ForEach(state.topChatters, id: \.author) { entry in HStack { Text(entry.author); Spacer(); Text("\(entry.messages) Nachrichten · \(entry.words) Wörter").monospacedDigit().bold() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            Text("Personen stummschalten").font(.headline)
+            let activeAuthors = Array(NSOrderedSet(array: state.chatLines.map(\.author).filter { !$0.isEmpty }).array.compactMap { $0 as? String }.suffix(20))
+            if activeAuthors.isEmpty { Text("Noch keine Personen aus dem LIVE-Chat verfügbar.").font(.footnote).foregroundStyle(.secondary) }
+            ForEach(activeAuthors, id: \.self) { author in HStack { Text(author); Spacer(); Button("Stumm") { state.muteAuthor(author) }.buttonStyle(.bordered) }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             Text("Seiteninformationen").font(.headline)
             if state.pageInfo.isEmpty { Text("Noch keine Seitenprüfung ausgeführt · \u{201E}Seite prüfen\u{201C} im Tab Mehr.").font(.footnote).foregroundStyle(.secondary) }
             ForEach(state.pageInfo.keys.sorted(), id: \.self) { key in VStack(alignment: .leading, spacing: 3) { Text(key).font(.caption).foregroundStyle(.secondary); Text(state.pageInfo[key] ?? "–").bold() }.frame(maxWidth: .infinity, alignment: .leading).padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
