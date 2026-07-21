@@ -49,6 +49,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             val engine = remember { createRecognitionEngine(applicationContext) }
             val model: CompanionViewModel = viewModel(factory = simpleViewModelFactory { CompanionViewModel(engine, CompanionPreferences(applicationContext)) })
+            DisposableEffect(model) {
+                model.backgroundPlaybackChanged = { enabled ->
+                    val intent = Intent(applicationContext, BackgroundPlaybackService::class.java).setAction(if (enabled) BackgroundPlaybackService.ACTION_START else BackgroundPlaybackService.ACTION_STOP)
+                    if (enabled) ContextCompat.startForegroundService(applicationContext, intent) else applicationContext.startService(intent)
+                }
+                BackgroundPlaybackService.commandSink = { command -> model.sendCommand?.invoke(command, emptyMap()) }
+                onDispose {
+                    model.backgroundPlaybackChanged = null
+                    BackgroundPlaybackService.commandSink = null
+                }
+            }
             MaterialTheme(colorScheme = lightColorScheme(primary = Accent, secondary = Accent)) { CompanionApp(model) }
         }
     }

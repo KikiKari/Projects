@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@style/Theme.TikTokLiveCompanion" android:label="TikTok LIVE Companion">
         <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true"/>
         <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="unspecified">
@@ -13,5 +16,10 @@
                 <data android:scheme="https" android:host="www.tiktok.com"/>
             </intent-filter>
         </activity>
+        <service
+            android:name=".BackgroundPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false"/>
     </application>
 </manifest>
