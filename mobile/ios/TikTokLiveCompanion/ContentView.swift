@@ -133,5 +133,22 @@ struct ContentView: View {
         }
     }
     private func commandButton(_ label: String, _ command: String, _ icon: String) -> some View { Button { state.sendCommand?(command, [:]) } label: { Label(label, systemImage: icon).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered) }
-    private var moreView: some View { VStack(alignment: .leading, spacing: 12) { Text("Mehr").font(.headline); Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.borderedProminent); Button("Untertitel aktivieren") { state.sendCommand?("captions", [:]) }.buttonStyle(.bordered); Button("Refresh") { state.sendCommand?("refresh", [:]) }.buttonStyle(.bordered); Button(state.forceInProgress ? "Force läuft …" : "Force") { state.startForce() }.buttonStyle(.bordered).disabled(state.forceInProgress); if state.forceRecoveryURL != nil { Button("Manuell zum LIVE-Stream zurück") { state.recoverForce() }.buttonStyle(.bordered) }; Button("Melden öffnen") { state.sendCommand?("open-report", [:]) }.buttonStyle(.bordered); Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.").font(.footnote).foregroundStyle(.secondary) } }
+    private var moreView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Mehr").font(.headline)
+            Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.borderedProminent)
+            Button("Untertitel aktivieren") { state.sendCommand?("captions", [:]) }.buttonStyle(.bordered)
+            Button("Refresh") { state.sendCommand?("refresh", [:]) }.buttonStyle(.bordered)
+            Button(state.forceInProgress ? "Force läuft …" : "Force") { state.startForce() }.buttonStyle(.bordered).disabled(state.forceInProgress)
+            if state.forceRecoveryURL != nil { Button("Manuell zum LIVE-Stream zurück") { state.recoverForce() }.buttonStyle(.bordered) }
+            Button("Melden öffnen") { state.sendCommand?("open-report", [:]) }.buttonStyle(.bordered)
+            Text("Debugmodus").font(.headline)
+            Toggle("Validierte Diagnoseereignisse protokollieren", isOn: $state.debugEnabled)
+            Text("\(state.debugEvents.count) Ereignisse · maximal 200").font(.footnote).foregroundStyle(.secondary)
+            ForEach(Array(state.debugEvents.suffix(20).enumerated()), id: \.offset) { _, event in Text(event).font(.caption).monospaced() }
+            HStack { Button("Debug kopieren") { UIPasteboard.general.string = state.debugEvents.joined(separator: "\n") }.buttonStyle(.bordered).disabled(state.debugEvents.isEmpty); Button("Leeren") { state.clearDebugEvents() }.buttonStyle(.bordered).disabled(state.debugEvents.isEmpty) }
+            Text("Es werden nur Ereignistyp und Zeit erfasst – keine Audio-Nutzdaten, Cookies oder URL-Parameter.").font(.footnote).foregroundStyle(.secondary)
+            Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
 }

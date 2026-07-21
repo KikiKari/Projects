@@ -16,4 +16,22 @@ final class MobileUIStructureTests: XCTestCase {
         XCTAssertFalse(song.contains("capabilityRows"))
         XCTAssertTrue(status.contains("capabilityRows"))
     }
+
+    func testChatSummaryMuteListAndBackgroundAudioSources() throws {
+        let testURL = URL(fileURLWithPath: #filePath)
+        let mobileRoot = testURL.deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/ContentView.swift"))
+        let chat = source.components(separatedBy: "private var chatView")[1].components(separatedBy: "private var statusView")[0]
+        let status = source.components(separatedBy: "private var statusView")[1].components(separatedBy: "private var playerView")[0]
+        XCTAssertTrue(chat.contains("suffix(5)"))
+        XCTAssertTrue(chat.contains("Top-Chatter"))
+        XCTAssertFalse(status.contains("Top-Chatter"))
+        XCTAssertTrue(status.contains("Personen stummschalten"))
+        let plist = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/Info.plist"))
+        XCTAssertTrue(plist.contains("UIBackgroundModes"))
+        XCTAssertTrue(plist.contains("<string>audio</string>"))
+        let controller = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/BackgroundAudioController.swift"))
+        XCTAssertTrue(controller.contains("setCategory(.playback"))
+        XCTAssertTrue(source.components(separatedBy: "private var moreView")[1].contains("Debugmodus"))
+    }
 }

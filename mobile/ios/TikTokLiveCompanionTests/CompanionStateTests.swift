@@ -103,6 +103,26 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(state.liveValues["Follows seit Hook"], "2")
     }
 
+    func testMediaURLsRequireHTTPSDeduplicateAndKeepTwelve() throws {
+        let state = makeState(#function)
+        state.handle(try envelope("media-url", #"{"url":"javascript:alert(1)","kind":"network"}"#))
+        for index in 0 ..< 14 { state.handle(try envelope("media-url", #"{"url":"https://cdn.example/live-#(index).m3u8","kind":"network"}"#)) }
+        state.handle(try envelope("media-url", #"{"url":"https://cdn.example/live-13.m3u8","kind":"player"}"#))
+        XCTAssertEqual(state.mediaURLs.count, 12)
+        XCTAssertFalse(state.mediaURLs.contains { $0.url.scheme != "https" })
+        XCTAssertEqual(state.mediaURLs.last?.kind, "player")
+    }
+
+    func testDebugLogIsOptInPayloadFreeAndBounded() throws {
+        let state = makeState(#function)
+        state.handle(try envelope("command-result", #"{"data":"secret"}"#))
+        XCTAssertTrue(state.debugEvents.isEmpty)
+        state.debugEnabled = true
+        for index in 0 ..< 205 { state.handle(try envelope("command-result", #"{"data":"secret-#(index)"}"#)) }
+        XCTAssertEqual(state.debugEvents.count, 200)
+        XCTAssertFalse(state.debugEvents.contains { $0.contains("secret") })
+    }
+
     func testParticipantsAreBoundedAndRankByMessagesWordsThenName() throws {
         let state = makeState(#function)
         for index in 0 ... 5_000 { state.handle(try envelope("chat", #"{"nickname":"user\#(index)","content":"one two"}"#)) }

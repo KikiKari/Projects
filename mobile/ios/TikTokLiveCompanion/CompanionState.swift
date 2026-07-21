@@ -44,6 +44,8 @@ import Foundation
     @Published var playerMuted: Bool?
     @Published var audibleStartBlocked = false
     @Published var mediaURLs: [StreamMediaURL] = []
+    @Published var debugEnabled = false
+    @Published var debugEvents: [String] = []
     @Published var streamName = ""
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
@@ -99,6 +101,7 @@ import Foundation
     }
 
     func toggleVideoExpanded() { videoExpanded.toggle() }
+    func clearDebugEvents() { debugEvents = [] }
 
     func startForce() {
         let inspected = pageInfo["URL"].flatMap(URL.init(string:)).flatMap(Self.validatedLiveURL)
@@ -165,6 +168,10 @@ import Foundation
 
     func handle(_ envelope: BridgeEnvelope) {
         connected = true
+        if debugEnabled {
+            debugEvents.append("\(String(envelope.timestamp.prefix(19))) · \(envelope.type)")
+            if debugEvents.count > 200 { debugEvents.removeFirst(debugEvents.count - 200) }
+        }
         switch envelope.type {
         case "bridge-ready": pushLimiter(); if audibleStartRequested { sendCommand?("start-audible", [:]) }
         case "capability":
