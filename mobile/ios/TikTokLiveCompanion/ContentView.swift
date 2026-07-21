@@ -98,7 +98,7 @@ struct ContentView: View {
             ForEach(state.liveValues.keys.sorted(), id: \.self) { key in HStack { Text(key); Spacer(); Text(state.liveValues[key] ?? "–").monospacedDigit() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             Text("Top-Chatter").font(.headline)
             if state.topChatters.isEmpty { Text("Noch keine Personen im Chat beobachtet.").font(.footnote).foregroundStyle(.secondary) }
-            ForEach(state.topChatters, id: \.0) { entry in HStack { Text(entry.0); Spacer(); Text("\(entry.1)").monospacedDigit().bold() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            ForEach(state.topChatters, id: \.author) { entry in HStack { Text(entry.author); Spacer(); Text("\(entry.messages) Nachrichten · \(entry.words) Wörter").monospacedDigit().bold() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             Text("Seiteninformationen").font(.headline)
             if state.pageInfo.isEmpty { Text("Noch keine Seitenprüfung ausgeführt · \u{201E}Seite prüfen\u{201C} im Tab Mehr.").font(.footnote).foregroundStyle(.secondary) }
             ForEach(state.pageInfo.keys.sorted(), id: \.self) { key in VStack(alignment: .leading, spacing: 3) { Text(key).font(.caption).foregroundStyle(.secondary); Text(state.pageInfo[key] ?? "–").bold() }.frame(maxWidth: .infinity, alignment: .leading).padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }

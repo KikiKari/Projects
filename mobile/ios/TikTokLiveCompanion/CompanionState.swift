@@ -20,6 +20,8 @@ import Foundation
     @Published var ttsShortenNames = true { didSet { defaults.set(ttsShortenNames, forKey: Self.ttsShortenNamesKey) } }
     @Published var liveValues: [String: String] = [:]
     @Published var chatterCounts: [String: Int] = [:]
+    @Published var chatterWords: [String: Int] = [:]
+    @Published var liveNumbers: [String: Int] = [:]
     @Published var pageInfo: [String: String] = [:]
     @Published var limiterEnabled: Bool {
         didSet { defaults.set(limiterEnabled, forKey: Self.limiterEnabledKey); pushLimiter() }
@@ -63,8 +65,10 @@ import Foundation
         "shareCount": "Teilungen"
     ]
 
-    var topChatters: [(String, Int)] {
-        chatterCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(5).map { ($0.key, $0.value) }
+    var topChatters: [(author: String, messages: Int, words: Int)] {
+        chatterCounts.map { (author: $0.key, messages: $0.value, words: chatterWords[$0.key, default: 0]) }
+            .sorted { $0.messages != $1.messages ? $0.messages > $1.messages : $0.words != $1.words ? $0.words > $1.words : $0.author.localizedCaseInsensitiveCompare($1.author) == .orderedAscending }
+            .prefix(5).map { $0 }
     }
 
     init(recognizer: RecognitionService = ShazamRecognitionService(), defaults: UserDefaults = .standard) {
@@ -127,7 +131,7 @@ import Foundation
             return
         }
         connected = false; hookAvailable = false; captionsAvailable = false
-        chatLines = []; liveValues = [:]; chatterCounts = [:]; pageInfo = [:]
+        chatLines = []; liveValues = [:]; liveNumbers = [:]; chatterCounts = [:]; chatterWords = [:]; pageInfo = [:]
         loadURL?(url)
     }
 
@@ -165,6 +169,16 @@ import Foundation
             var info: [String: String] = [:]
             if let title = envelope.payload["title"]?.stringValue, !title.isEmpty { info["Titel"] = title }
             if let url = envelope.payload["url"]?.stringValue, !url.isEmpty { info["URL"] = url }
+            if let value = envelope.payload["canonicalUrl"]?.stringValue, !value.isEmpty { info["Kanonische URL"] = value }
+            if let value = envelope.payload["description"]?.stringValue, !value.isEmpty { info["Beschreibung"] = value }
+            if let value = envelope.payload["creatorName"]?.stringValue, !value.isEmpty { info["Creator"] = value }
+            if let value = envelope.payload["creatorHandle"]?.stringValue, !value.isEmpty { info["Handle"] = value }
+            if let value = envelope.payload["followerText"]?.stringValue, !value.isEmpty { info["Follower"] = value }
+            if let value = envelope.payload["followingText"]?.stringValue, !value.isEmpty { info["Gefolgt"] = value }
+            if let value = envelope.payload["profileLikesText"]?.stringValue, !value.isEmpty { info["Profil-Likes"] = value }
+            if let value = envelope.payload["signature"]?.stringValue, !value.isEmpty { info["Bio"] = value }
+            if let value = envelope.payload["language"]?.stringValue, !value.isEmpty { info["Seitensprache"] = value }
+            info["Verifiziert"] = envelope.payload["verified"]?.boolValue == true ? "ja" : "nein"
             info["Video vorhanden"] = envelope.payload["videoPresent"]?.boolValue == true ? "ja" : "nein"
             info["Untertitel-Steuerung"] = captionsAvailable ? "ja" : "nein"
             pageInfo = info
@@ -177,15 +191,22 @@ import Foundation
             let line = ChatLine(id: speechSequence, author: String(author.prefix(128)), content: String(content.prefix(1_000)), language: String(language.prefix(24)))
             chatLines.append(line)
             if chatLines.count > 50 { chatLines.removeFirst(chatLines.count - 50) }
-            if !author.isEmpty { chatterCounts[author, default: 0] += 1 }
+            if !author.isEmpty, chatterCounts[author] != nil || chatterCounts.count < 5_000 {
+                chatterCounts[author, default: 0] += 1
+                chatterWords[author, default: 0] += content.split(whereSeparator: { $0.isWhitespace }).count
+            }
             if ttsEnabled { enqueueSpeech(line) }
         case "live-stats":
             for (key, label) in Self.liveStatLabels {
-                if let text = envelope.payload[key]?.stringValue, !text.isEmpty { liveValues[label] = text }
-                else if let number = envelope.payload[key]?.numberValue { liveValues[label] = String(Int(number)) }
+                let number = envelope.payload[key]?.numberValue.map { Int($0) } ?? envelope.payload[key]?.stringValue.flatMap { Int($0) }
+                if let number {
+                    let effective = key == "viewerCount" ? number : max(number, liveNumbers[key, default: 0])
+                    liveNumbers[key] = effective
+                    liveValues[label] = String(effective)
+                }
             }
             if envelope.payload["kind"]?.stringValue == "follow" {
-                liveValues["Follows seit Start"] = String((Int(liveValues["Follows seit Start"] ?? "0") ?? 0) + 1)
+                liveValues["Follows seit Hook"] = String((Int(liveValues["Follows seit Hook"] ?? "0") ?? 0) + 1)
             }
         case "force-return":
             if envelope.payload["ok"]?.boolValue == true { forceWatchdog?.cancel(); forceInProgress = false; forceRecoveryURL = nil }
@@ -230,6 +251,8 @@ import Foundation
         guard !normalized.isEmpty else { return }
         mutedAuthors.insert(normalized)
         chatLines.removeAll { $0.author == normalized }
+        chatterCounts.removeValue(forKey: normalized)
+        chatterWords.removeValue(forKey: normalized)
         defaults.set(Array(mutedAuthors).sorted(), forKey: Self.mutedAuthorsKey)
     }
 }

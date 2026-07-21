@@ -82,11 +82,15 @@ private final class FakeRecognizer: RecognitionService {
 
     func testInspectionFillsPageInfo() throws {
         let state = makeState(#function)
-        state.handle(try envelope("inspection", #"{"title":"Stream","url":"https://www.tiktok.com/@x/live","videoPresent":true,"captionsControlPresent":false}"#))
+        state.handle(try envelope("inspection", #"{"title":"Stream","url":"https://www.tiktok.com/@x/live","creatorHandle":"@x","signature":"Bio","followerText":"12K","verified":true,"videoPresent":true,"captionsControlPresent":false}"#))
         XCTAssertEqual(state.pageInfo["Titel"], "Stream")
         XCTAssertEqual(state.pageInfo["URL"], "https://www.tiktok.com/@x/live")
         XCTAssertEqual(state.pageInfo["Video vorhanden"], "ja")
         XCTAssertEqual(state.pageInfo["Untertitel-Steuerung"], "nein")
+        XCTAssertEqual(state.pageInfo["Handle"], "@x")
+        XCTAssertEqual(state.pageInfo["Bio"], "Bio")
+        XCTAssertEqual(state.pageInfo["Follower"], "12K")
+        XCTAssertEqual(state.pageInfo["Verifiziert"], "ja")
     }
 
     func testLiveStatsMapToGermanLabelsAndCountFollows() throws {
@@ -96,7 +100,25 @@ private final class FakeRecognizer: RecognitionService {
         state.handle(try envelope("live-stats", #"{"kind":"follow"}"#))
         XCTAssertEqual(state.liveValues["Zuschauer*innen"], "42")
         XCTAssertEqual(state.liveValues["Likes"], "7")
-        XCTAssertEqual(state.liveValues["Follows seit Start"], "2")
+        XCTAssertEqual(state.liveValues["Follows seit Hook"], "2")
+    }
+
+    func testParticipantsAreBoundedAndRankByMessagesWordsThenName() throws {
+        let state = makeState(#function)
+        for index in 0 ... 5_000 { state.handle(try envelope("chat", #"{"nickname":"user\#(index)","content":"one two"}"#)) }
+        state.handle(try envelope("chat", #"{"nickname":"user2","content":"one two three"}"#))
+        state.handle(try envelope("chat", #"{"nickname":"user1","content":"one"}"#))
+        XCTAssertEqual(state.chatterCounts.count, 5_000)
+        XCTAssertEqual(state.topChatters.first?.author, "user2")
+        XCTAssertEqual(state.topChatters.first?.words, 5)
+    }
+
+    func testCumulativeLiveValuesNeverDecrease() throws {
+        let state = makeState(#function)
+        state.handle(try envelope("live-stats", #"{"likeCount":100,"viewerCount":42}"#))
+        state.handle(try envelope("live-stats", #"{"likeCount":80,"viewerCount":30}"#))
+        XCTAssertEqual(state.liveValues["Likes"], "100")
+        XCTAssertEqual(state.liveValues["Zuschauer*innen"], "30")
     }
 
     func testLimiterSettingsAreClampedPersistedAndSentToBridge() throws {
