@@ -40,6 +40,9 @@ import android.os.Bundle
 
 private val Accent = Color(0xFFFF1C50)
 
+internal fun mobileVideoHeightDp(screenHeightDp: Int, landscape: Boolean): Int =
+    if (!landscape) screenHeightDp / 2 else (screenHeightDp - 160 - 96).coerceIn(0, 220)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,15 +73,17 @@ class MainActivity : ComponentActivity() {
     BackHandler(enabled = state.videoExpanded) { model.toggleVideoExpanded() }
     val configuration = LocalConfiguration.current
     val landscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val compactLandscape = landscape && configuration.screenHeightDp < 352
     // Querformat: Video kleiner halten, damit Inhalt unter dem Menüband sichtbar und scrollbar bleibt (0PE-56).
-    val videoHeight = if (landscape) minOf(configuration.screenHeightDp * 0.35f, 220f).dp else (configuration.screenHeightDp * 0.5f).dp
+    val videoHeight = mobileVideoHeightDp(configuration.screenHeightDp, landscape).dp
     Scaffold(topBar = { if (!state.videoExpanded) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.GraphicEq, null, tint = Color.White, modifier = Modifier.background(Accent, RoundedCornerShape(8.dp)).padding(7.dp)); Spacer(Modifier.width(10.dp)); Text("TikTok LIVE Companion", fontWeight = FontWeight.Bold) } }, actions = { Icon(Icons.Default.Circle, null, tint = Accent, modifier = Modifier.size(9.dp)); Text(" LIVE", fontSize = 12.sp); Spacer(Modifier.width(14.dp)) }) }) { insets ->
-        Column(Modifier.padding(insets).fillMaxSize()) {
+        Column(Modifier.padding(insets).fillMaxSize().then(if (compactLandscape && !state.videoExpanded) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
             if (!state.videoExpanded) StreamNameField(state, model)
             CompanionWebView(model, if (state.videoExpanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(videoHeight), onTap = model::toggleVideoExpanded)
             if (!state.videoExpanded) {
                 PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { CompanionTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { model.selectTab(tab) }, text = { Text(tab.label) }) } }
-                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                val tabModifier = if (compactLandscape) Modifier.fillMaxWidth().heightIn(min = 96.dp).padding(16.dp) else Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)
+                Box(tabModifier) {
                     when (state.tab) {
                         CompanionTab.SONG -> SongTab(state, model) {
                             if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()

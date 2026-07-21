@@ -6,6 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MobileUiStructureTest {
+    @Test fun landscapeVideoReservesScrollableContentHeight() {
+        assertTrue(mobileVideoHeightDp(360, true) <= 104)
+        assertTrue(360 - 160 - mobileVideoHeightDp(360, true) >= 96)
+        assertTrue(mobileVideoHeightDp(800, false) == 400)
+    }
     @Test fun capabilityRowsAreRenderedOnlyByLiveTab() {
         val sourceFile = listOf(File("src/main/java/app/tiktoklivecompanion/MainActivity.kt"), File("app/src/main/java/app/tiktoklivecompanion/MainActivity.kt")).first { it.isFile }
         val source = sourceFile.readText()
