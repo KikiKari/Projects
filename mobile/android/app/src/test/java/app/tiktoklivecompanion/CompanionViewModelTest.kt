@@ -15,10 +15,72 @@ private class FakeEngine : RecognitionEngine {
 }
 
 class CompanionViewModelTest {
+    private fun envelope(type: String, payload: Map<String, Any?>) = BridgeEnvelope(1, type, "", 1, "2026-07-21T12:00:00Z", payload)
+
     @Test fun recognitionStartsOnlyAfterExplicitAction() {
         val engine = FakeEngine(); val model = CompanionViewModel(engine)
         assertEquals(0, engine.microphoneStarts)
         model.recognize(); assertEquals(1, engine.microphoneStarts)
         model.selectSource(RecognitionSource.WEBVIEW); model.recognize(); assertEquals(1, engine.streamStarts)
+    }
+
+    @Test fun chatEventsFillChatAndTopChatters() {
+        val model = CompanionViewModel(FakeEngine())
+        repeat(3) { model.handle(envelope("chat", mapOf("nickname" to "Anna", "content" to "hi $it"))) }
+        model.handle(envelope("chat", mapOf("nickname" to "Ben", "content" to "hallo")))
+        assertEquals(4, model.state.value.chats.size)
+        assertEquals(listOf("Anna" to 3, "Ben" to 1), model.state.value.topChatters)
+        model.muteAuthor("Anna")
+        assertEquals(listOf("Ben" to 1), model.state.value.topChatters)
+    }
+
+    @Test fun inspectionFillsPageInfo() {
+        val model = CompanionViewModel(FakeEngine())
+        model.handle(envelope("inspection", mapOf("title" to "Stream", "url" to "https://www.tiktok.com/@x/live", "videoPresent" to true, "captionsControlPresent" to false)))
+        val info = model.state.value.pageInfo
+        assertEquals("Stream", info["Titel"])
+        assertEquals("https://www.tiktok.com/@x/live", info["URL"])
+        assertEquals("ja", info["Video vorhanden"])
+        assertEquals("nein", info["Untertitel-Steuerung"])
+    }
+
+    @Test fun liveStatsMapToGermanLabelsAndCountFollows() {
+        val model = CompanionViewModel(FakeEngine())
+        model.handle(envelope("live-stats", mapOf("viewerCount" to 42, "likeCount" to 7)))
+        model.handle(envelope("live-stats", mapOf("kind" to "follow")))
+        model.handle(envelope("live-stats", mapOf("kind" to "follow")))
+        val values = model.state.value.liveValues
+        assertEquals("42", values["Zuschauer*innen"])
+        assertEquals("7", values["Likes"])
+        assertEquals("2", values["Follows seit Start"])
+    }
+
+    @Test fun limiterSettingsAreClampedAndSentToBridge() {
+        val model = CompanionViewModel(FakeEngine())
+        val sent = mutableListOf<Pair<String, Map<String, Any>>>()
+        model.sendCommand = { command, payload -> sent += command to payload }
+        model.setLimiterEnabled(true)
+        model.setLimiterThreshold(-99)
+        assertEquals(-30, model.state.value.limiterThreshold)
+        model.setLimiterThreshold(5)
+        assertEquals(-1, model.state.value.limiterThreshold)
+        assertEquals(3, sent.count { it.first == "set-limiter" })
+        model.handle(envelope("bridge-ready", emptyMap()))
+        assertEquals(4, sent.count { it.first == "set-limiter" })
+        assertEquals(true, sent.last().second["enabled"])
+    }
+
+    @Test fun failedForceReturnSurfacesError() {
+        val model = CompanionViewModel(FakeEngine())
+        model.handle(envelope("force-return", mapOf("ok" to false, "reason" to "max-attempts")))
+        assertEquals(true, model.state.value.error?.contains("Force"))
+        model.handle(envelope("force-return", mapOf("ok" to true)))
+    }
+
+    @Test fun hookAvailabilityStaysOnceAnyFrameReportsIt() {
+        val model = CompanionViewModel(FakeEngine())
+        model.handle(envelope("capability", mapOf("feature" to "websocket-hook", "available" to true)))
+        model.handle(envelope("capability", mapOf("feature" to "websocket-hook", "available" to false)))
+        assertEquals(true, model.state.value.hookAvailable)
     }
 }

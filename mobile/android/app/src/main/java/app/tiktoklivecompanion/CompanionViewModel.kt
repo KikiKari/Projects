@@ -19,11 +19,18 @@ data class CompanionUiState(
     val captionsAvailable: Boolean = false,
     val chats: List<String> = emptyList(),
     val liveValues: Map<String, String> = emptyMap(),
+    val chatterCounts: Map<String, Int> = emptyMap(),
+    val pageInfo: Map<String, String> = emptyMap(),
     val mutedAuthors: Set<String> = emptySet(),
+    val limiterEnabled: Boolean = false,
+    val limiterThreshold: Int = -6,
     val error: String? = null,
     val videoExpanded: Boolean = false,
     val streamName: String = ""
-)
+) {
+    val topChatters: List<Pair<String, Int>>
+        get() = chatterCounts.entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key }).take(5).map { it.key to it.value }
+}
 
 class CompanionViewModel(private val recognizer: RecognitionEngine, private val preferences: CompanionPreferences? = null) : ViewModel() {
     private val mutable = MutableStateFlow(CompanionUiState())
@@ -31,12 +38,24 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
     var loadUrl: ((String) -> Unit)? = null
 
+    private companion object {
+        val liveStatLabels = mapOf(
+            "viewerCount" to "Zuschauer*innen",
+            "totalViewers" to "Aufrufe gesamt",
+            "likeCount" to "Likes",
+            "followerCount" to "Follower gesamt",
+            "shareCount" to "Teilungen"
+        )
+    }
+
     init {
         recognizer.onResult = { result -> mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") } }
         recognizer.onError = { message -> mutable.update { it.copy(error = message, recognitionStatus = message) } }
         preferences?.let { stored ->
             viewModelScope.launch { stored.source.collectLatest { source -> mutable.update { it.copy(source = source) } } }
             viewModelScope.launch { stored.mutedAuthors.collectLatest { authors -> mutable.update { it.copy(mutedAuthors = authors) } } }
+            viewModelScope.launch { stored.limiterEnabled.collectLatest { enabled -> mutable.update { it.copy(limiterEnabled = enabled) } } }
+            viewModelScope.launch { stored.limiterThreshold.collectLatest { threshold -> mutable.update { it.copy(limiterThreshold = threshold) } } }
         }
     }
 
@@ -51,7 +70,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
-        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), liveValues = emptyMap()) }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), liveValues = emptyMap(), chatterCounts = emptyMap(), pageInfo = emptyMap()) }
         loadUrl?.invoke(url)
     }
     fun reportError(message: String) = mutable.update { it.copy(error = message, recognitionStatus = message) }
@@ -59,8 +78,23 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val normalized = author.trim().take(80)
         if (normalized.isEmpty()) return
         val updated = mutable.value.mutedAuthors + normalized
-        mutable.update { it.copy(mutedAuthors = updated, chats = it.chats.filterNot { line -> line.startsWith("$normalized:") }) }
+        mutable.update { it.copy(mutedAuthors = updated, chats = it.chats.filterNot { line -> line.startsWith("$normalized:") }, chatterCounts = it.chatterCounts - normalized) }
         preferences?.let { stored -> viewModelScope.launch { stored.setMutedAuthors(updated) } }
+    }
+    fun setLimiterEnabled(enabled: Boolean) {
+        mutable.update { it.copy(limiterEnabled = enabled) }
+        preferences?.let { stored -> viewModelScope.launch { stored.setLimiterEnabled(enabled) } }
+        pushLimiter()
+    }
+    fun setLimiterThreshold(threshold: Int) {
+        val clamped = threshold.coerceIn(-30, -1)
+        mutable.update { it.copy(limiterThreshold = clamped) }
+        preferences?.let { stored -> viewModelScope.launch { stored.setLimiterThreshold(clamped) } }
+        pushLimiter()
+    }
+    private fun pushLimiter() {
+        val current = mutable.value
+        sendCommand?.invoke("set-limiter", mapOf("enabled" to current.limiterEnabled, "threshold" to current.limiterThreshold))
     }
     fun recognize() {
         mutable.update { it.copy(result = null, error = null, recognitionStatus = "Erkennung läuft · maximal 12 Sekunden") }
@@ -71,29 +105,55 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun handle(envelope: BridgeEnvelope) {
         mutable.update { it.copy(connected = true) }
         when (envelope.type) {
+            "bridge-ready" -> pushLimiter()
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false
-                if (feature == "websocket-hook") mutable.update { it.copy(hookAvailable = available) }
+                if (feature == "websocket-hook") mutable.update { it.copy(hookAvailable = available || it.hookAvailable) }
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
                 }
             }
-            "inspection" -> mutable.update { it.copy(captionsAvailable = envelope.payload["captionsControlPresent"] as? Boolean ?: false) }
+            "inspection" -> {
+                val info = buildMap {
+                    (envelope.payload["title"] as? String)?.takeIf { it.isNotBlank() }?.let { put("Titel", it) }
+                    (envelope.payload["url"] as? String)?.takeIf { it.isNotBlank() }?.let { put("URL", it) }
+                    put("Video vorhanden", if (envelope.payload["videoPresent"] as? Boolean == true) "ja" else "nein")
+                    put("Untertitel-Steuerung", if (envelope.payload["captionsControlPresent"] as? Boolean == true) "ja" else "nein")
+                }
+                mutable.update { it.copy(captionsAvailable = envelope.payload["captionsControlPresent"] as? Boolean ?: false, pageInfo = info) }
+            }
             "chat" -> {
                 val author = envelope.payload["nickname"] as? String ?: ""
                 val content = envelope.payload["content"] as? String ?: ""
                 if (author in mutable.value.mutedAuthors) return
                 val line = if (author.isBlank()) content else "$author: $content"
-                mutable.update { it.copy(chats = (it.chats + line).takeLast(50)) }
+                mutable.update { current ->
+                    val counts = if (author.isBlank()) current.chatterCounts else current.chatterCounts + (author to (current.chatterCounts[author] ?: 0) + 1)
+                    current.copy(chats = (current.chats + line).takeLast(50), chatterCounts = counts)
+                }
             }
-            "live-stats" -> mutable.update { current -> current.copy(liveValues = current.liveValues + envelope.payload.mapValues { it.value?.toString() ?: "" }) }
+            "live-stats" -> mutable.update { current ->
+                val mapped = buildMap {
+                    for ((key, label) in liveStatLabels) {
+                        val value = envelope.payload[key] ?: continue
+                        val textValue = value.toString().takeIf { it.isNotBlank() } ?: continue
+                        put(label, textValue)
+                    }
+                    if ((envelope.payload["kind"] as? String) == "follow") put("Follows seit Start", ((current.liveValues["Follows seit Start"]?.toIntOrNull() ?: 0) + 1).toString())
+                }
+                current.copy(liveValues = current.liveValues + mapped)
+            }
             "audio-chunk" -> {
                 val encoded = envelope.payload["data"] as? String ?: return
                 val sampleRate = (envelope.payload["sampleRate"] as? Number)?.toInt() ?: 48_000
                 runCatching { Base64.decode(encoded, Base64.DEFAULT) }.getOrNull()?.let { recognizer.appendPcm16(it, sampleRate) }
             }
             "audio-complete" -> recognizer.finishPcmStream()
+            "force-return" -> {
+                val ok = envelope.payload["ok"] as? Boolean
+                if (ok == false) mutable.update { it.copy(error = "Force: automatische Rückkehr zum LIVE-Stream fehlgeschlagen · bitte manuell zurück") }
+            }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
     }

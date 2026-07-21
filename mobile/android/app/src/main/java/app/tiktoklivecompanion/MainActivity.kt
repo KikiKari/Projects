@@ -58,7 +58,10 @@ class MainActivity : ComponentActivity() {
     DisposableEffect(tts) { onDispose { tts.shutdown() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed -> if (allowed) model.recognize() else model.reportError("Mikrofonzugriff wurde abgelehnt") }
     BackHandler(enabled = state.videoExpanded) { model.toggleVideoExpanded() }
-    val videoHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    val configuration = LocalConfiguration.current
+    val landscape = configuration.screenWidthDp > configuration.screenHeightDp
+    // Querformat: Video kleiner halten, damit Inhalt unter dem Menüband sichtbar und scrollbar bleibt (0PE-56).
+    val videoHeight = if (landscape) minOf(configuration.screenHeightDp * 0.35f, 220f).dp else (configuration.screenHeightDp * 0.5f).dp
     Scaffold(topBar = { if (!state.videoExpanded) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.GraphicEq, null, tint = Color.White, modifier = Modifier.background(Accent, RoundedCornerShape(8.dp)).padding(7.dp)); Spacer(Modifier.width(10.dp)); Text("TikTok LIVE Companion", fontWeight = FontWeight.Bold) } }, actions = { Icon(Icons.Default.Circle, null, tint = Accent, modifier = Modifier.size(9.dp)); Text(" LIVE", fontSize = 12.sp); Spacer(Modifier.width(14.dp)) }) }) { insets ->
         Column(Modifier.padding(insets).fillMaxSize()) {
             if (!state.videoExpanded) StreamNameField(state, model)
@@ -72,7 +75,7 @@ class MainActivity : ComponentActivity() {
                         }
                         CompanionTab.CHAT -> ChatTab(state, model::muteAuthor) { line -> tts.language = Locale.GERMAN; tts.speak(line.take(1_000), TextToSpeech.QUEUE_FLUSH, null, "tlc-chat") }
                         CompanionTab.LIVE -> LiveTab(state)
-                        CompanionTab.PLAYER -> PlayerTab(model)
+                        CompanionTab.PLAYER -> PlayerTab(state, model)
                         CompanionTab.MORE -> MoreTab(model)
                     }
                 }
@@ -104,15 +107,42 @@ class MainActivity : ComponentActivity() {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { RecognitionSource.entries.forEachIndexed { index, source -> SegmentedButton(selected = state.source == source, onClick = { model.selectSource(source) }, shape = SegmentedButtonDefaults.itemShape(index, RecognitionSource.entries.size)) { Text(source.label, maxLines = 1) } } }
         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Circle, null, tint = Color(0xFF009B5A), modifier = Modifier.size(10.dp)); Spacer(Modifier.width(8.dp)); Text(state.recognitionStatus, style = MaterialTheme.typography.bodySmall) }
         state.result?.takeIf { it.matched }?.let { result -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(result.title, fontWeight = FontWeight.Bold); Text(result.artist, color = Color.Gray); result.songUrl?.let { url -> TextButton(onClick = { BridgeValidator.safeHttpsUrl(url)?.let { safe -> context.startActivity(Intent(Intent.ACTION_VIEW, safe)) } }) { Text("Song öffnen") } } } } }
-        CapabilityRows(state)
     }
 }
 
 @Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("WebSocket-Hook", state.hookAvailable); HorizontalDivider(); Capability("Untertitel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
 @Composable private fun Capability(label: String, available: Boolean) { Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label); Spacer(Modifier.weight(1f)); Icon(Icons.Default.Circle, null, tint = if (available) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp)) } }
 @Composable private fun ChatTab(state: CompanionUiState, mute: (String) -> Unit, speak: (String) -> Unit) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); if (state.chats.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray); state.chats.forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line, Modifier.weight(1f)); IconButton(onClick = { speak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") }; line.substringBefore(':', "").takeIf { it.isNotBlank() }?.let { author -> IconButton(onClick = { mute(author) }) { Icon(Icons.Default.VolumeOff, "Autor dauerhaft stummschalten") } } } } } } }
-@Composable private fun LiveTab(state: CompanionUiState) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("LIVE-Informationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); CapabilityRows(state); state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } } } }
-@Composable private fun PlayerTab(model: CompanionViewModel) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); listOf("play" to "Play", "pause" to "Pause", "mute" to "Stumm", "fullscreen" to "Vollbild", "picture-in-picture" to "PiP", "reload-player" to "Neu laden").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f)) { Text(label) } } } } } }
+@Composable private fun LiveTab(state: CompanionUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("LIVE-Informationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        CapabilityRows(state)
+        if (state.liveValues.isEmpty()) Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
+        Text("Top-Chatter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (state.topChatters.isEmpty()) Text("Noch keine Personen im Chat beobachtet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.topChatters.forEach { (author, count) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(author); Spacer(Modifier.weight(1f)); Text("$count", fontWeight = FontWeight.Bold) } } }
+        Text("Seiteninformationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (state.pageInfo.isEmpty()) Text("Noch keine Seitenprüfung ausgeführt · „Seite prüfen“ im Tab Mehr.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.pageInfo.forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) { Text(key, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(value, fontWeight = FontWeight.Bold) } } }
+    }
+}
+@Composable private fun PlayerTab(state: CompanionUiState, model: CompanionViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        listOf("play" to "Play", "pause" to "Pause", "mute" to "Stumm").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f)) { Text(label) } } } }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Vollbild nativ: Bridge-„fullscreen" greift im mobilen WebView nicht (0PE-54); PiP ist Nicht-Ziel.
+            OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { Text("Vollbild") }
+            OutlinedButton(onClick = { model.sendCommand?.invoke("reload-player", emptyMap()) }, modifier = Modifier.weight(1f)) { Text("Neu laden") }
+        }
+        Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Digitalen Pegelschutz aktivieren", Modifier.weight(1f)); Switch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Grenzwert"); Spacer(Modifier.weight(1f)); Text("${state.limiterThreshold} dBFS", fontWeight = FontWeight.Bold) }
+        Slider(value = state.limiterThreshold.toFloat(), onValueChange = { model.setLimiterThreshold(it.toInt()) }, valueRange = -30f..-1f, steps = 28, enabled = state.limiterEnabled)
+        Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+    }
+}
 @Composable private fun MoreTab(model: CompanionViewModel) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Mehr", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); listOf("inspect" to "Seite prüfen", "captions" to "Untertitel aktivieren", "refresh" to "Refresh", "force-profile" to "Force", "open-report" to "Melden öffnen").forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { Text(label) } }; Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray) } }
 
 inline fun <reified T : androidx.lifecycle.ViewModel> simpleViewModelFactory(crossinline create: () -> T) = object : androidx.lifecycle.ViewModelProvider.Factory { override fun <R : androidx.lifecycle.ViewModel> create(modelClass: Class<R>): R = create() as R }
