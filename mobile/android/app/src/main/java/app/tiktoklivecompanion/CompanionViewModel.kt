@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 data class CompanionUiState(
     val tab: CompanionTab = CompanionTab.SONG,
@@ -33,6 +35,8 @@ data class CompanionUiState(
     val speechQueue: List<SpeechRequest> = emptyList(),
     val error: String? = null,
     val videoExpanded: Boolean = false,
+    val forceInProgress: Boolean = false,
+    val forceRecoveryUrl: String? = null,
     val streamName: String = ""
 ) {
     val topChatters: List<Pair<String, Int>>
@@ -45,6 +49,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
     var loadUrl: ((String) -> Unit)? = null
     private var speechSequence = 0L
+    private var forceWatchdog: Job? = null
 
     private companion object {
         val liveStatLabels = mapOf(
@@ -80,6 +85,24 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun clearError() = mutable.update { it.copy(error = null) }
     fun toggleVideoExpanded() = mutable.update { it.copy(videoExpanded = !it.videoExpanded) }
     fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
+    fun startForce() {
+        val recovery = mutable.value.pageInfo["URL"]?.takeIf { it.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?")) }
+            ?: StreamNameNormalizer.liveUrl(mutable.value.streamName)
+        if (recovery == null) { reportError("Force ist erst in einem gültigen LIVE-Stream verfügbar"); return }
+        forceWatchdog?.cancel()
+        mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = recovery, error = null) }
+        sendCommand?.invoke("force-profile", mapOf("liveUrl" to recovery))
+        forceWatchdog = viewModelScope.launch {
+            delay(20_000)
+            if (mutable.value.forceInProgress) recoverForce("Timeout nach 20 Sekunden")
+        }
+    }
+    fun recoverForce(reason: String = "manuelle Rückkehr") {
+        val recovery = mutable.value.forceRecoveryUrl
+        forceWatchdog?.cancel()
+        mutable.update { it.copy(forceInProgress = false, error = if (recovery == null) "Force: $reason · bitte manuell zurück" else "Force: $reason · LIVE-Stream wurde wieder geöffnet") }
+        recovery?.let { loadUrl?.invoke(it) }
+    }
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
@@ -184,11 +207,13 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "audio-complete" -> recognizer.finishPcmStream()
             "force-return" -> {
                 val ok = envelope.payload["ok"] as? Boolean
-                if (ok == false) mutable.update { it.copy(error = "Force: automatische Rückkehr zum LIVE-Stream fehlgeschlagen · bitte manuell zurück") }
+                if (ok == true) { forceWatchdog?.cancel(); mutable.update { it.copy(forceInProgress = false, forceRecoveryUrl = null) } }
+                if (ok == false) recoverForce("Bridge-Rückkehr fehlgeschlagen")
             }
+            "force-start" -> mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = (envelope.payload["url"] as? String) ?: it.forceRecoveryUrl) }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
     }
 
-    override fun onCleared() { recognizer.cancel(); super.onCleared() }
+    override fun onCleared() { forceWatchdog?.cancel(); recognizer.cancel(); super.onCleared() }
 }

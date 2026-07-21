@@ -5,6 +5,7 @@ import android.content.Intent
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.webkit.WebChromeClient
+import android.os.Message
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -74,7 +75,22 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                     return true
                 }
             }
-            webChromeClient = object : WebChromeClient() {}
+            webChromeClient = object : WebChromeClient() {
+                override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+                    val popup = WebView(context)
+                    popup.webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(child: WebView, request: WebResourceRequest): Boolean {
+                            val target = request.url
+                            if (target.scheme == "https" && target.host == "www.tiktok.com") view.loadUrl(target.toString())
+                            child.destroy()
+                            return true
+                        }
+                    }
+                    (resultMsg.obj as? WebView.WebViewTransport)?.webView = popup
+                    resultMsg.sendToTarget()
+                    return true
+                }
+            }
             viewModel.sendCommand = { command, payload -> post { evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null) } }
             viewModel.loadUrl = { url -> post { loadUrl(url) } }
             loadUrl("https://www.tiktok.com/live")

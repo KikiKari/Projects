@@ -17,7 +17,7 @@ class BridgeValidatorTest {
     }
     @Test fun acceptsSameOriginSubframe() { assertEquals("bridge-ready", BridgeValidator.decode(ready, BridgeValidator.ALLOWED_ORIGIN, false)?.type) }
     @Test fun acceptsNewDiagnosticTypes() {
-        for (type in listOf("socket-open", "force-return")) {
+        for (type in listOf("socket-open", "force-start", "force-return")) {
             assertEquals(type, BridgeValidator.decode(ready.replace("bridge-ready", type), BridgeValidator.ALLOWED_ORIGIN, true)?.type)
         }
     }

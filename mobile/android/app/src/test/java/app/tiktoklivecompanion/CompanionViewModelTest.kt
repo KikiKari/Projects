@@ -96,6 +96,20 @@ class CompanionViewModelTest {
         model.handle(envelope("force-return", mapOf("ok" to true)))
     }
 
+    @Test fun forceFailureRecoversOnceToValidatedLiveUrl() {
+        val model = CompanionViewModel(FakeEngine())
+        val loaded = mutableListOf<String>()
+        val sent = mutableListOf<String>()
+        model.loadUrl = { loaded += it }
+        model.sendCommand = { command, _ -> sent += command }
+        model.setStreamName("creator")
+        model.startForce()
+        assertEquals(listOf("force-profile"), sent)
+        model.handle(envelope("force-return", mapOf("ok" to false)))
+        assertEquals(listOf("https://www.tiktok.com/@creator/live"), loaded)
+        assertEquals(false, model.state.value.forceInProgress)
+    }
+
     @Test fun hookAvailabilityStaysOnceAnyFrameReportsIt() {
         val model = CompanionViewModel(FakeEngine())
         model.handle(envelope("capability", mapOf("feature" to "websocket-hook", "available" to true)))

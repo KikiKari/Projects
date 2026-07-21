@@ -26,6 +26,11 @@ assert.ok(!source.includes(".send ="));
 assert.ok(!source.includes("document.cookie"));
 assert.ok(!source.includes("localStorage"));
 assert.ok(source.includes("MAX_CHAT = 50"));
+assert.ok(source.includes("FORCE_RETURN_DELAY_MS = 8_000"));
+assert.ok(source.includes("FORCE_RETURN_MAX_ATTEMPTS = 2"));
+assert.ok(source.includes('emit("force-start"'));
+assert.ok(source.includes("dismissOverlays"));
+assert.ok(source.includes("validatedLiveUrl"));
 assert.ok(!source.includes("innerHTML"));
 
 for (const copy of [
