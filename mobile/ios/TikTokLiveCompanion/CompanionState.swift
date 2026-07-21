@@ -127,6 +127,7 @@ import Foundation
                 recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen"
                 recognizer.cancel()
             }
+            if feature == "limiter", !available { lastError = "Pegelschutz nicht verfügbar · Player oder Web Audio fehlt" }
         case "inspection":
             captionsAvailable = envelope.payload["captionsControlPresent"]?.boolValue == true
             var info: [String: String] = [:]
