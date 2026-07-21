@@ -20,13 +20,16 @@ data class CompanionUiState(
     val chats: List<String> = emptyList(),
     val liveValues: Map<String, String> = emptyMap(),
     val mutedAuthors: Set<String> = emptySet(),
-    val error: String? = null
+    val error: String? = null,
+    val videoExpanded: Boolean = false,
+    val streamName: String = ""
 )
 
 class CompanionViewModel(private val recognizer: RecognitionEngine, private val preferences: CompanionPreferences? = null) : ViewModel() {
     private val mutable = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = mutable
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
+    var loadUrl: ((String) -> Unit)? = null
 
     init {
         recognizer.onResult = { result -> mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") } }
@@ -43,6 +46,14 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         preferences?.let { stored -> viewModelScope.launch { stored.setSource(source) } }
     }
     fun clearError() = mutable.update { it.copy(error = null) }
+    fun toggleVideoExpanded() = mutable.update { it.copy(videoExpanded = !it.videoExpanded) }
+    fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
+    fun openStream() {
+        val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
+        if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), liveValues = emptyMap()) }
+        loadUrl?.invoke(url)
+    }
     fun reportError(message: String) = mutable.update { it.copy(error = message, recognitionStatus = message) }
     fun muteAuthor(author: String) {
         val normalized = author.trim().take(80)
