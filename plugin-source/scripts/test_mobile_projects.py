@@ -30,6 +30,7 @@ if IOS.exists():
     pbx = (IOS / "TikTokLiveCompanion.xcodeproj" / "project.pbxproj").read_text(encoding="utf-8")
     require("forMainFrameOnly: false" in ios_webview and "securityOrigin.host == \"www.tiktok.com\"" in ios_webview, "origin-restricted iOS subframe bridge")
     require("MARKETING_VERSION = 0.7.0" in pbx and "IPHONEOS_DEPLOYMENT_TARGET = 15.0" in pbx, "iOS version contract")
+    require(all(name in pbx for name in ["StreamNameNormalizer.swift in Sources", "StreamNameNormalizerTests.swift in Sources", "MobileUIStructureTests.swift in Sources"]), "iOS source and XCTest membership")
     require(SHARED.read_bytes() == (IOS / "Resources" / "webview-bridge.js").read_bytes(), "iOS bridge copy drift")
     with (IOS / "TikTokLiveCompanion" / "Info.plist").open("rb") as handle:
         info = plistlib.load(handle)

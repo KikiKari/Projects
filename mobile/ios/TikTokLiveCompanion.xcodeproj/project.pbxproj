@@ -21,6 +21,9 @@
 		A1000000000000000000000D /* ShazamKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* ShazamKit.framework */; };
 		A1000000000000000000000E /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* WebKit.framework */; };
 		A1000000000000000000000F /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* AVFoundation.framework */; };
+		A20000000000000000000001 /* StreamNameNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* StreamNameNormalizer.swift */; };
+		A20000000000000000000002 /* StreamNameNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* StreamNameNormalizerTests.swift */; };
+		A20000000000000000000003 /* MobileUIStructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* MobileUIStructureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +50,9 @@
 		B10000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TikTokLiveCompanion.entitlements; sourceTree = "<group>"; };
 		B10000000000000000000012 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TikTokLiveCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000013 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TikTokLiveCompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamNameNormalizer.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamNameNormalizerTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileUIStructureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,9 +62,9 @@
 
 /* Begin PBXGroup section */
 		G10000000000000000000001 = {isa = PBXGroup; children = (G10000000000000000000002, G10000000000000000000003, G10000000000000000000004, G10000000000000000000005, G10000000000000000000006); sourceTree = "<group>"; };
-		G10000000000000000000002 = {isa = PBXGroup; path = TikTokLiveCompanion; sourceTree = "<group>"; children = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000004, B10000000000000000000005, B10000000000000000000006, B10000000000000000000007, B10000000000000000000010, B10000000000000000000011); };
+		G10000000000000000000002 = {isa = PBXGroup; path = TikTokLiveCompanion; sourceTree = "<group>"; children = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000004, B10000000000000000000005, B10000000000000000000006, B10000000000000000000007, B20000000000000000000001, B10000000000000000000010, B10000000000000000000011); };
 		G10000000000000000000003 = {isa = PBXGroup; path = Resources; sourceTree = "<group>"; children = (B10000000000000000000008, B10000000000000000000009, B1000000000000000000000A); };
-		G10000000000000000000004 = {isa = PBXGroup; path = TikTokLiveCompanionTests; sourceTree = "<group>"; children = (B1000000000000000000000B, B1000000000000000000000C); };
+		G10000000000000000000004 = {isa = PBXGroup; path = TikTokLiveCompanionTests; sourceTree = "<group>"; children = (B1000000000000000000000B, B1000000000000000000000C, B20000000000000000000002, B20000000000000000000003); };
 		G10000000000000000000005 = {isa = PBXGroup; name = Frameworks; sourceTree = "<group>"; children = (B1000000000000000000000D, B1000000000000000000000E, B1000000000000000000000F); };
 		G10000000000000000000006 = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (B10000000000000000000012, B10000000000000000000013); };
 /* End PBXGroup section */
@@ -78,8 +84,8 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		S10000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007); runOnlyForDeploymentPostprocessing = 0; };
-		S10000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000B, A1000000000000000000000C); runOnlyForDeploymentPostprocessing = 0; };
+		S10000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000006, A10000000000000000000007, A20000000000000000000001); runOnlyForDeploymentPostprocessing = 0; };
+		S10000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000B, A1000000000000000000000C, A20000000000000000000002, A20000000000000000000003); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
