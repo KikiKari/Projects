@@ -15,7 +15,10 @@ import Foundation
     @Published var liveValues: [String: String] = [:]
     @Published var mutedAuthors: Set<String>
     @Published var lastError: String?
+    @Published var videoExpanded = false
+    @Published var streamName = ""
     var sendCommand: ((String, [String: Any]) -> Void)?
+    var loadURL: ((URL) -> Void)?
     let recognizer: RecognitionService
     private let speaker = AVSpeechSynthesizer()
     private let defaults: UserDefaults
@@ -35,6 +38,18 @@ import Foundation
             self?.lastError = message
             self?.recognitionStatus = message
         }}
+    }
+
+    func toggleVideoExpanded() { videoExpanded.toggle() }
+
+    func openStream() {
+        guard let url = StreamNameNormalizer.liveURL(streamName) else {
+            lastError = "Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"
+            return
+        }
+        connected = false; hookAvailable = false; captionsAvailable = false
+        chatLines = []; liveValues = [:]
+        loadURL?(url)
     }
 
     func recognize() {
