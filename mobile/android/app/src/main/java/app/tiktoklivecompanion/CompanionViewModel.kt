@@ -41,6 +41,7 @@ data class CompanionUiState(
     val audibleStartRequested: Boolean = false,
     val playerMuted: Boolean? = null,
     val audibleStartBlocked: Boolean = false,
+    val mediaUrls: List<StreamMediaUrl> = emptyList(),
     val streamName: String = ""
 ) {
     val topChatters: List<TopChatter>
@@ -110,7 +111,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
-        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false) }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList()) }
         loadUrl?.invoke(url)
     }
     fun enableStreamSound() {
@@ -239,6 +240,14 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             }
             "force-start" -> mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = (envelope.payload["url"] as? String) ?: it.forceRecoveryUrl) }
             "player-state" -> mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
+            "media-url" -> {
+                val safe = BridgeValidator.safeHttpsUrl(envelope.payload["url"] as? String)?.toString() ?: return
+                val kind = (envelope.payload["kind"] as? String)?.take(24) ?: "media"
+                mutable.update { current ->
+                    val next = (current.mediaUrls.filterNot { it.url == safe } + StreamMediaUrl(safe, kind)).takeLast(12)
+                    current.copy(mediaUrls = next)
+                }
+            }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
     }

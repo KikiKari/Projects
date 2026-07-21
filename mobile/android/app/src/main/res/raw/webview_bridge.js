@@ -7,6 +7,7 @@
   const MAX_MESSAGE_BYTES = 64 * 1024;
   const MAX_CHAT = 50;
   const MAX_AUDIO_SECONDS = 12;
+  const MAX_MEDIA_URLS = 12;
   const FORCE_RETURN_KEY = "tlc-force-return";
   const FORCE_RETURN_DELAY_MS = 8_000;
   const FORCE_RETURN_MAX_ATTEMPTS = 2;
@@ -22,6 +23,7 @@
   const limiter = { enabled: false, threshold: -6 };
   const chat = [];
   const seenLiveEventIds = new Set();
+  const mediaUrls = new Map();
   let focusedPlayer = null;
   let audibleStartRequested = false;
 
@@ -44,6 +46,27 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function rememberMediaUrl(value, kind = "media") {
+    try {
+      const candidate = new URL(String(value || ""), location.href);
+      if (candidate.protocol !== "https:" || !candidate.hostname) return false;
+      const normalized = candidate.href.slice(0, 4_096);
+      if (mediaUrls.has(normalized)) return false;
+      mediaUrls.set(normalized, text(kind, 32));
+      while (mediaUrls.size > MAX_MEDIA_URLS) mediaUrls.delete(mediaUrls.keys().next().value);
+      emit("media-url", { url: normalized, kind: mediaUrls.get(normalized), count: mediaUrls.size, limit: MAX_MEDIA_URLS });
+      return true;
+    } catch (_) { return false; }
+  }
+
+  function collectMediaUrls() {
+    const video = primaryVideo();
+    rememberMediaUrl(video?.currentSrc || video?.src, "player");
+    for (const source of video?.querySelectorAll?.("source[src]") || []) rememberMediaUrl(source.src, "source");
+    const mediaPattern = /\.(?:m3u8|mp4|flv)(?:[?#]|$)|(?:byteoversea|tiktokcdn|muscdn|akamaized|pull-)/i;
+    for (const entry of (performance.getEntriesByType?.("resource") || []).slice(-200)) if (mediaPattern.test(entry.name || "")) rememberMediaUrl(entry.name, "network");
+  }
+
   function playerContainer(video) {
     if (!video) return null;
     const videoArea = Math.max(1, video.clientWidth * video.clientHeight);
@@ -64,6 +87,10 @@
     if (!video || !container) return false;
     if (focusedPlayer && focusedPlayer !== container) focusedPlayer.removeAttribute("data-tlc-mobile-player");
     focusedPlayer = container;
+    if (video.dataset.tlcMediaObserved !== "true") {
+      video.dataset.tlcMediaObserved = "true";
+      for (const eventName of ["loadedmetadata", "canplay", "playing"]) video.addEventListener(eventName, collectMediaUrls);
+    }
     document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
     container.setAttribute("data-tlc-mobile-player", "true");
     if (!document.getElementById("tlc-mobile-player-style")) {
@@ -78,6 +105,7 @@
     }
     emit("capability", { feature: "player-focus", available: true });
     if (audibleStartRequested) void attemptAudibleStart();
+    collectMediaUrls();
     return true;
   }
 
@@ -103,6 +131,7 @@
   function inspect() {
     const video = primaryVideo();
     applyPlayerFocus();
+    collectMediaUrls();
     const captionButtons = [...document.querySelectorAll("button,[role=menuitem]")].filter((node) => /caption|untertitel/i.test(node.textContent || ""));
     const creatorHandle = decodeURIComponent((location.pathname.match(/^\/@([^/]+)/) || [])[1] || "");
     const creatorName = metaValue("og:title", true).replace(/\s*[|·-]\s*TikTok.*$/i, "");

@@ -11,6 +11,7 @@ data class ChatLine(val author: String, val content: String, val language: Strin
 data class ParticipantStats(val messages: Int = 0, val words: Int = 0)
 data class TopChatter(val author: String, val messages: Int, val words: Int)
 data class SpeechRequest(val id: Long, val text: String, val languageTag: String?)
+data class StreamMediaUrl(val url: String, val kind: String)
 
 data class RecognitionResult(
     val matched: Boolean,

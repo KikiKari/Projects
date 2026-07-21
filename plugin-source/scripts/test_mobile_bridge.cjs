@@ -40,6 +40,10 @@ assert.ok(!source.includes('document.body.innerHTML'));
 assert.ok(source.includes('"start-audible"'));
 assert.ok(source.includes('video.defaultMuted = false'));
 assert.ok(source.includes('reason: "autoplay-blocked"'));
+assert.ok(source.includes("MAX_MEDIA_URLS = 12"));
+assert.ok(source.includes('emit("media-url"'));
+assert.ok(source.includes('candidate.protocol !== "https:"'));
+assert.ok(source.includes('performance.getEntriesByType?.("resource")'));
 assert.ok(!source.includes("innerHTML"));
 
 for (const copy of [

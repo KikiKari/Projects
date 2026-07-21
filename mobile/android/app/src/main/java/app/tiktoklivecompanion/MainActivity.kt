@@ -157,6 +157,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable private fun PlayerTab(state: CompanionUiState, model: CompanionViewModel) {
+    val context = LocalContext.current
+    fun copyMedia(label: String, value: String) {
+        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(label, value))
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         listOf("play" to "Play", "pause" to "Pause", "mute" to "Stumm").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f)) { Text(label) } } } }
@@ -171,6 +176,11 @@ class MainActivity : ComponentActivity() {
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Grenzwert"); Spacer(Modifier.weight(1f)); Text("${state.limiterThreshold} dBFS", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterThreshold.toFloat(), onValueChange = { model.setLimiterThreshold(it.toInt()) }, valueRange = -30f..-1f, steps = 28, enabled = state.limiterEnabled)
         Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text("Media-/VLC-URLs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (state.mediaUrls.isEmpty()) Text("Noch keine direkte Media-URL erkannt. Sie erscheint, sobald TikTok den Player lädt.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.mediaUrls.forEach { media -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(media.kind, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(media.url, maxLines = 2) }; TextButton(onClick = { copyMedia("TikTok LIVE Media-URL", media.url) }) { Text("Kopieren") } } } }
+        if (state.mediaUrls.isNotEmpty()) OutlinedButton(onClick = { copyMedia("TikTok LIVE Media-URLs", state.mediaUrls.joinToString("\n") { it.url }) }, modifier = Modifier.fillMaxWidth()) { Text("Alle kopieren") }
+        Text("Direkte TikTok-Media-URLs sind temporär, können ablaufen und funktionieren in VLC nicht in jedem Fall.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 @Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Mehr", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); listOf("inspect" to "Seite prüfen", "captions" to "Untertitel aktivieren", "refresh" to "Refresh", "open-report" to "Melden öffnen").forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { Text(label) } }; OutlinedButton(onClick = model::startForce, enabled = !state.forceInProgress, modifier = Modifier.fillMaxWidth()) { Text(if (state.forceInProgress) "Force läuft …" else "Force") }; state.forceRecoveryUrl?.let { OutlinedButton(onClick = { model.recoverForce() }, modifier = Modifier.fillMaxWidth()) { Text("Manuell zum LIVE-Stream zurück") } }; Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray) } }
