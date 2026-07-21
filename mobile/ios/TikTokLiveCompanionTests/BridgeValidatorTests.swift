@@ -17,7 +17,7 @@ final class BridgeValidatorTests: XCTestCase {
     }
 
     func testAcceptsNewDiagnosticTypes() throws {
-        for type in ["socket-open", "force-return"] {
+        for type in ["socket-open", "force-start", "force-return"] {
             let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: type).data(using: .utf8)!
             XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, type)
         }

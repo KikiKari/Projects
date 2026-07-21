@@ -126,6 +126,20 @@ private final class FakeRecognizer: RecognitionService {
         state.handle(try envelope("force-return", #"{"ok":true}"#))
     }
 
+    func testForceFailureRecoversToValidatedLiveURL() throws {
+        let state = makeState(#function)
+        var loaded: [URL] = []
+        var sent: [String] = []
+        state.loadURL = { loaded.append($0) }
+        state.sendCommand = { command, _ in sent.append(command) }
+        state.streamName = "creator"
+        state.startForce()
+        XCTAssertEqual(sent, ["force-profile"])
+        state.handle(try envelope("force-return", #"{"ok":false}"#))
+        XCTAssertEqual(loaded.map(\.absoluteString), ["https://www.tiktok.com/@creator/live"])
+        XCTAssertFalse(state.forceInProgress)
+    }
+
     func testHookAvailabilityStaysOnceAnyFrameReportsIt() throws {
         let state = makeState(#function)
         state.handle(try envelope("capability", #"{"feature":"websocket-hook","available":true}"#))

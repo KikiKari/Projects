@@ -36,6 +36,8 @@ import Foundation
     @Published var mutedAuthors: Set<String>
     @Published var lastError: String?
     @Published var videoExpanded = false
+    @Published var forceInProgress = false
+    @Published var forceRecoveryURL: URL?
     @Published var streamName = ""
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
@@ -43,6 +45,7 @@ import Foundation
     private let speaker = AVSpeechSynthesizer()
     private let defaults: UserDefaults
     private var speechSequence = 0
+    private var forceWatchdog: Task<Void, Never>?
     private static let sourceKey = "recognitionSource"
     private static let mutedAuthorsKey = "mutedAuthors"
     private static let limiterEnabledKey = "limiterEnabled"
@@ -88,6 +91,35 @@ import Foundation
     }
 
     func toggleVideoExpanded() { videoExpanded.toggle() }
+
+    func startForce() {
+        let inspected = pageInfo["URL"].flatMap(URL.init(string:)).flatMap(Self.validatedLiveURL)
+        let recovery = inspected ?? StreamNameNormalizer.liveURL(streamName)
+        guard let recovery else { lastError = "Force ist erst in einem gültigen LIVE-Stream verfügbar"; return }
+        forceWatchdog?.cancel()
+        forceInProgress = true
+        forceRecoveryURL = recovery
+        lastError = nil
+        sendCommand?("force-profile", ["liveUrl": recovery.absoluteString])
+        forceWatchdog = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run { if self?.forceInProgress == true { self?.recoverForce(reason: "Timeout nach 20 Sekunden") } }
+        }
+    }
+
+    private static func validatedLiveURL(_ url: URL) -> URL? {
+        guard url.scheme == "https", url.host == "www.tiktok.com", url.path.range(of: #"^/@[^/]+/live(?:/|$)"#, options: .regularExpression) != nil else { return nil }
+        return url
+    }
+
+    func recoverForce(reason: String = "manuelle Rückkehr") {
+        let recovery = forceRecoveryURL
+        forceWatchdog?.cancel()
+        forceInProgress = false
+        lastError = recovery == nil ? "Force: \(reason) · bitte manuell zurück" : "Force: \(reason) · LIVE-Stream wurde wieder geöffnet"
+        if let recovery { loadURL?(recovery) }
+    }
 
     func openStream() {
         guard let url = StreamNameNormalizer.liveURL(streamName) else {
@@ -156,9 +188,11 @@ import Foundation
                 liveValues["Follows seit Start"] = String((Int(liveValues["Follows seit Start"] ?? "0") ?? 0) + 1)
             }
         case "force-return":
-            if envelope.payload["ok"]?.boolValue == false {
-                lastError = "Force: automatische Rückkehr zum LIVE-Stream fehlgeschlagen · bitte manuell zurück"
-            }
+            if envelope.payload["ok"]?.boolValue == true { forceWatchdog?.cancel(); forceInProgress = false; forceRecoveryURL = nil }
+            if envelope.payload["ok"]?.boolValue == false { recoverForce(reason: "Bridge-Rückkehr fehlgeschlagen") }
+        case "force-start":
+            forceInProgress = true
+            if let value = envelope.payload["url"]?.stringValue, let url = URL(string: value), let valid = Self.validatedLiveURL(url) { forceRecoveryURL = valid }
         case "audio-chunk":
             guard let encoded = envelope.payload["data"]?.stringValue,
                   let bytes = Data(base64Encoded: encoded) else { return }

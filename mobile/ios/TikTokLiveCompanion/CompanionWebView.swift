@@ -25,6 +25,7 @@ struct CompanionWebView: UIViewRepresentable {
         // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
         view.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
         view.navigationDelegate = context.coordinator
+        view.uiDelegate = context.coordinator
         view.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = view
         state.sendCommand = { [weak view] command, payload in
@@ -50,7 +51,7 @@ struct CompanionWebView: UIViewRepresentable {
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, UIGestureRecognizerDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, UIGestureRecognizerDelegate {
         let state: CompanionState
         weak var webView: WKWebView?
         init(state: CompanionState) { self.state = state }
@@ -71,6 +72,13 @@ struct CompanionWebView: UIViewRepresentable {
             guard let url = navigationAction.request.url else { return decisionHandler(.cancel) }
             if url.scheme == "https", url.host == "www.tiktok.com" { decisionHandler(.allow) }
             else { if url.scheme == "https" { UIApplication.shared.open(url) }; decisionHandler(.cancel) }
+        }
+
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if navigationAction.targetFrame == nil, let url = navigationAction.request.url, url.scheme == "https", url.host == "www.tiktok.com" {
+                webView.load(navigationAction.request)
+            }
+            return nil
         }
     }
 }

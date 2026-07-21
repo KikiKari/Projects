@@ -205,10 +205,17 @@
     try { return JSON.parse(sessionStorage.getItem(FORCE_RETURN_KEY) || "null"); } catch (_) { return null; }
   }
 
+  function validatedLiveUrl(value) {
+    try {
+      const candidate = new URL(String(value || ""), location.origin);
+      return candidate.origin === location.origin && /^\/@[^/]+\/live(?:\/|$)/.test(candidate.pathname) ? candidate.href : null;
+    } catch (_) { return null; }
+  }
+
   function handleForceReturn() {
     const marker = readForceMarker();
     if (!marker || typeof marker.url !== "string") return;
-    if (/^\/@[^/]+\/live/.test(location.pathname)) {
+    if (validatedLiveUrl(location.href) === validatedLiveUrl(marker.url)) {
       sessionStorage.removeItem(FORCE_RETURN_KEY);
       emit("force-return", { ok: true, attempts: marker.attempts || 0 });
       return;
@@ -245,10 +252,12 @@
       else if (name === "refresh") location.reload();
       else if (name === "force-profile") {
         const match = location.pathname.match(/^\/@([^/]+)\/live/);
-        if (match) {
-          try { sessionStorage.setItem(FORCE_RETURN_KEY, JSON.stringify({ url: `${location.origin}${location.pathname}`, attempts: 0 })); } catch (_) {}
+        const liveUrl = validatedLiveUrl(payload.liveUrl) || validatedLiveUrl(location.href);
+        if (match && liveUrl) {
+          try { sessionStorage.setItem(FORCE_RETURN_KEY, JSON.stringify({ url: liveUrl, attempts: 0, startedAt: Date.now() })); } catch (_) {}
+          emit("force-start", { url: liveUrl, timeoutMs: 20_000, bridgeDelayMs: FORCE_RETURN_DELAY_MS, maxAttempts: FORCE_RETURN_MAX_ATTEMPTS });
           location.assign(`/@${encodeURIComponent(match[1])}`);
-        }
+        } else emit("force-return", { ok: false, reason: "invalid-live-url" });
       } else if (name === "open-report") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /report|melden/i.test(node.textContent || ""))?.click();
       else if (name === "start-webview-audio") await startAudioCapture();
       else if (name === "stop-webview-audio") await stopAudioCapture();
