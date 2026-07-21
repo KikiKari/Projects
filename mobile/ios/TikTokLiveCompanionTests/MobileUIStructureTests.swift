@@ -34,4 +34,15 @@ final class MobileUIStructureTests: XCTestCase {
         XCTAssertTrue(controller.contains("setCategory(.playback"))
         XCTAssertTrue(source.components(separatedBy: "private var moreView")[1].contains("Debugmodus"))
     }
+
+    func testMobilePlayerFocusExcludesTikTokChatAndTargetsOnlyPrimaryVideo() throws {
+        let testURL = URL(fileURLWithPath: #filePath)
+        let mobileRoot = testURL.deletingLastPathComponent().deletingLastPathComponent()
+        let bridge = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/Resources/webview-bridge.js"))
+        XCTAssertTrue(bridge.contains("function containsChatSurface"))
+        XCTAssertTrue(bridge.contains("data-tlc-mobile-primary-video"))
+        XCTAssertTrue(bridge.contains("data-tlc-mobile-video-layer"))
+        XCTAssertFalse(bridge.contains("[data-tlc-mobile-player=\"true\"] video"))
+        XCTAssertFalse(bridge.contains("videoArea * 3.5"))
+    }
 }
