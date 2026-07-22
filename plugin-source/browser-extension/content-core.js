@@ -113,7 +113,7 @@
 
   function normalizeCaptionInfo(value) {
     if (!value || typeof value !== "object") {
-      return { present: false, open: null, supportLang: [], location: null, showType: null };
+      return { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null };
     }
     const support = value.support_lang || value.supportLang || value.support_language || [];
     return {
@@ -121,7 +121,27 @@
       open: value.open ?? value.is_open ?? value.enabled ?? null,
       supportLang: Array.isArray(support) ? support.map(String) : [],
       location: value.location ?? null,
-      showType: value.show_type ?? value.showType ?? null
+      showType: value.show_type ?? value.showType ?? null,
+      observed: Boolean(value.observed),
+      source: value.source ?? null
+    };
+  }
+
+  function mergeObservedCaptionInfo(value, captions) {
+    const base = normalizeCaptionInfo(value);
+    const items = (Array.isArray(captions) ? captions : [captions]).filter(Boolean);
+    const languages = items.flatMap((caption) => (caption.contents || []).map((content) => String(content.lang || "").trim())).filter(Boolean);
+    const observed = items.some((caption) => (caption.contents || []).some((content) => String(content.text || "").trim()));
+    if (!observed) return base;
+    const domOnly = items.every((caption) => caption.source === "dom" || caption.method === "DomCaption");
+    return {
+      ...base,
+      present: true,
+      open: true,
+      supportLang: [...new Set([...base.supportLang, ...languages])],
+      location: base.location || (domOnly ? "player-dom" : "WebcastCaptionMessage"),
+      observed: true,
+      source: domOnly ? "dom" : "websocket"
     };
   }
 
@@ -485,6 +505,7 @@
     QUALITY_LABELS,
     extractStreamVariants,
     normalizeCaptionInfo,
+    mergeObservedCaptionInfo,
     sanitizeChatText,
     normalizedIdentity,
     wordCount,

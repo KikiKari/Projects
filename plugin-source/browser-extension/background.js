@@ -19,7 +19,7 @@ function stateKey(tabId) {
 function emptyState() {
   return {
     page: { url: "", title: "", scannedAtUtc: null },
-    captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null },
+    captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
     aiSummaryInfo: { ...core.EMPTY_AI_SUMMARY_INFO },
     menuCaptionAvailable: false,
@@ -222,8 +222,21 @@ async function addMedia(tabId, entries, source) {
 
 async function addCaption(tabId, caption) {
   const state = await getState(tabId);
-  state.captions.push({ ...caption, receivedAtUtc: caption.receivedAtUtc || new Date().toISOString() });
+  const receivedAtUtc = caption.receivedAtUtc || new Date().toISOString();
+  if (caption.source === "dom") {
+    const recentWebSocket = [...state.captions].reverse().find((item) => item.method === "WebcastCaptionMessage");
+    if (recentWebSocket && Date.parse(receivedAtUtc) - Date.parse(recentWebSocket.receivedAtUtc || 0) < 5_000) return;
+  }
+  const entry = { ...caption, receivedAtUtc };
+  const key = entry.sentenceId || entry.sequenceId || (entry.contents || []).map((content) => `${content.lang || ""}:${content.text || ""}`).join("\n");
+  const duplicate = key && state.captions.slice(-20).some((item) => {
+    const itemKey = item.sentenceId || item.sequenceId || (item.contents || []).map((content) => `${content.lang || ""}:${content.text || ""}`).join("\n");
+    return itemKey === key;
+  });
+  if (duplicate) return;
+  state.captions.push(entry);
   state.captions = state.captions.slice(-MAX_CAPTIONS);
+  state.captionInfo = core.mergeObservedCaptionInfo(state.captionInfo, entry);
   await setState(tabId, state);
 }
 

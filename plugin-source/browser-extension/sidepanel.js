@@ -336,8 +336,10 @@
   function renderStatuses(state) {
     clearChildren(elements["caption-status"]);
     const info = state.captionInfo || {};
+    const observedCaptions = Boolean(state.captions?.length || info.observed);
+    const sourceLabel = info.source === "dom" ? "Playertext" : observedCaptions ? "Datenstrom" : info.present ? "Seitenmetadaten" : "nicht gefunden";
     elements["caption-status"].append(
-      statusCard("caption_info", info.present ? "vorhanden" : "nicht gefunden", info.present ? "good" : "bad"),
+      statusCard("Untertitelquelle", sourceLabel, info.present || observedCaptions ? "good" : "bad"),
       statusCard("TikTok-Menü", state.menuCaptionActive ? "aktiv" : state.menuCaptionAvailable ? "verfügbar" : "nicht gefunden", state.menuCaptionActive ? "good" : state.menuCaptionAvailable ? "warn" : "bad"),
       statusCard("Sprachen", info.supportLang?.length ? info.supportLang.join(", ") : "keine Angabe", info.supportLang?.length ? "good" : "warn"),
       statusCard("Messages", String(state.captions?.length || 0), state.captions?.length ? "good" : "warn")

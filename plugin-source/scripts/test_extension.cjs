@@ -80,6 +80,14 @@ const inspected = core.inspectMetadata(metadata);
 assert.strictEqual(inspected.captionInfo.present, true);
 assert.strictEqual(inspected.captionInfo.open, true);
 assert.deepStrictEqual(inspected.captionInfo.supportLang, ["de", "en"]);
+const observedCaptionInfo = core.mergeObservedCaptionInfo(core.normalizeCaptionInfo(null), {
+  method: "WebcastCaptionMessage",
+  contents: [{ lang: "en", text: "I am speaking German but TikTok provides English captions" }]
+});
+assert.strictEqual(observedCaptionInfo.present, true);
+assert.strictEqual(observedCaptionInfo.open, true);
+assert.deepStrictEqual(observedCaptionInfo.supportLang, ["en"]);
+assert.strictEqual(observedCaptionInfo.source, "websocket");
 assert.strictEqual(inspected.media.length, 2);
 assert.ok(inspected.media.some((item) => item.protocol === "FLV" && item.quality === "HD"));
 assert.ok(inspected.media.some((item) => item.protocol === "HLS" && item.quality === "720p"));

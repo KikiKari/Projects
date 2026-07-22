@@ -20,6 +20,7 @@
   const ALL_QUALITY_LABELS = [...new Set(Object.values(QUALITY_ALIASES).flat().map(normalizedLabel))];
   const chatNodeText = new WeakMap();
   const giftNodeText = new WeakMap();
+  let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
   let audioPipeline = null;
@@ -718,6 +719,34 @@
     }
   }
 
+  function scanDomCaptions() {
+    const lines = [...document.querySelectorAll('p[class*="h-[34px]"][class*="leading-[34px]"]')]
+      .filter((element) => {
+        const row = element.parentElement;
+        const viewport = row?.parentElement;
+        return isVisible(element)
+          && String(row?.className || "").includes("flex-col-reverse")
+          && String(viewport?.className || "").includes("absolute")
+          && String(viewport?.className || "").includes("overflow-hidden");
+      })
+      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+      .map(visibleText)
+      .filter(Boolean);
+    const text = lines.join(" ").replace(/\s+/g, " ").trim();
+    if (!text || text === lastDomCaptionText) return;
+    lastDomCaptionText = text;
+    chrome.runtime.sendMessage({
+      type: "TLC_CAPTION",
+      caption: {
+        method: "DomCaption",
+        source: "dom",
+        definite: false,
+        contents: [{ lang: "", text }],
+        receivedAtUtc: new Date().toISOString()
+      }
+    }).catch(() => {});
+  }
+
   window.addEventListener("message", (event) => {
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data;
@@ -784,10 +813,12 @@
     new MutationObserver(() => {
       scanDomChat();
       scanDomGifts();
+      scanDomCaptions();
       scheduleScan(1500);
     }).observe(document.documentElement, { childList: true, subtree: true });
     scanDomChat();
     scanDomGifts();
+    scanDomCaptions();
     scheduleScan(50);
   };
   if (document.documentElement) start();
