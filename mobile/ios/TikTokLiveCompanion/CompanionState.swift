@@ -101,7 +101,10 @@ import Foundation
         }}
     }
 
-    func toggleVideoExpanded() { videoExpanded.toggle() }
+    func toggleVideoExpanded() {
+        videoExpanded.toggle()
+        sendCommand?("set-player-expanded", ["expanded": videoExpanded])
+    }
     func clearDebugEvents() { debugEvents = [] }
 
     func startForce() {
@@ -179,7 +182,10 @@ import Foundation
             if debugEvents.count > 200 { debugEvents.removeFirst(debugEvents.count - 200) }
         }
         switch envelope.type {
-        case "bridge-ready": pushLimiter(); if audibleStartRequested { sendCommand?("start-audible", [:]) }
+        case "bridge-ready":
+            pushLimiter()
+            sendCommand?("set-player-expanded", ["expanded": videoExpanded])
+            if audibleStartRequested { sendCommand?("start-audible", [:]) }
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
