@@ -28,6 +28,7 @@
   let focusedVideoAncestors = [];
   let focusedVideoHadControls = false;
   let audibleStartRequested = false;
+  const contentCore = root.TLC_CONTENT_CORE;
 
   function nativePost(message) {
     const serialized = JSON.stringify(message);
@@ -48,13 +49,27 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function ensureMobileViewport() {
+    if (!isTop) return;
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement("meta");
+      viewport.name = "viewport";
+      (document.head || document.documentElement).appendChild(viewport);
+    }
+    viewport.content = "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover";
+  }
+
   function rememberMediaUrl(value, kind = "media") {
     try {
       const candidate = new URL(String(value || ""), location.href);
-      if (candidate.protocol !== "https:" || !candidate.hostname) return false;
-      const normalized = candidate.href.slice(0, 4_096);
+      if (candidate.protocol !== "https:" || !contentCore?.classifyMediaUrl) return false;
+      const classified = contentCore.classifyMediaUrl(candidate.href);
+      if (!classified) return false;
+      const normalized = classified.url.slice(0, 4_096);
       if (mediaUrls.has(normalized)) return false;
-      mediaUrls.set(normalized, text(kind, 32));
+      const label = `${classified.quality || "unbekannt"} · ${classified.protocol || kind}`;
+      mediaUrls.set(normalized, text(label, 32));
       while (mediaUrls.size > MAX_MEDIA_URLS) mediaUrls.delete(mediaUrls.keys().next().value);
       emit("media-url", { url: normalized, kind: mediaUrls.get(normalized), count: mediaUrls.size, limit: MAX_MEDIA_URLS });
       return true;
@@ -65,8 +80,14 @@
     const video = primaryVideo();
     rememberMediaUrl(video?.currentSrc || video?.src, "player");
     for (const source of video?.querySelectorAll?.("source[src]") || []) rememberMediaUrl(source.src, "source");
-    const mediaPattern = /\.(?:m3u8|mp4|flv)(?:[?#]|$)|(?:byteoversea|tiktokcdn|muscdn|akamaized|pull-)/i;
-    for (const entry of (performance.getEntriesByType?.("resource") || []).slice(-200)) if (mediaPattern.test(entry.name || "")) rememberMediaUrl(entry.name, "network");
+    for (const entry of (performance.getEntriesByType?.("resource") || []).slice(-400)) rememberMediaUrl(entry.name, "network");
+    if (!contentCore?.inspectMetadata) return;
+    for (const script of [...document.scripts].slice(-80)) {
+      const value = script.textContent || "";
+      if (!value || value.length > 2_000_000 || !/(?:\.flv|\.m3u8|only_audio)/i.test(value)) continue;
+      const result = contentCore.inspectMetadata(value, { maxNodes: 5_000 });
+      for (const item of result.media || []) rememberMediaUrl(item.url, item.protocol);
+    }
   }
 
   function clearPlayerFocus() {
@@ -104,10 +125,10 @@
       const style = document.createElement("style");
       style.id = "tlc-mobile-player-style";
       style.textContent = `
-        html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{overflow:hidden!important;background:#000!important}
+        html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{overflow-x:hidden!important;overflow-y:auto!important;background:#000!important}
         html[data-tlc-mobile-focus="true"] body *:not(video[data-tlc-mobile-primary-video="true"]){z-index:auto!important}
-        [data-tlc-mobile-video-ancestor="true"]{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;clip-path:none!important;overflow:visible!important}
-        video[data-tlc-mobile-primary-video="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;object-fit:contain!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;visibility:visible!important}
+        [data-tlc-mobile-video-ancestor="true"]{position:static!important;transform:none!important;scale:none!important;translate:none!important;rotate:none!important;zoom:1!important;filter:none!important;perspective:none!important;contain:none!important;clip-path:none!important;overflow:visible!important;max-width:none!important;max-height:none!important}
+        video[data-tlc-mobile-primary-video="true"]{position:absolute!important;top:0!important;left:0!important;width:100dvw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;scale:none!important;zoom:1!important;object-fit:contain!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:pan-y!important;visibility:visible!important}
       `;
       (document.head || document.documentElement).appendChild(style);
     }
@@ -324,6 +345,20 @@
     try { return JSON.parse(sessionStorage.getItem(FORCE_RETURN_KEY) || "null"); } catch (_) { return null; }
   }
 
+  function rejectCookieConsent() {
+    const rejectPattern = /alle ablehnen|reject all|decline all|nur (?:erforderliche|notwendige) cookies|only necessary cookies/i;
+    const cookiePattern = /cookie|cookies|datenschutz|privacy/i;
+    for (const node of document.querySelectorAll("button, [role=button]")) {
+      if (node.offsetParent === null) continue;
+      const label = `${node.getAttribute?.("aria-label") || ""} ${node.textContent || ""}`;
+      if (!rejectPattern.test(label)) continue;
+      const scope = node.closest('[role="dialog"], [aria-modal="true"]') || node.parentElement;
+      if (!cookiePattern.test(scope?.textContent || label)) continue;
+      try { node.click(); emit("capability", { feature: "cookie-consent", available: true, rejected: true }); return true; } catch (_) { return false; }
+    }
+    return false;
+  }
+
   function validatedLiveUrl(value) {
     try {
       const candidate = new URL(String(value || ""), location.origin);
@@ -392,9 +427,15 @@
   if (!isTop) return; // Subframes liefern nur dekodierte WebSocket-Daten.
   root.TLC_MOBILE_BRIDGE = Object.freeze({ command, inspect });
   const startTopFrame = () => {
+    ensureMobileViewport();
+    rejectCookieConsent();
     inspect();
     handleForceReturn();
-    const observer = new MutationObserver(() => { if (!focusedVideo?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus(); });
+    const observer = new MutationObserver(() => {
+      ensureMobileViewport();
+      rejectCookieConsent();
+      if (!focusedVideo?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus();
+    });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();

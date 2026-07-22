@@ -47,6 +47,7 @@ import Foundation
     @Published var debugEnabled = false
     @Published var debugEvents: [String] = []
     @Published var streamName = ""
+    @Published private(set) var currentWebURL = URL(string: "https://www.tiktok.com/live")!
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
     let recognizer: RecognitionService
@@ -129,7 +130,11 @@ import Foundation
         forceWatchdog?.cancel()
         forceInProgress = false
         lastError = recovery == nil ? "Force: \(reason) · bitte manuell zurück" : "Force: \(reason) · LIVE-Stream wurde wieder geöffnet"
-        if let recovery { loadURL?(recovery) }
+        if let recovery { currentWebURL = recovery; loadURL?(recovery) }
+    }
+
+    func noteNavigation(_ url: URL) {
+        if let live = Self.validatedLiveURL(url) { currentWebURL = live }
     }
 
     func openStream() {
@@ -141,6 +146,7 @@ import Foundation
         chatLines = []; liveValues = [:]; liveNumbers = [:]; chatterCounts = [:]; chatterWords = [:]; pageInfo = [:]
         audibleStartRequested = true; playerMuted = nil; audibleStartBlocked = false; mediaURLs = []
         BackgroundAudioController.shared.activatePlayback()
+        currentWebURL = url
         loadURL?(url)
     }
 
@@ -237,6 +243,7 @@ import Foundation
             audibleStartBlocked = envelope.payload["reason"]?.stringValue == "autoplay-blocked"
         case "media-url":
             guard let url = BridgeValidator.validatedHTTPS(envelope.payload["url"]?.stringValue) else { return }
+            guard Self.isVLCMediaURL(url) else { return }
             let kind = String((envelope.payload["kind"]?.stringValue ?? "media").prefix(24))
             mediaURLs.removeAll { $0.url == url }
             mediaURLs.append(StreamMediaURL(url: url, kind: kind))
@@ -250,6 +257,14 @@ import Foundation
         case "bridge-error": lastError = envelope.payload["message"]?.stringValue
         default: break
         }
+    }
+
+    private static func isVLCMediaURL(_ url: URL) -> Bool {
+        guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
+        let suffixes = [".tiktokcdn.com", ".tiktokcdn-eu.com", ".tiktokcdn-us.com", ".tiktokcdn-in.com", ".ttlivecdn.com"]
+        guard suffixes.contains(where: { host == String($0.dropFirst()) || host.hasSuffix($0) }) else { return false }
+        let media = (url.path + "?" + (url.query ?? "")).lowercased()
+        return media.contains(".flv") || media.contains(".m3u8") || media.contains("only_audio=1")
     }
 
     func speak(_ line: ChatLine) { enqueueSpeech(line) }

@@ -4,8 +4,6 @@ import WebKit
 
 struct CompanionWebView: UIViewRepresentable {
     @ObservedObject var state: CompanionState
-    let url = URL(string: "https://www.tiktok.com/live")!
-
     func makeCoordinator() -> Coordinator { Coordinator(state: state) }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -39,6 +37,7 @@ struct CompanionWebView: UIViewRepresentable {
         }
         state.loadURL = { [weak view] target in
             guard target.scheme == "https", target.host == "www.tiktok.com" else { return }
+            state.noteNavigation(target)
             view?.load(URLRequest(url: target, cachePolicy: .reloadIgnoringLocalCacheData))
         }
         // Tap-Erkennung ohne die WebView-Bedienung zu stören: Events werden nicht konsumiert.
@@ -46,7 +45,7 @@ struct CompanionWebView: UIViewRepresentable {
         tap.cancelsTouchesInView = false
         tap.delegate = context.coordinator
         view.addGestureRecognizer(tap)
-        view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
+        view.load(URLRequest(url: state.currentWebURL, cachePolicy: .reloadIgnoringLocalCacheData))
         return view
     }
 
@@ -73,6 +72,10 @@ struct CompanionWebView: UIViewRepresentable {
             guard let url = navigationAction.request.url else { return decisionHandler(.cancel) }
             if url.scheme == "https", url.host == "www.tiktok.com" { decisionHandler(.allow) }
             else { if url.scheme == "https" { UIApplication.shared.open(url) }; decisionHandler(.cancel) }
+        }
+
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            if let url = webView.url { Task { @MainActor in state.noteNavigation(url) } }
         }
 
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
