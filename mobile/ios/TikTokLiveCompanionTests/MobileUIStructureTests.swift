@@ -35,14 +35,21 @@ final class MobileUIStructureTests: XCTestCase {
         XCTAssertTrue(source.components(separatedBy: "private var moreView")[1].contains("Debugmodus"))
     }
 
-    func testMobilePlayerFocusExcludesTikTokChatAndTargetsOnlyPrimaryVideo() throws {
+    func testMobilePlayerFocusUsesCenterFrameThenLiveOverviewAndPureFullscreen() throws {
         let testURL = URL(fileURLWithPath: #filePath)
         let mobileRoot = testURL.deletingLastPathComponent().deletingLastPathComponent()
         let bridge = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/Resources/webview-bridge.js"))
-        XCTAssertTrue(bridge.contains("function containsChatSurface"))
+        XCTAssertTrue(bridge.contains("[data-e2e=\"live-content-container\"]"))
+        XCTAssertTrue(bridge.contains("[data-e2e=\"live-room-content\"]"))
+        XCTAssertTrue(bridge.contains("[data-e2e=\"live-second-screen-container\"]"))
+        XCTAssertTrue(bridge.contains("data-tlc-mobile-content-root"))
         XCTAssertTrue(bridge.contains("data-tlc-mobile-primary-video"))
-        XCTAssertTrue(bridge.contains("data-tlc-mobile-video-layer"))
+        XCTAssertTrue(bridge.contains("data-tlc-mobile-second-screen"))
+        XCTAssertTrue(bridge.contains("display:none!important"))
+        XCTAssertFalse(bridge.contains("--tlc-scroll-y"))
+        XCTAssertFalse(bridge.contains("object-fit:contain"))
         XCTAssertFalse(bridge.contains("[data-tlc-mobile-player=\"true\"] video"))
-        XCTAssertFalse(bridge.contains("videoArea * 3.5"))
+        XCTAssertTrue(bridge.contains("optionale cookies ablehnen"))
+        XCTAssertTrue(bridge.contains("node.shadowRoot"))
     }
 }

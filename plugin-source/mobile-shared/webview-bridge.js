@@ -13,7 +13,7 @@
   const FORCE_RETURN_MAX_ATTEMPTS = 2;
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
-    "reload-player", "captions", "refresh", "set-player-expanded",
+    "reload-player", "captions", "refresh", "set-player-expanded", "reject-cookies",
     "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter"
   ]);
   let sequence = 0;
@@ -25,7 +25,9 @@
   const seenLiveEventIds = new Set();
   const mediaUrls = new Map();
   let focusedVideo = null;
+  let focusedContentRoot = null;
   let focusedPlayerRoot = null;
+  let focusedSecondScreen = null;
   let audibleStartRequested = false;
   let playerExpanded = false;
   const contentCore = root.TLC_CONTENT_CORE;
@@ -92,38 +94,50 @@
 
   function clearPlayerFocus() {
     focusedVideo?.removeAttribute?.("data-tlc-mobile-primary-video");
+    focusedContentRoot?.removeAttribute?.("data-tlc-mobile-content-root");
     focusedPlayerRoot?.removeAttribute?.("data-tlc-mobile-player-root");
+    focusedSecondScreen?.removeAttribute?.("data-tlc-mobile-second-screen");
     focusedVideo = null;
+    focusedContentRoot = null;
     focusedPlayerRoot = null;
+    focusedSecondScreen = null;
   }
 
   function applyPlayerFocus() {
     if (!isTop) return false;
     const video = primaryVideo();
-    if (!video) return false;
-    const playerRoot = video.closest('[data-e2e="live-room-content"]') || video.closest(".xgplayer") || video.parentElement;
-    if (!playerRoot) return false;
-    if (focusedVideo !== video || focusedPlayerRoot !== playerRoot) {
+    const contentRoot = document.querySelector('[data-e2e="live-content-container"]');
+    const playerRoot = contentRoot?.querySelector('[data-e2e="live-room-content"]') || video?.closest('[data-e2e="live-room-content"]');
+    const secondScreen = contentRoot?.querySelector('[data-e2e="live-second-screen-container"]') || null;
+    if (!contentRoot || !playerRoot) return false;
+    if (focusedVideo !== video || focusedContentRoot !== contentRoot || focusedPlayerRoot !== playerRoot || focusedSecondScreen !== secondScreen) {
       clearPlayerFocus();
       focusedVideo = video;
+      focusedContentRoot = contentRoot;
       focusedPlayerRoot = playerRoot;
+      focusedSecondScreen = secondScreen;
     }
-    if (video.dataset.tlcMediaObserved !== "true") {
+    if (video && video.dataset.tlcMediaObserved !== "true") {
       video.dataset.tlcMediaObserved = "true";
       for (const eventName of ["loadedmetadata", "canplay", "playing"]) video.addEventListener(eventName, collectMediaUrls);
     }
     document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
-    video.setAttribute("data-tlc-mobile-primary-video", "true");
+    video?.setAttribute("data-tlc-mobile-primary-video", "true");
+    contentRoot.setAttribute("data-tlc-mobile-content-root", "true");
     playerRoot.setAttribute("data-tlc-mobile-player-root", "true");
+    secondScreen?.setAttribute("data-tlc-mobile-second-screen", "true");
     if (!document.getElementById("tlc-mobile-player-style")) {
       const style = document.createElement("style");
       style.id = "tlc-mobile-player-style";
       style.textContent = `
-        html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{background:#000!important}
-        html[data-tlc-mobile-focus="true"] body{overflow-x:hidden!important;overflow-y:auto!important;min-height:200vh!important}
-        html[data-tlc-mobile-focus="true"][data-tlc-player-expanded="true"] body{overflow:hidden!important;min-height:100vh!important}
-        [data-tlc-mobile-player-root="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:0!important;overflow:hidden!important;transform:translateY(calc(var(--tlc-scroll-y, 0) * -1px))!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:pan-y!important;visibility:visible!important}
-        html[data-tlc-player-expanded="true"] [data-tlc-mobile-player-root="true"]{transform:none!important;touch-action:auto!important}
+        html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{margin:0!important;background:#000!important;overflow:hidden!important}
+        [data-tlc-mobile-content-root="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0!important;border-radius:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:pan-y!important;visibility:visible!important;box-sizing:border-box!important;overscroll-behavior:contain!important}
+        [data-tlc-mobile-content-root="true"]>:first-child{position:relative!important;width:100%!important;height:100vh!important;min-width:0!important;min-height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:0!important;overflow:hidden!important;background:#000!important}
+        [data-tlc-mobile-player-root="true"]{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:0!important;overflow:hidden!important;background:#000!important;pointer-events:auto!important;visibility:visible!important}
+        [data-tlc-mobile-second-screen="true"]{position:relative!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;box-sizing:border-box!important;background:#000!important}
+        html[data-tlc-player-expanded="true"] [data-tlc-mobile-content-root="true"]{overflow:hidden!important;touch-action:auto!important}
+        html[data-tlc-player-expanded="true"] [data-tlc-mobile-content-root="true"]>:first-child,html[data-tlc-player-expanded="true"] [data-tlc-mobile-player-root="true"]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important}
+        html[data-tlc-player-expanded="true"] [data-tlc-mobile-second-screen="true"]{display:none!important}
       `;
       (document.head || document.documentElement).appendChild(style);
     }
@@ -343,7 +357,13 @@
   function rejectCookieConsent() {
     const rejectPattern = /optionale cookies ablehnen|alle ablehnen|reject all|decline all|nur (?:erforderliche|notwendige) cookies|only necessary cookies/i;
     const cookiePattern = /cookie|cookies|datenschutz|privacy/i;
-    for (const node of document.querySelectorAll("button, [role=button]")) {
+    const candidates = [];
+    const visit = (rootNode) => {
+      for (const node of rootNode.querySelectorAll?.("button, [role=button]") || []) candidates.push(node);
+      for (const node of rootNode.querySelectorAll?.("*") || []) if (node.shadowRoot) visit(node.shadowRoot);
+    };
+    visit(document);
+    for (const node of candidates) {
       const bounds = node.getBoundingClientRect?.();
       const nodeStyle = getComputedStyle(node);
       if (!bounds || bounds.width <= 0 || bounds.height <= 0 || nodeStyle.display === "none" || nodeStyle.visibility === "hidden") continue;
@@ -402,10 +422,11 @@
       else if (name === "reload-player" && video) video.load();
       else if (name === "captions") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /caption|untertitel/i.test(node.textContent || ""))?.click();
       else if (name === "refresh") location.reload();
+      else if (name === "reject-cookies") rejectCookieConsent();
       else if (name === "set-player-expanded") {
         playerExpanded = payload.expanded === true;
         document.documentElement.toggleAttribute("data-tlc-player-expanded", playerExpanded);
-        if (playerExpanded) root.scrollTo(0, 0);
+        focusedContentRoot?.scrollTo?.(0, 0);
       }
       else if (name === "force-profile") {
         const match = location.pathname.match(/^\/@([^/]+)\/live/);
@@ -439,7 +460,11 @@
       if (!focusedVideo?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus();
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    root.addEventListener("scroll", () => focusedPlayerRoot?.style.setProperty("--tlc-scroll-y", String(root.scrollY || document.documentElement.scrollTop || 0)), { passive: true });
+    let cookieAttempts = 0;
+    const cookieTimer = setInterval(() => {
+      cookieAttempts += 1;
+      if (rejectCookieConsent() || cookieAttempts >= 20) clearInterval(cookieTimer);
+    }, 500);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
   emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true });

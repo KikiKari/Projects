@@ -56,7 +56,7 @@ struct CompanionWebView: UIViewRepresentable {
         weak var webView: WKWebView?
         init(state: CompanionState) { self.state = state }
 
-        @objc func handleTap() { Task { @MainActor in state.toggleVideoExpanded() } }
+        @objc func handleTap() { Task { @MainActor in state.expandVideo() } }
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -76,6 +76,14 @@ struct CompanionWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             if let url = webView.url { Task { @MainActor in state.noteNavigation(url) } }
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            for delay in [0.5, 1.5, 3.0] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak webView] in
+                    webView?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command('reject-cookies', {})")
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {

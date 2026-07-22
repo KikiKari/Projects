@@ -105,6 +105,11 @@ import Foundation
         videoExpanded.toggle()
         sendCommand?("set-player-expanded", ["expanded": videoExpanded])
     }
+    func expandVideo() {
+        guard !videoExpanded else { return }
+        videoExpanded = true
+        sendCommand?("set-player-expanded", ["expanded": true])
+    }
     func clearDebugEvents() { debugEvents = [] }
 
     func startForce() {
