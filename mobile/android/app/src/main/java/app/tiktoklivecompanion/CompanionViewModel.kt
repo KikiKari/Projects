@@ -95,7 +95,11 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun clearError() = mutable.update { it.copy(error = null) }
     fun setDebugEnabled(enabled: Boolean) = mutable.update { it.copy(debugEnabled = enabled) }
     fun clearDebugEvents() = mutable.update { it.copy(debugEvents = emptyList()) }
-    fun toggleVideoExpanded() = mutable.update { it.copy(videoExpanded = !it.videoExpanded) }
+    fun toggleVideoExpanded() {
+        val expanded = !mutable.value.videoExpanded
+        mutable.update { it.copy(videoExpanded = expanded) }
+        sendCommand?.invoke("set-player-expanded", mapOf("expanded" to expanded))
+    }
     fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
     fun startForce() {
         val recovery = mutable.value.pageInfo["URL"]?.takeIf { it.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?")) }
@@ -180,7 +184,11 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             it.copy(connected = true, debugEvents = events)
         }
         when (envelope.type) {
-            "bridge-ready" -> { pushLimiter(); if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap()) }
+            "bridge-ready" -> {
+                pushLimiter()
+                sendCommand?.invoke("set-player-expanded", mapOf("expanded" to mutable.value.videoExpanded))
+                if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap())
+            }
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false

@@ -52,7 +52,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             settings.domStorageEnabled = true
             // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
             settings.userAgentString = settings.userAgentString.replace("; wv", "").replace(Regex("Android [^;]+; [^)]+\\)"), "Windows NT 10.0; Win64; x64)").replace(Regex("Mobile Safari"), "Safari")
-            settings.useWideViewPort = true
+            settings.useWideViewPort = false
             settings.loadWithOverviewMode = false
             settings.mediaPlaybackRequiresUserGesture = false
             settings.allowFileAccess = false
