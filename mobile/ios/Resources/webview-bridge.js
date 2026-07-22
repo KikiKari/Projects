@@ -24,9 +24,9 @@
   const chat = [];
   const seenLiveEventIds = new Set();
   const mediaUrls = new Map();
-  let focusedPlayer = null;
   let focusedVideo = null;
-  let focusedPlayerLayers = [];
+  let focusedVideoAncestors = [];
+  let focusedVideoHadControls = false;
   let audibleStartRequested = false;
 
   function nativePost(message) {
@@ -69,64 +69,45 @@
     for (const entry of (performance.getEntriesByType?.("resource") || []).slice(-200)) if (mediaPattern.test(entry.name || "")) rememberMediaUrl(entry.name, "network");
   }
 
-  function containsChatSurface(node) {
-    if (!node?.querySelector) return false;
-    return Boolean(node.querySelector([
-      '[data-e2e*="chat" i]', '[data-testid*="chat" i]', '[class*="ChatRoom"]', '[class*="chat-room"]',
-      'textarea', '[contenteditable="true"]', 'input[placeholder*="Tippen" i]', 'input[placeholder*="chat" i]'
-    ].join(',')));
-  }
-
-  function playerContainer(video) {
-    if (!video) return null;
-    let fallback = video.parentElement || video;
-    for (let node = video.parentElement, depth = 0; node && node !== document.body && depth < 10; node = node.parentElement, depth += 1) {
-      // TikTok legt Player und Chat in einen gemeinsamen LIVE-Container. Diese Grenze darf nie fokussiert werden.
-      if (containsChatSurface(node)) break;
-      fallback = node;
-      const controls = node.querySelectorAll('button,[role="button"],[role="slider"],input[type="range"]');
-      const stablePlayerMarker = node.matches?.('[data-e2e*="player" i],[data-testid*="player" i],[class*="PlayerContainer"],[class*="player-container"]');
-      if (stablePlayerMarker && controls.length) return node;
-    }
-    return fallback;
-  }
-
   function clearPlayerFocus() {
-    focusedPlayer?.removeAttribute?.("data-tlc-mobile-player");
-    focusedVideo?.removeAttribute?.("data-tlc-mobile-primary-video");
-    for (const layer of focusedPlayerLayers) layer.removeAttribute?.("data-tlc-mobile-video-layer");
-    focusedPlayer = null;
+    if (focusedVideo) {
+      focusedVideo.removeAttribute?.("data-tlc-mobile-primary-video");
+      focusedVideo.controls = focusedVideoHadControls;
+    }
+    for (const ancestor of focusedVideoAncestors) ancestor.removeAttribute?.("data-tlc-mobile-video-ancestor");
     focusedVideo = null;
-    focusedPlayerLayers = [];
+    focusedVideoAncestors = [];
+    focusedVideoHadControls = false;
   }
 
   function applyPlayerFocus() {
     if (!isTop) return false;
     const video = primaryVideo();
-    const container = playerContainer(video);
-    if (!video || !container) return false;
-    if (focusedPlayer !== container || focusedVideo !== video) clearPlayerFocus();
-    focusedPlayer = container;
-    focusedVideo = video;
-    for (let layer = video.parentElement; layer && layer !== container; layer = layer.parentElement) {
-      layer.setAttribute("data-tlc-mobile-video-layer", "true");
-      focusedPlayerLayers.push(layer);
+    if (!video) return false;
+    if (focusedVideo !== video) {
+      clearPlayerFocus();
+      focusedVideoHadControls = video.controls;
+      focusedVideo = video;
+      for (let ancestor = video.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
+        ancestor.setAttribute("data-tlc-mobile-video-ancestor", "true");
+        focusedVideoAncestors.push(ancestor);
+      }
     }
     if (video.dataset.tlcMediaObserved !== "true") {
       video.dataset.tlcMediaObserved = "true";
       for (const eventName of ["loadedmetadata", "canplay", "playing"]) video.addEventListener(eventName, collectMediaUrls);
     }
     document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
-    container.setAttribute("data-tlc-mobile-player", "true");
     video.setAttribute("data-tlc-mobile-primary-video", "true");
+    video.controls = true;
     if (!document.getElementById("tlc-mobile-player-style")) {
       const style = document.createElement("style");
       style.id = "tlc-mobile-player-style";
       style.textContent = `
         html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{overflow:hidden!important;background:#000!important}
-        [data-tlc-mobile-player="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;z-index:2147483646!important;background:#000!important;overflow:hidden!important}
-        [data-tlc-mobile-video-layer="true"]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;overflow:visible!important}
-        video[data-tlc-mobile-primary-video="true"]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;object-fit:contain!important;background:#000!important}
+        html[data-tlc-mobile-focus="true"] body *:not(video[data-tlc-mobile-primary-video="true"]){z-index:auto!important}
+        [data-tlc-mobile-video-ancestor="true"]{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;clip-path:none!important;overflow:visible!important}
+        video[data-tlc-mobile-primary-video="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;object-fit:contain!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;visibility:visible!important}
       `;
       (document.head || document.documentElement).appendChild(style);
     }
@@ -413,7 +394,7 @@
   const startTopFrame = () => {
     inspect();
     handleForceReturn();
-    const observer = new MutationObserver(() => { if (!focusedPlayer?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus(); });
+    const observer = new MutationObserver(() => { if (!focusedVideo?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus(); });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
