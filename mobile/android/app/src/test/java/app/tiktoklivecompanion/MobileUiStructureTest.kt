@@ -26,12 +26,19 @@ class MobileUiStructureTest {
         assertTrue(source.split("CapabilityRows(state)").size - 1 == 1)
     }
 
-    @Test fun mobilePlayerFocusExcludesTikTokChatAndTargetsOnlyPrimaryVideo() {
+    @Test fun mobilePlayerFocusUsesCenterFrameThenLiveOverviewAndPureFullscreen() {
         val source = bridgeSource()
-        assertTrue(source.contains("function containsChatSurface"))
+        assertTrue(source.contains("[data-e2e=\"live-content-container\"]"))
+        assertTrue(source.contains("[data-e2e=\"live-room-content\"]"))
+        assertTrue(source.contains("[data-e2e=\"live-second-screen-container\"]"))
+        assertTrue(source.contains("data-tlc-mobile-content-root"))
         assertTrue(source.contains("data-tlc-mobile-primary-video"))
-        assertTrue(source.contains("data-tlc-mobile-video-layer"))
+        assertTrue(source.contains("data-tlc-mobile-second-screen"))
+        assertTrue(source.contains("display:none!important"))
+        assertFalse(source.contains("--tlc-scroll-y"))
+        assertFalse(source.contains("object-fit:contain"))
         assertFalse(source.contains("[data-tlc-mobile-player=\"true\"] video"))
-        assertFalse(source.contains("videoArea * 3.5"))
+        assertTrue(source.contains("optionale cookies ablehnen"))
+        assertTrue(source.contains("node.shadowRoot"))
     }
 }

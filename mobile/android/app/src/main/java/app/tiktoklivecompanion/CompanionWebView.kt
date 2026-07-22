@@ -5,6 +5,7 @@ import android.content.Intent
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.webkit.WebChromeClient
+import android.webkit.CookieManager
 import android.os.Message
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -58,6 +59,8 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.setSupportMultipleWindows(false)
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
             if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) WebViewCompat.startSafeBrowsing(context) {}
             val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
@@ -71,6 +74,14 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                 override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
                     url?.let(viewModel::noteNavigation)
                     super.onPageStarted(view, url, favicon)
+                }
+                override fun onPageFinished(view: WebView, url: String?) {
+                    super.onPageFinished(view, url)
+                    for (delayMs in listOf(500L, 1_500L, 3_000L)) view.postDelayed({
+                        view.evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command('reject-cookies', {})") {
+                            CookieManager.getInstance().flush()
+                        }
+                    }, delayMs)
                 }
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     val uri = request.url

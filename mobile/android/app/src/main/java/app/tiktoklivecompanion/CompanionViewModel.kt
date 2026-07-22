@@ -100,6 +100,11 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         mutable.update { it.copy(videoExpanded = expanded) }
         sendCommand?.invoke("set-player-expanded", mapOf("expanded" to expanded))
     }
+    fun expandVideo() {
+        if (mutable.value.videoExpanded) return
+        mutable.update { it.copy(videoExpanded = true) }
+        sendCommand?.invoke("set-player-expanded", mapOf("expanded" to true))
+    }
     fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
     fun startForce() {
         val recovery = mutable.value.pageInfo["URL"]?.takeIf { it.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?")) }
