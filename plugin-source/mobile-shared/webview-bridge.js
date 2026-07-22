@@ -25,8 +25,7 @@
   const seenLiveEventIds = new Set();
   const mediaUrls = new Map();
   let focusedVideo = null;
-  let focusedVideoAncestors = [];
-  let focusedVideoHadControls = false;
+  let focusedPlayerRoot = null;
   let audibleStartRequested = false;
   let playerExpanded = false;
   const contentCore = root.TLC_CONTENT_CORE;
@@ -92,28 +91,22 @@
   }
 
   function clearPlayerFocus() {
-    if (focusedVideo) {
-      focusedVideo.removeAttribute?.("data-tlc-mobile-primary-video");
-      focusedVideo.controls = focusedVideoHadControls;
-    }
-    for (const ancestor of focusedVideoAncestors) ancestor.removeAttribute?.("data-tlc-mobile-video-ancestor");
+    focusedVideo?.removeAttribute?.("data-tlc-mobile-primary-video");
+    focusedPlayerRoot?.removeAttribute?.("data-tlc-mobile-player-root");
     focusedVideo = null;
-    focusedVideoAncestors = [];
-    focusedVideoHadControls = false;
+    focusedPlayerRoot = null;
   }
 
   function applyPlayerFocus() {
     if (!isTop) return false;
     const video = primaryVideo();
     if (!video) return false;
-    if (focusedVideo !== video) {
+    const playerRoot = video.closest('[data-e2e="live-room-content"]') || video.closest(".xgplayer") || video.parentElement;
+    if (!playerRoot) return false;
+    if (focusedVideo !== video || focusedPlayerRoot !== playerRoot) {
       clearPlayerFocus();
-      focusedVideoHadControls = video.controls;
       focusedVideo = video;
-      for (let ancestor = video.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
-        ancestor.setAttribute("data-tlc-mobile-video-ancestor", "true");
-        focusedVideoAncestors.push(ancestor);
-      }
+      focusedPlayerRoot = playerRoot;
     }
     if (video.dataset.tlcMediaObserved !== "true") {
       video.dataset.tlcMediaObserved = "true";
@@ -121,7 +114,7 @@
     }
     document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
     video.setAttribute("data-tlc-mobile-primary-video", "true");
-    video.controls = true;
+    playerRoot.setAttribute("data-tlc-mobile-player-root", "true");
     if (!document.getElementById("tlc-mobile-player-style")) {
       const style = document.createElement("style");
       style.id = "tlc-mobile-player-style";
@@ -129,10 +122,8 @@
         html[data-tlc-mobile-focus="true"],html[data-tlc-mobile-focus="true"] body{background:#000!important}
         html[data-tlc-mobile-focus="true"] body{overflow-x:hidden!important;overflow-y:auto!important;min-height:200vh!important}
         html[data-tlc-mobile-focus="true"][data-tlc-player-expanded="true"] body{overflow:hidden!important;min-height:100vh!important}
-        html[data-tlc-mobile-focus="true"] body *:not(video[data-tlc-mobile-primary-video="true"]){z-index:auto!important}
-        [data-tlc-mobile-video-ancestor="true"]{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;clip-path:none!important;overflow:visible!important}
-        video[data-tlc-mobile-primary-video="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;margin:0!important;transform:translateY(calc(var(--tlc-scroll-y, 0) * -1px))!important;object-fit:contain!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:pan-y!important;visibility:visible!important}
-        html[data-tlc-player-expanded="true"] video[data-tlc-mobile-primary-video="true"]{transform:none!important;touch-action:auto!important}
+        [data-tlc-mobile-player-root="true"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:0!important;overflow:hidden!important;transform:translateY(calc(var(--tlc-scroll-y, 0) * -1px))!important;background:#000!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:pan-y!important;visibility:visible!important}
+        html[data-tlc-player-expanded="true"] [data-tlc-mobile-player-root="true"]{transform:none!important;touch-action:auto!important}
       `;
       (document.head || document.documentElement).appendChild(style);
     }
@@ -353,7 +344,9 @@
     const rejectPattern = /optionale cookies ablehnen|alle ablehnen|reject all|decline all|nur (?:erforderliche|notwendige) cookies|only necessary cookies/i;
     const cookiePattern = /cookie|cookies|datenschutz|privacy/i;
     for (const node of document.querySelectorAll("button, [role=button]")) {
-      if (node.offsetParent === null) continue;
+      const bounds = node.getBoundingClientRect?.();
+      const nodeStyle = getComputedStyle(node);
+      if (!bounds || bounds.width <= 0 || bounds.height <= 0 || nodeStyle.display === "none" || nodeStyle.visibility === "hidden") continue;
       const label = `${node.getAttribute?.("aria-label") || ""} ${node.textContent || ""}`;
       if (!rejectPattern.test(label)) continue;
       const scope = node.closest('[role="dialog"], [aria-modal="true"], [class*="cookie" i]') || node.parentElement?.parentElement || node.parentElement;
@@ -446,7 +439,7 @@
       if (!focusedVideo?.isConnected || primaryVideo() !== focusedVideo) applyPlayerFocus();
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    root.addEventListener("scroll", () => focusedVideo?.style.setProperty("--tlc-scroll-y", String(root.scrollY || document.documentElement.scrollTop || 0)), { passive: true });
+    root.addEventListener("scroll", () => focusedPlayerRoot?.style.setProperty("--tlc-scroll-y", String(root.scrollY || document.documentElement.scrollTop || 0)), { passive: true });
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
   emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true });
