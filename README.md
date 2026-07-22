@@ -14,7 +14,7 @@ Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkenn
 
 ## Schnellstart
 
-1. Lade `release/0.7.0/tiktok-live-companion-extension-0.7.0.zip` herunter und entpacke die Datei.
+1. Lade `release/0.7.1/tiktok-live-companion-extension-0.7.1.zip` herunter und entpacke die Datei.
 2. Öffne `edge://extensions` oder `chrome://extensions` und aktiviere den Entwicklermodus.
 3. Wähle **Entpackte Erweiterung laden** und den Ordner mit `manifest.json`.
 4. Öffne einen öffentlichen TikTok-LIVE-Tab und klicke auf **TikTok LIVE Companion**.

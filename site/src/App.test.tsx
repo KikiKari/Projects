@@ -14,7 +14,7 @@ describe("documentation site", () => {
   it("renders the German overview and download", () => {
     render(<MemoryRouter initialEntries={["/de"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Version 0.7.0 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.0.zip");
+    expect(screen.getByRole("link", { name: /Version 0.7.1 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
   });
 
   it("opens keyboard search and lists English architecture", () => {
@@ -44,7 +44,7 @@ describe("documentation site", () => {
 
   it("exposes all release downloads and the checksum action", () => {
     render(<MemoryRouter initialEntries={["/en/downloads"]}><App/></MemoryRouter>);
-    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.0.zip");
+    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
     expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.7.0.zip");
     expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.0.zip");
     expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.0-source.zip");

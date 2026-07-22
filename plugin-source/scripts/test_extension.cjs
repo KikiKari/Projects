@@ -42,7 +42,7 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.7.0");
+assert.strictEqual(manifest.version, "0.7.1");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
@@ -305,4 +305,4 @@ assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 
-console.log(`PASS: manifest 0.7.0, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
+console.log(`PASS: manifest ${manifest.version}, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

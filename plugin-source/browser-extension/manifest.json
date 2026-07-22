@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TikTok LIVE Companion",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Accessible TikTok LIVE chat speech, participant statistics, captions, player controls and optional paired local audio tools.",
   "minimum_chrome_version": "114",
   "permissions": [
