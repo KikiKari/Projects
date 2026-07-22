@@ -53,7 +53,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
             settings.userAgentString = settings.userAgentString.replace("; wv", "").replace(Regex("Android [^;]+; [^)]+\\)"), "Windows NT 10.0; Win64; x64)").replace(Regex("Mobile Safari"), "Safari")
             settings.useWideViewPort = true
-            settings.loadWithOverviewMode = true
+            settings.loadWithOverviewMode = false
             settings.mediaPlaybackRequiresUserGesture = false
             settings.allowFileAccess = false
             settings.allowContentAccess = false
@@ -68,6 +68,10 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                 }
             }
             webViewClient = object : WebViewClient() {
+                override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                    url?.let(viewModel::noteNavigation)
+                    super.onPageStarted(view, url, favicon)
+                }
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     val uri = request.url
                     if (uri.scheme == "https" && uri.host == "www.tiktok.com") return false
@@ -93,7 +97,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             }
             viewModel.sendCommand = { command, payload -> post { evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null) } }
             viewModel.loadUrl = { url -> post { loadUrl(url) } }
-            loadUrl("https://www.tiktok.com/live")
+            loadUrl(viewModel.currentWebUrl)
         }
         TapDetectingFrameLayout(context, onTap).apply { addView(webView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)) }
     })

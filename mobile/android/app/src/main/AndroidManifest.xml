@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@style/Theme.TikTokLiveCompanion" android:label="TikTok LIVE Companion">
         <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true"/>
-        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="unspecified">
+        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="unspecified" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>

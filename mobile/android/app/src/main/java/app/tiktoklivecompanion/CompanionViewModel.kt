@@ -56,6 +56,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
     var loadUrl: ((String) -> Unit)? = null
     var backgroundPlaybackChanged: ((Boolean) -> Unit)? = null
+    var currentWebUrl: String = "https://www.tiktok.com/live"
+        private set
     private var speechSequence = 0L
     private var forceWatchdog: Job? = null
 
@@ -111,13 +113,17 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val recovery = mutable.value.forceRecoveryUrl
         forceWatchdog?.cancel()
         mutable.update { it.copy(forceInProgress = false, error = if (recovery == null) "Force: $reason · bitte manuell zurück" else "Force: $reason · LIVE-Stream wurde wieder geöffnet") }
-        recovery?.let { loadUrl?.invoke(it) }
+        recovery?.let { currentWebUrl = it; loadUrl?.invoke(it) }
+    }
+    fun noteNavigation(url: String) {
+        if (url.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?"))) currentWebUrl = url
     }
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
         mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList()) }
         backgroundPlaybackChanged?.invoke(true)
+        currentWebUrl = url
         loadUrl?.invoke(url)
     }
     fun enableStreamSound() {
@@ -250,6 +256,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "player-state" -> mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
             "media-url" -> {
                 val safe = BridgeValidator.safeHttpsUrl(envelope.payload["url"] as? String)?.toString() ?: return
+                if (!isVlcMediaUrl(safe)) return
                 val kind = (envelope.payload["kind"] as? String)?.take(24) ?: "media"
                 mutable.update { current ->
                     val next = (current.mediaUrls.filterNot { it.url == safe } + StreamMediaUrl(safe, kind)).takeLast(12)
@@ -261,4 +268,13 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     override fun onCleared() { forceWatchdog?.cancel(); recognizer.cancel(); super.onCleared() }
+
+    private fun isVlcMediaUrl(value: String): Boolean = try {
+        val uri = java.net.URI(value)
+        val host = uri.host?.lowercase() ?: return false
+        val allowed = listOf(".tiktokcdn.com", ".tiktokcdn-eu.com", ".tiktokcdn-us.com", ".tiktokcdn-in.com", ".ttlivecdn.com")
+            .any { host == it.removePrefix(".") || host.endsWith(it) }
+        val media = "${uri.path.orEmpty()}?${uri.query.orEmpty()}".lowercase()
+        uri.scheme == "https" && allowed && (media.contains(".flv") || media.contains(".m3u8") || media.contains("only_audio=1"))
+    } catch (_: Exception) { false }
 }
