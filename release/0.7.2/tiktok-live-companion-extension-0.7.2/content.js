@@ -529,6 +529,7 @@
     const context = new AudioContextClass();
     const source = context.createMediaElementSource(video);
     const compressor = context.createDynamicsCompressor();
+    const makeupGain = context.createGain();
     const analyser = context.createAnalyser();
     analyser.fftSize = 2048;
     compressor.threshold.value = 0;
@@ -536,8 +537,9 @@
     compressor.ratio.value = 1;
     compressor.attack.value = 0.001;
     compressor.release.value = 0.08;
-    source.connect(compressor).connect(analyser).connect(context.destination);
-    audioPipeline = { video, context, source, compressor, analyser, enabled: false, limiterStrength: 30, thresholdDbfs: core.limiterStrengthToDbfs(30) };
+    makeupGain.gain.value = 1;
+    source.connect(compressor).connect(makeupGain).connect(analyser).connect(context.destination);
+    audioPipeline = { video, context, source, compressor, makeupGain, analyser, enabled: false, limiterStrength: 30, thresholdDbfs: core.limiterStrengthToDbfs(30) };
     await context.resume();
     return audioPipeline;
   }
@@ -555,6 +557,7 @@
       pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
       pipeline.compressor.attack.value = 0.001;
       pipeline.compressor.release.value = 0.08;
+      pipeline.makeupGain.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
       debug("limiter", { mode: "compressor", enabled: pipeline.enabled, strength, threshold });
       return pipeline;
     } catch (error) {

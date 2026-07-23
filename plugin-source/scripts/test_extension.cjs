@@ -101,6 +101,8 @@ assert.strictEqual(core.captionsOverlap(
 ), false);
 assert.strictEqual(core.limiterStrengthToDbfs(0), -1);
 assert.strictEqual(core.limiterStrengthToDbfs(100), -18);
+assert.ok(Math.abs(core.limiterMakeupCompensation(-18, 20) - 0.3069) < 0.001);
+assert.strictEqual(core.limiterMakeupCompensation(0, 1), 1);
 assert.strictEqual(core.limiterDbfsToStrength(-18), 100);
 assert.strictEqual(inspected.media.length, 2);
 assert.ok(inspected.media.some((item) => item.protocol === "FLV" && item.quality === "HD"));
@@ -302,7 +304,8 @@ assert.ok(!contentSource.includes('limiter-fallback'));
 assert.ok(contentSource.includes("compressor.ratio.value = pipeline.enabled ? 20 : 1"));
 assert.ok(contentSource.includes("compressor.attack.value = 0.001"));
 assert.ok(contentSource.includes("compressor.release.value = 0.08"));
-assert.strictEqual((contentSource.match(/source\.connect\(compressor\)\.connect\(analyser\)\.connect\(context\.destination\)/g) || []).length, 1);
+assert.strictEqual((contentSource.match(/source\.connect\(compressor\)\.connect\(makeupGain\)\.connect\(analyser\)\.connect\(context\.destination\)/g) || []).length, 1);
+assert.ok(contentSource.includes("core.limiterMakeupCompensation(threshold, 20)"));
 assert.ok(contentSource.includes('collectRecommendedSummary'));
 assert.ok(contentSource.includes('collectProfileFromHover'));
 assert.ok(contentSource.includes('credentials: "omit"'));

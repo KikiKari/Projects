@@ -183,6 +183,13 @@
     return Math.round(((-1 - threshold) / 17) * 100);
   }
 
+  function limiterMakeupCompensation(thresholdDbfs, ratio = 20) {
+    const threshold = Math.max(-100, Math.min(0, Number(thresholdDbfs) || 0));
+    const safeRatio = Math.max(1, Number(ratio) || 1);
+    const fullScaleOutputDb = threshold + ((0 - threshold) / safeRatio);
+    return Math.pow(10, (fullScaleOutputDb * 0.6) / 20);
+  }
+
   function parseJsonValue(value) {
     if (value && typeof value === "object") return value;
     if (typeof value !== "string") return null;
@@ -549,6 +556,7 @@
     captionsOverlap,
     limiterStrengthToDbfs,
     limiterDbfsToStrength,
+    limiterMakeupCompensation,
     sanitizeChatText,
     normalizedIdentity,
     wordCount,
