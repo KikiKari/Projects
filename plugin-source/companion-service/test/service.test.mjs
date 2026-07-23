@@ -24,7 +24,9 @@ test("health requires pairing and reports providers", async (t) => {
   assert.equal((await fetch(`${base}/v1/health`)).status, 401);
   const response = await fetch(`${base}/v1/health`, { headers });
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).auddConfigured, true);
+  const health = await response.json();
+  assert.equal(health.version, "0.7.2");
+  assert.equal(health.auddConfigured, true);
 });
 
 test("rejects web origins", async (t) => {

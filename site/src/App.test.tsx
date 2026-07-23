@@ -14,7 +14,7 @@ describe("documentation site", () => {
   it("renders the German overview and download", () => {
     render(<MemoryRouter initialEntries={["/de"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Version 0.7.1 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
+    expect(screen.getByRole("link", { name: /Version 0.7.2 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.2.zip");
   });
 
   it("opens keyboard search and lists English architecture", () => {
@@ -44,12 +44,12 @@ describe("documentation site", () => {
 
   it("exposes all release downloads and the checksum action", () => {
     render(<MemoryRouter initialEntries={["/en/downloads"]}><App/></MemoryRouter>);
-    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
-    expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.7.0.zip");
-    expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.0.zip");
-    expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.0-source.zip");
+    expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.2.zip");
+    expect(screen.getByRole("link", { name: /Installer \(unsigned-dev\)/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-setup-0.7.2-unsigned-dev.exe");
+    expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.7.2.zip");
+    expect(screen.getByRole("link", { name: /Manual service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.2.zip");
+    expect(screen.getByRole("link", { name: /iOS source 0.7.0/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.0-source.zip");
     expect(screen.getByRole("link", { name: /Android\/HyperOS source/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.0-source.zip");
-    expect(screen.getByRole("link", { name: /Android test APK/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.0-debug.apk");
     expect(screen.getByRole("button", { name: "Copy checksums" })).toBeInTheDocument();
   });
 

@@ -1,25 +1,24 @@
-# Downloads und Release 0.7.0
+# Downloads und Release 0.7.2
 
-## Artefakte
+## Browser-Kernpaket
 
-- `tiktok-live-companion-extension-0.7.0.zip` – entpackbare Edge-/Chrome-Erweiterung
-- `tiktok-live-companion-plugin-0.7.0.zip` – Codex-Plugin einschließlich Skill, Referenzen und Tests
-- `tiktok-live-companion-service-0.7.0.zip` – optionaler lokaler Windows-Dienst
-- `tiktok-live-companion-ios-0.7.0-source.zip` – vollständiges SwiftUI-/Xcode-Quellprojekt
-- `tiktok-live-companion-android-0.7.0-source.zip` – Kotlin-/Compose-Quellprojekt für Android und HyperOS
-- `tiktok-live-companion-android-0.7.0-debug.apk` – optionales Testpaket, wenn die Android-Toolchain verfügbar war
-- `tiktok-live-companion-0.7.0-SHA256.txt` – Integritätswerte
+- `tiktok-live-companion-extension-0.7.2.zip` – entpackbare Edge-/Chrome-Erweiterung
+- `tiktok-live-companion-plugin-0.7.2.zip` – Codex-Plugin mit Browser-, Dienst- und Installerquellen
+- `tiktok-live-companion-service-0.7.2.zip` – manueller lokaler Windows-Dienst
+- `tiktok-live-companion-setup-0.7.2-unsigned-dev.exe` – benutzerbezogener Windows-Installer mit fester Node-Laufzeit und Chrome-/Edge-Native-Messaging; nicht codesigniert
+- `tiktok-live-companion-0.7.2-SHA256.txt` – Integritätswerte
+
+Android und iOS bleiben unverändert auf 0.7.0 und sind nicht Bestandteil dieses Browser-Kernpakets.
 
 ## SHA-256
 
 ```text
-40721b800a0f1aa4580ebabaa13ad82d10426ce0287eb1559749385f5850dfce  tiktok-live-companion-extension-0.7.0.zip
-c8696754cc06453ad26237cb0d1d641ddeb19b7c21df7df3b06c7ac0b55f457c  tiktok-live-companion-plugin-0.7.0.zip
-617c63288976c8507d2e5cd6cfaf9eb5767f43b4c901e703f29d3aff58aa6c56  tiktok-live-companion-service-0.7.0.zip
+6c35fc60ff8842479a8fe5e2eb165f69cb97ae6e54753816f89b78abc64f66ea  tiktok-live-companion-extension-0.7.2.zip
+398dfd9b03962171f31409c611eff5d7cd2a9d99f49cb0255fc05aa0fbfe906e  tiktok-live-companion-plugin-0.7.2.zip
+c474066ec55cf539df1d8457c45118d1841a2b5f5fbc886cccb74dc339155aaf  tiktok-live-companion-service-0.7.2.zip
+3d1f96d856c65e8bf3dd5cce4224a54e7c5fbfcf3468826766d5321c78ab6c0c  tiktok-live-companion-setup-0.7.2-unsigned-dev.exe
 ```
 
-## Änderungen in 0.7.0
+## Änderungen
 
-Version 0.7.0 ergänzt native Apps für iOS und Android/HyperOS, eine origin-beschränkte WebView-Bridge sowie einen kurzlebigen ShazamKit-Token-Endpunkt. Die Browser-Erweiterung behält die manuelle AudD-Songerkennung; mobile Apps verwenden ShazamKit mit Mikrofon als stabilem Weg und WebView-PCM als experimentellem Weg.
-
-AudD erhält im Browser nur nach einem ausdrücklichen Klick einen ungefähr zwölfsekündigen Audioausschnitt. Mobil beginnt ebenfalls keine Erkennung ohne Klick. Das proprietäre ShazamKit-AAR, Apple-Schlüssel und Signierzertifikate sind nicht Bestandteil der Archive.
+0.7.2 entfernt die Qualitätsbox und sechs Erklärungstexte, stabilisiert native Untertitel durch DOM-Zusammenführung und WebSocket-Vorrang, stellt Lautstärke und Pegelschutz als 0–100 dar und ersetzt die fehleranfällige Sidepanel-Aufnahme durch einen Background-Broker. Native Messaging automatisiert die interne Dienstauthentifizierung und hält den AudD-Token außerhalb von Erweiterungsspeicher, Logs und Debugexporten.

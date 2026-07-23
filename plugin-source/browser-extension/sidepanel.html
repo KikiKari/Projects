@@ -30,8 +30,9 @@
       <div class="settings-grid speech-settings">
         <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option></select></label>
         <label><span>Dienstadresse</span><input id="service-url" type="url" value="http://127.0.0.1:43117" spellcheck="false"></label>
-        <label><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off"></label>
+        <label><span>AudD API-Token (optional)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
       </div>
+      <button id="service-action" class="secondary">Sprachdienst installieren</button>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
       <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen vorlesen</label>
       <label class="option-row"><input id="shorten-names" type="checkbox"> Geeignete lange Namen kürzen</label>
@@ -56,7 +57,6 @@
       <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
       <p id="song-status" class="inline-status">Es wird nichts aufgenommen oder übertragen.</p>
       <div id="song-result" class="song-result" hidden></div>
-      <p class="muted small">Nach einem Klick werden etwa 12 Sekunden Tab-Audio über den lokalen Dienst an AudD übertragen. Anbietergebühren können anfallen.</p>
     </section>
 
     <section aria-labelledby="caption-heading">
@@ -74,7 +74,6 @@
         <h2 id="hook-heading">WebSocket-Hook</h2>
         <span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span>
       </div>
-      <p class="muted small">Der Hook wird vor dem Player-Code gesetzt. Der aktuelle Tab wird danach neu geladen.</p>
       <div class="button-row">
         <button id="enable-hook" class="primary">Hook setzen</button>
         <button id="disable-hook" class="secondary">Hook deaktivieren</button>
@@ -82,7 +81,6 @@
       </div>
       <p id="hook-status" class="inline-status"></p>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Hook beim Öffnen von TikTok automatisch starten</label>
-      <p class="muted small reset-note">Refresh leert nur die flüchtigen Daten dieses Tabs, aktiviert den Hook erneut und lädt TikTok ohne Seitencache. Cookies bleiben unverändert.</p>
     </section>
 
     <section aria-labelledby="stats-heading">
@@ -110,11 +108,10 @@
       <div class="audio-controls">
         <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
         <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
-        <div class="audio-meter-row"><span>Digitaler Spitzenpegel</span><strong id="player-peak">– dBFS</strong></div>
+        <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
         <label class="option-row"><input id="limiter-enabled" type="checkbox"> Digitalen Pegelschutz aktivieren</label>
-        <div class="control-label"><label for="limiter-threshold">Grenzwert</label><output id="limiter-threshold-output" for="limiter-threshold">−6 dBFS</output></div>
-        <input id="limiter-threshold" type="range" min="-30" max="-1" step="1" value="-6">
-        <p class="muted small audio-note">dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im Browser.</p>
+        <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
+        <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
       </div>
       <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
       <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
@@ -131,15 +128,6 @@
       </div>
       <div id="profile-info" class="profile-info" hidden></div>
       <div id="summary-info" class="summary-info"></div>
-    </section>
-
-    <section aria-labelledby="quality-heading">
-      <div class="section-title">
-        <h2 id="quality-heading">Verfügbare Bildqualitäten</h2>
-        <span id="quality-count" class="count">0</span>
-      </div>
-      <div id="quality-list" class="list empty">Noch keine Qualitätsstufen aus den Stream-Metadaten erkannt.</div>
-      <p id="quality-action-status" role="status" class="inline-status"></p>
     </section>
 
     <section aria-labelledby="links-heading">

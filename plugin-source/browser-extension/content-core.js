@@ -145,6 +145,44 @@
     };
   }
 
+  function normalizeCaptionText(value) {
+    return String(value || "")
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+  }
+
+  function captionText(caption) {
+    return normalizeCaptionText((caption?.contents || []).map((content) => content.text || "").join(" "));
+  }
+
+  function captionsOverlap(left, right) {
+    const a = typeof left === "string" ? normalizeCaptionText(left) : captionText(left);
+    const b = typeof right === "string" ? normalizeCaptionText(right) : captionText(right);
+    if (!a || !b) return false;
+    if (a.includes(b) || b.includes(a)) return true;
+    const aWords = a.split(" ");
+    const bWords = b.split(" ");
+    const max = Math.min(8, aWords.length, bWords.length);
+    for (let size = max; size >= 3; size -= 1) {
+      if (aWords.slice(-size).join(" ") === bWords.slice(0, size).join(" ")) return true;
+      if (bWords.slice(-size).join(" ") === aWords.slice(0, size).join(" ")) return true;
+    }
+    return false;
+  }
+
+  function limiterStrengthToDbfs(value) {
+    const strength = Math.max(0, Math.min(100, Number(value) || 0));
+    return Math.round((-1 - (strength * 17 / 100)) * 100) / 100;
+  }
+
+  function limiterDbfsToStrength(value) {
+    const threshold = Math.max(-18, Math.min(-1, Number(value) || -1));
+    return Math.round(((-1 - threshold) / 17) * 100);
+  }
+
   function parseJsonValue(value) {
     if (value && typeof value === "object") return value;
     if (typeof value !== "string") return null;
@@ -506,6 +544,11 @@
     extractStreamVariants,
     normalizeCaptionInfo,
     mergeObservedCaptionInfo,
+    normalizeCaptionText,
+    captionText,
+    captionsOverlap,
+    limiterStrengthToDbfs,
+    limiterDbfsToStrength,
     sanitizeChatText,
     normalizedIdentity,
     wordCount,

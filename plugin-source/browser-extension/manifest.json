@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "TikTok LIVE Companion",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Accessible TikTok LIVE chat speech, participant statistics, captions, player controls and optional paired local audio tools.",
   "minimum_chrome_version": "114",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoAlrtMmaSX027yFDO5TLMv3UCwZ9LwUhg3udGOkR0oea72zViGP8KENY7vdTBsloTvxVrdGz6zETmj77luHBpANdgZxca2M47pGh/A9o5py/RdJppWIytC0EFNUFe2kGyYolq1FzL21QhZt0HeNLhflpl/8rtE9TIlzuthicyw9lk4QDzgja2POWd+4DYfgiEnzdlGwPQdclLYwnfEJJfzJBIzinmF7aAGu+0YW8EXeaa9W9poi0MfrePTNM7Mdh/oK00fmEFLWvVhqiWrEde2nmUkhPFUZ+HNKsGFoSZ2KiBSyqARnIw1I7GUutKfIZ+MSq68jJPHN//SPVJ2CkpQIDAQAB",
   "permissions": [
     "activeTab",
     "scripting",
@@ -11,7 +12,8 @@
     "storage",
     "tabCapture",
     "tabs",
-    "webRequest"
+    "webRequest",
+    "nativeMessaging"
   ],
   "host_permissions": [
     "https://www.tiktok.com/*",

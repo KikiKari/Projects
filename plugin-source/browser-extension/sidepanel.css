@@ -102,8 +102,6 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .inline-status, .notice { min-height: 17px; margin: 9px 0 0; color: var(--muted); font-size: 11px; }
 .action-status { line-height: 1.4; }
 .reset-note { margin: 7px 0 0; }
-.quality-details { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.4; }
-.quality-active { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
 .notice { margin: 0 3px 8px; color: var(--bad); }
 @media (min-width: 430px) { .speech-settings { grid-template-columns: 1fr 1fr; } .speech-settings label:first-child { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

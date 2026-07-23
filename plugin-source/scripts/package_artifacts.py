@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = ROOT.parent
-EXCLUDED_PARTS = {"__pycache__", ".gradle", ".kotlin", "build", "DerivedData", "xcuserdata"}
+EXCLUDED_PARTS = {"__pycache__", ".gradle", ".kotlin", "build", "DerivedData", "xcuserdata", "stage", "output"}
 
 
 def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
@@ -22,6 +22,8 @@ def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
 parser = argparse.ArgumentParser(description="Package TikTok LIVE Companion artifacts.")
 parser.add_argument("--output-dir", type=Path, required=True)
 parser.add_argument("--android-apk", type=Path, help="Optional verified mockDebug or shazamDebug APK")
+parser.add_argument("--include-mobile", action="store_true", help="Also package unchanged mobile source projects")
+parser.add_argument("--installer", type=Path, help="Verified Windows installer to include in the release")
 args = parser.parse_args()
 args.output_dir.mkdir(parents=True, exist_ok=True)
 output_dir = args.output_dir.resolve()
@@ -53,11 +55,11 @@ with zipfile.ZipFile(plugin_zip, "w", compression=zipfile.ZIP_DEFLATED, compress
 with zipfile.ZipFile(service_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ROOT / "companion-service")
 
-with zipfile.ZipFile(ios_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, PROJECT_ROOT / "mobile" / "ios", "TikTokLiveCompanion-iOS")
-
-with zipfile.ZipFile(android_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, PROJECT_ROOT / "mobile" / "android", "TikTokLiveCompanion-Android")
+if args.include_mobile:
+    with zipfile.ZipFile(ios_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        add_tree(archive, PROJECT_ROOT / "mobile" / "ios", "TikTokLiveCompanion-iOS")
+    with zipfile.ZipFile(android_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        add_tree(archive, PROJECT_ROOT / "mobile" / "android", "TikTokLiveCompanion-Android")
 
 if args.android_apk:
     source_apk = args.android_apk.resolve()
@@ -65,9 +67,19 @@ if args.android_apk:
         raise RuntimeError("--android-apk must point to an existing APK")
     shutil.copy2(source_apk, android_apk)
 
-artifacts = [extension_zip, plugin_zip, service_zip, ios_source_zip, android_source_zip]
+artifacts = [extension_zip, plugin_zip, service_zip]
+if args.include_mobile:
+    artifacts.extend([ios_source_zip, android_source_zip])
 if android_apk.exists():
     artifacts.append(android_apk)
+installer_copy = None
+if args.installer:
+    source_installer = args.installer.resolve()
+    if not source_installer.is_file() or source_installer.suffix.lower() != ".exe":
+        raise RuntimeError("--installer must point to an existing EXE")
+    installer_copy = args.output_dir / source_installer.name
+    shutil.copy2(source_installer, installer_copy)
+    artifacts.append(installer_copy)
 checksums = []
 for artifact in artifacts:
     digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
@@ -79,9 +91,10 @@ print(json.dumps({
     "extension_zip": str(extension_zip.resolve()),
     "plugin_zip": str(plugin_zip.resolve()),
     "service_zip": str(service_zip.resolve()),
-    "ios_source_zip": str(ios_source_zip.resolve()),
-    "android_source_zip": str(android_source_zip.resolve()),
+    "ios_source_zip": str(ios_source_zip.resolve()) if args.include_mobile else None,
+    "android_source_zip": str(android_source_zip.resolve()) if args.include_mobile else None,
     "android_apk": str(android_apk.resolve()) if android_apk.exists() else None,
+    "installer": str(installer_copy.resolve()) if installer_copy else None,
     "checksum_file": str(checksum_file.resolve()),
     "version": version
 }, ensure_ascii=False))

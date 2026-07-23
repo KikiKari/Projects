@@ -10,6 +10,8 @@ const MAX_CHAT = 50;
 const MAX_EVENT_IDS = 500;
 const MAX_DEBUG = 500;
 const MAX_PARTICIPANTS = 5000;
+const NATIVE_HOST = "de.kikikari.tiktok_live_companion";
+const INSTALLER_URL = "https://tiktok-live-companion.vercel.app/de/installation#sprachdienst";
 const core = globalThis.TLC_CONTENT_CORE;
 
 function stateKey(tabId) {
@@ -41,7 +43,7 @@ function emptyState() {
     playerState: {
       available: false, playing: false, muted: false, elapsedText: "", pipActive: false, fullscreenActive: false,
       volume: 1, volumePercent: 100, volumeGainDb: 0, peakDbfs: null,
-      limiterEnabled: false, limiterThresholdDbfs: -6, limiterReductionDb: 0,
+      limiterEnabled: false, limiterStrength: 30, limiterThresholdDbfs: core.limiterStrengthToDbfs(30), limiterReductionDb: 0,
       connectedStreams: 0, multiGuest: false
     },
     media: [],
@@ -143,6 +145,11 @@ async function getSettings() {
     shortenNames: false,
     serviceUrl: "http://127.0.0.1:43117",
     pairingCode: "",
+    playerVolume: 100,
+    limiterStrength: 30,
+    limiterEnabled: false,
+    nativeHostVersion: "",
+    auddConfigured: false,
     songRecognitionEnabled: false,
     permanentMutes: [],
     ...(stored[SETTINGS_KEY] || {})
@@ -153,6 +160,64 @@ async function setSettings(patch) {
   const settings = { ...(await getSettings()), ...patch };
   await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
   return settings;
+}
+
+function publicTikTokLiveUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" && url.hostname === "www.tiktok.com" && /^\/@[^/]+\/live\/?$/.test(url.pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
+function nativeMessage(payload) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendNativeMessage(NATIVE_HOST, payload, (response) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        const message = String(error.message || error);
+        const code = /native messaging host.*(?:not found|not registered)|specified native messaging host/i.test(message)
+          ? "NATIVE_HOST_NOT_INSTALLED"
+          : "NATIVE_HOST_ERROR";
+        reject(Object.assign(new Error(message), { code }));
+        return;
+      }
+      if (!response?.ok) reject(Object.assign(new Error(response?.error || "Native Host meldet einen Fehler."), { code: response?.code || "NATIVE_HOST_ERROR" }));
+      else resolve(response);
+    });
+  });
+}
+
+async function bootstrapNativeHost(action = "bootstrap", extra = {}) {
+  const response = await nativeMessage({ action, clientVersion: chrome.runtime.getManifest().version, ...extra });
+  const patch = {
+    nativeHostVersion: String(response.hostVersion || ""),
+    auddConfigured: Boolean(response.auddConfigured)
+  };
+  if (response.pairingCode) patch.pairingCode = String(response.pairingCode);
+  await setSettings(patch);
+  return response;
+}
+
+async function getLiveCaptureTarget(tabId) {
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const target = Number.isInteger(tabId) ? await chrome.tabs.get(tabId).catch(() => null) : active;
+  if (!target || target.id !== active?.id || !publicTikTokLiveUrl(target.url)) {
+    throw Object.assign(new Error("Kein aktiver öffentlicher TikTok-LIVE-Tab gefunden."), { code: "NO_TIKTOK_LIVE_TAB" });
+  }
+  return target;
+}
+
+async function getTabAudioStreamId(tabId) {
+  const target = await getLiveCaptureTarget(tabId);
+  try {
+    const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: target.id });
+    if (!streamId) throw new Error("Keine Stream-ID erhalten.");
+    return { streamId, tabId: target.id };
+  } catch (error) {
+    throw Object.assign(new Error("Die Tab-Audiofreigabe fehlt oder wurde abgelehnt."), { code: "TAB_CAPTURE_PERMISSION", cause: error });
+  }
 }
 
 function loopbackServiceUrl(value) {
@@ -223,9 +288,24 @@ async function addMedia(tabId, entries, source) {
 async function addCaption(tabId, caption) {
   const state = await getState(tabId);
   const receivedAtUtc = caption.receivedAtUtc || new Date().toISOString();
+  const timestamp = Date.parse(receivedAtUtc) || Date.now();
   if (caption.source === "dom") {
     const recentWebSocket = [...state.captions].reverse().find((item) => item.method === "WebcastCaptionMessage");
-    if (recentWebSocket && Date.parse(receivedAtUtc) - Date.parse(recentWebSocket.receivedAtUtc || 0) < 5_000) return;
+    if (recentWebSocket
+      && Math.abs(timestamp - (Date.parse(recentWebSocket.receivedAtUtc || 0) || 0)) < 8_000
+      && core.captionsOverlap(caption, recentWebSocket)) return;
+    const last = state.captions.at(-1);
+    if (last?.source === "dom"
+      && timestamp - (Date.parse(last.receivedAtUtc || 0) || 0) < 2_500
+      && core.captionsOverlap(last, caption)) {
+      const replacement = core.captionText(caption).length >= core.captionText(last).length
+        ? { ...caption, receivedAtUtc }
+        : { ...last, receivedAtUtc };
+      state.captions[state.captions.length - 1] = replacement;
+      state.captionInfo = core.mergeObservedCaptionInfo(state.captionInfo, replacement);
+      await setState(tabId, state);
+      return;
+    }
   }
   const entry = { ...caption, receivedAtUtc };
   const key = entry.sentenceId || entry.sequenceId || (entry.contents || []).map((content) => `${content.lang || ""}:${content.text || ""}`).join("\n");
@@ -234,6 +314,13 @@ async function addCaption(tabId, caption) {
     return itemKey === key;
   });
   if (duplicate) return;
+  if (entry.method === "WebcastCaptionMessage") {
+    state.captions = state.captions.filter((item) => !(
+      item.source === "dom"
+      && Math.abs(timestamp - (Date.parse(item.receivedAtUtc || 0) || 0)) < 8_000
+      && core.captionsOverlap(item, entry)
+    ));
+  }
   state.captions.push(entry);
   state.captions = state.captions.slice(-MAX_CAPTIONS);
   state.captionInfo = core.mergeObservedCaptionInfo(state.captionInfo, entry);
@@ -569,8 +656,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         break;
       case "TLC_GET_SETTINGS":
-        sendResponse({ ok: true, settings: await getSettings() });
+        {
+          const { pairingCode: _pairingCode, ...settings } = await getSettings();
+          sendResponse({ ok: true, settings });
+        }
         break;
+      case "TLC_NATIVE_BOOTSTRAP": {
+        const response = await bootstrapNativeHost(message.action || "bootstrap");
+        sendResponse({ ok: true, native: response });
+        break;
+      }
+      case "TLC_CONFIGURE_AUDD": {
+        const token = String(message.token || "").trim();
+        if (!token) throw Object.assign(new Error("Kein AudD API-Token eingegeben."), { code: "AUDD_NOT_CONFIGURED" });
+        const response = await bootstrapNativeHost("configureAudd", { token });
+        sendResponse({ ok: true, native: response });
+        break;
+      }
+      case "TLC_GET_TAB_AUDIO_STREAM_ID": {
+        const settings = await getSettings();
+        if (!settings.nativeHostVersion) throw Object.assign(new Error("Native Host ist nicht installiert."), { code: "NATIVE_HOST_NOT_INSTALLED" });
+        const native = await bootstrapNativeHost("health");
+        if (!native.serviceRunning) throw Object.assign(new Error("Der lokale Sprachdienst ist nicht gestartet."), { code: "SERVICE_NOT_RUNNING" });
+        if (!native.auddConfigured) throw Object.assign(new Error("AudD ist im lokalen Dienst nicht konfiguriert."), { code: "AUDD_NOT_CONFIGURED" });
+        const capture = await getTabAudioStreamId(tabId);
+        sendResponse({ ok: true, ...capture });
+        break;
+      }
+      case "TLC_OPEN_SERVICE_INSTALLER":
+        await chrome.tabs.create({ url: INSTALLER_URL });
+        sendResponse({ ok: true });
+        break;
+      case "TLC_AUDIO_PIPELINE_CONFLICT": {
+        const key = `tlc-audio-reload-${tabId}`;
+        const stored = await chrome.storage.session.get(key);
+        if (!stored[key]) {
+          await chrome.storage.session.set({ [key]: true });
+          await chrome.tabs.reload(tabId);
+          sendResponse({ ok: true, reloading: true });
+        } else {
+          sendResponse({ ok: false, error: "Die bestehende Audio-Pipeline konnte auch nach dem kontrollierten Reload nicht übernommen werden." });
+        }
+        break;
+      }
       case "TLC_SET_AUTOSTART": {
         const settings = await setSettings({ autoHook: Boolean(message.enabled) });
         if (settings.autoHook) await ensureHookRegistered(true);
@@ -586,7 +714,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
           ...(message.serviceUrl == null ? {} : { serviceUrl: loopbackServiceUrl(message.serviceUrl) || "http://127.0.0.1:43117" }),
-          ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
         });
         sendResponse({ ok: true, settings });
@@ -603,8 +730,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (cached) state.profileInfo = mergeProfile(state.profileInfo, cached);
         if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
         state.aiSummaryInfo = message.aiSummaryInfo || state.aiSummaryInfo;
-        state.menuCaptionAvailable = Boolean(message.menuCaptionAvailable);
-        state.menuCaptionActive = Boolean(message.menuCaptionActive);
+        state.menuCaptionAvailable = Boolean(state.menuCaptionAvailable || message.menuCaptionAvailable);
+        state.menuCaptionActive = Boolean(state.menuCaptionActive || message.menuCaptionActive);
         await setState(tabId, state);
         await addMedia(tabId, message.media || [], "metadata");
         await addDebug(tabId, "page-state", { profile: state.profileInfo, summary: state.aiSummaryInfo, mediaCount: message.media?.length || 0 });
@@ -688,9 +815,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           action: message.action,
           value: message.value,
           enabled: message.enabled,
-          thresholdDbfs: message.thresholdDbfs
+          strength: message.strength
         });
         if (response?.playerState) await patchState(tabId, { playerState: response.playerState });
+        if (message.action === "set-volume" && response?.activated) {
+          await setSettings({ playerVolume: Math.max(0, Math.min(100, Math.round(Number(message.value) * 100))) });
+        }
+        if (message.action === "set-limiter" && response?.activated) {
+          await setSettings({
+            limiterEnabled: Boolean(message.enabled),
+            limiterStrength: Math.max(0, Math.min(100, Math.round(Number(message.strength) || 0)))
+          });
+        }
         await addDebug(tabId, "player-action", { action: message.action, activated: response?.activated, reason: response?.reason || response?.error || null, playerState: response?.playerState || null });
         sendResponse({ ok: true, response });
         break;
@@ -771,6 +907,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       default:
         sendResponse({ ok: false, error: "Unbekannte Nachricht" });
     }
-  })().catch((error) => sendResponse({ ok: false, error: String(error?.message || error) }));
+  })().catch((error) => sendResponse({ ok: false, error: String(error?.message || error), code: error?.code || "UNKNOWN" }));
   return true;
 });

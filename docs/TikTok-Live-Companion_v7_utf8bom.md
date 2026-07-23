@@ -65,10 +65,10 @@ Es werden keine Cookies gelesen, kein Konto benötigt und kein API-Key in der Er
 
 ### 2.2 Optionaler lokaler Sprach- und Songdienst
 
-1. `tiktok-live-companion-service-0.7.0.zip` entpacken und PowerShell in diesem Ordner öffnen.
+1. `tiktok-live-companion-service-0.7.2.zip` entpacken und PowerShell in diesem Ordner öffnen.
 2. `npm run setup` ausführen; ein AudD-Token ist ausschließlich für die Songerkennung erforderlich.
 3. Den Dienst mit `npm start` starten.
-4. Den ausgegebenen Pairing-Code im Sidepanel eintragen.
+4. Im Sidepanel **Verbinden** wählen. Native Messaging übernimmt die interne Authentifizierung; der Pairing-Code ist nicht mehr sichtbar.
 
 Der Dienst lauscht ausschließlich auf `127.0.0.1:43117`.
 
@@ -373,7 +373,7 @@ Geprüft und bestätigt: Origin- und Hauptframe-Beschränkung, 64-KiB-Schemagren
 |---|---|---|
 | Stream, Chat, Captions, Teilnehmer, Diagnose | `chrome.storage.session` | nur Arbeitsspeicher |
 | Einstellungen, dauerhafte Mutes | `chrome.storage.local` | UserDefaults / DataStore |
-| Pairing-Code, Dienstadresse | `chrome.storage.local` | entfällt |
+| Dienstadresse, Native-Host-Version, AudD-Konfigurationsstatus | `chrome.storage.local` | entfällt |
 | AudD-Token | lokale Dienstkonfiguration unter `%LOCALAPPDATA%` | entfällt |
 | Apple-Schlüsselmaterial | entfällt | ausschließlich Vercel-Umgebungsvariablen |
 
@@ -408,7 +408,7 @@ Ein Stream kann nur HLS, nur FLV oder keine extrahierbare URL liefern. **Automat
 
 ### Vorlesen nicht lauter als bisher
 
-Oberhalb 50 % ist Verstärkung nur mit laufendem lokalem Dienst möglich. Dienststatus im Sidepanel prüfen: Dienstadresse, Pairing-Code und `npm start`.
+Oberhalb 50 % ist Verstärkung nur mit laufendem lokalem Dienst möglich. Dienststatus im Sidepanel prüfen und bei manueller Installation nach `npm run setup` ausdrücklich `npm start` ausführen.
 
 ### Songerkennung ohne Ergebnis
 

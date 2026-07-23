@@ -5,6 +5,8 @@ site/node_modules/
 site/dist/
 site/.vite/
 plugin-source/companion-service/node_modules/
+plugin-source/companion-service/installer/stage/
+plugin-source/companion-service/installer/output/
 mobile/android/.gradle/
 mobile/android/.kotlin/
 mobile/android/local.properties

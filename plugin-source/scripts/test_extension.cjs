@@ -42,10 +42,12 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.7.1");
+assert.strictEqual(manifest.version, "0.7.2");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
+assert.ok(manifest.permissions.includes("nativeMessaging"));
+assert.ok(typeof manifest.key === "string" && manifest.key.length > 100);
 assert.ok(manifest.host_permissions.includes("http://127.0.0.1/*"));
 assert.ok(manifest.host_permissions.includes("http://localhost/*"));
 assert.ok(!manifest.permissions.includes("cookies"));
@@ -88,6 +90,18 @@ assert.strictEqual(observedCaptionInfo.present, true);
 assert.strictEqual(observedCaptionInfo.open, true);
 assert.deepStrictEqual(observedCaptionInfo.supportLang, ["en"]);
 assert.strictEqual(observedCaptionInfo.source, "websocket");
+assert.strictEqual(core.normalizeCaptionText("  And it's—right! "), "and it s right");
+assert.strictEqual(core.captionsOverlap(
+  { contents: [{ text: "And it's a memory" }] },
+  { contents: [{ text: "And it's a memory yes that's right" }] }
+), true);
+assert.strictEqual(core.captionsOverlap(
+  { contents: [{ text: "a completely different sentence" }] },
+  { contents: [{ text: "nothing in common here" }] }
+), false);
+assert.strictEqual(core.limiterStrengthToDbfs(0), -1);
+assert.strictEqual(core.limiterStrengthToDbfs(100), -18);
+assert.strictEqual(core.limiterDbfsToStrength(-18), 100);
 assert.strictEqual(inspected.media.length, 2);
 assert.ok(inspected.media.some((item) => item.protocol === "FLV" && item.quality === "HD"));
 assert.ok(inspected.media.some((item) => item.protocol === "HLS" && item.quality === "720p"));
@@ -267,12 +281,28 @@ assert.ok(backgroundSource.includes('case "TLC_SET_MUTE"'));
 assert.ok(backgroundSource.includes('case "TLC_GIFT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_AUTOSTART"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_DEBUG_REPORT"'));
+assert.ok(backgroundSource.includes('case "TLC_GET_TAB_AUDIO_STREAM_ID"'));
+assert.ok(backgroundSource.includes('chrome.tabCapture.getMediaStreamId'));
+assert.ok(backgroundSource.includes('"NO_TIKTOK_LIVE_TAB"'));
+assert.ok(backgroundSource.includes('"TAB_CAPTURE_PERMISSION"'));
+assert.ok(backgroundSource.includes('"NATIVE_HOST_NOT_INSTALLED"'));
+assert.ok(backgroundSource.includes('"SERVICE_NOT_RUNNING"'));
+assert.ok(backgroundSource.includes('"AUDD_NOT_CONFIGURED"'));
+assert.ok(backgroundSource.includes("state.menuCaptionAvailable || message.menuCaptionAvailable"));
+assert.ok(backgroundSource.includes("core.captionsOverlap"));
+assert.ok(backgroundSource.includes("playerVolume"));
+assert.ok(backgroundSource.includes("limiterStrength"));
 assert.ok(backgroundSource.includes('const PROFILE_PREFIX = "tlc-profile-"'));
 assert.ok(contentSource.includes('action === "open-report"'));
 assert.ok(contentSource.includes('action === "set-volume"'));
 assert.ok(contentSource.includes('action === "set-limiter"'));
 assert.ok(contentSource.includes('createDynamicsCompressor'));
-assert.ok(contentSource.includes('Lautstärkedeckel'));
+assert.ok(!contentSource.includes('Lautstärkedeckel'));
+assert.ok(!contentSource.includes('limiter-fallback'));
+assert.ok(contentSource.includes("compressor.ratio.value = pipeline.enabled ? 20 : 1"));
+assert.ok(contentSource.includes("compressor.attack.value = 0.001"));
+assert.ok(contentSource.includes("compressor.release.value = 0.08"));
+assert.strictEqual((contentSource.match(/source\.connect\(compressor\)\.connect\(analyser\)\.connect\(context\.destination\)/g) || []).length, 1);
 assert.ok(contentSource.includes('collectRecommendedSummary'));
 assert.ok(contentSource.includes('collectProfileFromHover'));
 assert.ok(contentSource.includes('credentials: "omit"'));
@@ -287,6 +317,7 @@ assert.ok(panelHtml.includes('id="speech-led"'));
 assert.ok(panelHtml.includes('id="speech-volume"'));
 assert.ok(panelHtml.includes('id="hook-led"'));
 assert.ok(panelHtml.includes('id="limiter-enabled"'));
+assert.ok(panelHtml.includes('id="limiter-strength"'));
 assert.ok(panelHtml.includes('id="refresh-page-info"'));
 assert.ok(panelHtml.includes('id="force-page-info"'));
 assert.ok(panelHtml.includes('id="top-chatters"'));
@@ -295,6 +326,8 @@ assert.ok(panelHtml.includes('id="speech-language"'));
 assert.ok(panelHtml.includes('id="speak-names"'));
 assert.ok(panelHtml.includes('id="shorten-names"'));
 assert.ok(panelHtml.includes('id="recognize-song"'));
+assert.ok(panelHtml.includes('id="audd-token"'));
+assert.ok(panelHtml.includes('id="service-action"'));
 assert.ok(panelHtml.includes('id="hook-autostart"'));
 assert.ok(panelHtml.includes('id="debug-enabled"'));
 assert.ok(panelHtml.includes('id="export-debug"'));
@@ -304,5 +337,16 @@ assert.ok(!panelHtml.includes('<p class="eyebrow">TikTok LIVE</p>'));
 assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
+assert.ok(!panelHtml.includes("Verfügbare Bildqualitäten"));
+assert.ok(!panelHtml.includes('id="quality-list"'));
+assert.ok(!panelHtml.includes('id="quality-count"'));
+assert.ok(!panelHtml.includes('id="quality-action-status"'));
+assert.ok(!panelHtml.includes("dBFS ist ein digitaler Signalpegel"));
+assert.ok(!panelHtml.includes("Refresh leert nur die flüchtigen Daten"));
+assert.ok(!panelHtml.includes("Der Hook wird vor dem Player-Code gesetzt"));
+assert.ok(!panelHtml.includes("Nach einem Klick werden etwa 12 Sekunden"));
+assert.ok(!panelHtml.includes("TikTok schloss das Menü vor der Bestätigung"));
+assert.ok(!fs.readFileSync(path.join(extension, "sidepanel.js"), "utf8").includes("Vorlesen nutzt den Browser-Fallback"));
+assert.ok(!panelHtml.includes('id="pairing-code"'));
 
 console.log(`PASS: manifest ${manifest.version}, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

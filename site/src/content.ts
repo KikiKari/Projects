@@ -17,7 +17,7 @@ export const strings = {
     search: "Dokumentation durchsuchen", searchHint: "Titel oder Thema eingeben", noResults: "Keine passenden Inhalte gefunden.", skip: "Zum Inhalt springen",
     heroTitle: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen",
     heroBody: "Chat lesen und lokal vorlesen, native Untertitel prüfen, Player steuern und Stream-Informationen verstehen – direkt im Browser.",
-    download: "Version 0.7.1 herunterladen", install: "Installation öffnen", compatibility: "Edge & Chrome · Manifest V3 · optionaler lokaler Windows-Dienst",
+    download: "Version 0.7.2 herunterladen", install: "Installation öffnen", compatibility: "Edge & Chrome · Manifest V3 · optionaler lokaler Windows-Dienst",
     why: "Warum TikTok LIVE Companion?", whyBody: "Funktionen, die das Seherlebnis verbessern und Barrierefreiheit fördern.",
     local: "Lokal im Browser", localBody: "Keine Cookies, Telemetrie oder externen Analysedienste.",
     observable: "Beobachten statt verändern", observableBody: "Passive Ereignis- und CDN-Beobachtung ohne Request-Blocking.",
@@ -29,7 +29,7 @@ export const strings = {
     search: "Search documentation", searchHint: "Enter a title or topic", noResults: "No matching content found.", skip: "Skip to content",
     heroTitle: "Make public TikTok LIVE streams more accessible",
     heroBody: "Read chat and hear it locally, inspect native captions, control the player, and understand stream information – directly in your browser.",
-    download: "Download version 0.7.1", install: "Open installation", compatibility: "Edge & Chrome · Manifest V3 · optional local Windows service",
+    download: "Download version 0.7.2", install: "Open installation", compatibility: "Edge & Chrome · Manifest V3 · optional local Windows service",
     why: "Why TikTok LIVE Companion?", whyBody: "Features that improve the viewing experience and support accessibility.",
     local: "Local in the browser", localBody: "No cookies, telemetry, or external analytics services.",
     observable: "Observe, never modify", observableBody: "Passive event and CDN observation without request blocking.",
@@ -45,7 +45,7 @@ export const featureData = {
     ["Untertitel", "caption_info, sichtbarer Menüpunkt und empfangene CaptionMessages werden als getrennte Signale erklärt."],
     ["LIVE-Informationen", "Zuschauerzahl, Aufrufe, Likes, Follows und Teilungen stammen aus beobachteten Webcast-Ereignissen."],
     ["Player & Pegelschutz", "Wiedergabe, Lautstärke, Stumm, Bild-in-Bild und Vollbild steuern. Der optionale Kompressor begrenzt digitale Spitzen lokal."],
-    ["Bildqualität & VLC", "Verfügbare Qualitätsstufen wählen und zeitlich begrenzte FLV- oder HLS-Links kopieren."],
+    ["VLC-Links", "Zeitlich begrenzte FLV- oder HLS-Links aus beobachteten Stream-Metadaten kopieren."],
     ["Diagnose", "Bereinigte Diagnoseereignisse exportieren, ohne Chattext, Cookies, API-Keys oder signierte Parameterwerte."]
   ],
   en: [
@@ -54,7 +54,7 @@ export const featureData = {
     ["Captions", "caption_info, a visible menu item, and received CaptionMessages are presented as separate signals."],
     ["LIVE information", "Viewer count, total views, likes, follows, and shares come from observed Webcast events."],
     ["Player & peak protection", "Control playback, volume, mute, picture-in-picture, and fullscreen. The optional compressor limits digital peaks locally."],
-    ["Quality & VLC", "Select available quality levels and copy temporary FLV or HLS links."],
+    ["VLC links", "Copy temporary FLV or HLS links from observed stream metadata."],
     ["Diagnostics", "Export sanitized diagnostics without chat text, cookies, API keys, or signed parameter values."]
   ]
 } as const;
@@ -67,7 +67,7 @@ export const searchText: Record<Language, Record<PageKey, string>> = {
     architecture: "Architektur content WebSocket background storage session Seitenpanel Mermaid",
     security: "Sicherheit Datenschutz Cookies Telemetrie webRequest textContent Restrisiken",
     troubleshooting: "Fehlerbehebung Caption Hook Player VLC Debug",
-    downloads: "Downloads Browser-Erweiterung 0.7.1 Release ZIP SHA-256 Prüfsumme"
+    downloads: "Downloads Browser-Erweiterung 0.7.2 Installer Release ZIP SHA-256 Prüfsumme"
   },
   en: {
     overview: "Overview accessible chat speech captions player stream local",
@@ -76,6 +76,6 @@ export const searchText: Record<Language, Record<PageKey, string>> = {
     architecture: "Architecture content WebSocket background storage session side panel Mermaid",
     security: "Security privacy cookies telemetry webRequest textContent residual risks",
     troubleshooting: "Troubleshooting caption hook player VLC debug",
-    downloads: "Downloads browser extension 0.7.1 release ZIP SHA-256 checksum"
+    downloads: "Downloads browser extension 0.7.2 installer release ZIP SHA-256 checksum"
   }
 };

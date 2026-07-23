@@ -4,7 +4,7 @@
 
 - Microsoft Edge or Google Chrome 114 or newer
 - a public TikTok LIVE tab
-- the unpacked `tiktok-live-companion-extension-0.7.0.zip`
+- the unpacked `tiktok-live-companion-extension-0.7.2.zip`
 
 ## Steps
 
@@ -17,10 +17,12 @@
 
 ## Optional local speech and song service
 
-1. Extract `tiktok-live-companion-service-0.7.0.zip` and open PowerShell in that folder.
-2. Run `npm run setup`; an AudD token is required only for song recognition.
-3. Start the service with `npm start`.
-4. Enter the displayed pairing code in the side panel. The service listens only on `127.0.0.1:43117`.
+1. Deliberately launch the visible `tiktok-live-companion-setup-0.7.2-unsigned-dev.exe` installer. This development artifact is not code-signed.
+2. Select **Connect** in the side panel. Native Messaging supplies internal authentication; users do not enter a pairing code.
+3. If song recognition is needed, enter the optional **AudD API token** once. The field is then cleared and the token remains only in the local service configuration.
+4. The service listens only on `127.0.0.1:43117`.
+
+Manual fallback without the installer: extract `tiktok-live-companion-service-0.7.2.zip`, run `npm run setup` first, and then explicitly run `npm start`.
 
 ## First run
 

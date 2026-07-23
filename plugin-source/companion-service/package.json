@@ -1,12 +1,13 @@
 {
   "name": "tiktok-live-companion-service",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.2",
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
     "setup": "powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1",
-    "test": "node --test test/service.test.mjs"
+    "native-host": "node native-host.mjs",
+    "test": "node --test test/*.test.mjs"
   },
   "engines": {
     "node": ">=20"

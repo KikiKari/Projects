@@ -3,19 +3,18 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speak-names", "shorten-names", "service-url", "pairing-code", "service-status",
+    "speech-language", "speak-names", "shorten-names", "service-url", "audd-token", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "media-list", "media-count", "caption-list", "caption-count",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
     "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report",
-    "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-threshold", "limiter-threshold-output", "multi-guest-status",
+    "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-strength", "limiter-strength-output", "multi-guest-status",
     "page-info-section", "page-info-source", "profile-info", "summary-info", "refresh-page-info", "force-page-info",
-    "quality-list", "quality-count", "quality-action-status", "scan", "enable-captions",
+    "scan", "enable-captions",
     "enable-hook", "disable-hook", "reset-tab", "export-log", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
   ].map((id) => [id, document.getElementById(id)]));
   const PLAYER_BUTTONS = ["player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report"];
-  const QUALITY_DISPLAY = Object.freeze({ auto: "Automatisch", origin: "Original", uhd_60: "1080p60", uhd: "1080p", hd_60: "720p60", hd: "720p", sd: "540p", ld: "360p" });
   const core = globalThis.TLC_CONTENT_CORE;
   let activeTabId = null;
   let activeIsTikTok = false;
@@ -33,6 +32,8 @@
   let shortenNames = false;
   let serviceUrl = "http://127.0.0.1:43117";
   let pairingCode = "";
+  let nativeAvailable = false;
+  let serviceRunning = false;
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
@@ -46,7 +47,7 @@
   async function send(type, payload = {}) {
     if (!Number.isInteger(activeTabId)) throw new Error("Kein aktiver Tab gefunden.");
     const response = await chrome.runtime.sendMessage({ type, tabId: activeTabId, ...payload });
-    if (!response?.ok) throw new Error(response?.error || "Aktion fehlgeschlagen");
+    if (!response?.ok) throw Object.assign(new Error(response?.error || "Aktion fehlgeschlagen"), { code: response?.code || "UNKNOWN" });
     return response;
   }
 
@@ -85,11 +86,6 @@
     element.title = label;
   }
 
-  function formatDb(value, suffix = "dB") {
-    if (value == null || !Number.isFinite(Number(value))) return `– ${suffix}`;
-    return `${Number(value).toLocaleString("de-DE", { maximumFractionDigits: 1 })} ${suffix}`.replace("-", "−");
-  }
-
   function stopSpeech(message = "Vorlesen ist ausgeschaltet.") {
     speechEnabled = false;
     speechBusy = false;
@@ -105,7 +101,7 @@
   }
 
   function serviceHeaders(extra = {}) {
-    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.7.0", ...extra };
+    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.7.2", ...extra };
   }
 
   function speechText(item) {
@@ -134,7 +130,7 @@
   }
 
   async function serviceSpeech(text, lang) {
-    if (!pairingCode) throw new Error("Kein Pairing-Code eingerichtet.");
+    if (!pairingCode) throw new Error("Der Sprachdienst ist noch nicht verbunden.");
     const response = await fetch(`${serviceUrl}/v1/tts`, {
       method: "POST",
       headers: serviceHeaders({ "Content-Type": "application/json" }),
@@ -374,18 +370,22 @@
     elements["player-fullscreen"].textContent = playerState.fullscreenActive ? "Vollbild beenden" : "Vollbild";
     const volumePercent = Number.isFinite(Number(playerState.volumePercent)) ? Number(playerState.volumePercent) : 100;
     elements["player-volume"].value = String(volumePercent);
-    elements["player-volume-output"].textContent = `${volumePercent}% · ${formatDb(playerState.volumeGainDb)}`;
-    elements["player-peak"].textContent = formatDb(playerState.peakDbfs, "dBFS");
+    elements["player-volume-output"].textContent = String(volumePercent);
+    const peakPercent = Number.isFinite(Number(playerState.peakDbfs))
+      ? Math.max(0, Math.min(100, Math.round(Math.pow(10, Number(playerState.peakDbfs) / 20) * 100)))
+      : null;
+    elements["player-peak"].textContent = peakPercent == null ? "–" : String(peakPercent);
     elements["limiter-enabled"].checked = Boolean(playerState.limiterEnabled);
-    elements["limiter-threshold"].value = String(playerState.limiterThresholdDbfs ?? -6);
-    elements["limiter-threshold-output"].textContent = formatDb(playerState.limiterThresholdDbfs ?? -6, "dBFS");
+    const limiterStrength = Number.isFinite(Number(playerState.limiterStrength)) ? Number(playerState.limiterStrength) : 30;
+    elements["limiter-strength"].value = String(limiterStrength);
+    elements["limiter-strength-output"].textContent = String(limiterStrength);
     elements["multi-guest-status"].textContent = playerState.multiGuest
       ? `Verbundene Streams: ${playerState.connectedStreams || "mehrere"} · Mehrgast-Modus erkannt.`
       : `Verbundene Streams: ${playerState.connectedStreams || (available ? 1 : 0)}.`;
     for (const id of PLAYER_BUTTONS) elements[id].disabled = !available;
-    for (const id of ["player-volume", "limiter-enabled", "limiter-threshold"]) elements[id].disabled = !available;
+    for (const id of ["player-volume", "limiter-enabled", "limiter-strength"]) elements[id].disabled = !available;
     elements["player-status"].textContent = available
-      ? `${playerState.playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${playerState.muted ? "stumm" : "Ton aktiv"}${playerState.limiterEnabled ? ` · Pegelschutz ${formatDb(playerState.limiterThresholdDbfs, "dBFS")} (${playerState.limiterMode || "aktiv"})` : ""}.`
+      ? `${playerState.playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${playerState.muted ? "stumm" : "Ton aktiv"}${playerState.limiterEnabled ? ` · Pegelschutz ${limiterStrength}/100` : ""}.`
       : "Warte auf den TikTok-Player.";
   }
 
@@ -483,90 +483,6 @@
     }
   }
 
-  function qualityRank(item) {
-    const order = ["auto", "origin", "uhd_60", "uhd", "hd_60", "hd", "sd", "ld"];
-    const keyIndex = order.indexOf(item.sdkKey);
-    if (keyIndex >= 0) return keyIndex;
-    const match = String(item.quality || "").match(/(\d{3,4})p/);
-    return match ? 10000 - Number(match[1]) : 20000;
-  }
-
-  function normalizedQuality(value) {
-    return String(value || "").toLocaleLowerCase().replace(/\s+/g, "");
-  }
-
-  function renderQualities(items, selectedQuality, playerState) {
-    const groups = new Map();
-    for (const item of items.filter((entry) => !entry.audioOnly)) {
-      const key = item.sdkKey || item.quality;
-      if (!key || item.quality === "unbekannt") continue;
-      const genericQuality = normalizedQuality(item.quality) === normalizedQuality(item.sdkKey) || /^(?:sd|hd|ld|uhd)$/i.test(String(item.quality || ""));
-      const existing = groups.get(key) || { ...item, quality: genericQuality ? (QUALITY_DISPLAY[item.sdkKey] || item.quality) : item.quality, protocols: new Set() };
-      existing.protocols.add(item.protocol);
-      for (const detail of ["bitrate", "codec", "width", "height", "fps", "sdkKey", "quality"]) {
-        if (item[detail] != null && detail !== "quality") existing[detail] = item[detail];
-      }
-      groups.set(key, existing);
-    }
-    const qualities = [...groups.values()];
-    if ((qualities.length || playerState?.available) && !groups.has("auto")) qualities.push({ sdkKey: "auto", quality: "Automatisch", protocols: new Set(), synthetic: true });
-    qualities.sort((a, b) => qualityRank(a) - qualityRank(b));
-    elements["quality-count"].textContent = String(qualities.length);
-    clearChildren(elements["quality-list"]);
-    elements["quality-list"].classList.toggle("empty", !qualities.length);
-    if (!qualities.length) {
-      elements["quality-list"].textContent = "Noch keine Qualitätsstufen aus den Stream-Metadaten erkannt.";
-      return;
-    }
-    for (const item of qualities) {
-      const active = selectedQuality && normalizedQuality(selectedQuality) === normalizedQuality(item.quality);
-      const row = document.createElement("article");
-      row.className = `item${active ? " quality-active" : ""}`;
-      const head = document.createElement("div");
-      head.className = "item-head";
-      const title = document.createElement("div");
-      title.className = "item-title";
-      title.textContent = item.quality;
-      const choose = document.createElement("button");
-      choose.className = active ? "ghost" : "secondary";
-      choose.textContent = active ? "Ausgewählt" : "Im Player wählen";
-      choose.disabled = Boolean(active);
-      choose.addEventListener("click", async () => {
-        choose.disabled = true;
-        choose.textContent = "Wechsle …";
-        try {
-          const response = await send("TLC_SET_QUALITY", { quality: item.quality, sdkKey: item.sdkKey });
-          const result = response.response || {};
-          elements["quality-action-status"].textContent = result.activated
-            ? result.verificationPending
-              ? `${result.quality || item.quality} wurde im TikTok-Menü angeklickt; TikTok schloss das Menü vor der Bestätigung.`
-              : `${result.quality || item.quality} ist ${result.alreadyActive ? "bereits aktiv" : "im TikTok-Player ausgewählt und bestätigt"}.`
-            : result.reason || result.error || "Qualität konnte nicht gewechselt werden.";
-          await refresh();
-        } catch (error) {
-          elements["quality-action-status"].textContent = String(error?.message || error);
-        } finally {
-          choose.disabled = false;
-          choose.textContent = "Im Player wählen";
-        }
-      });
-      head.append(title, choose);
-      const details = document.createElement("div");
-      details.className = "quality-details";
-      if (item.synthetic) {
-        details.textContent = "TikTok wählt die Qualität automatisch · kein eigener VLC-Link";
-      } else {
-        const parts = [[...item.protocols].join("/"), item.codec?.toUpperCase()];
-        if (item.width && item.height) parts.push(`${item.width}×${item.height}`);
-        if (item.fps) parts.push(`${item.fps} fps`);
-        if (item.bitrate) parts.push(`${(item.bitrate / 1000000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} Mbit/s`);
-        details.textContent = parts.flat().filter(Boolean).join(" · ") || "Stream-Metadaten erkannt";
-      }
-      row.append(head, details);
-      elements["quality-list"].append(row);
-    }
-  }
-
   function renderCaptions(items) {
     elements["caption-count"].textContent = String(items.length);
     clearChildren(elements["caption-list"]);
@@ -600,7 +516,6 @@
     renderLiveStats(state);
     renderPlayer(state.playerState || {});
     renderPageInfo(state);
-    renderQualities(state.media || [], state.selectedQuality, state.playerState);
     renderMedia(state.media || []);
     renderCaptions(state.captions || []);
     elements["debug-enabled"].checked = Boolean(state.debug?.enabled);
@@ -647,7 +562,6 @@
     speakNames = response.settings?.speakNames !== false;
     shortenNames = Boolean(response.settings?.shortenNames);
     serviceUrl = response.settings?.serviceUrl || "http://127.0.0.1:43117";
-    pairingCode = response.settings?.pairingCode || "";
     permanentMutes = new Set(response.settings?.permanentMutes || []);
     elements["keep-speech-active"].checked = keepSpeechActive;
     elements["speech-volume"].value = String(Math.round(speechVolume * 100));
@@ -657,12 +571,43 @@
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
     elements["service-url"].value = serviceUrl;
-    elements["pairing-code"].value = pairingCode;
+    elements["audd-token"].value = "";
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     elements["hook-autostart"].checked = Boolean(response.settings?.autoHook);
-    await checkService();
+    await connectNative("bootstrap");
+  }
+
+  function renderServiceAction() {
+    elements["service-action"].textContent = !nativeAvailable
+      ? "Sprachdienst installieren"
+      : serviceRunning ? "Neu verbinden" : "Verbinden";
+  }
+
+  async function connectNative(action = "health") {
+    try {
+      const response = await send("TLC_NATIVE_BOOTSTRAP", { action });
+      const native = response.native || {};
+      nativeAvailable = true;
+      serviceRunning = Boolean(native.serviceRunning);
+      pairingCode = native.pairingCode || pairingCode;
+      renderServiceAction();
+      if (!serviceRunning) {
+        elements["service-status"].textContent = "Native Host vorhanden · Sprachdienst nicht gestartet.";
+        return null;
+      }
+      return await checkService();
+    } catch (error) {
+      nativeAvailable = error.code !== "NATIVE_HOST_NOT_INSTALLED";
+      serviceRunning = false;
+      pairingCode = "";
+      renderServiceAction();
+      elements["service-status"].textContent = nativeAvailable
+        ? "Native Host antwortet nicht."
+        : "Native Host nicht installiert.";
+      return null;
+    }
   }
 
   async function checkService() {
@@ -670,10 +615,14 @@
       const response = await fetch(`${serviceUrl}/v1/health`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
+      serviceRunning = true;
+      renderServiceAction();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Windows-Stimmen"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       return health;
     } catch (_) {
-      elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
+      serviceRunning = false;
+      renderServiceAction();
+      elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar.";
       return null;
     }
   }
@@ -735,14 +684,21 @@
     }
   }
 
-  function captureCurrentTabAudio() {
-    return new Promise((resolve, reject) => {
-      chrome.tabCapture.capture({ audio: true, video: false }, (stream) => {
-        const error = chrome.runtime.lastError;
-        if (error || !stream) reject(new Error(error?.message || "Tab-Audio konnte nicht aufgenommen werden."));
-        else resolve(stream);
+  async function captureCurrentTabAudio() {
+    const response = await send("TLC_GET_TAB_AUDIO_STREAM_ID");
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: {
+          mandatory: {
+            chromeMediaSource: "tab",
+            chromeMediaSourceId: response.streamId
+          }
+        },
+        video: false
       });
-    });
+    } catch (error) {
+      throw Object.assign(new Error("Die Tab-Audiofreigabe fehlt oder wurde abgelehnt."), { code: "TAB_CAPTURE_PERMISSION", cause: error });
+    }
   }
 
   async function recordSongSample() {
@@ -781,7 +737,8 @@
       const response = await fetch(`${serviceUrl}/v1/recognize`, {
         method: "POST",
         headers: serviceHeaders({ "Content-Type": sample.type || "application/octet-stream" }),
-        body: sample
+        body: sample,
+        signal: AbortSignal.timeout(20_000)
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || `Songerkennung HTTP ${response.status}`);
@@ -808,7 +765,16 @@
       elements["song-result"].hidden = false;
       elements["song-status"].textContent = "Song erkannt; der Audioausschnitt wurde verworfen.";
     } catch (error) {
-      elements["song-status"].textContent = String(error?.message || error);
+      const labels = {
+        NO_TIKTOK_LIVE_TAB: "Kein aktiver öffentlicher TikTok-LIVE-Tab gefunden.",
+        TAB_CAPTURE_PERMISSION: "Die Tab-Audiofreigabe fehlt oder wurde abgelehnt.",
+        NATIVE_HOST_NOT_INSTALLED: "Native Host nicht installiert.",
+        SERVICE_NOT_RUNNING: "Der lokale Sprachdienst ist nicht gestartet.",
+        AUDD_NOT_CONFIGURED: "AudD ist im lokalen Dienst nicht konfiguriert."
+      };
+      elements["song-status"].textContent = error?.name === "TimeoutError"
+        ? "Zeitüberschreitung bei der Songerkennung."
+        : labels[error?.code] || String(error?.message || error);
     } finally {
       button.disabled = !elements["song-enabled"].checked;
     }
@@ -950,12 +916,32 @@
   });
   const saveServiceSettings = async () => {
     serviceUrl = elements["service-url"].value.trim().replace(/\/$/, "") || "http://127.0.0.1:43117";
-    pairingCode = elements["pairing-code"].value.trim();
-    await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl, pairingCode });
+    await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl });
     await checkService();
   };
   elements["service-url"].addEventListener("change", saveServiceSettings);
-  elements["pairing-code"].addEventListener("change", saveServiceSettings);
+  elements["audd-token"].addEventListener("change", async () => {
+    const token = elements["audd-token"].value.trim();
+    if (!token) return;
+    try {
+      const response = await send("TLC_CONFIGURE_AUDD", { token });
+      pairingCode = response.native?.pairingCode || pairingCode;
+      elements["service-status"].textContent = "AudD-Konfiguration wurde lokal gespeichert.";
+      await checkService();
+    } catch (error) {
+      elements["service-status"].textContent = String(error?.message || error);
+    } finally {
+      elements["audd-token"].value = "";
+    }
+  });
+  elements["service-action"].addEventListener("click", async () => {
+    if (!nativeAvailable) {
+      await send("TLC_OPEN_SERVICE_INSTALLER");
+      return;
+    }
+    elements["service-status"].textContent = "Sprachdienst wird verbunden …";
+    await connectNative("ensureService");
+  });
   elements["song-enabled"].addEventListener("change", async () => {
     const enabled = elements["song-enabled"].checked;
     elements["recognize-song"].disabled = !enabled;
@@ -972,19 +958,18 @@
   elements["player-report"].addEventListener("click", () => runPlayer("open-report", elements["player-report"]));
   elements["player-volume"].addEventListener("input", () => {
     const value = Number(elements["player-volume"].value);
-    const gain = value > 0 ? 20 * Math.log10(value / 100) : null;
-    elements["player-volume-output"].textContent = `${value}% · ${formatDb(gain)}`;
+    elements["player-volume-output"].textContent = String(value);
   });
   elements["player-volume"].addEventListener("change", () => runPlayer("set-volume", elements["player-mute"], { value: Number(elements["player-volume"].value) / 100 }));
-  elements["limiter-threshold"].addEventListener("input", () => {
-    elements["limiter-threshold-output"].textContent = formatDb(Number(elements["limiter-threshold"].value), "dBFS");
+  elements["limiter-strength"].addEventListener("input", () => {
+    elements["limiter-strength-output"].textContent = elements["limiter-strength"].value;
   });
   const applyLimiter = () => runPlayer("set-limiter", elements["limiter-enabled"], {
     enabled: elements["limiter-enabled"].checked,
-    thresholdDbfs: Number(elements["limiter-threshold"].value)
+    strength: Number(elements["limiter-strength"].value)
   });
   elements["limiter-enabled"].addEventListener("change", applyLimiter);
-  elements["limiter-threshold"].addEventListener("change", () => {
+  elements["limiter-strength"].addEventListener("change", () => {
     if (elements["limiter-enabled"].checked) applyLimiter();
   });
   elements["debug-enabled"].addEventListener("change", async () => {

@@ -9,8 +9,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
+export const VERSION = "0.7.2";
+export { defaultConfigPath };
 
-async function ensureConfig(configPath = defaultConfigPath) {
+export async function ensureConfig(configPath = defaultConfigPath) {
   try { return JSON.parse(await fs.readFile(configPath, "utf8")); }
   catch (error) {
     if (error.code !== "ENOENT") throw error;
@@ -19,6 +21,12 @@ async function ensureConfig(configPath = defaultConfigPath) {
     await fs.writeFile(configPath, JSON.stringify(config, null, 2), { encoding: "utf8", mode: 0o600 });
     return config;
   }
+}
+
+export async function saveConfig(config, configPath = defaultConfigPath) {
+  await fs.mkdir(path.dirname(configPath), { recursive: true });
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2), { encoding: "utf8", mode: 0o600 });
+  return config;
 }
 
 function readBody(request, limit) {
@@ -97,9 +105,10 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, tts = windowsTts, recognize = auddRecognize } = {}) {
+export function createServer({ config, configProvider, tts = windowsTts, recognize = auddRecognize } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   return http.createServer(async (request, response) => {
+    const currentConfig = configProvider ? await configProvider() : config;
     const origin = String(request.headers.origin || "");
     const allowedOrigin = /^chrome-extension:\/\/[a-p]{32}$/.test(origin) ? origin : "";
     if (origin && !allowedOrigin) return sendJson(response, 403, { error: "Origin nicht erlaubt." });
@@ -113,10 +122,17 @@ export function createServer({ config, tts = windowsTts, recognize = auddRecogni
       return response.end();
     }
     const authorization = String(request.headers.authorization || "");
-    if (authorization !== `Bearer ${config.pairingCode}`) return sendJson(response, 401, { error: "Pairing fehlgeschlagen." }, allowedOrigin);
+    if (authorization !== `Bearer ${currentConfig.pairingCode}`) return sendJson(response, 401, { error: "Pairing fehlgeschlagen." }, allowedOrigin);
     try {
       if (request.method === "GET" && request.url === "/v1/health") {
-        return sendJson(response, 200, { ok: true, version: "0.7.0", tts: "Windows-Stimmen", auddConfigured: Boolean(config.auddApiToken) }, allowedOrigin);
+        return sendJson(response, 200, {
+          ok: true,
+          version: VERSION,
+          tts: "Windows-Stimmen",
+          ttsAvailable: process.platform === "win32",
+          auddConfigured: Boolean(currentConfig.auddApiToken),
+          songProvider: currentConfig.auddApiToken ? "AudD" : null
+        }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/tts") {
         const raw = await readBody(request, 64 * 1024);
@@ -130,7 +146,7 @@ export function createServer({ config, tts = windowsTts, recognize = auddRecogni
       }
       if (request.method === "POST" && request.url === "/v1/recognize") {
         const audio = await readBody(request, 10 * 1024 * 1024);
-        const result = await recognize(audio, request.headers["content-type"], config.auddApiToken);
+        const result = await recognize(audio, request.headers["content-type"], currentConfig.auddApiToken);
         return sendJson(response, 200, result, allowedOrigin);
       }
       return sendJson(response, 404, { error: "Unbekannter Endpunkt." }, allowedOrigin);
@@ -142,10 +158,9 @@ export function createServer({ config, tts = windowsTts, recognize = auddRecogni
 
 async function main() {
   const config = await ensureConfig();
-  const server = createServer({ config });
+  const server = createServer({ config, configProvider: () => ensureConfig() });
   server.listen(Number(config.port) || 43117, "127.0.0.1", () => {
-    console.log(`TikTok LIVE Companion Dienst 0.7.0: http://127.0.0.1:${Number(config.port) || 43117}`);
-    console.log(`Pairing-Code: ${config.pairingCode}`);
+    console.log(`TikTok LIVE Companion Dienst ${VERSION}: http://127.0.0.1:${Number(config.port) || 43117}`);
     console.log(config.auddApiToken ? "AudD ist eingerichtet." : "AudD-Token fehlt; npm run setup ausführen.");
   });
 }

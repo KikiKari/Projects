@@ -97,7 +97,7 @@ Beide sind dem Meilenstein `Security & Release Gate` zugeordnet, Priorität Low,
 | `POST /v1/tts` | Text → `audio/wav` |
 | `POST /v1/recognize` | Audioausschnitt → Songdaten |
 
-Bindet ausschließlich an Loopback. Die Erweiterung akzeptiert nur `127.0.0.1` oder `localhost`. Zugriff erfordert einen generierten Pairing-Code.
+Bindet ausschließlich an Loopback. Die Erweiterung akzeptiert nur `127.0.0.1` oder `localhost`. Native Messaging übernimmt die interne Authentifizierung; ein Pairing-Code wird nicht angezeigt oder eingegeben.
 
 ### Shazam-Token-Endpunkt ✅
 
@@ -115,7 +115,7 @@ Die SPA-Rewrite-Regel fängt `/api` nicht ab. Apple-Schlüsselmaterial liegt aus
 
 | Inhalt | Ort |
 |---|---|
-| Pairing-Code, Dienstadresse | `chrome.storage.local` |
+| Dienstadresse, Native-Host-Version, AudD-Konfigurationsstatus | `chrome.storage.local` |
 | AudD-Token | Dienstkonfiguration unter `%LOCALAPPDATA%` |
 | Stream-, Chat-, Caption-, Teilnehmerdaten | `chrome.storage.session` (flüchtig, pro Tab) |
 | Einstellungen, dauerhafte Mutes (Browser) | `chrome.storage.local` |
