@@ -32,7 +32,7 @@ Manual fallback: run `npm run setup` first, and then explicitly run `npm start`.
 3. **Set hook** enables observation only for the current tab before player code and reloads that tab.
 4. After reload, chat, caption, and LIVE events appear when TikTok supplies them.
 
-**Refresh** clears only the extension's volatile state for the current tab, re-enables the hook, and reloads TikTok without page cache. Cookies and login remain intact.
+**Refresh** creates a new tab-scoped browser-session ID, opens the current LIVE stream in a new tab/document context, enables the hook there, and then closes the previous tab. If the tab cannot be replaced, it still receives a new session ID and reloads without page cache. Cookies, login, and other TikTok tabs remain unchanged.
 
 **Play/Pause** remains available when TikTok's video element is temporarily missing or disabled. The extension retries TikTok's own player control.
 

@@ -32,7 +32,7 @@ Manueller Fallback: zuerst `npm run setup` und danach ausdrücklich `npm start` 
 3. **Hook setzen** aktiviert die Beobachtung ausschließlich für den aktuellen Tab vor dem Player-Code und lädt diesen Tab neu.
 4. Nach dem Reload erscheinen Chat, Caption- und LIVE-Ereignisse, sofern TikTok sie liefert.
 
-**Refresh** leert nur flüchtige Erweiterungsdaten des aktuellen Tabs, aktiviert den Hook erneut und lädt TikTok ohne Seitencache. Cookies und Login bleiben unverändert.
+**Refresh** erzeugt eine neue tabbezogene Browser-Sitzungs-ID, öffnet den aktuellen LIVE-Stream in einem neuen Tab-/Dokumentkontext, aktiviert dort den Hook und schließt anschließend den bisherigen Tab. Falls der Tab nicht ersetzt werden kann, erhält er trotzdem eine neue Sitzungs-ID und wird ohne Seitencache neu geladen. Cookies, Login und andere TikTok-Tabs bleiben unverändert.
 
 **Abspielen/Pause** bleibt auch dann bedienbar, wenn TikToks Videoelement vorübergehend fehlt oder deaktiviert ist. Die Erweiterung versucht TikToks eigene Playersteuerung erneut auszuführen.
 

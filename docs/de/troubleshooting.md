@@ -6,7 +6,7 @@ Zuerst **Seite prüfen** ausführen. `caption_info` und ein sichtbarer Menüpunk
 
 ## Hook bleibt getrennt
 
-**Refresh** im Hook-Bereich verwenden. Dadurch wird nur der flüchtige Zustand dieses Tabs gelöscht, der Hook ausschließlich für diesen Tab erneut aktiviert und die Seite ohne Cache geladen. Andere TikTok-Tabs bleiben unverändert.
+**Refresh** im Hook-Bereich verwenden. Dadurch erhält der aktuelle LIVE-Stream eine neue tabbezogene Browser-Sitzungs-ID und wird in einem neuen Tab-/Dokumentkontext mit aktivem Hook geöffnet; der bisherige Tab wird danach geschlossen. Nur wenn das Ersetzen nicht möglich ist, wird derselbe Tab mit neuer Sitzungs-ID ohne Cache geladen. Cookies, Login und andere TikTok-Tabs bleiben unverändert.
 
 ## Playeraktion wird abgelehnt
 

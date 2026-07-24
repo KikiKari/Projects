@@ -16,9 +16,16 @@ function stateKey(tabId) {
   return `${STATE_PREFIX}${tabId}`;
 }
 
+function newBrowserSessionId() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 function emptyState() {
   return {
     enabled: false,
+    browserSessionId: "",
     page: { url: "", title: "", scannedAtUtc: null },
     captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
@@ -485,10 +492,42 @@ async function resetTabWithHook(tabId) {
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
   const state = emptyState();
   state.enabled = true;
+  state.browserSessionId = newBrowserSessionId();
   state.page = { url: tab.url, title: tab.title || "", scannedAtUtc: null };
   state.hook.armed = true;
-  await setState(tabId, state);
-  await chrome.tabs.reload(tabId, { bypassCache: true });
+  let replacement = null;
+  try {
+    replacement = await chrome.tabs.create({
+      windowId: tab.windowId,
+      index: tab.index + 1,
+      url: "about:blank",
+      active: false,
+      pinned: Boolean(tab.pinned)
+    });
+    await setState(replacement.id, state);
+    if (Number.isInteger(tab.groupId) && tab.groupId >= 0) {
+      await chrome.tabs.group({ tabIds: replacement.id, groupId: tab.groupId }).catch(() => {});
+    }
+    await chrome.tabs.update(replacement.id, {
+      url: tab.url,
+      active: Boolean(tab.active),
+      muted: Boolean(tab.mutedInfo?.muted)
+    });
+    await chrome.sidePanel.setOptions({ tabId: replacement.id, path: "sidepanel.html", enabled: true }).catch(() => {});
+    await chrome.sidePanel.open({ tabId: replacement.id }).catch(() => {});
+    await chrome.tabs.remove(tabId);
+    return { replaced: true, tabId: replacement.id, browserSessionId: state.browserSessionId };
+  } catch (error) {
+    if (replacement?.id) await chrome.tabs.remove(replacement.id).catch(() => {});
+    await setState(tabId, state);
+    await chrome.tabs.reload(tabId, { bypassCache: true });
+    return {
+      replaced: false,
+      tabId,
+      browserSessionId: state.browserSessionId,
+      fallbackReason: String(error?.message || error).slice(0, 300)
+    };
+  }
 }
 
 function waitForTabComplete(tabId, expectedPrefix, timeoutMs = 12000) {
@@ -610,6 +649,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "TLC_ACTIVATE_TAB": {
         const state = await getState(tabId);
         state.enabled = true;
+        if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
         await setState(tabId, state);
         await chrome.tabs.sendMessage(tabId, {
           type: "TLC_SET_TAB_ACTIVE",
@@ -787,8 +827,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, reloading: true });
         break;
       case "TLC_RESET_TAB":
-        await resetTabWithHook(tabId);
-        sendResponse({ ok: true, reloading: true });
+        {
+          const result = await resetTabWithHook(tabId);
+          sendResponse({ ok: true, reloading: true, result });
+        }
         break;
       case "TLC_CLEAR":
         {
@@ -831,6 +873,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const state = await getState(tabId);
         sendResponse({ ok: true, report: {
           generatedAtUtc: new Date().toISOString(), version: chrome.runtime.getManifest().version,
+          browserSessionId: state.browserSessionId,
           page: state.page, captionInfo: state.captionInfo, profileInfo: state.profileInfo,
           aiSummaryInfo: state.aiSummaryInfo, hook: state.hook, liveStats: state.liveStats,
           playerState: state.playerState, selectedQuality: state.selectedQuality,

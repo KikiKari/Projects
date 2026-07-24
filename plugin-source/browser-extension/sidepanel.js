@@ -748,7 +748,7 @@
       globalThis.speechSynthesis?.cancel();
       elements["speech-status"].textContent = "Vorlesen bleibt aktiv und wartet nach dem Refresh auf neue Chatzeilen.";
     }
-    run("TLC_RESET_TAB", "Tab wird mit aktivem Hook neu geladen.");
+    run("TLC_RESET_TAB", "Neue Browsersitzung für diesen LIVE-Tab wird geöffnet.");
   });
   elements.clear.addEventListener("click", () => run("TLC_CLEAR"));
   elements["refresh-chat"].addEventListener("click", async () => {
