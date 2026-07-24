@@ -24,7 +24,9 @@
   let scanTimer = null;
   let profilePageCache = null;
   let audioPipeline = null;
+  let fallbackLimiter = null;
   let debugEnabled = false;
+  const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
     if (!debugEnabled) return;
@@ -419,7 +421,7 @@
       if (settings.isConnected) settings.click();
     }
     scheduleScan(0);
-    return { activated: false, reason: "Kein Untertitelschalter gefunden. TikTok stellt für diesen Stream derzeit keine native Untertitelfunktion bereit." };
+    return { activated: false, reason: "" };
   }
 
   async function setQuality(quality, sdkKey) {
@@ -529,44 +531,62 @@
     const context = new AudioContextClass();
     const source = context.createMediaElementSource(video);
     const compressor = context.createDynamicsCompressor();
-    const makeupGain = context.createGain();
     const analyser = context.createAnalyser();
     analyser.fftSize = 2048;
     compressor.threshold.value = 0;
     compressor.knee.value = 0;
     compressor.ratio.value = 1;
-    compressor.attack.value = 0.001;
-    compressor.release.value = 0.08;
-    makeupGain.gain.value = 1;
-    source.connect(compressor).connect(makeupGain).connect(analyser).connect(context.destination);
-    audioPipeline = { video, context, source, compressor, makeupGain, analyser, enabled: false, limiterStrength: 30, thresholdDbfs: core.limiterStrengthToDbfs(30) };
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    source.connect(compressor).connect(analyser).connect(context.destination);
+    audioPipeline = { video, context, source, compressor, analyser, enabled: false, thresholdDbfs: -6 };
     await context.resume();
     return audioPipeline;
   }
 
-  async function configureLimiter(video, enabled, strengthValue) {
-    const strength = Math.max(0, Math.min(100, Number(strengthValue ?? 30)));
-    const threshold = core.limiterStrengthToDbfs(strength);
+  function dismissTimedLiveInterruption() {
+    if (!/^\/@[^/]+\/live\/?$/.test(location.pathname) || Date.now() - popupGuardStartedAt < 5000) return;
+    const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
+    const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience)/i.test(visibleText(dialog)));
+    if (!interruption) return;
+    const close = [...document.querySelectorAll('button,[role="button"]')].find((button) => {
+      if (!isVisible(button)) return false;
+      const label = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("title") || ""} ${visibleText(button)}`.trim();
+      return /^(?:schließen|close)$/i.test(label);
+    });
+    if (close) {
+      close.click();
+      debug("timed-live-interruption-dismissed", { label: visibleText(interruption).slice(0, 120) });
+    }
+  }
+
+  async function configureLimiter(video, enabled, thresholdDbfs) {
+    const threshold = Math.max(-30, Math.min(-1, Number(thresholdDbfs ?? -6)));
+    if (!enabled && fallbackLimiter?.video === video) {
+      video.removeEventListener("volumechange", fallbackLimiter.enforce);
+      fallbackLimiter = null;
+    }
     try {
       const pipeline = await ensureAudioPipeline(video);
       pipeline.enabled = Boolean(enabled);
-      pipeline.limiterStrength = strength;
       pipeline.thresholdDbfs = threshold;
       pipeline.compressor.threshold.value = pipeline.enabled ? threshold : 0;
-      pipeline.compressor.knee.value = 0;
+      pipeline.compressor.knee.value = pipeline.enabled ? 1 : 0;
       pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
-      pipeline.compressor.attack.value = 0.001;
-      pipeline.compressor.release.value = 0.08;
-      pipeline.makeupGain.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
-      debug("limiter", { mode: "compressor", enabled: pipeline.enabled, strength, threshold });
+      debug("limiter", { mode: "compressor", enabled: pipeline.enabled, threshold });
       return pipeline;
     } catch (error) {
-      const detail = String(error?.message || error).slice(0, 300);
-      debug("limiter-pipeline-conflict", { strength, threshold, error: detail });
-      if (/MediaElementSource|different MediaElementSource|already connected/i.test(detail)) {
-        await chrome.runtime.sendMessage({ type: "TLC_AUDIO_PIPELINE_CONFLICT" }).catch(() => {});
-      }
-      throw error;
+      if (!enabled) return null;
+      const cap = Math.pow(10, threshold / 20);
+      if (fallbackLimiter?.video && fallbackLimiter.video !== video) fallbackLimiter.video.removeEventListener("volumechange", fallbackLimiter.enforce);
+      const enforce = () => {
+        if (video.volume > cap) video.volume = cap;
+      };
+      fallbackLimiter = { video, enabled: true, thresholdDbfs: threshold, cap, enforce, error: String(error?.message || error).slice(0, 300) };
+      video.addEventListener("volumechange", enforce);
+      enforce();
+      debug("limiter-fallback", { threshold, cap, error: fallbackLimiter.error });
+      return fallbackLimiter;
     }
   }
 
@@ -582,10 +602,10 @@
       volumePercent: Math.round(volume * 100),
       volumeGainDb: volumeGainDb(volume),
       peakDbfs: currentPeakDbfs(),
-      limiterEnabled: Boolean(audioPipeline?.video === video && audioPipeline.enabled),
-      limiterMode: audioPipeline?.video === video && audioPipeline.enabled ? "Kompressor" : null,
-      limiterStrength: audioPipeline?.video === video ? audioPipeline.limiterStrength : 30,
-      limiterThresholdDbfs: audioPipeline?.video === video ? audioPipeline.thresholdDbfs : core.limiterStrengthToDbfs(30),
+      limiterEnabled: Boolean((audioPipeline?.video === video && audioPipeline.enabled) || (fallbackLimiter?.video === video && fallbackLimiter.enabled)),
+      limiterMode: audioPipeline?.video === video && audioPipeline.enabled ? "Kompressor" : fallbackLimiter?.video === video && fallbackLimiter.enabled ? "Lautstärkedeckel" : null,
+      limiterStrength: core.limiterDbfsToStrength(audioPipeline?.video === video ? audioPipeline.thresholdDbfs : fallbackLimiter?.video === video ? fallbackLimiter.thresholdDbfs : -6),
+      limiterThresholdDbfs: audioPipeline?.video === video ? audioPipeline.thresholdDbfs : fallbackLimiter?.video === video ? fallbackLimiter.thresholdDbfs : -6,
       limiterReductionDb: audioPipeline?.video === video ? Math.round(Number(audioPipeline.compressor.reduction || 0) * 10) / 10 : 0,
       ...connected,
       elapsedText: elapsedText(),
@@ -622,7 +642,7 @@
         if (volume > 0) video.muted = false;
         video.dispatchEvent(new Event("volumechange", { bubbles: true }));
       } else if (action === "set-limiter") {
-        await configureLimiter(video, payload.enabled, payload.strength);
+        await configureLimiter(video, payload.enabled, payload.thresholdDbfs);
       } else if (action === "toggle-pip") {
         if (document.pictureInPictureElement) await document.exitPictureInPicture();
         else if (document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function") await video.requestPictureInPicture();
@@ -812,11 +832,13 @@
       scanDomChat();
       scanDomGifts();
       scanDomCaptions();
+      dismissTimedLiveInterruption();
       scheduleScan(1500);
     }).observe(document.documentElement, { childList: true, subtree: true });
     scanDomChat();
     scanDomGifts();
     scanDomCaptions();
+    setInterval(dismissTimedLiveInterruption, 1000);
     scheduleScan(50);
     chrome.storage.local.get("tlc-settings").then(({ "tlc-settings": settings = {} }) => {
       const apply = async () => {
@@ -828,7 +850,7 @@
         const volume = Math.max(0, Math.min(100, Number(settings.playerVolume ?? 100))) / 100;
         video.volume = volume;
         if (volume > 0) video.muted = false;
-        if (settings.limiterEnabled) await configureLimiter(video, true, settings.limiterStrength ?? 30);
+        if (settings.limiterEnabled) await configureLimiter(video, true, core.limiterStrengthToDbfs(settings.limiterStrength ?? 30));
       };
       apply().catch((error) => debug("audio-settings-restore", { error: String(error?.message || error).slice(0, 300) }));
     }).catch(() => {});

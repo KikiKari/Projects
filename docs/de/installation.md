@@ -4,7 +4,7 @@
 
 - Microsoft Edge oder Google Chrome ab Version 114
 - ein öffentlicher TikTok-LIVE-Tab
-- die entpackte Erweiterung aus `tiktok-live-companion-extension-0.7.2.zip`
+- die entpackte Erweiterung aus `tiktok-live-companion-extension-0.7.1.zip`
 
 ## Schritte
 
@@ -17,12 +17,13 @@
 
 ## Optionaler lokaler Sprach- und Songdienst
 
-1. Den sichtbaren Installer `tiktok-live-companion-setup-0.7.2-unsigned-dev.exe` bewusst starten. Das Entwicklungsartefakt ist nicht codesigniert.
-2. Danach im Sidepanel **Verbinden** wählen. Native Messaging übernimmt die interne Authentifizierung; ein Pairing-Code wird nicht eingegeben.
-3. Falls Songerkennung verwendet wird, den optionalen **AudD API-Token** im Sidepanel einmalig eingeben. Das Feld wird danach geleert und der Token ausschließlich in der lokalen Dienstkonfiguration gespeichert.
-4. Der Dienst lauscht ausschließlich auf `127.0.0.1:43117`.
+1. Den Ordner `companion-service` öffnen und `npm run setup` ausführen.
+2. Das Setup speichert die Konfiguration, richtet den lokalen Startaufruf für den Sidepanel-Button ein und führt abschließend `npm start` im Hintergrund aus.
+3. Den ausgegebenen Pairing-Code im Sidepanel eintragen.
+4. Mit **Sprachdienst installieren** kann der eingerichtete Dienst später erneut im Hintergrund gestartet werden.
+5. Der Dienst lauscht ausschließlich auf `127.0.0.1:43117`.
 
-Manueller Fallback ohne Installer: `tiktok-live-companion-service-0.7.2.zip` entpacken, zuerst `npm run setup` und danach ausdrücklich `npm start` ausführen.
+Manueller Fallback: zuerst `npm run setup` und danach ausdrücklich `npm start` ausführen.
 
 ## Erster Einsatz
 

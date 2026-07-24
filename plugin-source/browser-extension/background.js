@@ -10,8 +10,6 @@ const MAX_CHAT = 50;
 const MAX_EVENT_IDS = 500;
 const MAX_DEBUG = 500;
 const MAX_PARTICIPANTS = 5000;
-const NATIVE_HOST = "de.kikikari.tiktok_live_companion";
-const INSTALLER_URL = "https://tiktok-live-companion.vercel.app/de/installation#sprachdienst";
 const core = globalThis.TLC_CONTENT_CORE;
 
 function stateKey(tabId) {
@@ -148,8 +146,6 @@ async function getSettings() {
     playerVolume: 100,
     limiterStrength: 30,
     limiterEnabled: false,
-    nativeHostVersion: "",
-    auddConfigured: false,
     songRecognitionEnabled: false,
     permanentMutes: [],
     ...(stored[SETTINGS_KEY] || {})
@@ -160,64 +156,6 @@ async function setSettings(patch) {
   const settings = { ...(await getSettings()), ...patch };
   await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
   return settings;
-}
-
-function publicTikTokLiveUrl(value) {
-  try {
-    const url = new URL(String(value || ""));
-    return url.protocol === "https:" && url.hostname === "www.tiktok.com" && /^\/@[^/]+\/live\/?$/.test(url.pathname);
-  } catch (_) {
-    return false;
-  }
-}
-
-function nativeMessage(payload) {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendNativeMessage(NATIVE_HOST, payload, (response) => {
-      const error = chrome.runtime.lastError;
-      if (error) {
-        const message = String(error.message || error);
-        const code = /native messaging host.*(?:not found|not registered)|specified native messaging host/i.test(message)
-          ? "NATIVE_HOST_NOT_INSTALLED"
-          : "NATIVE_HOST_ERROR";
-        reject(Object.assign(new Error(message), { code }));
-        return;
-      }
-      if (!response?.ok) reject(Object.assign(new Error(response?.error || "Native Host meldet einen Fehler."), { code: response?.code || "NATIVE_HOST_ERROR" }));
-      else resolve(response);
-    });
-  });
-}
-
-async function bootstrapNativeHost(action = "bootstrap", extra = {}) {
-  const response = await nativeMessage({ action, clientVersion: chrome.runtime.getManifest().version, ...extra });
-  const patch = {
-    nativeHostVersion: String(response.hostVersion || ""),
-    auddConfigured: Boolean(response.auddConfigured)
-  };
-  if (response.pairingCode) patch.pairingCode = String(response.pairingCode);
-  await setSettings(patch);
-  return response;
-}
-
-async function getLiveCaptureTarget(tabId) {
-  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const target = Number.isInteger(tabId) ? await chrome.tabs.get(tabId).catch(() => null) : active;
-  if (!target || target.id !== active?.id || !publicTikTokLiveUrl(target.url)) {
-    throw Object.assign(new Error("Kein aktiver öffentlicher TikTok-LIVE-Tab gefunden."), { code: "NO_TIKTOK_LIVE_TAB" });
-  }
-  return target;
-}
-
-async function getTabAudioStreamId(tabId) {
-  const target = await getLiveCaptureTarget(tabId);
-  try {
-    const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: target.id });
-    if (!streamId) throw new Error("Keine Stream-ID erhalten.");
-    return { streamId, tabId: target.id };
-  } catch (error) {
-    throw Object.assign(new Error("Die Tab-Audiofreigabe fehlt oder wurde abgelehnt."), { code: "TAB_CAPTURE_PERMISSION", cause: error });
-  }
 }
 
 function loopbackServiceUrl(value) {
@@ -579,6 +517,11 @@ async function forceProfileRefresh(tabId) {
     await profileLoaded;
     profileResult = await chrome.tabs.sendMessage(tabId, { type: "TLC_SCAN" });
     if (!profileResult?.profileInfo?.present) throw new Error("Die vollständig geladene Profilseite lieferte keine Profilwerte.");
+    await cacheProfile(profileResult.profileInfo);
+    const state = await getState(tabId);
+    state.profileInfo = mergeProfile(state.profileInfo, profileResult.profileInfo);
+    if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
+    await setState(tabId, state);
     return { activated: true, profileInfo: profileResult.profileInfo };
   } finally {
     await chrome.tabs.update(tabId, { url: liveUrl }).catch(() => {});
@@ -656,49 +599,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         break;
       case "TLC_GET_SETTINGS":
-        {
-          const { pairingCode: _pairingCode, ...settings } = await getSettings();
-          sendResponse({ ok: true, settings });
-        }
+        sendResponse({ ok: true, settings: await getSettings() });
         break;
-      case "TLC_NATIVE_BOOTSTRAP": {
-        const response = await bootstrapNativeHost(message.action || "bootstrap");
-        sendResponse({ ok: true, native: response });
-        break;
-      }
-      case "TLC_CONFIGURE_AUDD": {
-        const token = String(message.token || "").trim();
-        if (!token) throw Object.assign(new Error("Kein AudD API-Token eingegeben."), { code: "AUDD_NOT_CONFIGURED" });
-        const response = await bootstrapNativeHost("configureAudd", { token });
-        sendResponse({ ok: true, native: response });
-        break;
-      }
-      case "TLC_GET_TAB_AUDIO_STREAM_ID": {
-        const settings = await getSettings();
-        if (!settings.nativeHostVersion) throw Object.assign(new Error("Native Host ist nicht installiert."), { code: "NATIVE_HOST_NOT_INSTALLED" });
-        const native = await bootstrapNativeHost("health");
-        if (!native.serviceRunning) throw Object.assign(new Error("Der lokale Sprachdienst ist nicht gestartet."), { code: "SERVICE_NOT_RUNNING" });
-        if (!native.auddConfigured) throw Object.assign(new Error("AudD ist im lokalen Dienst nicht konfiguriert."), { code: "AUDD_NOT_CONFIGURED" });
-        const capture = await getTabAudioStreamId(tabId);
-        sendResponse({ ok: true, ...capture });
-        break;
-      }
-      case "TLC_OPEN_SERVICE_INSTALLER":
-        await chrome.tabs.create({ url: INSTALLER_URL });
+      case "TLC_START_LOCAL_SERVICE":
+        await chrome.tabs.create({ url: "tiktok-live-companion://start" });
         sendResponse({ ok: true });
         break;
-      case "TLC_AUDIO_PIPELINE_CONFLICT": {
-        const key = `tlc-audio-reload-${tabId}`;
-        const stored = await chrome.storage.session.get(key);
-        if (!stored[key]) {
-          await chrome.storage.session.set({ [key]: true });
-          await chrome.tabs.reload(tabId);
-          sendResponse({ ok: true, reloading: true });
-        } else {
-          sendResponse({ ok: false, error: "Die bestehende Audio-Pipeline konnte auch nach dem kontrollierten Reload nicht übernommen werden." });
-        }
-        break;
-      }
       case "TLC_SET_AUTOSTART": {
         const settings = await setSettings({ autoHook: Boolean(message.enabled) });
         if (settings.autoHook) await ensureHookRegistered(true);
@@ -714,6 +620,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
           ...(message.serviceUrl == null ? {} : { serviceUrl: loopbackServiceUrl(message.serviceUrl) || "http://127.0.0.1:43117" }),
+          ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
         });
         sendResponse({ ok: true, settings });
@@ -815,7 +722,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           action: message.action,
           value: message.value,
           enabled: message.enabled,
-          strength: message.strength
+          thresholdDbfs: message.thresholdDbfs
         });
         if (response?.playerState) await patchState(tabId, { playerState: response.playerState });
         if (message.action === "set-volume" && response?.activated) {
@@ -824,7 +731,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "set-limiter" && response?.activated) {
           await setSettings({
             limiterEnabled: Boolean(message.enabled),
-            limiterStrength: Math.max(0, Math.min(100, Math.round(Number(message.strength) || 0)))
+            limiterStrength: core.limiterDbfsToStrength(message.thresholdDbfs)
           });
         }
         await addDebug(tabId, "player-action", { action: message.action, activated: response?.activated, reason: response?.reason || response?.error || null, playerState: response?.playerState || null });

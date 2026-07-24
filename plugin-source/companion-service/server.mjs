@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
-export const VERSION = "0.7.2";
+export const VERSION = "0.7.0";
 export { defaultConfigPath };
 
 export async function ensureConfig(configPath = defaultConfigPath) {

@@ -1,4 +1,4 @@
-# Lokaler Begleitdienst 0.7.2
+# Lokaler Begleitdienst 0.7.0
 
 Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschließlich manuell aufgenommene Audioausschnitte an AudD weiter. Er bindet nur an `127.0.0.1`.
 
@@ -7,6 +7,6 @@ npm run setup
 npm start
 ```
 
-Der 0.7.2-Installer richtet Native Messaging für Chrome und Edge ein, startet den Dienst bei Bedarf und übergibt die interne Authentifizierung automatisch. Ein optional im Sidepanel eingegebener AudD-Token wird nur an den Native Host übertragen, danach aus dem Feld gelöscht und ausschließlich in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespeichert.
+`npm run setup` speichert die lokale Konfiguration, richtet den Sidepanel-Button **Sprachdienst installieren** als lokalen Windows-Startaufruf ein und führt abschließend `npm start` verborgen aus. Den ausgegebenen Pairing-Code im Sidepanel eintragen. Das AudD-Token bleibt in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json`.
 
-Ohne Installer bleiben beide manuellen Befehle erforderlich: zuerst `npm run setup`, anschließend `npm start`.
+Falls der automatische Hintergrundstart nicht verfügbar ist, bleiben beide manuellen Befehle möglich: zuerst `npm run setup`, anschließend `npm start`.

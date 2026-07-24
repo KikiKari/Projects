@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speak-names", "shorten-names", "service-url", "audd-token", "service-action", "service-status",
+    "speech-language", "speak-names", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "media-list", "media-count", "caption-list", "caption-count",
@@ -32,8 +32,6 @@
   let shortenNames = false;
   let serviceUrl = "http://127.0.0.1:43117";
   let pairingCode = "";
-  let nativeAvailable = false;
-  let serviceRunning = false;
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
@@ -101,7 +99,7 @@
   }
 
   function serviceHeaders(extra = {}) {
-    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.7.2", ...extra };
+    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.7.1", ...extra };
   }
 
   function speechText(item) {
@@ -130,7 +128,7 @@
   }
 
   async function serviceSpeech(text, lang) {
-    if (!pairingCode) throw new Error("Der Sprachdienst ist noch nicht verbunden.");
+    if (!pairingCode) throw new Error("Kein Pairing-Code eingerichtet.");
     const response = await fetch(`${serviceUrl}/v1/tts`, {
       method: "POST",
       headers: serviceHeaders({ "Content-Type": "application/json" }),
@@ -357,7 +355,7 @@
     elements["stats-live"].textContent = hasData ? "Datenstrom" : "warte";
     elements["stats-live"].classList.toggle("active", hasData);
     elements["stats-status"].textContent = hasData
-      ? `Letzte Statistik: ${new Date(stats.lastUpdatedUtc).toLocaleTimeString()} · Follows werden ab Hook-Start gezählt.`
+      ? `Letzte Statistik: ${new Date(stats.lastUpdatedUtc).toLocaleTimeString()}`
       : "Noch keine Statistiknachricht empfangen. Hook setzen und den Tab neu laden.";
   }
 
@@ -562,6 +560,7 @@
     speakNames = response.settings?.speakNames !== false;
     shortenNames = Boolean(response.settings?.shortenNames);
     serviceUrl = response.settings?.serviceUrl || "http://127.0.0.1:43117";
+    pairingCode = response.settings?.pairingCode || "";
     permanentMutes = new Set(response.settings?.permanentMutes || []);
     elements["keep-speech-active"].checked = keepSpeechActive;
     elements["speech-volume"].value = String(Math.round(speechVolume * 100));
@@ -571,43 +570,12 @@
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
     elements["service-url"].value = serviceUrl;
-    elements["audd-token"].value = "";
+    elements["pairing-code"].value = pairingCode;
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     elements["hook-autostart"].checked = Boolean(response.settings?.autoHook);
-    await connectNative("bootstrap");
-  }
-
-  function renderServiceAction() {
-    elements["service-action"].textContent = !nativeAvailable
-      ? "Sprachdienst installieren"
-      : serviceRunning ? "Neu verbinden" : "Verbinden";
-  }
-
-  async function connectNative(action = "health") {
-    try {
-      const response = await send("TLC_NATIVE_BOOTSTRAP", { action });
-      const native = response.native || {};
-      nativeAvailable = true;
-      serviceRunning = Boolean(native.serviceRunning);
-      pairingCode = native.pairingCode || pairingCode;
-      renderServiceAction();
-      if (!serviceRunning) {
-        elements["service-status"].textContent = "Native Host vorhanden · Sprachdienst nicht gestartet.";
-        return null;
-      }
-      return await checkService();
-    } catch (error) {
-      nativeAvailable = error.code !== "NATIVE_HOST_NOT_INSTALLED";
-      serviceRunning = false;
-      pairingCode = "";
-      renderServiceAction();
-      elements["service-status"].textContent = nativeAvailable
-        ? "Native Host antwortet nicht."
-        : "Native Host nicht installiert.";
-      return null;
-    }
+    await checkService();
   }
 
   async function checkService() {
@@ -615,14 +583,10 @@
       const response = await fetch(`${serviceUrl}/v1/health`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
-      serviceRunning = true;
-      renderServiceAction();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Windows-Stimmen"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       return health;
     } catch (_) {
-      serviceRunning = false;
-      renderServiceAction();
-      elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar.";
+      elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
       return null;
     }
   }
@@ -684,21 +648,14 @@
     }
   }
 
-  async function captureCurrentTabAudio() {
-    const response = await send("TLC_GET_TAB_AUDIO_STREAM_ID");
-    try {
-      return await navigator.mediaDevices.getUserMedia({
-        audio: {
-          mandatory: {
-            chromeMediaSource: "tab",
-            chromeMediaSourceId: response.streamId
-          }
-        },
-        video: false
+  function captureCurrentTabAudio() {
+    return new Promise((resolve, reject) => {
+      chrome.tabCapture.capture({ audio: true, video: false }, (stream) => {
+        const error = chrome.runtime.lastError;
+        if (error || !stream) reject(new Error(error?.message || "Tab-Audio konnte nicht aufgenommen werden."));
+        else resolve(stream);
       });
-    } catch (error) {
-      throw Object.assign(new Error("Die Tab-Audiofreigabe fehlt oder wurde abgelehnt."), { code: "TAB_CAPTURE_PERMISSION", cause: error });
-    }
+    });
   }
 
   async function recordSongSample() {
@@ -737,8 +694,7 @@
       const response = await fetch(`${serviceUrl}/v1/recognize`, {
         method: "POST",
         headers: serviceHeaders({ "Content-Type": sample.type || "application/octet-stream" }),
-        body: sample,
-        signal: AbortSignal.timeout(20_000)
+        body: sample
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || `Songerkennung HTTP ${response.status}`);
@@ -765,16 +721,7 @@
       elements["song-result"].hidden = false;
       elements["song-status"].textContent = "Song erkannt; der Audioausschnitt wurde verworfen.";
     } catch (error) {
-      const labels = {
-        NO_TIKTOK_LIVE_TAB: "Kein aktiver öffentlicher TikTok-LIVE-Tab gefunden.",
-        TAB_CAPTURE_PERMISSION: "Die Tab-Audiofreigabe fehlt oder wurde abgelehnt.",
-        NATIVE_HOST_NOT_INSTALLED: "Native Host nicht installiert.",
-        SERVICE_NOT_RUNNING: "Der lokale Sprachdienst ist nicht gestartet.",
-        AUDD_NOT_CONFIGURED: "AudD ist im lokalen Dienst nicht konfiguriert."
-      };
-      elements["song-status"].textContent = error?.name === "TimeoutError"
-        ? "Zeitüberschreitung bei der Songerkennung."
-        : labels[error?.code] || String(error?.message || error);
+      elements["song-status"].textContent = String(error?.message || error);
     } finally {
       button.disabled = !elements["song-enabled"].checked;
     }
@@ -835,6 +782,7 @@
     } catch (error) {
       elements.notice.textContent = String(error?.message || error);
     } finally {
+      button.disabled = false;
       button.textContent = "Force";
     }
   });
@@ -916,31 +864,21 @@
   });
   const saveServiceSettings = async () => {
     serviceUrl = elements["service-url"].value.trim().replace(/\/$/, "") || "http://127.0.0.1:43117";
-    await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl });
+    pairingCode = elements["pairing-code"].value.trim();
+    await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl, pairingCode });
     await checkService();
   };
   elements["service-url"].addEventListener("change", saveServiceSettings);
-  elements["audd-token"].addEventListener("change", async () => {
-    const token = elements["audd-token"].value.trim();
-    if (!token) return;
+  elements["pairing-code"].addEventListener("change", saveServiceSettings);
+  elements["service-action"].addEventListener("click", async () => {
+    elements["service-status"].textContent = "Lokaler Sprachdienst wird gestartet …";
     try {
-      const response = await send("TLC_CONFIGURE_AUDD", { token });
-      pairingCode = response.native?.pairingCode || pairingCode;
-      elements["service-status"].textContent = "AudD-Konfiguration wurde lokal gespeichert.";
+      await send("TLC_START_LOCAL_SERVICE");
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       await checkService();
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
-    } finally {
-      elements["audd-token"].value = "";
     }
-  });
-  elements["service-action"].addEventListener("click", async () => {
-    if (!nativeAvailable) {
-      await send("TLC_OPEN_SERVICE_INSTALLER");
-      return;
-    }
-    elements["service-status"].textContent = "Sprachdienst wird verbunden …";
-    await connectNative("ensureService");
   });
   elements["song-enabled"].addEventListener("change", async () => {
     const enabled = elements["song-enabled"].checked;
@@ -966,7 +904,7 @@
   });
   const applyLimiter = () => runPlayer("set-limiter", elements["limiter-enabled"], {
     enabled: elements["limiter-enabled"].checked,
-    strength: Number(elements["limiter-strength"].value)
+    thresholdDbfs: core.limiterStrengthToDbfs(Number(elements["limiter-strength"].value))
   });
   elements["limiter-enabled"].addEventListener("change", applyLimiter);
   elements["limiter-strength"].addEventListener("change", () => {

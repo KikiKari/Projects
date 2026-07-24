@@ -42,12 +42,12 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.7.2");
+assert.strictEqual(manifest.version, "0.7.1");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
-assert.ok(manifest.permissions.includes("nativeMessaging"));
-assert.ok(typeof manifest.key === "string" && manifest.key.length > 100);
+assert.ok(!manifest.permissions.includes("nativeMessaging"));
+assert.ok(!Object.prototype.hasOwnProperty.call(manifest, "key"));
 assert.ok(manifest.host_permissions.includes("http://127.0.0.1/*"));
 assert.ok(manifest.host_permissions.includes("http://localhost/*"));
 assert.ok(!manifest.permissions.includes("cookies"));
@@ -283,13 +283,9 @@ assert.ok(backgroundSource.includes('case "TLC_SET_MUTE"'));
 assert.ok(backgroundSource.includes('case "TLC_GIFT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_AUTOSTART"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_DEBUG_REPORT"'));
-assert.ok(backgroundSource.includes('case "TLC_GET_TAB_AUDIO_STREAM_ID"'));
-assert.ok(backgroundSource.includes('chrome.tabCapture.getMediaStreamId'));
-assert.ok(backgroundSource.includes('"NO_TIKTOK_LIVE_TAB"'));
-assert.ok(backgroundSource.includes('"TAB_CAPTURE_PERMISSION"'));
-assert.ok(backgroundSource.includes('"NATIVE_HOST_NOT_INSTALLED"'));
-assert.ok(backgroundSource.includes('"SERVICE_NOT_RUNNING"'));
-assert.ok(backgroundSource.includes('"AUDD_NOT_CONFIGURED"'));
+assert.ok(backgroundSource.includes('case "TLC_START_LOCAL_SERVICE"'));
+assert.ok(backgroundSource.includes("tiktok-live-companion://start"));
+assert.ok(!backgroundSource.includes("sendNativeMessage"));
 assert.ok(backgroundSource.includes("state.menuCaptionAvailable || message.menuCaptionAvailable"));
 assert.ok(backgroundSource.includes("core.captionsOverlap"));
 assert.ok(backgroundSource.includes("playerVolume"));
@@ -299,16 +295,17 @@ assert.ok(contentSource.includes('action === "open-report"'));
 assert.ok(contentSource.includes('action === "set-volume"'));
 assert.ok(contentSource.includes('action === "set-limiter"'));
 assert.ok(contentSource.includes('createDynamicsCompressor'));
-assert.ok(!contentSource.includes('Lautstärkedeckel'));
-assert.ok(!contentSource.includes('limiter-fallback'));
+assert.ok(contentSource.includes('Lautstärkedeckel'));
+assert.ok(contentSource.includes('limiter-fallback'));
 assert.ok(contentSource.includes("compressor.ratio.value = pipeline.enabled ? 20 : 1"));
-assert.ok(contentSource.includes("compressor.attack.value = 0.001"));
-assert.ok(contentSource.includes("compressor.release.value = 0.08"));
-assert.strictEqual((contentSource.match(/source\.connect\(compressor\)\.connect\(makeupGain\)\.connect\(analyser\)\.connect\(context\.destination\)/g) || []).length, 1);
-assert.ok(contentSource.includes("core.limiterMakeupCompensation(threshold, 20)"));
+assert.ok(contentSource.includes("compressor.attack.value = 0.003"));
+assert.ok(contentSource.includes("compressor.release.value = 0.25"));
+assert.strictEqual((contentSource.match(/source\.connect\(compressor\)\.connect\(analyser\)\.connect\(context\.destination\)/g) || []).length, 1);
 assert.ok(contentSource.includes('collectRecommendedSummary'));
 assert.ok(contentSource.includes('collectProfileFromHover'));
 assert.ok(contentSource.includes('credentials: "omit"'));
+assert.ok(contentSource.includes("dismissTimedLiveInterruption"));
+assert.ok(contentSource.includes("timed-live-interruption-dismissed"));
 assert.ok(contentSource.includes('auto: ["Automatisch", "Automatic", "Auto"]'));
 assert.ok(!contentSource.includes('credentials: "include"'));
 assert.ok(!hookSource.includes('sessionStorage.getItem("tlc_ws_hook_enabled")'));
@@ -329,7 +326,7 @@ assert.ok(panelHtml.includes('id="speech-language"'));
 assert.ok(panelHtml.includes('id="speak-names"'));
 assert.ok(panelHtml.includes('id="shorten-names"'));
 assert.ok(panelHtml.includes('id="recognize-song"'));
-assert.ok(panelHtml.includes('id="audd-token"'));
+assert.ok(panelHtml.includes('id="pairing-code"'));
 assert.ok(panelHtml.includes('id="service-action"'));
 assert.ok(panelHtml.includes('id="hook-autostart"'));
 assert.ok(panelHtml.includes('id="debug-enabled"'));
@@ -344,12 +341,33 @@ assert.ok(!panelHtml.includes("Verfügbare Bildqualitäten"));
 assert.ok(!panelHtml.includes('id="quality-list"'));
 assert.ok(!panelHtml.includes('id="quality-count"'));
 assert.ok(!panelHtml.includes('id="quality-action-status"'));
-assert.ok(!panelHtml.includes("dBFS ist ein digitaler Signalpegel"));
+assert.ok(!panelHtml.includes("positive Werte von 0 bis 100"));
 assert.ok(!panelHtml.includes("Refresh leert nur die flüchtigen Daten"));
 assert.ok(!panelHtml.includes("Der Hook wird vor dem Player-Code gesetzt"));
 assert.ok(!panelHtml.includes("Nach einem Klick werden etwa 12 Sekunden"));
+assert.ok(!contentSource.includes("Kein Untertitelschalter gefunden." + " TikTok stellt für diesen Stream derzeit keine native Untertitelfunktion bereit."));
+assert.ok(!fs.readFileSync(path.join(extension, "sidepanel.js"), "utf8").includes("Follows werden ab Hook-Start" + " gezählt."));
 assert.ok(!panelHtml.includes("TikTok schloss das Menü vor der Bestätigung"));
-assert.ok(!fs.readFileSync(path.join(extension, "sidepanel.js"), "utf8").includes("Vorlesen nutzt den Browser-Fallback"));
-assert.ok(!panelHtml.includes('id="pairing-code"'));
+assert.ok(fs.readFileSync(path.join(extension, "sidepanel.js"), "utf8").includes("Vorlesen nutzt den Browser-Fallback"));
+const setupSource = fs.readFileSync(path.join(root, "companion-service", "setup.ps1"), "utf8");
+assert.ok(setupSource.includes('Start-Process -FilePath "$npmPath" -ArgumentList @("start")'));
+assert.ok(setupSource.includes("tiktok-live-companion"));
+const popupGuardSource = fs.readFileSync(path.join(extension, "popup-guard.js"), "utf8");
+assert.ok(popupGuardSource.includes("watchlimit"));
+assert.ok(popupGuardSource.includes("Number(delay) < 5000"));
+const scheduledTimers = [];
+const popupWindow = {
+  setTimeout(callback, delay) { scheduledTimers.push(["timeout", callback, delay]); return scheduledTimers.length; },
+  setInterval(callback, delay) { scheduledTimers.push(["interval", callback, delay]); return scheduledTimers.length; }
+};
+vm.runInNewContext(popupGuardSource, {
+  window: popupWindow,
+  location: { pathname: "/@demo/live" }
+});
+assert.strictEqual(popupWindow.setTimeout(function watchLimit() {}, 10_000), 0);
+assert.strictEqual(popupWindow.setInterval(function loginModal() {}, 30_000), 0);
+assert.strictEqual(popupWindow.setTimeout(function refreshPlayer() {}, 10_000), 1);
+assert.strictEqual(scheduledTimers.length, 1);
+assert.ok(backgroundSource.includes("await cacheProfile(profileResult.profileInfo)"));
 
 console.log(`PASS: manifest ${manifest.version}, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
