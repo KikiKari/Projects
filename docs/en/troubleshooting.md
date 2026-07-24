@@ -6,7 +6,7 @@ Run **Inspect page** first. `caption_info` and a visible menu item indicate avai
 
 ## Hook remains disconnected
 
-Use **Refresh** in the hook area. This clears only volatile tab state, registers the hook again, and reloads without cache. Auto-hook can keep registration across browser restarts.
+Use **Refresh** in the hook area. This clears only the volatile state of that tab, enables the hook again only for that tab, and reloads without cache. Other TikTok tabs remain unchanged.
 
 ## Player action rejected
 

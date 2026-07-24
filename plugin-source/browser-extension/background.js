@@ -1,7 +1,7 @@
 importScripts("content-core.js");
 
 const STATE_PREFIX = "tlc-tab-";
-const HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
+const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
 const PROFILE_PREFIX = "tlc-profile-";
 const MAX_MEDIA = 60;
@@ -18,6 +18,7 @@ function stateKey(tabId) {
 
 function emptyState() {
   return {
+    enabled: false,
     page: { url: "", title: "", scannedAtUtc: null },
     captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
@@ -135,7 +136,6 @@ async function setState(tabId, state) {
 async function getSettings() {
   const stored = await chrome.storage.local.get(SETTINGS_KEY);
   return {
-    autoHook: false,
     keepSpeechActive: false,
     speechVolume: 0.5,
     speechLanguage: "auto",
@@ -446,31 +446,34 @@ async function addLiveEvent(tabId, liveEvent) {
   await setState(tabId, state);
 }
 
-async function ensureHookRegistered(persistAcrossSessions = false) {
-  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [HOOK_SCRIPT_ID] });
-  if (existing.length && Boolean(existing[0].persistAcrossSessions) === Boolean(persistAcrossSessions)) return;
-  if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [HOOK_SCRIPT_ID] });
-  await chrome.scripting.registerContentScripts([{
-    id: HOOK_SCRIPT_ID,
-    matches: ["https://www.tiktok.com/*"],
-    js: ["proto-main.js", "hook.js"],
-    runAt: "document_start",
+async function injectTabRuntime(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der Tab ist kein TikTok-Tab.");
+  const injection = {
+    target: { tabId },
+    files: ["popup-guard.js", "proto-main.js", "hook.js"],
     world: "MAIN",
-    persistAcrossSessions
-  }]);
+    injectImmediately: true
+  };
+  try {
+    await chrome.scripting.executeScript(injection);
+  } catch (error) {
+    if (!/injectImmediately|unexpected property/i.test(String(error?.message || error))) throw error;
+    delete injection.injectImmediately;
+    await chrome.scripting.executeScript(injection);
+  }
 }
 
-async function unregisterHook() {
-  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [HOOK_SCRIPT_ID] });
-  if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [HOOK_SCRIPT_ID] });
+async function removeLegacyGlobalHook() {
+  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [LEGACY_HOOK_SCRIPT_ID] });
+  if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [LEGACY_HOOK_SCRIPT_ID] });
 }
 
 async function setHookFlag(tabId, enabled) {
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
-  if (enabled) await ensureHookRegistered((await getSettings()).autoHook);
-  else await unregisterHook();
   const state = await getState(tabId);
+  state.enabled = true;
   state.hook = { armed: enabled, installed: false, connected: false, lastError: null };
   if (enabled) state.liveStats = emptyState().liveStats;
   await setState(tabId, state);
@@ -480,8 +483,8 @@ async function setHookFlag(tabId, enabled) {
 async function resetTabWithHook(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
-  await ensureHookRegistered((await getSettings()).autoHook);
   const state = emptyState();
+  state.enabled = true;
   state.page = { url: tab.url, title: tab.title || "", scannedAtUtc: null };
   state.hook.armed = true;
   await setState(tabId, state);
@@ -532,34 +535,38 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => 
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
-  getSettings().then((settings) => settings.autoHook && ensureHookRegistered(true)).catch(() => {});
+  removeLegacyGlobalHook().catch(() => {});
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  getSettings().then((settings) => settings.autoHook && ensureHookRegistered(true)).catch(() => {});
+  removeLegacyGlobalHook().catch(() => {});
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab.url) return;
+  const isTikTok = tab.url.startsWith("https://www.tiktok.com/");
   chrome.sidePanel.setOptions({
     tabId,
     path: "sidepanel.html",
-    enabled: true
+    enabled: isTikTok
   }).catch(() => {});
-  if (changeInfo.status === "loading" && tab.url.startsWith("https://www.tiktok.com/")) {
-    getSettings().then(async (settings) => {
-      if (!settings.autoHook) return;
-      await ensureHookRegistered(true);
-      const state = await getState(tabId);
-      state.hook = { ...state.hook, armed: true, lastError: null };
-      await setState(tabId, state);
+  if (changeInfo.status === "loading" && isTikTok) {
+    getState(tabId).then(async (state) => {
+      if (!state.enabled || !state.hook.armed) return;
+      await injectTabRuntime(tabId);
+      const refreshedState = await getState(tabId);
+      refreshedState.hook = { ...refreshedState.hook, armed: true, lastError: null };
+      await setState(tabId, refreshedState);
     }).catch(() => {});
   }
   if (changeInfo.status === "loading") {
     patchState(tabId, { page: { url: tab.url, title: tab.title || "", scannedAtUtc: null } }).catch(() => {});
   }
-  if (changeInfo.status === "complete" && tab.url.startsWith("https://www.tiktok.com/")) {
-    getState(tabId).then((state) => chrome.tabs.sendMessage(tabId, { type: "TLC_DEBUG_CONFIG", enabled: Boolean(state.debug?.enabled) })).catch(() => {});
+  if (changeInfo.status === "complete" && isTikTok) {
+    getState(tabId).then((state) => {
+      if (!state.enabled) return;
+      return chrome.tabs.sendMessage(tabId, { type: "TLC_SET_TAB_ACTIVE", enabled: true, debugEnabled: Boolean(state.debug?.enabled) });
+    }).catch(() => {});
   }
 });
 
@@ -569,7 +576,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    if (details.tabId >= 0) addMedia(details.tabId, [details.url], "network").catch(() => {});
+    if (details.tabId >= 0) {
+      getState(details.tabId).then((state) => state.enabled && addMedia(details.tabId, [details.url], "network")).catch(() => {});
+    }
   },
   {
     urls: [
@@ -598,6 +607,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ ok: true, state });
         }
         break;
+      case "TLC_ACTIVATE_TAB": {
+        const state = await getState(tabId);
+        state.enabled = true;
+        await setState(tabId, state);
+        await chrome.tabs.sendMessage(tabId, {
+          type: "TLC_SET_TAB_ACTIVE",
+          enabled: true,
+          debugEnabled: Boolean(state.debug?.enabled)
+        }).catch(() => {});
+        sendResponse({ ok: true, state });
+        break;
+      }
+      case "TLC_GET_TAB_ACTIVATION": {
+        const state = await getState(tabId);
+        sendResponse({ ok: true, enabled: Boolean(state.enabled) });
+        break;
+      }
       case "TLC_GET_SETTINGS":
         sendResponse({ ok: true, settings: await getSettings() });
         break;
@@ -606,10 +632,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true });
         break;
       case "TLC_SET_AUTOSTART": {
-        const settings = await setSettings({ autoHook: Boolean(message.enabled) });
-        if (settings.autoHook) await ensureHookRegistered(true);
-        else await unregisterHook();
-        sendResponse({ ok: true, settings });
+        await setHookFlag(tabId, Boolean(message.enabled));
+        sendResponse({ ok: true, reloading: true });
         break;
       }
       case "TLC_SET_SPEECH_PREFERENCE": {
@@ -717,13 +741,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_PLAYER_ACTION": {
-        const response = await chrome.tabs.sendMessage(tabId, {
-          type: message.type,
-          action: message.action,
-          value: message.value,
-          enabled: message.enabled,
-          thresholdDbfs: message.thresholdDbfs
-        });
+        let response;
+        try {
+          response = await chrome.tabs.sendMessage(tabId, {
+            type: message.type,
+            action: message.action,
+            value: message.value,
+            enabled: message.enabled,
+            thresholdDbfs: message.thresholdDbfs
+          });
+        } catch (error) {
+          response = { activated: false, action: message.action, reason: String(error?.message || error).slice(0, 500) };
+        }
         if (response?.playerState) await patchState(tabId, { playerState: response.playerState });
         if (message.action === "set-volume" && response?.activated) {
           await setSettings({ playerVolume: Math.max(0, Math.min(100, Math.round(Number(message.value) * 100))) });

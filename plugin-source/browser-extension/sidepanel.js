@@ -361,6 +361,7 @@
 
   function renderPlayer(playerState = {}) {
     const available = Boolean(playerState.available);
+    const videoAvailable = Boolean(playerState.videoAvailable ?? playerState.available);
     elements["player-time"].textContent = playerState.elapsedText || "–";
     elements["player-play"].textContent = playerState.playing ? "Pause" : "Abspielen";
     elements["player-mute"].textContent = playerState.muted ? "Ton an" : "Stumm";
@@ -380,8 +381,9 @@
     elements["multi-guest-status"].textContent = playerState.multiGuest
       ? `Verbundene Streams: ${playerState.connectedStreams || "mehrere"} · Mehrgast-Modus erkannt.`
       : `Verbundene Streams: ${playerState.connectedStreams || (available ? 1 : 0)}.`;
-    for (const id of PLAYER_BUTTONS) elements[id].disabled = !available;
-    for (const id of ["player-volume", "limiter-enabled", "limiter-strength"]) elements[id].disabled = !available;
+    for (const id of PLAYER_BUTTONS) elements[id].disabled = !videoAvailable;
+    elements["player-play"].disabled = !activeIsTikTok;
+    for (const id of ["player-volume", "limiter-enabled", "limiter-strength"]) elements[id].disabled = !videoAvailable;
     elements["player-status"].textContent = available
       ? `${playerState.playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${playerState.muted ? "stumm" : "Ton aktiv"}${playerState.limiterEnabled ? ` · Pegelschutz ${limiterStrength}/100` : ""}.`
       : "Warte auf den TikTok-Player.";
@@ -526,6 +528,7 @@
       : hook.installed ? "Hook installiert; warte auf WebSocket."
       : hook.armed ? "Hook vorgemerkt; Tab wird neu geladen."
       : "Hook ist nicht aktiviert.";
+    elements["hook-autostart"].checked = Boolean(hook.armed);
   }
 
   async function refresh() {
@@ -548,6 +551,7 @@
       return;
     }
     elements.notice.textContent = "";
+    await send("TLC_ACTIVATE_TAB");
     const response = await send("TLC_GET_STATE");
     render(response.state);
   }
@@ -574,7 +578,6 @@
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
-    elements["hook-autostart"].checked = Boolean(response.settings?.autoHook);
     await checkService();
   }
 
@@ -733,10 +736,9 @@
   elements["enable-captions"].dataset.busyText = "Suche Schalter …";
   elements.scan.addEventListener("click", () => run("TLC_SCAN", null, elements.scan));
   elements["enable-captions"].addEventListener("click", () => run("TLC_ENABLE_CAPTIONS", null, elements["enable-captions"]));
-  elements["enable-hook"].addEventListener("click", () => run("TLC_ENABLE_HOOK", "Hook gesetzt; Tab wird neu geladen."));
+  elements["enable-hook"].addEventListener("click", () => run("TLC_ENABLE_HOOK", "Hook für diesen Tab gesetzt; Tab wird neu geladen."));
   elements["disable-hook"].addEventListener("click", async () => {
     elements["hook-autostart"].checked = false;
-    await send("TLC_SET_AUTOSTART", { enabled: false });
     await run("TLC_DISABLE_HOOK", "Hook deaktiviert; Tab wird neu geladen.");
   });
   elements["reset-tab"].addEventListener("click", () => {
@@ -820,9 +822,7 @@
     const enabled = elements["hook-autostart"].checked;
     try {
       await send("TLC_SET_AUTOSTART", { enabled });
-      if (activeTabId != null && activeIsTikTok) {
-        await run(enabled ? "TLC_ENABLE_HOOK" : "TLC_DISABLE_HOOK", enabled ? "Autostart aktiviert; TikTok wird neu geladen." : "Autostart deaktiviert; TikTok wird neu geladen.");
-      }
+      elements.notice.textContent = enabled ? "Hook bleibt für diesen Tab aktiv; TikTok wird neu geladen." : "Hook ist für diesen Tab deaktiviert; TikTok wird neu geladen.";
     } catch (error) {
       elements.notice.textContent = String(error?.message || error);
       elements["hook-autostart"].checked = !enabled;

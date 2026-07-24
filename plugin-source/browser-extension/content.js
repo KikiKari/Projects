@@ -26,6 +26,8 @@
   let audioPipeline = null;
   let fallbackLimiter = null;
   let debugEnabled = false;
+  let tabActive = false;
+  let tabRuntimeStarted = false;
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -492,6 +494,44 @@
     })[0] || null;
   }
 
+  function playerToggleControl() {
+    const selectors = [
+      '[data-e2e="play-icon"]',
+      '[data-e2e="pause-icon"]',
+      '[data-testid="control-container"][role="button"]',
+      '[data-e2e="play-icon-id"]',
+      '[data-e2e="pause-icon-id"]',
+      '[aria-label*="play" i]',
+      '[aria-label*="pause" i]',
+      '[aria-label*="abspielen" i]',
+      '[aria-label*="paus" i]'
+    ];
+    const controls = [...document.querySelectorAll(selectors.join(","))]
+      .filter(isVisible)
+      .map(interactiveTarget);
+    return smallestElement([...new Set(controls)]);
+  }
+
+  function clickPlayerControl(control) {
+    if (!control) return false;
+    const target = interactiveTarget(control);
+    if ((target instanceof HTMLButtonElement && target.disabled) || target.getAttribute("aria-disabled") === "true") {
+      target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+    } else {
+      target.click();
+    }
+    return true;
+  }
+
+  function revealPlayerControls() {
+    const surface = primaryVideo()?.closest('[data-e2e*="player" i]')
+      || document.querySelector('[data-e2e="control-bar-id-v2"]')?.parentElement
+      || document.documentElement;
+    for (const type of ["pointermove", "mousemove"]) {
+      surface.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: false, view: window }));
+    }
+  }
+
   function connectedStreamState() {
     const videos = [...document.querySelectorAll("video")].filter(isVisible);
     const guestSelectors = [
@@ -592,10 +632,13 @@
 
   function getPlayerState() {
     const video = primaryVideo();
+    const toggleControl = playerToggleControl();
     const connected = connectedStreamState();
     const volume = Number(video?.volume ?? 1);
     return {
-      available: Boolean(video),
+      available: Boolean(video || toggleControl),
+      videoAvailable: Boolean(video),
+      controlAvailable: Boolean(toggleControl),
       playing: Boolean(video && !video.paused),
       muted: Boolean(video && (video.muted || video.volume === 0)),
       volume,
@@ -616,12 +659,59 @@
   }
 
   async function playerAction(action, payload = {}) {
-    const video = primaryVideo();
-    if (!video) return { activated: false, action, reason: "Kein TikTok-Videoelement gefunden.", playerState: getPlayerState() };
+    let video = primaryVideo();
+    let toggleControl = playerToggleControl();
+    if (!video && action !== "toggle-play") {
+      return { activated: false, action, reason: "Kein TikTok-Videoelement gefunden.", playerState: getPlayerState() };
+    }
     try {
       if (action === "toggle-play") {
-        if (video.paused) await video.play();
-        else video.pause();
+        if (!toggleControl) {
+          revealPlayerControls();
+          await sleep(100);
+          toggleControl = playerToggleControl();
+        }
+        if (!video) {
+          if (!clickPlayerControl(toggleControl)) {
+            return { activated: false, action, reason: "TikToks Play/Pause-Steuerung wurde nicht gefunden.", playerState: getPlayerState() };
+          }
+          video = await waitFor(primaryVideo, 1200);
+          if (video?.paused) await video.play().catch(() => {});
+          await sleep(250);
+          if (!video || video.paused) {
+            return { activated: false, action, reason: "TikToks Play-Steuerung wurde ausgeführt, der Stream startete jedoch nicht.", playerState: getPlayerState() };
+          }
+        } else {
+          const stalled = Boolean(video.ended || video.error || video.readyState < 2);
+          if (!video.paused && !stalled) {
+            video.pause();
+          } else {
+            let directError = null;
+            try {
+              if (video.ended && Number.isFinite(video.duration)) video.currentTime = Math.max(0, video.duration - 0.1);
+              await video.play();
+            } catch (error) {
+              directError = error;
+            }
+            await sleep(250);
+            if (video.paused || video.ended || video.error || video.readyState < 2) {
+              clickPlayerControl(toggleControl);
+              await sleep(350);
+            }
+            if (video.paused || video.ended || video.error || video.readyState < 2) {
+              const replay = document.querySelector('[data-e2e="replay-icon"]');
+              if (replay) {
+                interactiveTarget(replay).click();
+                await sleep(350);
+                await video.play().catch(() => {});
+              }
+            }
+            if (video.paused || video.ended || video.error || video.readyState < 2) {
+              const message = String(directError?.message || "Der unterbrochene Stream ließ sich im TikTok-Player nicht starten.");
+              return { activated: false, action, reason: message.slice(0, 500), playerState: getPlayerState() };
+            }
+          }
+        }
       } else if (action === "replay") {
         const replay = document.querySelector('[data-e2e="replay-icon"]');
         if (!replay) return { activated: false, action, reason: "TikToks Player-Neuladen wurde nicht gefunden.", playerState: getPlayerState() };
@@ -766,6 +856,7 @@
   }
 
   window.addEventListener("message", (event) => {
+    if (!tabActive) return;
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data;
     if (!data || data.source !== "tiktok-live-companion" || data.version !== 1) return;
@@ -783,6 +874,13 @@
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "TLC_SET_TAB_ACTIVE") {
+      tabActive = Boolean(message.enabled);
+      debugEnabled = Boolean(message.debugEnabled);
+      if (tabActive) startTabRuntime();
+      sendResponse({ enabled: tabActive });
+      return false;
+    }
     if (message.type === "TLC_DEBUG_CONFIG") {
       debugEnabled = Boolean(message.enabled);
       sendResponse({ enabled: debugEnabled });
@@ -815,19 +913,20 @@
     return false;
   });
 
-  try {
-    const observer = new PerformanceObserver((list) => {
-      const media = [];
-      for (const entry of list.getEntries()) {
-        const item = core.classifyMediaUrl(entry.name);
-        if (item) media.push(item);
-      }
-      if (media.length) chrome.runtime.sendMessage({ type: "TLC_MEDIA_FOUND", source: "performance", media }).catch(() => {});
-    });
-    observer.observe({ type: "resource", buffered: true });
-  } catch (_) { /* Resource observation is optional. */ }
-
-  const start = () => {
+  function startTabRuntime() {
+    if (!tabActive || tabRuntimeStarted) return;
+    tabRuntimeStarted = true;
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const media = [];
+        for (const entry of list.getEntries()) {
+          const item = core.classifyMediaUrl(entry.name);
+          if (item) media.push(item);
+        }
+        if (media.length) chrome.runtime.sendMessage({ type: "TLC_MEDIA_FOUND", source: "performance", media }).catch(() => {});
+      });
+      observer.observe({ type: "resource", buffered: true });
+    } catch (_) { /* Resource observation is optional. */ }
     new MutationObserver(() => {
       scanDomChat();
       scanDomGifts();
@@ -854,7 +953,12 @@
       };
       apply().catch((error) => debug("audio-settings-restore", { error: String(error?.message || error).slice(0, 300) }));
     }).catch(() => {});
-  };
-  if (document.documentElement) start();
-  else document.addEventListener("DOMContentLoaded", start, { once: true });
+  }
+
+  chrome.runtime.sendMessage({ type: "TLC_GET_TAB_ACTIVATION" }).then((response) => {
+    tabActive = Boolean(response?.enabled);
+    if (!tabActive) return;
+    if (document.documentElement) startTabRuntime();
+    else document.addEventListener("DOMContentLoaded", startTabRuntime, { once: true });
+  }).catch(() => {});
 })();

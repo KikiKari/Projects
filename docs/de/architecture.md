@@ -9,7 +9,7 @@ Die Erweiterung besteht aus sechs Laufzeitbereichen:
 - `background.js`: passives CDN-Monitoring und flüchtiger Tab-Zustand;
 - `sidepanel.*`: lokale Darstellung, Export- und Kopieraktionen.
 
-Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertrauenswürdig und werden mit `textContent` ausgegeben. Stream-Daten, Captions, Chat und Diagnosen liegen in `storage.session`; `storage.local` enthält nur Autostart-, Vorlese- und Lautstärkepräferenzen.
+Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertrauenswürdig und werden mit `textContent` ausgegeben. Aktivierung, Stream-Daten, Captions, Chat und Diagnosen liegen getrennt je Tab in `storage.session`; `storage.local` enthält nur Vorlese- und Lautstärkepräferenzen.
 
 ## Mobile Laufzeitbereiche
 

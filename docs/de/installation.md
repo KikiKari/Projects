@@ -29,10 +29,12 @@ Manueller Fallback: zuerst `npm run setup` und danach ausdrücklich `npm start` 
 
 1. **Seite prüfen** liest Caption-Metadaten, sichtbare Bedienelemente und Stream-Informationen.
 2. **Untertitel aktivieren** betätigt nur einen eindeutig erkannten TikTok-Menüpunkt.
-3. **Hook setzen** registriert die Beobachtung vor dem Player-Code und lädt den Tab neu.
+3. **Hook setzen** aktiviert die Beobachtung ausschließlich für den aktuellen Tab vor dem Player-Code und lädt diesen Tab neu.
 4. Nach dem Reload erscheinen Chat, Caption- und LIVE-Ereignisse, sofern TikTok sie liefert.
 
 **Refresh** leert nur flüchtige Erweiterungsdaten des aktuellen Tabs, aktiviert den Hook erneut und lädt TikTok ohne Seitencache. Cookies und Login bleiben unverändert.
+
+**Abspielen/Pause** bleibt auch dann bedienbar, wenn TikToks Videoelement vorübergehend fehlt oder deaktiviert ist. Die Erweiterung versucht TikToks eigene Playersteuerung erneut auszuführen.
 
 ## iOS 15 oder neuer
 

@@ -35,12 +35,6 @@
   "content_scripts": [
     {
       "matches": ["https://www.tiktok.com/*"],
-      "js": ["popup-guard.js"],
-      "run_at": "document_start",
-      "world": "MAIN"
-    },
-    {
-      "matches": ["https://www.tiktok.com/*"],
       "js": ["content-core.js", "content.js"],
       "run_at": "document_start"
     }

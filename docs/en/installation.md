@@ -29,10 +29,12 @@ Manual fallback: run `npm run setup` first, and then explicitly run `npm start`.
 
 1. **Inspect page** reads caption metadata, visible controls, and stream information.
 2. **Enable captions** activates only a clearly identified TikTok menu item.
-3. **Set hook** registers observation before player code and reloads the tab.
+3. **Set hook** enables observation only for the current tab before player code and reloads that tab.
 4. After reload, chat, caption, and LIVE events appear when TikTok supplies them.
 
 **Refresh** clears only the extension's volatile state for the current tab, re-enables the hook, and reloads TikTok without page cache. Cookies and login remain intact.
+
+**Play/Pause** remains available when TikTok's video element is temporarily missing or disabled. The extension retries TikTok's own player control.
 
 ## iOS 15 or newer
 

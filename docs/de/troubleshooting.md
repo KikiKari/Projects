@@ -6,7 +6,7 @@ Zuerst **Seite prüfen** ausführen. `caption_info` und ein sichtbarer Menüpunk
 
 ## Hook bleibt getrennt
 
-**Refresh** im Hook-Bereich verwenden. Dadurch wird nur der flüchtige Zustand des Tabs gelöscht, der Hook erneut registriert und die Seite ohne Cache geladen. Bei Autostart kann die Registrierung browserübergreifend bestehen bleiben.
+**Refresh** im Hook-Bereich verwenden. Dadurch wird nur der flüchtige Zustand dieses Tabs gelöscht, der Hook ausschließlich für diesen Tab erneut aktiviert und die Seite ohne Cache geladen. Andere TikTok-Tabs bleiben unverändert.
 
 ## Playeraktion wird abgelehnt
 
