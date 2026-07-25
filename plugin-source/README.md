@@ -18,8 +18,10 @@ Lokales Codex-Plugin plus entpackbare Manifest-V3-Erweiterung für Edge und Chro
 - Profilkopfwerte tabübergreifend zwischenspeichern sowie ausdrücklich gelieferte Übersichtskarten-Texte und TikTok-KI-Zusammenfassungen anzeigen
 - Profilwerte auf ausdrücklichen Force-Klick über einen vollständigen Profilseitenaufruf aktualisieren
 - optional verstärkbares Windows-TTS über den lokalen Begleitdienst und eine manuelle 12-Sekunden-Songerkennung über AudD anbieten
-- Mehrgast-Layouts bestmöglich erkennen und den WebSocket-Hook optional browserübergreifend automatisch starten
-- vollständiger Tab-Reset ohne Cookie-Löschung, mit erneut aktiviertem Hook und Cache-umgehendem Reload
+- Mehrgast-Layouts bestmöglich erkennen und den WebSocket-Hook optional als Permanent Hook automatisch starten
+- Auto-Reconnect bei Stream-Unterbrechungen sowie vollständiger Tab-Reset ohne Cookie-Löschung, mit erneut aktiviertem Hook und Cache-umgehendem Reload
+- Wechsel zwischen normaler LIVE-Seite und TikToks Embed-LIVE-Seite über Embed / Normal
+- verifizierte Creator-Kennzeichnung in den Seiteninformationen anzeigen, wenn TikTok sie sichtbar liefert
 - Caption-Protokoll als JSONL exportieren
 - einen abschaltbaren Diagnosemodus mit bereinigtem JSON-Export bereitstellen
 

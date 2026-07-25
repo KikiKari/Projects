@@ -3,7 +3,7 @@
 ## Artefakte
 
 - `tiktok-live-companion-extension-0.7.1.zip` – entpackbare Edge-/Chrome-Erweiterung
-- `tiktok-live-companion-plugin-0.7.0.zip` – Codex-Plugin einschließlich Skill, Referenzen und Tests
+- `tiktok-live-companion-plugin-0.7.1.zip` – Codex-Plugin einschließlich Skill, Referenzen und Tests
 - `tiktok-live-companion-service-0.7.0.zip` – optionaler lokaler Windows-Dienst
 - `tiktok-live-companion-ios-0.7.0-source.zip` – vollständiges SwiftUI-/Xcode-Quellprojekt
 - `tiktok-live-companion-android-0.7.0-source.zip` – Kotlin-/Compose-Quellprojekt für Android und HyperOS
