@@ -27,7 +27,10 @@
   let fallbackLimiter = null;
   let debugEnabled = false;
   let tabActive = false;
+  let quickRecoverEnabled = false;
   let tabRuntimeStarted = false;
+  let quickRecoverFailures = 0;
+  let lastQuickRecoverAt = 0;
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -185,7 +188,13 @@
     if (!candidate?.present) return current;
     const score = (value) => [value.uniqueId, value.nickname, value.signature, value.followingCount, value.followerCount, value.likeCount]
       .filter((item) => item != null && item !== "").length;
-    return score(candidate) >= score(current || {}) ? candidate : current;
+    const winner = score(candidate) >= score(current || {}) ? candidate : current;
+    return {
+      ...winner,
+      live: Boolean(winner?.live || current?.live || candidate?.live),
+      verified: Boolean(winner?.verified || current?.verified || candidate?.verified),
+      verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || ""
+    };
   }
 
   function collectMetadata() {
@@ -237,21 +246,72 @@
     return "";
   }
 
+  function currentPathHandle() {
+    const path = decodeURIComponent(location.pathname);
+    return path.match(/^\/@([^/]+)(?:\/live)?\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "";
+  }
+
+  function colorIsCertified(value) {
+    const raw = String(value || "");
+    const match = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (!match) return /#(?:00b|0af|20d5ec|25f4ee|2af|5ad|0dd)/i.test(raw);
+    const red = Number(match[1]);
+    const green = Number(match[2]);
+    const blue = Number(match[3]);
+    return blue >= 170 && green >= 120 && red <= 90;
+  }
+
+  function certifiedBadgePresent(root = document) {
+    const labeled = [...root.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
+      isVisible(element) && /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
+    );
+    if (labeled) return true;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    const roots = [...root.querySelectorAll('header,[data-e2e*="user" i],[data-e2e*="profile" i],a[href^="/@"],a[href*="tiktok.com/@"]')]
+      .filter((element) => isVisible(element) && (!handle || visibleText(element).toLocaleLowerCase().includes(handle)));
+    for (const item of roots.slice(0, 12)) {
+      for (const element of item.querySelectorAll("svg, img, span, div")) {
+        if (!isVisible(element)) continue;
+        const rect = element.getBoundingClientRect();
+        if (rect.width < 6 || rect.height < 6 || rect.width > 32 || rect.height > 32) continue;
+        const style = getComputedStyle(element);
+        if (colorIsCertified(style.color) || colorIsCertified(style.backgroundColor) || colorIsCertified(style.fill) || colorIsCertified(style.stroke)) return true;
+      }
+    }
+    return false;
+  }
+
+  function collectDomLiveStats() {
+    const text = visibleText(document.body);
+    const pattern = "([0-9][0-9.,\\s]*\\s*[KMB]?)";
+    const clean = (value) => value ? value.replace(/\s+/g, "") : null;
+    const viewerCount = clean(text.match(new RegExp(`Zuschauer\\*innen\\s*[·:]?\\s*${pattern}`, "i"))?.[1]);
+    const totalViewers = clean(text.match(new RegExp(`Aufrufe\\s+gesamt\\s*[·:]?\\s*${pattern}`, "i"))?.[1]);
+    const likeCount = clean(text.match(new RegExp(`Likes?\\s*[·:]?\\s*${pattern}`, "i"))?.[1]);
+    return viewerCount || totalViewers || likeCount
+      ? { viewerCount, totalViewers, likeCount, lastUpdatedUtc: new Date().toISOString() }
+      : null;
+  }
+
   function collectProfileFromDom() {
-    if (!/^\/@[^/]+\/?$/.test(location.pathname)) return { ...core.EMPTY_PROFILE_INFO };
-    const uniqueId = selectorText(['[data-e2e="user-subtitle"]']) || decodeURIComponent(location.pathname.slice(2));
+    const handle = currentPathHandle();
+    const profilePage = /^\/@[^/]+\/?$/i.test(location.pathname);
+    const livePage = isLivePage();
+    if (!profilePage && !livePage) return { ...core.EMPTY_PROFILE_INFO };
+    const uniqueId = selectorText(['[data-e2e="user-subtitle"]']) || handle;
     const nickname = selectorText(['[data-e2e="user-title"] h1', '[data-e2e="user-title"]']);
     const signature = selectorText(['[data-e2e="user-bio"]', '[data-e2e="user-signature"]']);
     const followingCount = selectorText(['[data-e2e="following-count"]']);
     const followerCount = selectorText(['[data-e2e="followers-count"]']);
     const likeCount = selectorText(['[data-e2e="likes-count"]']);
-    const live = Boolean(document.querySelector('[data-e2e*="live" i]'));
-    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount);
-    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, source: present ? "dom" : null };
+    const verified = certifiedBadgePresent();
+    const live = Boolean(livePage || document.querySelector('[data-e2e*="live" i]'));
+    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePage);
+    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "dom" : null };
   }
 
   async function collectProfileFromHover(force = false) {
-    if (!force || !/^\/@[^/]+\/live\/?$/.test(location.pathname)) return { ...core.EMPTY_PROFILE_INFO };
+    if (!force || !isLivePage()) return { ...core.EMPTY_PROFILE_INFO };
     const handle = currentHandle();
     const expected = `/@${handle.toLocaleLowerCase()}`;
     const link = [...document.querySelectorAll('a[href^="/@"],a[href*="tiktok.com/@"]')].find((item) => {
@@ -267,12 +327,13 @@
     const likeCount = selectorText(['[data-e2e="likes-count"]']);
     const signature = selectorText(['[data-e2e="user-bio"]', '[data-e2e="user-signature"]']);
     const nickname = selectorText(['[data-e2e="user-title"] h1', '[data-e2e="user-title"]']) || visibleText(link);
+    const verified = certifiedBadgePresent();
     const present = Boolean(followingCount || followerCount || likeCount);
-    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, source: present ? "Profilkarte" : null };
+    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "Profilkarte" : null };
   }
 
   async function fetchPublicProfile(force = false) {
-    const handle = decodeURIComponent(location.pathname.match(/^\/@([^/]+)/)?.[1] || "");
+    const handle = currentPathHandle();
     if (!handle) return { ...core.EMPTY_PROFILE_INFO };
     const now = Date.now();
     if (!force && profilePageCache?.handle === handle && now - profilePageCache.at < 5 * 60 * 1000) return profilePageCache.profile;
@@ -293,7 +354,10 @@
           profile = mergeProfile(profile, core.inspectMetadata(JSON.parse(value), { maxNodes: 20000, profileUniqueId: handle }).profileInfo);
         } catch (_) { /* Many profile scripts are not JSON. */ }
       }
-      if (profile.present) profile = { ...profile, uniqueId: profile.uniqueId || handle, live: true, source: "öffentliche Profilseite" };
+      const verified = [...page.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
+        /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
+      );
+      if (profile.present || verified) profile = { ...profile, present: true, uniqueId: profile.uniqueId || handle, live: true, verified: Boolean(profile.verified || verified), verifiedLabel: profile.verifiedLabel || (verified ? "Zertifiziert" : ""), source: "öffentliche Profilseite" };
       profilePageCache = { handle, at: now, profile };
       return profile;
     } catch (_) {
@@ -304,7 +368,7 @@
   }
 
   function collectSummaryFromDom() {
-    if (!/(?:^|\/)live(?:\/|$)/.test(location.pathname)) return "";
+    if (!isLivePage()) return "";
     const candidates = [...document.querySelectorAll('[data-e2e*="summary" i],[class*="summary" i]')].filter(isVisible);
     for (const element of candidates) {
       const value = visibleText(element);
@@ -315,8 +379,13 @@
     return "";
   }
 
+  function isLivePage() {
+    return /^\/@[^/]+\/live\/?$/i.test(location.pathname) || /^\/embed\/live\/@?[^/?#]+\/?$/i.test(location.pathname);
+  }
+
   function currentHandle() {
-    return decodeURIComponent(location.pathname.match(/^\/@([^/]+)/)?.[1] || "");
+    const path = decodeURIComponent(location.pathname);
+    return path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "";
   }
 
   function recommendedCardForHandle(handle) {
@@ -365,7 +434,7 @@
 
   async function scanPage(options = {}) {
     const collected = collectMetadata();
-    if (/^\/@[^/]+\/live\/?$/.test(location.pathname) && (options.refreshProfile || !collected.profileInfo?.followerCount)) {
+    if (isLivePage() && (options.refreshProfile || !collected.profileInfo?.followerCount)) {
       collected.profileInfo = mergeProfile(collected.profileInfo, await fetchPublicProfile(Boolean(options.refreshProfile)));
       collected.profileInfo = mergeProfile(collected.profileInfo, await collectProfileFromHover(Boolean(options.refreshProfile)));
     }
@@ -383,6 +452,7 @@
       aiSummaryInfo: collected.aiSummaryInfo,
       menuCaptionAvailable: Boolean(captionControl),
       menuCaptionActive: Boolean(captionControl?.active),
+      liveStats: collectDomLiveStats(),
       media: collected.media
     }).catch(() => {});
     debug("scan", { profile: collected.profileInfo, summary: collected.aiSummaryInfo, mediaCount: collected.media.length });
@@ -560,17 +630,35 @@
     return peak > 0 ? Math.max(-100, Math.round(20 * Math.log10(peak) * 10) / 10) : -100;
   }
 
-  async function ensureAudioPipeline(video) {
-    if (audioPipeline?.video === video) {
-      if (audioPipeline.context.state === "suspended") await audioPipeline.context.resume();
-      return audioPipeline;
-    }
-    if (audioPipeline?.context) await audioPipeline.context.close().catch(() => {});
-    const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
-    if (!AudioContextClass) throw new Error("Die Web-Audio-API ist in diesem Browser nicht verfügbar.");
-    const context = new AudioContextClass();
-    const source = context.createMediaElementSource(video);
+  function clearFallbackLimiter(video) {
+    if (!fallbackLimiter?.video || (video && fallbackLimiter.video !== video)) return;
+    if (fallbackLimiter.enforce) fallbackLimiter.video.removeEventListener("volumechange", fallbackLimiter.enforce);
+    fallbackLimiter = null;
+  }
+
+  async function resumeAudioContext(pipeline) {
+    if (!pipeline?.context || pipeline.context.state !== "suspended") return;
+    await pipeline.context.resume().catch((error) => {
+      debug("audio-context-resume-deferred", { error: String(error?.message || error).slice(0, 300) });
+    });
+  }
+
+  function attachAudioResumeHandlers(pipeline) {
+    const resume = () => resumeAudioContext(pipeline);
+    pipeline.video.addEventListener("play", resume);
+    pipeline.video.addEventListener("volumechange", resume);
+    document.addEventListener("pointerdown", resume, { capture: true, passive: true });
+    pipeline.cleanupResumeHandlers = () => {
+      pipeline.video.removeEventListener("play", resume);
+      pipeline.video.removeEventListener("volumechange", resume);
+      document.removeEventListener("pointerdown", resume, { capture: true });
+    };
+  }
+
+  function wireAudioPipeline(video, context, source, captureMode = false, stream = null) {
     const compressor = context.createDynamicsCompressor();
+    const makeup = context.createGain();
+    const outputGain = context.createGain();
     const analyser = context.createAnalyser();
     analyser.fftSize = 2048;
     compressor.threshold.value = 0;
@@ -578,33 +666,245 @@
     compressor.ratio.value = 1;
     compressor.attack.value = 0.003;
     compressor.release.value = 0.25;
-    source.connect(compressor).connect(analyser).connect(context.destination);
-    audioPipeline = { video, context, source, compressor, analyser, enabled: false, thresholdDbfs: -6 };
-    await context.resume();
+    makeup.gain.value = 1;
+    outputGain.gain.value = captureMode && video.muted ? 0 : Number(video.volume || 1);
+    source.connect(compressor).connect(makeup).connect(analyser).connect(outputGain).connect(context.destination);
+    const pipeline = {
+      video, context, source, compressor, makeup, outputGain, analyser,
+      captureMode, stream, enabled: false, thresholdDbfs: -6,
+      userVolume: Number(video.volume || 1), userMuted: Boolean(video.muted)
+    };
+    if (captureMode) {
+      pipeline.restoreVolume = pipeline.userVolume;
+      pipeline.restoreMuted = pipeline.userMuted;
+      video.muted = true;
+    }
+    attachAudioResumeHandlers(pipeline);
+    return pipeline;
+  }
+
+  async function destroyAudioPipeline(pipeline) {
+    if (!pipeline) return;
+    pipeline.cleanupResumeHandlers?.();
+    if (pipeline.captureMode && pipeline.video) {
+      pipeline.video.volume = Math.max(0, Math.min(1, Number(pipeline.userVolume ?? pipeline.restoreVolume ?? 1)));
+      pipeline.video.muted = Boolean(pipeline.userMuted ?? pipeline.restoreMuted);
+      pipeline.video.dispatchEvent(new Event("volumechange", { bubbles: true }));
+    }
+    pipeline.stream?.getTracks?.().forEach((track) => track.stop());
+    await pipeline.context?.close?.().catch(() => {});
+  }
+
+  function setPipelineVolume(pipeline, volume) {
+    pipeline.userVolume = volume;
+    if (volume > 0) pipeline.userMuted = false;
+    pipeline.outputGain.gain.value = pipeline.userMuted ? 0 : volume;
+  }
+
+  function setPipelineMuted(pipeline, muted) {
+    pipeline.userMuted = Boolean(muted);
+    if (!pipeline.userMuted && pipeline.userVolume <= 0) pipeline.userVolume = Math.max(0.01, Number(pipeline.restoreVolume || 1));
+    pipeline.outputGain.gain.value = pipeline.userMuted ? 0 : pipeline.userVolume;
+  }
+
+  async function ensureAudioPipeline(video) {
+    if (audioPipeline?.video === video) {
+      await resumeAudioContext(audioPipeline);
+      return audioPipeline;
+    }
+    if (audioPipeline?.context) await destroyAudioPipeline(audioPipeline);
+    audioPipeline = null;
+    const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!AudioContextClass) throw new Error("Die Web-Audio-API ist in diesem Browser nicht verfügbar.");
+    let context = new AudioContextClass();
+    try {
+      audioPipeline = wireAudioPipeline(video, context, context.createMediaElementSource(video));
+    } catch (sourceError) {
+      await context.close().catch(() => {});
+      const captureStream = video.captureStream || video.mozCaptureStream;
+      if (typeof captureStream !== "function") throw sourceError;
+      const stream = captureStream.call(video);
+      if (!stream?.getAudioTracks?.().length) throw sourceError;
+      context = new AudioContextClass();
+      audioPipeline = wireAudioPipeline(video, context, context.createMediaStreamSource(stream), true, stream);
+      debug("limiter-capture-fallback", { reason: String(sourceError?.message || sourceError).slice(0, 300) });
+    }
+    await resumeAudioContext(audioPipeline);
     return audioPipeline;
   }
 
   function dismissTimedLiveInterruption() {
-    if (!/^\/@[^/]+\/live\/?$/.test(location.pathname) || Date.now() - popupGuardStartedAt < 5000) return;
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return;
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
-    const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience)/i.test(visibleText(dialog)));
+    const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (!interruption) return;
-    const close = [...document.querySelectorAll('button,[role="button"]')].find((button) => {
+    const action = [...document.querySelectorAll('button,[role="button"],a')].find((button) => {
       if (!isVisible(button)) return false;
       const label = `${button.getAttribute("aria-label") || ""} ${button.getAttribute("title") || ""} ${visibleText(button)}`.trim();
-      return /^(?:schließen|close)$/i.test(label);
+      return /(?:^(?:schließen|close|x)$|not now|maybe later|später|nicht jetzt|continue watching|keep watching|weiter ansehen|weiterschauen|weiter schauen)/i.test(label);
     });
-    if (close) {
-      close.click();
+    if (action) {
+      action.click();
+      const video = primaryVideo();
+      if (video?.paused && !video.ended && !video.error) video.play().catch(() => {});
       debug("timed-live-interruption-dismissed", { label: visibleText(interruption).slice(0, 120) });
     }
   }
 
+  function timedLiveInterruptionReason() {
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return "";
+    const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
+    const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
+    if (interruption) return "login-dialog";
+    if (/anmelden|log in|login|sign in/i.test(document.title || "") && !primaryVideo()) return "login-page-no-video";
+    return "";
+  }
+
+  function quickRecoverReason() {
+    if (!quickRecoverEnabled || !tabActive || !isLivePage()) return "";
+    const interruption = timedLiveInterruptionReason();
+    if (interruption) return interruption;
+    const video = primaryVideo();
+    if (!video) return "";
+    if (video.error) return "video-error";
+    if (video.ended) return "video-ended";
+    if (Date.now() - popupGuardStartedAt < 2000) return "";
+    if (video.paused) return "video-paused";
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return "video-not-ready";
+    return "";
+  }
+
+  async function tryQuickRecover(reason) {
+    dismissTimedLiveInterruption();
+    const video = primaryVideo();
+    if (video && !video.ended && !video.error) {
+      await video.play().catch(() => {});
+      await sleep(150);
+      if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        quickRecoverFailures = 0;
+        chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason: "quick-recover-local", playerState: getPlayerState() }).catch(() => {});
+        return;
+      }
+    }
+    quickRecoverFailures += 1;
+    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < 3000) return;
+    quickRecoverFailures = 0;
+    lastQuickRecoverAt = Date.now();
+    chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason }).catch(() => {});
+  }
+
+  function monitorQuickRecover() {
+    setInterval(() => {
+      const reason = quickRecoverReason();
+      if (!reason) {
+        quickRecoverFailures = 0;
+        return;
+      }
+      tryQuickRecover(reason).catch((error) => debug("quick-recover-error", { reason, error: String(error?.message || error).slice(0, 300) }));
+    }, 350);
+  }
+
+  function pushPlayerState(reason) {
+    chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason, playerState: getPlayerState() }).catch(() => {});
+  }
+
+  function playerSurface() {
+    return primaryVideo()?.closest('[data-e2e*="player" i]')
+      || document.querySelector('[data-e2e="control-bar-id-v2"]')?.parentElement
+      || document.querySelector("main")
+      || document.body
+      || document.documentElement;
+  }
+
+  function mediaFallbackCandidates(media = []) {
+    const usable = (media || []).filter((item) => item?.url && !item.audioOnly);
+    return usable.sort((a, b) => {
+      const protocolScore = (item) => /hls/i.test(item.protocol || "") ? 0 : /flv/i.test(item.protocol || "") ? 1 : 2;
+      const height = (item) => Number(item.height || String(item.quality || "").match(/\d+/)?.[0] || 0);
+      return protocolScore(a) - protocolScore(b) || height(b) - height(a);
+    });
+  }
+
+  function ensureMediaFallbackVideo() {
+    let holder = document.getElementById("tlc-media-fallback");
+    if (!holder) {
+      holder = document.createElement("div");
+      holder.id = "tlc-media-fallback";
+      holder.style.cssText = "position:absolute;inset:0;z-index:2147483646;display:grid;place-items:center;background:#000;";
+      const video = document.createElement("video");
+      video.controls = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = false;
+      video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;";
+      holder.append(video);
+    }
+    const surface = playerSurface();
+    const style = getComputedStyle(surface);
+    if (style.position === "static") surface.style.position = "relative";
+    if (holder.parentElement !== surface) surface.append(holder);
+    return holder.querySelector("video");
+  }
+
+  function tryMediaUrl(video, item) {
+    return new Promise((resolve) => {
+      let finished = false;
+      const done = (ok, reason = "") => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        video.removeEventListener("canplay", onCanPlay);
+        video.removeEventListener("playing", onPlaying);
+        video.removeEventListener("error", onError);
+        resolve({ ok, item, reason });
+      };
+      const onCanPlay = () => done(true);
+      const onPlaying = () => done(true);
+      const onError = () => done(false, video.error?.message || "media-error");
+      const timeout = setTimeout(() => done(false, "timeout"), 4500);
+      video.addEventListener("canplay", onCanPlay);
+      video.addEventListener("playing", onPlaying);
+      video.addEventListener("error", onError);
+      video.src = item.url;
+      video.load();
+      video.play().catch(() => {});
+    });
+  }
+
+  async function playMediaFallback(media = []) {
+    const candidates = mediaFallbackCandidates(media);
+    if (!candidates.length) return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
+    const video = ensureMediaFallbackVideo();
+    const failures = [];
+    for (const item of candidates) {
+      const result = await tryMediaUrl(video, item);
+      if (result.ok) {
+        debug("media-fallback", { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" });
+        return { activated: true, action: "play-vlc-source", media: { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" }, playerState: getPlayerState() };
+      }
+      failures.push(`${item.quality || "?"} ${item.protocol || "?"}: ${result.reason}`);
+    }
+    document.getElementById("tlc-media-fallback")?.remove();
+    return { activated: false, action: "play-vlc-source", reason: `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`, playerState: getPlayerState() };
+  }
+
   async function configureLimiter(video, enabled, thresholdDbfs) {
     const threshold = Math.max(-30, Math.min(-1, Number(thresholdDbfs ?? -6)));
-    if (!enabled && fallbackLimiter?.video === video) {
-      video.removeEventListener("volumechange", fallbackLimiter.enforce);
-      fallbackLimiter = null;
+    clearFallbackLimiter(video);
+    if (!enabled && audioPipeline?.video === video) {
+      const pipeline = audioPipeline;
+      pipeline.enabled = false;
+      pipeline.thresholdDbfs = threshold;
+      pipeline.compressor.threshold.value = 0;
+      pipeline.compressor.knee.value = 0;
+      pipeline.compressor.ratio.value = 1;
+      pipeline.makeup.gain.value = 1;
+      if (pipeline.captureMode) {
+        await destroyAudioPipeline(pipeline);
+        audioPipeline = null;
+      }
+      debug("limiter", { mode: "off", enabled: false, threshold });
+      return { enabled: false, thresholdDbfs: threshold };
     }
     try {
       const pipeline = await ensureAudioPipeline(video);
@@ -613,19 +913,12 @@
       pipeline.compressor.threshold.value = pipeline.enabled ? threshold : 0;
       pipeline.compressor.knee.value = pipeline.enabled ? 1 : 0;
       pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
+      pipeline.makeup.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
       debug("limiter", { mode: "compressor", enabled: pipeline.enabled, threshold });
       return pipeline;
     } catch (error) {
-      if (!enabled) return null;
-      const cap = Math.pow(10, threshold / 20);
-      if (fallbackLimiter?.video && fallbackLimiter.video !== video) fallbackLimiter.video.removeEventListener("volumechange", fallbackLimiter.enforce);
-      const enforce = () => {
-        if (video.volume > cap) video.volume = cap;
-      };
-      fallbackLimiter = { video, enabled: true, thresholdDbfs: threshold, cap, enforce, error: String(error?.message || error).slice(0, 300) };
-      video.addEventListener("volumechange", enforce);
-      enforce();
-      debug("limiter-fallback", { threshold, cap, error: fallbackLimiter.error });
+      fallbackLimiter = { video, enabled: false, thresholdDbfs: threshold, error: String(error?.message || error).slice(0, 300) };
+      debug("limiter-unavailable", { threshold, enabled: Boolean(enabled), error: fallbackLimiter.error });
       return fallbackLimiter;
     }
   }
@@ -634,22 +927,24 @@
     const video = primaryVideo();
     const toggleControl = playerToggleControl();
     const connected = connectedStreamState();
-    const volume = Number(video?.volume ?? 1);
+    const pipeline = audioPipeline?.video === video ? audioPipeline : null;
+    const volume = pipeline?.captureMode ? Number(pipeline.userVolume ?? 1) : Number(video?.volume ?? 1);
     return {
       available: Boolean(video || toggleControl),
       videoAvailable: Boolean(video),
       controlAvailable: Boolean(toggleControl),
       playing: Boolean(video && !video.paused),
-      muted: Boolean(video && (video.muted || video.volume === 0)),
+      muted: Boolean(video && (pipeline?.captureMode ? pipeline.userMuted || pipeline.userVolume === 0 : video.muted || video.volume === 0)),
       volume,
       volumePercent: Math.round(volume * 100),
       volumeGainDb: volumeGainDb(volume),
       peakDbfs: currentPeakDbfs(),
-      limiterEnabled: Boolean((audioPipeline?.video === video && audioPipeline.enabled) || (fallbackLimiter?.video === video && fallbackLimiter.enabled)),
-      limiterMode: audioPipeline?.video === video && audioPipeline.enabled ? "Kompressor" : fallbackLimiter?.video === video && fallbackLimiter.enabled ? "Lautstärkedeckel" : null,
-      limiterStrength: core.limiterDbfsToStrength(audioPipeline?.video === video ? audioPipeline.thresholdDbfs : fallbackLimiter?.video === video ? fallbackLimiter.thresholdDbfs : -6),
-      limiterThresholdDbfs: audioPipeline?.video === video ? audioPipeline.thresholdDbfs : fallbackLimiter?.video === video ? fallbackLimiter.thresholdDbfs : -6,
-      limiterReductionDb: audioPipeline?.video === video ? Math.round(Number(audioPipeline.compressor.reduction || 0) * 10) / 10 : 0,
+      limiterEnabled: Boolean(pipeline?.enabled),
+      limiterMode: pipeline?.enabled ? "Kompressor" : null,
+      limiterStrength: core.limiterDbfsToStrength(pipeline ? pipeline.thresholdDbfs : -6),
+      limiterThresholdDbfs: pipeline ? pipeline.thresholdDbfs : -6,
+      limiterReductionDb: pipeline ? Math.round(Number(pipeline.compressor.reduction || 0) * 10) / 10 : 0,
+      limiterError: fallbackLimiter?.video === video ? fallbackLimiter.error : null,
       ...connected,
       elapsedText: elapsedText(),
       pipActive: Boolean(video && document.pictureInPictureElement === video),
@@ -661,6 +956,7 @@
   async function playerAction(action, payload = {}) {
     let video = primaryVideo();
     let toggleControl = playerToggleControl();
+    if (action === "play-vlc-source") return playMediaFallback(payload.media || []);
     if (!video && action !== "toggle-play") {
       return { activated: false, action, reason: "Kein TikTok-Videoelement gefunden.", playerState: getPlayerState() };
     }
@@ -717,6 +1013,12 @@
         if (!replay) return { activated: false, action, reason: "TikToks Player-Neuladen wurde nicht gefunden.", playerState: getPlayerState() };
         replay.click();
       } else if (action === "toggle-mute") {
+        if (audioPipeline?.video === video && audioPipeline.captureMode) {
+          setPipelineMuted(audioPipeline, !(audioPipeline.userMuted || audioPipeline.userVolume === 0));
+          video.dispatchEvent(new Event("volumechange", { bubbles: true }));
+          await resumeAudioContext(audioPipeline);
+          return { activated: true, action, playerState: getPlayerState() };
+        }
         const previous = video.muted || video.volume === 0;
         const volume = document.querySelector('[data-e2e="volume-icon"],[data-e2e="volume-icon-id"]');
         if (volume) volume.click();
@@ -728,11 +1030,20 @@
       } else if (action === "set-volume") {
         const volume = Math.max(0, Math.min(1, Number(payload.value)));
         if (!Number.isFinite(volume)) return { activated: false, action, reason: "Ungültiger Lautstärkewert.", playerState: getPlayerState() };
-        video.volume = volume;
-        if (volume > 0) video.muted = false;
+        clearFallbackLimiter(video);
+        if (audioPipeline?.video === video && audioPipeline.captureMode) {
+          setPipelineVolume(audioPipeline, volume);
+          await resumeAudioContext(audioPipeline);
+        } else {
+          video.volume = volume;
+          if (volume > 0) video.muted = false;
+        }
         video.dispatchEvent(new Event("volumechange", { bubbles: true }));
       } else if (action === "set-limiter") {
-        await configureLimiter(video, payload.enabled, payload.thresholdDbfs);
+        const limiter = await configureLimiter(video, payload.enabled, payload.thresholdDbfs);
+        if (payload.enabled && !limiter?.enabled) {
+          return { activated: false, action, reason: limiter?.error || "Pegelschutz konnte nicht aktiviert werden.", playerState: getPlayerState() };
+        }
       } else if (action === "toggle-pip") {
         if (document.pictureInPictureElement) await document.exitPictureInPicture();
         else if (document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function") await video.requestPictureInPicture();
@@ -769,37 +1080,49 @@
   }
 
   function extractDomChat(element) {
-    const owner = element.querySelector('[data-e2e="message-owner-name"]');
-    const author = visibleText(owner);
-    if (!owner) return null;
-    const pieces = [];
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
-      if (owner.contains(node)) continue;
-      if (!(owner.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
-      if (node.parentElement?.closest("svg,picture,[aria-hidden='true']")) continue;
-      const value = String(node.nodeValue || "").trim();
-      if (!value || /^(?:Nr\.\s*\d+|\d+|SHRK|tmm|LIVE\s*Pro)$/i.test(value)) continue;
-      pieces.push(value);
+    try {
+      if (!(element instanceof Element) || !element.isConnected) return null;
+      const owner = element.querySelector('[data-e2e="message-owner-name"]');
+      if (!owner) return null;
+      const author = visibleText(owner);
+      if (!author) return null;
+      const pieces = [];
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!owner.isConnected || !element.isConnected) return null;
+        if (owner.contains(node)) continue;
+        if (!(owner.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+        if (node.parentElement?.closest("svg,picture,[aria-hidden='true']")) continue;
+        const value = String(node.nodeValue || "").trim();
+        if (!value || /^(?:Nr\.\s*\d+|\d+|SHRK|tmm|LIVE\s*Pro)$/i.test(value)) continue;
+        pieces.push(value);
+      }
+      let content = pieces.join(" ").replace(/\s+/g, " ").trim();
+      if (!content) {
+        const whole = visibleText(element);
+        const position = whole.indexOf(author);
+        content = position >= 0 ? whole.slice(position + author.length).trim() : whole;
+        content = content.replace(/^(?:Nr\.\s*\d+\s*)+/i, "");
+      }
+      return { author, content, contentLanguage: document.documentElement?.lang || "", source: "dom", receivedAtUtc: new Date().toISOString() };
+    } catch (error) {
+      debug("dom-chat-scan-error", { error: String(error?.message || error).slice(0, 300) });
+      return null;
     }
-    let content = pieces.join(" ").replace(/\s+/g, " ").trim();
-    if (!content) {
-      const whole = visibleText(element);
-      const position = whole.indexOf(author);
-      content = position >= 0 ? whole.slice(position + author.length).trim() : whole;
-      content = content.replace(/^(?:Nr\.\s*\d+\s*)+/i, "");
-    }
-    return { author, content, contentLanguage: document.documentElement.lang || "", source: "dom", receivedAtUtc: new Date().toISOString() };
   }
 
   function scanDomChat() {
     for (const element of [...document.querySelectorAll('[data-e2e="chat-message"]')].slice(-100)) {
-      const raw = visibleText(element);
-      if (!raw || chatNodeText.get(element) === raw) continue;
-      chatNodeText.set(element, raw);
-      const chatMessage = extractDomChat(element);
-      if (chatMessage?.content) chrome.runtime.sendMessage({ type: "TLC_CHAT_MESSAGE", chatMessage }).catch(() => {});
+      try {
+        const raw = visibleText(element);
+        if (!raw || chatNodeText.get(element) === raw) continue;
+        chatNodeText.set(element, raw);
+        const chatMessage = extractDomChat(element);
+        if (chatMessage?.content) chrome.runtime.sendMessage({ type: "TLC_CHAT_MESSAGE", chatMessage }).catch(() => {});
+      } catch (error) {
+        debug("dom-chat-loop-error", { error: String(error?.message || error).slice(0, 300) });
+      }
     }
   }
 
@@ -877,8 +1200,14 @@
     if (message.type === "TLC_SET_TAB_ACTIVE") {
       tabActive = Boolean(message.enabled);
       debugEnabled = Boolean(message.debugEnabled);
+      quickRecoverEnabled = Boolean(message.quickRecoverEnabled);
       if (tabActive) startTabRuntime();
       sendResponse({ enabled: tabActive });
+      return false;
+    }
+    if (message.type === "TLC_QUICK_RECOVER_CONFIG") {
+      quickRecoverEnabled = Boolean(message.enabled);
+      sendResponse({ enabled: quickRecoverEnabled });
       return false;
     }
     if (message.type === "TLC_DEBUG_CONFIG") {
@@ -915,6 +1244,10 @@
 
   function startTabRuntime() {
     if (!tabActive || tabRuntimeStarted) return;
+    if (!document.documentElement) {
+      document.addEventListener("DOMContentLoaded", startTabRuntime, { once: true });
+      return;
+    }
     tabRuntimeStarted = true;
     try {
       const observer = new PerformanceObserver((list) => {
@@ -928,18 +1261,27 @@
       observer.observe({ type: "resource", buffered: true });
     } catch (_) { /* Resource observation is optional. */ }
     new MutationObserver(() => {
-      scanDomChat();
-      scanDomGifts();
-      scanDomCaptions();
-      dismissTimedLiveInterruption();
-      scheduleScan(1500);
+      try {
+        scanDomChat();
+        scanDomGifts();
+        scanDomCaptions();
+        dismissTimedLiveInterruption();
+        scheduleScan(1500);
+      } catch (error) {
+        debug("dom-observer-error", { error: String(error?.message || error).slice(0, 300) });
+      }
     }).observe(document.documentElement, { childList: true, subtree: true });
     scanDomChat();
     scanDomGifts();
     scanDomCaptions();
     setInterval(dismissTimedLiveInterruption, 1000);
+    monitorQuickRecover();
+    for (const eventName of ["fullscreenchange", "visibilitychange", "focus", "pageshow"]) {
+      window.addEventListener(eventName, () => setTimeout(() => pushPlayerState(eventName), 150));
+    }
     scheduleScan(50);
     chrome.storage.local.get("tlc-settings").then(({ "tlc-settings": settings = {} }) => {
+      quickRecoverEnabled = Boolean(settings.quickRecoverEnabled);
       const apply = async () => {
         const video = primaryVideo();
         if (!video) {

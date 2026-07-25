@@ -55,7 +55,7 @@
       </div>
       <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
       <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
-      <p id="song-status" class="inline-status">Es wird nichts aufgenommen oder übertragen.</p>
+      <p id="song-status" class="inline-status"></p>
       <div id="song-result" class="song-result" hidden></div>
     </section>
 
@@ -66,7 +66,7 @@
       </div>
       <div id="caption-status" class="status-grid"></div>
       <button id="enable-captions" class="primary">Untertitel aktivieren</button>
-      <p id="caption-action-status" role="status" class="inline-status action-status">Noch keine manuelle Prüfung ausgeführt.</p>
+      <p id="caption-action-status" role="status" class="inline-status action-status"></p>
     </section>
 
     <section aria-labelledby="hook-heading">
@@ -78,9 +78,12 @@
         <button id="enable-hook" class="primary">Hook setzen</button>
         <button id="disable-hook" class="secondary">Hook deaktivieren</button>
         <button id="reset-tab" class="secondary danger-outline">Refresh</button>
+        <button id="open-embed-live" class="secondary">Embed</button>
+        <button id="open-normal-live" class="secondary">Normal</button>
       </div>
       <p id="hook-status" class="inline-status"></p>
-      <label class="option-row"><input id="hook-autostart" type="checkbox"> Hook nur für diesen Tab aktiv halten</label>
+      <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
+      <label class="option-row"><input id="quick-recover" type="checkbox"> Auto-Reconnect</label>
     </section>
 
     <section aria-labelledby="stats-heading">
@@ -89,7 +92,7 @@
         <span id="stats-live" class="live-indicator">warte</span>
       </div>
       <div id="live-stats" class="status-grid stats-grid"></div>
-      <p id="stats-status" class="inline-status">Der WebSocket-Hook liefert die Werte nach dem Neuladen des Streams.</p>
+      <p id="stats-status" class="inline-status"></p>
     </section>
 
     <section aria-labelledby="player-heading">
@@ -104,12 +107,13 @@
         <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
         <button id="player-fullscreen" class="secondary compact">Vollbild</button>
         <button id="player-report" class="secondary compact danger-outline">Melden öffnen</button>
+        <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
       </div>
       <div class="audio-controls">
         <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
         <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
         <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
-        <label class="option-row"><input id="limiter-enabled" type="checkbox"> Digitalen Pegelschutz aktivieren</label>
+        <label class="option-row"><input id="limiter-enabled" type="checkbox"> Pegelschutz aktivieren</label>
         <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
         <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
       </div>
@@ -160,7 +164,7 @@
         <button id="export-debug" class="secondary">Debug exportieren</button>
         <button id="clear-debug" class="ghost">Debug leeren</button>
       </div>
-      <p class="muted small">Der Export entfernt Werte signierter URL-Parameter und enthält keine Cookies oder API-Keys.</p>
+      <p class="muted small"></p>
     </section>
 
     <div id="audience-modal" class="modal-backdrop" hidden>

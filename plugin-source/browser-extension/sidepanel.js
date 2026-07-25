@@ -6,13 +6,13 @@
     "speech-language", "speak-names", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
-    "caption-status", "hook-status", "hook-led", "hook-autostart", "media-list", "media-count", "caption-list", "caption-count",
+    "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
-    "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report",
+    "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report", "player-vlc-frame",
     "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-strength", "limiter-strength-output", "multi-guest-status",
     "page-info-section", "page-info-source", "profile-info", "summary-info", "refresh-page-info", "force-page-info",
     "scan", "enable-captions",
-    "enable-hook", "disable-hook", "reset-tab", "export-log", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
+    "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "export-log", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
   ].map((id) => [id, document.getElementById(id)]));
   const PLAYER_BUTTONS = ["player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report"];
   const core = globalThis.TLC_CONTENT_CORE;
@@ -36,6 +36,7 @@
   let speechAudioContext = null;
   let speechAudioSource = null;
   const knownSpeechKeys = new Set();
+  const TAB_OPTIONAL_MESSAGES = new Set(["TLC_GET_SETTINGS", "TLC_SET_AUTOSTART", "TLC_SET_QUICK_RECOVER", "TLC_ENABLE_HOOK", "TLC_DISABLE_HOOK", "TLC_SET_DEBUG"]);
 
   async function activeTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -43,8 +44,8 @@
   }
 
   async function send(type, payload = {}) {
-    if (!Number.isInteger(activeTabId)) throw new Error("Kein aktiver Tab gefunden.");
-    const response = await chrome.runtime.sendMessage({ type, tabId: activeTabId, ...payload });
+    if (!Number.isInteger(activeTabId) && !TAB_OPTIONAL_MESSAGES.has(type)) throw new Error("Kein aktiver Tab gefunden.");
+    const response = await chrome.runtime.sendMessage({ type, ...(Number.isInteger(activeTabId) ? { tabId: activeTabId } : {}), ...payload });
     if (!response?.ok) throw Object.assign(new Error(response?.error || "Aktion fehlgeschlagen"), { code: response?.code || "UNKNOWN" });
     return response;
   }
@@ -70,6 +71,13 @@
     if (value == null || value === "") return "–";
     try { return new Intl.NumberFormat("de-DE").format(BigInt(value)); }
     catch (_) { return String(value); }
+  }
+
+  function booleanValue(value) {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value !== 0;
+    if (typeof value === "string") return /^(?:1|true|yes|ja|on)$/i.test(value.trim());
+    return Boolean(value);
   }
 
   function chatKey(item) {
@@ -360,32 +368,39 @@
   }
 
   function renderPlayer(playerState = {}) {
-    const available = Boolean(playerState.available);
-    const videoAvailable = Boolean(playerState.videoAvailable ?? playerState.available);
+    const available = booleanValue(playerState.available);
+    const videoAvailable = booleanValue(playerState.videoAvailable ?? playerState.available);
+    const playing = booleanValue(playerState.playing);
+    const muted = booleanValue(playerState.muted);
+    const pipActive = booleanValue(playerState.pipActive);
+    const fullscreenActive = booleanValue(playerState.fullscreenActive);
+    const limiterEnabled = booleanValue(playerState.limiterEnabled);
+    const multiGuest = booleanValue(playerState.multiGuest);
     elements["player-time"].textContent = playerState.elapsedText || "–";
-    elements["player-play"].textContent = playerState.playing ? "Pause" : "Abspielen";
-    elements["player-mute"].textContent = playerState.muted ? "Ton an" : "Stumm";
-    elements["player-pip"].textContent = playerState.pipActive ? "PiP beenden" : "Bild-in-Bild";
-    elements["player-fullscreen"].textContent = playerState.fullscreenActive ? "Vollbild beenden" : "Vollbild";
+    elements["player-play"].textContent = playing ? "Pause" : "Abspielen";
+    elements["player-mute"].textContent = muted ? "Ton an" : "Stumm";
+    elements["player-pip"].textContent = pipActive ? "PiP beenden" : "Bild-in-Bild";
+    elements["player-fullscreen"].textContent = fullscreenActive ? "Vollbild beenden" : "Vollbild";
     const volumePercent = Number.isFinite(Number(playerState.volumePercent)) ? Number(playerState.volumePercent) : 100;
     elements["player-volume"].value = String(volumePercent);
-    elements["player-volume-output"].textContent = String(volumePercent);
+    elements["player-volume-output"].textContent = `${volumePercent}%`;
     const peakPercent = Number.isFinite(Number(playerState.peakDbfs))
       ? Math.max(0, Math.min(100, Math.round(Math.pow(10, Number(playerState.peakDbfs) / 20) * 100)))
       : null;
-    elements["player-peak"].textContent = peakPercent == null ? "–" : String(peakPercent);
-    elements["limiter-enabled"].checked = Boolean(playerState.limiterEnabled);
+    elements["player-peak"].textContent = peakPercent == null ? "–" : `${peakPercent}%`;
+    elements["limiter-enabled"].checked = limiterEnabled;
     const limiterStrength = Number.isFinite(Number(playerState.limiterStrength)) ? Number(playerState.limiterStrength) : 30;
     elements["limiter-strength"].value = String(limiterStrength);
-    elements["limiter-strength-output"].textContent = String(limiterStrength);
-    elements["multi-guest-status"].textContent = playerState.multiGuest
+    elements["limiter-strength-output"].textContent = `${limiterStrength}%`;
+    elements["multi-guest-status"].textContent = multiGuest
       ? `Verbundene Streams: ${playerState.connectedStreams || "mehrere"} · Mehrgast-Modus erkannt.`
       : `Verbundene Streams: ${playerState.connectedStreams || (available ? 1 : 0)}.`;
     for (const id of PLAYER_BUTTONS) elements[id].disabled = !videoAvailable;
     elements["player-play"].disabled = !activeIsTikTok;
+    elements["player-vlc-frame"].disabled = !activeIsTikTok || !(currentState?.media || []).some((item) => item?.url && !item.audioOnly);
     for (const id of ["player-volume", "limiter-enabled", "limiter-strength"]) elements[id].disabled = !videoAvailable;
     elements["player-status"].textContent = available
-      ? `${playerState.playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${playerState.muted ? "stumm" : "Ton aktiv"}${playerState.limiterEnabled ? ` · Pegelschutz ${limiterStrength}/100` : ""}.`
+      ? `${playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${muted ? "stumm" : "Ton aktiv"}${limiterEnabled ? ` · Pegelschutz ${limiterStrength}%` : ""}.`
       : "Warte auf den TikTok-Player.";
   }
 
@@ -419,6 +434,12 @@
       stats.className = "profile-stats";
       stats.append(profileStat(profile.followingCount, "Gefolgt"), profileStat(profile.followerCount, "Follower"), profileStat(profile.likeCount, "Likes"));
       elements["profile-info"].append(title, handle, stats);
+      if (profile.verified) {
+        const verified = document.createElement("p");
+        verified.className = "profile-bio";
+        verified.textContent = profile.verifiedLabel || "Zertifiziert";
+        elements["profile-info"].append(verified);
+      }
       if (profile.signature) {
         const bio = document.createElement("p");
         bio.className = "profile-bio";
@@ -526,7 +547,7 @@
       ? `Fehler: ${hook.lastError}`
       : hook.connected ? "Hook aktiv, WebSocket verbunden."
       : hook.installed ? "Hook installiert; warte auf WebSocket."
-      : hook.armed ? "Hook vorgemerkt; Tab wird neu geladen."
+      : hook.armed ? "Hook wartet auf den nächsten TikTok-Ladevorgang."
       : "Hook ist nicht aktiviert.";
     elements["hook-autostart"].checked = Boolean(hook.armed);
   }
@@ -542,17 +563,24 @@
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
-    for (const id of ["scan", "enable-captions", "enable-hook", "disable-hook", "reset-tab", "clear", "refresh-chat", "refresh-page-info", "force-page-info", ...PLAYER_BUTTONS]) {
+    for (const id of ["scan", "enable-captions", "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", ...PLAYER_BUTTONS]) {
       elements[id].disabled = !isTikTok;
     }
+    elements["enable-hook"].disabled = false;
+    elements["disable-hook"].disabled = false;
+    const settingsResponse = await send("TLC_GET_SETTINGS");
+    elements["hook-autostart"].checked = Boolean(settingsResponse.settings?.hookEnabled || settingsResponse.settings?.autoHook);
+    elements["quick-recover"].checked = Boolean(settingsResponse.settings?.quickRecoverEnabled);
+    elements["debug-enabled"].checked = Boolean(settingsResponse.settings?.debugEnabled);
     if (!isTikTok) {
-      elements["page-title"].textContent = "Bitte einen TikTok-Tab aktivieren.";
-      elements.notice.textContent = "Das Seitenpanel arbeitet nur auf https://www.tiktok.com/.";
+      elements["page-title"].textContent = "TikTok LIVE Companion";
+      elements.notice.textContent = "";
       return;
     }
     elements.notice.textContent = "";
     await send("TLC_ACTIVATE_TAB");
     const response = await send("TLC_GET_STATE");
+    elements["quick-recover"].checked = Boolean(settingsResponse.settings?.quickRecoverEnabled);
     render(response.state);
   }
 
@@ -616,7 +644,7 @@
         const result = response.response || {};
         const time = new Date().toLocaleTimeString();
         const captionInfo = result.captionInfo?.present ? "caption_info vorhanden" : "caption_info nicht gefunden";
-        const control = result.captionControl ? "Untertitelschalter gefunden" : "Untertitelschalter nicht gefunden";
+        const control = result.captionControl ? "Schalter ja" : "Schalter nein";
         elements["caption-action-status"].textContent = `${time}: geprüft · ${captionInfo} · ${control} · ${result.mediaCount || 0} Medienlinks in der Seite`;
       } else if (type === "TLC_ENABLE_CAPTIONS" && response.response && !response.response.activated) {
         elements["caption-action-status"].textContent = response.response.reason || response.response.error || "Untertitel konnten nicht aktiviert werden.";
@@ -736,10 +764,10 @@
   elements["enable-captions"].dataset.busyText = "Suche Schalter …";
   elements.scan.addEventListener("click", () => run("TLC_SCAN", null, elements.scan));
   elements["enable-captions"].addEventListener("click", () => run("TLC_ENABLE_CAPTIONS", null, elements["enable-captions"]));
-  elements["enable-hook"].addEventListener("click", () => run("TLC_ENABLE_HOOK", "Hook für diesen Tab gesetzt; Tab wird neu geladen."));
+  elements["enable-hook"].addEventListener("click", () => run("TLC_ENABLE_HOOK", "Hook bleibt aktiv."));
   elements["disable-hook"].addEventListener("click", async () => {
     elements["hook-autostart"].checked = false;
-    await run("TLC_DISABLE_HOOK", "Hook deaktiviert; Tab wird neu geladen.");
+    await run("TLC_DISABLE_HOOK", "Hook deaktiviert.");
   });
   elements["reset-tab"].addEventListener("click", () => {
     if (!keepSpeechActive) stopSpeech("Vorlesen wurde wegen des Refreshs ausgeschaltet.");
@@ -748,8 +776,10 @@
       globalThis.speechSynthesis?.cancel();
       elements["speech-status"].textContent = "Vorlesen bleibt aktiv und wartet nach dem Refresh auf neue Chatzeilen.";
     }
-    run("TLC_RESET_TAB", "Neue Browsersitzung für diesen LIVE-Tab wird geöffnet.");
+    run("TLC_RESET_TAB", "LIVE-Tab wird neu geladen.");
   });
+  elements["open-embed-live"].addEventListener("click", () => run("TLC_OPEN_EMBED_LIVE", "Embed-LIVE wird geöffnet."));
+  elements["open-normal-live"].addEventListener("click", () => run("TLC_OPEN_NORMAL_LIVE", "Normale LIVE-Seite wird geöffnet."));
   elements.clear.addEventListener("click", () => run("TLC_CLEAR"));
   elements["refresh-chat"].addEventListener("click", async () => {
     knownSpeechKeys.clear();
@@ -822,10 +852,20 @@
     const enabled = elements["hook-autostart"].checked;
     try {
       await send("TLC_SET_AUTOSTART", { enabled });
-      elements.notice.textContent = enabled ? "Hook bleibt für diesen Tab aktiv; TikTok wird neu geladen." : "Hook ist für diesen Tab deaktiviert; TikTok wird neu geladen.";
+      elements.notice.textContent = enabled ? "Hook bleibt aktiv." : "Hook ist deaktiviert.";
+    } catch (error) {
+    elements.notice.textContent = String(error?.message || error);
+      elements["hook-autostart"].checked = !enabled;
+    }
+  });
+  elements["quick-recover"].addEventListener("change", async () => {
+    const enabled = elements["quick-recover"].checked;
+    try {
+      await send("TLC_SET_QUICK_RECOVER", { enabled });
+      elements.notice.textContent = enabled ? "Schnelle Unterbrechungsbehebung aktiv." : "Schnelle Unterbrechungsbehebung aus.";
     } catch (error) {
       elements.notice.textContent = String(error?.message || error);
-      elements["hook-autostart"].checked = !enabled;
+      elements["quick-recover"].checked = !enabled;
     }
   });
   elements["toggle-speech"].addEventListener("click", () => {
@@ -884,7 +924,7 @@
     const enabled = elements["song-enabled"].checked;
     elements["recognize-song"].disabled = !enabled;
     setLed(elements["song-led"], enabled, "Songerkennung aktiviert", "Songerkennung inaktiv");
-    elements["song-status"].textContent = enabled ? "Bereit für eine manuelle 12-Sekunden-Erkennung." : "Es wird nichts aufgenommen oder übertragen.";
+    elements["song-status"].textContent = enabled ? "Bereit für eine manuelle 12-Sekunden-Erkennung." : "";
     await send("TLC_SET_SPEECH_PREFERENCE", { songRecognitionEnabled: enabled });
   });
   elements["recognize-song"].addEventListener("click", recognizeSong);
@@ -894,13 +934,14 @@
   elements["player-pip"].addEventListener("click", () => runPlayer("toggle-pip", elements["player-pip"]));
   elements["player-fullscreen"].addEventListener("click", () => runPlayer("toggle-fullscreen", elements["player-fullscreen"]));
   elements["player-report"].addEventListener("click", () => runPlayer("open-report", elements["player-report"]));
+  elements["player-vlc-frame"].addEventListener("click", () => runPlayer("play-vlc-source", elements["player-vlc-frame"]));
   elements["player-volume"].addEventListener("input", () => {
     const value = Number(elements["player-volume"].value);
-    elements["player-volume-output"].textContent = String(value);
+    elements["player-volume-output"].textContent = `${value}%`;
   });
   elements["player-volume"].addEventListener("change", () => runPlayer("set-volume", elements["player-mute"], { value: Number(elements["player-volume"].value) / 100 }));
   elements["limiter-strength"].addEventListener("input", () => {
-    elements["limiter-strength-output"].textContent = elements["limiter-strength"].value;
+    elements["limiter-strength-output"].textContent = `${elements["limiter-strength"].value}%`;
   });
   const applyLimiter = () => runPlayer("set-limiter", elements["limiter-enabled"], {
     enabled: elements["limiter-enabled"].checked,

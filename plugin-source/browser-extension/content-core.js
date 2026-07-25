@@ -36,6 +36,8 @@
     followerCount: null,
     likeCount: null,
     live: null,
+    verified: false,
+    verifiedLabel: "",
     source: null
   });
 
@@ -393,6 +395,8 @@
     const roomId = value.roomId ?? value.room_id ?? value.liveRoomId ?? value.live_room_id ?? value.ownRoom?.roomId;
     const liveStatus = value.liveStatus ?? value.live_status ?? value.isLive ?? value.is_live;
     const live = liveStatus == null && roomId == null ? null : Boolean(liveStatus === true || Number(liveStatus) > 0 || String(roomId || "0") !== "0");
+    const verifiedValue = value.verified ?? value.isVerified ?? value.is_verified ?? value.author?.verified ?? value.user?.verified ?? value.user?.isVerified;
+    const verified = verifiedValue === true || verifiedValue === 1 || /^(?:true|1|yes|verified)$/i.test(String(verifiedValue || ""));
     const present = Boolean(uniqueId || nickname) && Boolean(followingCount != null || followerCount != null || likeCount != null || signature);
     return {
       present,
@@ -403,6 +407,8 @@
       followerCount,
       likeCount,
       live,
+      verified,
+      verifiedLabel: verified ? "Zertifiziert" : "",
       source: present ? source : null
     };
   }
@@ -412,7 +418,7 @@
     const preferred = preferredUniqueId && String(info.uniqueId).toLocaleLowerCase() === String(preferredUniqueId).toLocaleLowerCase() ? 100 : 0;
     return preferred + (info.uniqueId ? 4 : 0) + (info.nickname ? 2 : 0) +
       (info.followerCount != null ? 4 : 0) + (info.followingCount != null ? 2 : 0) +
-      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0);
+      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0);
   }
 
   function summaryFlagValue(value) {

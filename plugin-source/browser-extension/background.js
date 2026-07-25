@@ -4,6 +4,7 @@ const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
 const PROFILE_PREFIX = "tlc-profile-";
+const STREAM_CACHE_PREFIX = "tlc-stream-";
 const MAX_MEDIA = 60;
 const MAX_CAPTIONS = 2000;
 const MAX_CHAT = 50;
@@ -59,6 +60,7 @@ function emptyState() {
     participantsTruncated: false,
     streamMutes: [],
     recentGiftIds: [],
+    recovery: { lastQuickRecoverAtUtc: null, lastReason: "" },
     debug: { enabled: false, entries: [] }
   };
 }
@@ -82,6 +84,7 @@ async function getState(tabId) {
     participantsTruncated: Boolean(state.participantsTruncated),
     streamMutes: state.streamMutes || [],
     recentGiftIds: state.recentGiftIds || [],
+    recovery: { ...defaults.recovery, ...(state.recovery || {}) },
     captions: state.captions || [],
     media: state.media || [],
     debug: { ...defaults.debug, ...(state.debug || {}), entries: state.debug?.entries || [] }
@@ -89,7 +92,10 @@ async function getState(tabId) {
 }
 
 function pageHandle(page) {
-  try { return decodeURIComponent(new URL(page?.url || "").pathname.match(/^\/@([^/]+)/)?.[1] || "").toLocaleLowerCase(); }
+  try {
+    const path = decodeURIComponent(new URL(page?.url || "").pathname);
+    return (path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "").toLocaleLowerCase();
+  }
   catch (_) { return ""; }
 }
 
@@ -136,6 +142,7 @@ function redactUrl(raw) {
 
 async function setState(tabId, state) {
   await chrome.storage.session.set({ [stateKey(tabId)]: state });
+  await cacheStreamSnapshot(state);
   chrome.runtime.sendMessage({ type: "TLC_STATE_UPDATED", tabId, state }).catch(() => {});
   return state;
 }
@@ -154,6 +161,11 @@ async function getSettings() {
     limiterStrength: 30,
     limiterEnabled: false,
     songRecognitionEnabled: false,
+    hookEnabled: false,
+    autoHook: false,
+    quickRecoverEnabled: false,
+    waitingForTikTok: true,
+    debugEnabled: false,
     permanentMutes: [],
     ...(stored[SETTINGS_KEY] || {})
   };
@@ -163,6 +175,28 @@ async function setSettings(patch) {
   const settings = { ...(await getSettings()), ...patch };
   await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
   return settings;
+}
+
+function booleanValue(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") return /^(?:1|true|yes|ja|on)$/i.test(value.trim());
+  return Boolean(value);
+}
+
+function normalizePlayerState(playerState = {}) {
+  return {
+    ...playerState,
+    available: booleanValue(playerState.available),
+    videoAvailable: booleanValue(playerState.videoAvailable ?? playerState.available),
+    controlAvailable: booleanValue(playerState.controlAvailable),
+    playing: booleanValue(playerState.playing),
+    muted: booleanValue(playerState.muted),
+    limiterEnabled: booleanValue(playerState.limiterEnabled),
+    pipActive: booleanValue(playerState.pipActive),
+    fullscreenActive: booleanValue(playerState.fullscreenActive),
+    multiGuest: booleanValue(playerState.multiGuest)
+  };
 }
 
 function loopbackServiceUrl(value) {
@@ -176,14 +210,77 @@ function loopbackServiceUrl(value) {
 }
 
 function profileCompleteness(profile) {
-  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount]
+  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : ""]
     .filter((value) => value != null && value !== "").length;
 }
 
 function mergeProfile(current, incoming) {
   if (!incoming?.present) return current;
-  if (!current?.present || profileCompleteness(incoming) >= profileCompleteness(current)) return incoming;
-  return { ...incoming, ...current, live: Boolean(current.live || incoming.live) };
+  const merged = !current?.present || profileCompleteness(incoming) >= profileCompleteness(current)
+    ? { ...current, ...incoming }
+    : { ...incoming, ...current };
+  return {
+    ...merged,
+    live: Boolean(current?.live || incoming.live),
+    verified: Boolean(current?.verified || incoming.verified),
+    verifiedLabel: current?.verifiedLabel || incoming.verifiedLabel || ""
+  };
+}
+
+function streamCacheKey(handle) {
+  return `${STREAM_CACHE_PREFIX}${String(handle || "").toLocaleLowerCase()}`;
+}
+
+function streamCacheHandle(state) {
+  return String(state?.stream?.handle || pageHandle(state?.page) || state?.profileInfo?.uniqueId || "").toLocaleLowerCase();
+}
+
+function mergeLiveStats(current = {}, incoming = {}) {
+  if (!incoming || typeof incoming !== "object") return current;
+  const merged = { ...emptyState().liveStats, ...(current || {}) };
+  for (const key of ["viewerCount", "totalViewers", "likeCount", "shareCount", "followerCount"]) {
+    if (incoming[key] != null && incoming[key] !== "") merged[key] = incoming[key];
+  }
+  if (incoming.lastUpdatedUtc) merged.lastUpdatedUtc = incoming.lastUpdatedUtc;
+  return merged;
+}
+
+async function cacheStreamSnapshot(state) {
+  const handle = streamCacheHandle(state);
+  if (!handle) return;
+  const hasLiveStats = Boolean(state.liveStats?.lastUpdatedUtc || state.liveStats?.viewerCount != null || state.liveStats?.totalViewers != null || state.liveStats?.likeCount != null);
+  const hasChat = Boolean(state.chatMessages?.length || Object.keys(state.participants || {}).length);
+  if (!hasLiveStats && !hasChat) return;
+  await chrome.storage.session.set({
+    [streamCacheKey(handle)]: {
+      handle,
+      stream: state.stream,
+      liveStats: state.liveStats,
+      chatMessages: state.chatMessages || [],
+      participants: state.participants || {},
+      participantsTruncated: Boolean(state.participantsTruncated),
+      updatedAtUtc: new Date().toISOString()
+    }
+  });
+}
+
+async function cachedStreamSnapshot(handle) {
+  if (!handle) return null;
+  const stored = await chrome.storage.session.get(streamCacheKey(handle));
+  return stored[streamCacheKey(handle)] || null;
+}
+
+function mergeStreamSnapshot(state, snapshot) {
+  if (!snapshot) return state;
+  const sameHandle = !state.stream?.handle || !snapshot.handle || state.stream.handle === snapshot.handle;
+  if (!sameHandle) return state;
+  state.liveStats = mergeLiveStats(state.liveStats, snapshot.liveStats);
+  if (!(state.chatMessages || []).length && snapshot.chatMessages?.length) state.chatMessages = snapshot.chatMessages;
+  if (!Object.keys(state.participants || {}).length && snapshot.participants) {
+    state.participants = snapshot.participants;
+    state.participantsTruncated = Boolean(snapshot.participantsTruncated);
+  }
+  return state;
 }
 
 async function patchState(tabId, patch) {
@@ -477,57 +574,34 @@ async function removeLegacyGlobalHook() {
 }
 
 async function setHookFlag(tabId, enabled) {
-  const tab = await chrome.tabs.get(tabId);
-  if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
-  const state = await getState(tabId);
+  const settings = await setSettings({ hookEnabled: Boolean(enabled), autoHook: Boolean(enabled), waitingForTikTok: Boolean(enabled) });
+  let tab = null;
+  if (Number.isInteger(tabId) && tabId >= 0) tab = await chrome.tabs.get(tabId).catch(() => null);
+  if (!tab?.url?.startsWith("https://www.tiktok.com/")) {
+    return { armed: Boolean(enabled), waitingForTikTok: settings.waitingForTikTok, reloading: false };
+  }
+  const state = await getState(tab.id);
   state.enabled = true;
+  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
   state.hook = { armed: enabled, installed: false, connected: false, lastError: null };
   if (enabled) state.liveStats = emptyState().liveStats;
-  await setState(tabId, state);
-  await chrome.tabs.reload(tabId);
+  await setState(tab.id, state);
+  await chrome.tabs.reload(tab.id);
+  return { armed: Boolean(enabled), waitingForTikTok: settings.waitingForTikTok, reloading: true, tabId: tab.id };
 }
 
 async function resetTabWithHook(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
+  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   const state = emptyState();
   state.enabled = true;
   state.browserSessionId = newBrowserSessionId();
   state.page = { url: tab.url, title: tab.title || "", scannedAtUtc: null };
   state.hook.armed = true;
-  let replacement = null;
-  try {
-    replacement = await chrome.tabs.create({
-      windowId: tab.windowId,
-      index: tab.index + 1,
-      url: "about:blank",
-      active: false,
-      pinned: Boolean(tab.pinned)
-    });
-    await setState(replacement.id, state);
-    if (Number.isInteger(tab.groupId) && tab.groupId >= 0) {
-      await chrome.tabs.group({ tabIds: replacement.id, groupId: tab.groupId }).catch(() => {});
-    }
-    await chrome.tabs.update(replacement.id, {
-      url: tab.url,
-      active: Boolean(tab.active),
-      muted: Boolean(tab.mutedInfo?.muted)
-    });
-    await chrome.sidePanel.setOptions({ tabId: replacement.id, path: "sidepanel.html", enabled: true }).catch(() => {});
-    await chrome.sidePanel.open({ tabId: replacement.id }).catch(() => {});
-    await chrome.tabs.remove(tabId);
-    return { replaced: true, tabId: replacement.id, browserSessionId: state.browserSessionId };
-  } catch (error) {
-    if (replacement?.id) await chrome.tabs.remove(replacement.id).catch(() => {});
-    await setState(tabId, state);
-    await chrome.tabs.reload(tabId, { bypassCache: true });
-    return {
-      replaced: false,
-      tabId,
-      browserSessionId: state.browserSessionId,
-      fallbackReason: String(error?.message || error).slice(0, 300)
-    };
-  }
+  await setState(tabId, state);
+  await chrome.tabs.reload(tabId, { bypassCache: true });
+  return { replaced: false, tabId, browserSessionId: state.browserSessionId };
 }
 
 function waitForTabComplete(tabId, expectedPrefix, timeoutMs = 12000) {
@@ -549,10 +623,11 @@ function waitForTabComplete(tabId, expectedPrefix, timeoutMs = 12000) {
 async function forceProfileRefresh(tabId) {
   const tab = await chrome.tabs.get(tabId);
   const liveUrl = tab.url || "";
-  const match = liveUrl.match(/^https:\/\/www\.tiktok\.com\/@([^/?#]+)\/live\/?/i);
+  const match = liveUrl.match(/^https:\/\/www\.tiktok\.com\/@([^/?#]+)\/live\/?/i) || liveUrl.match(/^https:\/\/www\.tiktok\.com\/embed\/live\/@?([^/?#]+)/i);
   if (!match) throw new Error("Force ist nur auf einer TikTok-LIVE-URL verfügbar.");
   const profileUrl = `https://www.tiktok.com/@${match[1]}`;
   let profileResult = null;
+  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   try {
     const profileLoaded = waitForTabComplete(tabId, profileUrl);
     await chrome.tabs.update(tabId, { url: profileUrl });
@@ -567,7 +642,47 @@ async function forceProfileRefresh(tabId) {
     return { activated: true, profileInfo: profileResult.profileInfo };
   } finally {
     await chrome.tabs.update(tabId, { url: liveUrl }).catch(() => {});
+    const settings = await getSettings();
+    const state = await getState(tabId);
+    state.enabled = true;
+    if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+    state.hook = { ...state.hook, armed: true, lastError: null };
+    state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
+    await setState(tabId, state);
+    await injectTabRuntime(tabId).catch(() => {});
   }
+}
+
+async function openEmbedLive(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
+  const state = await getState(tabId);
+  const urlHandle = pageHandle({ url: tab.url });
+  const handle = urlHandle || pageHandle(state.page) || state.stream?.handle;
+  if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
+  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
+  state.enabled = true;
+  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+  state.hook = { ...state.hook, armed: true, lastError: null };
+  await setState(tabId, state);
+  await chrome.tabs.update(tabId, { url: `https://www.tiktok.com/embed/live/@${encodeURIComponent(handle)}` });
+  return { activated: true, tabId, handle };
+}
+
+async function openNormalLive(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
+  const state = await getState(tabId);
+  const urlHandle = pageHandle({ url: tab.url });
+  const handle = urlHandle || pageHandle(state.page) || state.stream?.handle || state.profileInfo?.uniqueId;
+  if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
+  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
+  state.enabled = true;
+  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+  state.hook = { ...state.hook, armed: true, lastError: null };
+  await setState(tabId, state);
+  await chrome.tabs.update(tabId, { url: `https://www.tiktok.com/@${encodeURIComponent(handle)}/live` });
+  return { activated: true, tabId, handle };
 }
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -587,11 +702,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.sidePanel.setOptions({
     tabId,
     path: "sidepanel.html",
-    enabled: isTikTok
+    enabled: true
   }).catch(() => {});
   if (changeInfo.status === "loading" && isTikTok) {
-    getState(tabId).then(async (state) => {
-      if (!state.enabled || !state.hook.armed) return;
+    Promise.all([getState(tabId), getSettings()]).then(async ([state, settings]) => {
+      const shouldArm = Boolean(state.hook.armed || settings.autoHook || settings.hookEnabled);
+      if (!shouldArm) return;
+      state.enabled = true;
+      if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+      state.hook = { ...state.hook, armed: true, lastError: null };
+      state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
+      await setState(tabId, state);
       await injectTabRuntime(tabId);
       const refreshedState = await getState(tabId);
       refreshedState.hook = { ...refreshedState.hook, armed: true, lastError: null };
@@ -604,7 +725,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && isTikTok) {
     getState(tabId).then((state) => {
       if (!state.enabled) return;
-      return chrome.tabs.sendMessage(tabId, { type: "TLC_SET_TAB_ACTIVE", enabled: true, debugEnabled: Boolean(state.debug?.enabled) });
+      return getSettings().then((settings) => chrome.tabs.sendMessage(tabId, {
+        type: "TLC_SET_TAB_ACTIVE",
+        enabled: true,
+        debugEnabled: Boolean(state.debug?.enabled),
+        quickRecoverEnabled: Boolean(settings.quickRecoverEnabled)
+      }));
     }).catch(() => {});
   }
 });
@@ -643,18 +769,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             state.profileInfo = mergeProfile(state.profileInfo, cached);
             if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
           }
+          mergeStreamSnapshot(state, await cachedStreamSnapshot(pageHandle(state.page) || state.stream?.handle));
           sendResponse({ ok: true, state });
         }
         break;
       case "TLC_ACTIVATE_TAB": {
         const state = await getState(tabId);
+        const settings = await getSettings();
         state.enabled = true;
         if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+        state.hook = { ...state.hook, armed: Boolean(state.hook?.armed || settings.hookEnabled || settings.autoHook) };
+        state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
         await setState(tabId, state);
         await chrome.tabs.sendMessage(tabId, {
           type: "TLC_SET_TAB_ACTIVE",
           enabled: true,
-          debugEnabled: Boolean(state.debug?.enabled)
+          debugEnabled: Boolean(state.debug?.enabled),
+          quickRecoverEnabled: Boolean(settings.quickRecoverEnabled)
         }).catch(() => {});
         sendResponse({ ok: true, state });
         break;
@@ -672,8 +803,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true });
         break;
       case "TLC_SET_AUTOSTART": {
-        await setHookFlag(tabId, Boolean(message.enabled));
-        sendResponse({ ok: true, reloading: true });
+        const result = await setHookFlag(tabId, Boolean(message.enabled));
+        sendResponse({ ok: true, reloading: Boolean(result.reloading), result });
+        break;
+      }
+      case "TLC_SET_QUICK_RECOVER": {
+        const settings = await setSettings({ quickRecoverEnabled: Boolean(message.enabled) });
+        if (Number.isInteger(tabId) && tabId >= 0) {
+          await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: settings.quickRecoverEnabled }).catch(() => {});
+        }
+        sendResponse({ ok: true, settings });
         break;
       }
       case "TLC_SET_SPEECH_PREFERENCE": {
@@ -700,6 +839,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const cached = await cachedProfile(pageHandle(state.page));
         if (cached) state.profileInfo = mergeProfile(state.profileInfo, cached);
         if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
+        state.liveStats = mergeLiveStats(state.liveStats, message.liveStats);
+        mergeStreamSnapshot(state, await cachedStreamSnapshot(pageHandle(state.page) || state.stream?.handle));
         state.aiSummaryInfo = message.aiSummaryInfo || state.aiSummaryInfo;
         state.menuCaptionAvailable = Boolean(state.menuCaptionAvailable || message.menuCaptionAvailable);
         state.menuCaptionActive = Boolean(state.menuCaptionActive || message.menuCaptionActive);
@@ -754,6 +895,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, response, reloading: true });
         break;
       }
+      case "TLC_OPEN_EMBED_LIVE": {
+        const response = await openEmbedLive(tabId);
+        sendResponse({ ok: true, response, reloading: true });
+        break;
+      }
+      case "TLC_OPEN_NORMAL_LIVE": {
+        const response = await openNormalLive(tabId);
+        sendResponse({ ok: true, response, reloading: true });
+        break;
+      }
       case "TLC_SET_MUTE": {
         const key = String(message.participantKey || "");
         if (!key) throw new Error("Person konnte nicht zugeordnet werden.");
@@ -776,24 +927,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_GET_PLAYER_STATE": {
         const response = await chrome.tabs.sendMessage(tabId, { type: message.type });
-        if (response?.playerState) await patchState(tabId, { playerState: response.playerState });
+        if (response?.playerState) await patchState(tabId, { playerState: normalizePlayerState(response.playerState) });
         sendResponse({ ok: true, response });
+        break;
+      }
+      case "TLC_PLAYER_STATE_PUSH": {
+        const playerState = normalizePlayerState(message.playerState || {});
+        await patchState(tabId, { playerState });
+        await addDebug(tabId, "player-state", { reason: message.reason || null, playerState });
+        sendResponse({ ok: true });
         break;
       }
       case "TLC_PLAYER_ACTION": {
         let response;
         try {
-          response = await chrome.tabs.sendMessage(tabId, {
+          const playerMessage = {
             type: message.type,
             action: message.action,
             value: message.value,
             enabled: message.enabled,
             thresholdDbfs: message.thresholdDbfs
-          });
+          };
+          if (message.action === "play-vlc-source") {
+            const state = await getState(tabId);
+            playerMessage.media = state.media || [];
+          }
+          response = await chrome.tabs.sendMessage(tabId, playerMessage);
         } catch (error) {
           response = { activated: false, action: message.action, reason: String(error?.message || error).slice(0, 500) };
         }
-        if (response?.playerState) await patchState(tabId, { playerState: response.playerState });
+        if (response?.playerState) await patchState(tabId, { playerState: normalizePlayerState(response.playerState) });
         if (message.action === "set-volume" && response?.activated) {
           await setSettings({ playerVolume: Math.max(0, Math.min(100, Math.round(Number(message.value) * 100))) });
         }
@@ -805,6 +968,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         await addDebug(tabId, "player-action", { action: message.action, activated: response?.activated, reason: response?.reason || response?.error || null, playerState: response?.playerState || null });
         sendResponse({ ok: true, response });
+        break;
+      }
+      case "TLC_QUICK_RECOVER": {
+        const settings = await getSettings();
+        if (!settings.quickRecoverEnabled) {
+          sendResponse({ ok: true, skipped: true, reason: "disabled" });
+          break;
+        }
+        const state = await getState(tabId);
+        const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
+        if (Date.now() - lastAt < 3000) {
+          sendResponse({ ok: true, skipped: true, reason: "throttled" });
+          break;
+        }
+        const tab = await chrome.tabs.get(tabId).catch(() => null);
+        if (!tab?.url?.startsWith("https://www.tiktok.com/")) {
+          sendResponse({ ok: true, skipped: true, reason: "not-tiktok" });
+          break;
+        }
+        state.enabled = true;
+        if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+        state.hook = { ...state.hook, armed: true, lastError: null };
+        state.recovery = { lastQuickRecoverAtUtc: new Date().toISOString(), lastReason: String(message.reason || "").slice(0, 80) };
+        await setState(tabId, state);
+        await addDebug(tabId, "quick-recover", { reason: state.recovery.lastReason, url: redactUrl(tab.url || "") });
+        await chrome.tabs.reload(tabId);
+        sendResponse({ ok: true, reloading: true });
         break;
       }
       case "TLC_SET_QUALITY": {
@@ -819,12 +1009,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_ENABLE_HOOK":
-        await setHookFlag(tabId, true);
-        sendResponse({ ok: true, reloading: true });
+        {
+          const result = await setHookFlag(tabId, true);
+          sendResponse({ ok: true, reloading: Boolean(result.reloading), result });
+        }
         break;
       case "TLC_DISABLE_HOOK":
-        await setHookFlag(tabId, false);
-        sendResponse({ ok: true, reloading: true });
+        {
+          const result = await setHookFlag(tabId, false);
+          sendResponse({ ok: true, reloading: Boolean(result.reloading), result });
+        }
         break;
       case "TLC_RESET_TAB":
         {
@@ -851,11 +1045,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_SET_DEBUG": {
-        const state = await getState(tabId);
-        state.debug = { enabled: Boolean(message.enabled), entries: state.debug?.entries || [] };
-        await setState(tabId, state);
-        await chrome.tabs.sendMessage(tabId, { type: "TLC_DEBUG_CONFIG", enabled: state.debug.enabled }).catch(() => {});
-        sendResponse({ ok: true, state });
+        const settings = await setSettings({ debugEnabled: Boolean(message.enabled) });
+        let state = null;
+        if (Number.isInteger(tabId) && tabId >= 0) {
+          const tab = await chrome.tabs.get(tabId).catch(() => null);
+          if (tab?.url?.startsWith("https://www.tiktok.com/")) {
+            state = await getState(tabId);
+            state.debug = { enabled: Boolean(message.enabled), entries: state.debug?.entries || [] };
+            await setState(tabId, state);
+            await chrome.tabs.sendMessage(tabId, { type: "TLC_DEBUG_CONFIG", enabled: state.debug.enabled }).catch(() => {});
+          }
+        }
+        sendResponse({ ok: true, state, settings });
         break;
       }
       case "TLC_DEBUG_EVENT":

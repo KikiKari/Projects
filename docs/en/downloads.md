@@ -12,4 +12,4 @@
 
 ## What's new
 
-Browser extension 0.7.1 retains manual AudD recognition through the paired loopback service. Local setup runs `npm run setup` and then `npm start`; setup can perform that final start in the background.
+Browser extension 0.7.1 adds Permanent Hook, Auto-Reconnect, direct switching between Embed and the normal LIVE page, the peak-protection label, certified-account display in page information, and the top-chatter mute control. The existing VLC link list remains unchanged. The local service keeps the existing pairing flow.

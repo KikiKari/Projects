@@ -25,11 +25,20 @@
     }
   }
 
+  function currentLiveHandle() {
+    const path = decodeURIComponent(location.pathname);
+    return (
+      path.match(/^\/@([^/]+)\/live\/?$/i)?.[1]
+      || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1]
+      || ""
+    ).toLocaleLowerCase();
+  }
+
   function streamIdentity(url) {
     try {
       const parsed = new URL(String(url), location.href);
       return {
-        handle: decodeURIComponent(location.pathname.match(/^\/@([^/]+)/)?.[1] || "").toLocaleLowerCase(),
+        handle: currentLiveHandle(),
         roomId: parsed.searchParams.get("room_id") || parsed.searchParams.get("roomId") || ""
       };
     } catch (_) {

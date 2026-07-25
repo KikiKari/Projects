@@ -1,10 +1,10 @@
 (function (root, factory) {
-  const api = factory();
+  const protoKey = Symbol.for("tiktok-live-companion.proto");
   if (typeof module === "object" && module.exports) {
-    module.exports = api;
-  } else {
-    Object.defineProperty(root, Symbol.for("tiktok-live-companion.proto"), {
-      value: Object.freeze(api),
+    module.exports = factory();
+  } else if (!root[protoKey]) {
+    Object.defineProperty(root, protoKey, {
+      value: Object.freeze(factory()),
       configurable: false,
       enumerable: false,
       writable: false

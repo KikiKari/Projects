@@ -12,4 +12,4 @@
 
 ## Änderungen
 
-Die Browser-Erweiterung 0.7.1 behält die manuelle AudD-Songerkennung über den gepaarten Loopback-Dienst. Die lokale Einrichtung führt `npm run setup` aus und startet anschließend mit `npm start`; das Setup kann diesen abschließenden Start verborgen ausführen.
+Die Browser-Erweiterung 0.7.1 ergänzt Permanent Hook, Auto-Reconnect, den direkten Wechsel zwischen Embed- und normaler LIVE-Seite, die Pegelschutz-Beschriftung, Zertifiziert-Anzeige in den Seiteninformationen und die Stummfunktion in Top-Chatter. Die bestehende VLC-Link-Liste bleibt unverändert. Der lokale Dienst bleibt beim bisherigen Pairing-Verfahren.
