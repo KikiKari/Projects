@@ -157,6 +157,7 @@ async function getSettings() {
     speechVolume: 0.5,
     speechLanguage: "auto",
     speechVoiceName: "",
+    gameModeEnabled: false,
     speakNames: true,
     shortenNames: false,
     serviceUrl: "http://127.0.0.1:43117",
@@ -539,6 +540,25 @@ async function addGiftMessage(tabId, rawMessage) {
     participant.giftEventCount += 1;
     participant.giftItemCount += count;
   }
+  const settings = await getSettings();
+  const systemSpeechText = settings.gameModeEnabled ? core.gameEventSpeech(rawMessage) : "";
+  if (systemSpeechText) {
+    const receivedAtUtc = rawMessage.receivedAtUtc || new Date().toISOString();
+    state.chatMessages = [...(state.chatMessages || []), {
+      messageId: rawMessage.messageId ? `game:${rawMessage.messageId}` : null,
+      author: "System",
+      content: systemSpeechText,
+      systemSpeechText,
+      userId: null,
+      displayId: "",
+      participantKey: "",
+      muted: false,
+      contentLanguage: "de",
+      source: "game-mode",
+      receivedAtUtc,
+      dedupeKey: `game-mode:${core.normalizedIdentity(author)}:${core.normalizedIdentity(systemSpeechText)}:${timeBucket}`
+    }].slice(-MAX_CHAT);
+  }
   await setState(tabId, state);
   await relayToEmbedTab(tabId, state, "gift", rawMessage);
 }
@@ -896,6 +916,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.volume == null ? {} : { speechVolume: Math.max(0, Math.min(1, Number(message.volume))) }),
           ...(message.language == null ? {} : { speechLanguage: ["auto", "de-DE", "en-US"].includes(message.language) ? message.language : "auto" }),
           ...(message.voiceName == null ? {} : { speechVoiceName: String(message.voiceName).slice(0, 160) }),
+          ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
           ...(message.speechEnabled == null ? {} : { speechEnabled: Boolean(message.speechEnabled) }),

@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -30,6 +30,7 @@
   let speechLanguage = "auto";
   let speechVoiceName = "";
   let speakNames = true;
+  let gameModeEnabled = false;
   let shortenNames = false;
   let serviceUrl = "http://127.0.0.1:43117";
   let pairingCode = "";
@@ -267,11 +268,13 @@
       speechInitialized = true;
       return;
     }
-    for (const item of items || []) {
+    const allItems = items || [];
+    for (const item of allItems) {
       const key = chatKey(item);
       if (knownSpeechKeys.has(key)) continue;
       knownSpeechKeys.add(key);
       if (item.muted) continue;
+      if (gameModeEnabled && core.shouldFilterGameModeSpeech(item, currentState?.participants || {}, allItems)) continue;
       enqueueSpeech(item);
     }
   }
@@ -659,6 +662,7 @@
     speechLanguage = response.settings?.speechLanguage || "auto";
     speechVoiceName = response.settings?.speechVoiceName || "";
     speakNames = response.settings?.speakNames !== false;
+    gameModeEnabled = Boolean(response.settings?.gameModeEnabled);
     shortenNames = Boolean(response.settings?.shortenNames);
     serviceUrl = response.settings?.serviceUrl || "http://127.0.0.1:43117";
     pairingCode = response.settings?.pairingCode || "";
@@ -669,6 +673,7 @@
     elements["speech-language"].value = speechLanguage;
     setSpeechVoiceOptions();
     elements["speak-names"].checked = speakNames;
+    elements["game-mode"].checked = gameModeEnabled;
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
     elements["service-url"].value = serviceUrl;
@@ -967,6 +972,10 @@
     speakNames = elements["speak-names"].checked;
     elements["shorten-names"].disabled = !speakNames;
     await send("TLC_SET_SPEECH_PREFERENCE", { speakNames });
+  });
+  elements["game-mode"].addEventListener("change", async () => {
+    gameModeEnabled = elements["game-mode"].checked;
+    await send("TLC_SET_SPEECH_PREFERENCE", { gameModeEnabled });
   });
   elements["shorten-names"].addEventListener("change", async () => {
     shortenNames = elements["shorten-names"].checked;

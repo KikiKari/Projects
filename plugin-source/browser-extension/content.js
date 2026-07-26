@@ -1145,18 +1145,20 @@
     const candidates = [...document.querySelectorAll('[data-e2e*="gift" i],[data-e2e*="message" i]')].slice(-150);
     for (const element of candidates) {
       const raw = visibleText(element);
-      if (!raw || giftNodeText.get(element) === raw || !/(?:gesendet|sent)\s*x\s*\d+/i.test(raw)) continue;
+      if (!raw || giftNodeText.get(element) === raw || !/(?:gesendet|sent)(?:\s*x\s*\d+)?/i.test(raw)) continue;
       giftNodeText.set(element, raw);
-      const countMatch = raw.match(/(?:gesendet|sent)\s*x\s*(\d+)/i);
+      const countMatch = raw.match(/(?:gesendet|sent)\s*x\s*(\d+)/i) || raw.match(/\bhat\s+(\d+)\s+.+?\s+gesendet/i) || raw.match(/\bsent\s+(\d+)\s+.+/i);
       const owner = visibleText(element.querySelector('[data-e2e="message-owner-name"]'));
-      const authorMatch = raw.match(/^(.+?)\s+(?:hat\s+.+?\s+gesendet|sent\s+.+?)\s*x\s*\d+/i);
+      const authorMatch = raw.match(/^(.+?)\s+(?:hat\s+.+?\s+gesendet|sent\s+.+?)(?:\s*x\s*\d+)?/i);
+      const giftNameMatch = raw.match(/\bhat\s+\d+\s+(.+?)\s+gesendet/i) || raw.match(/\bhat\s+(.+?)\s+gesendet(?:\s*x\s*\d+)?/i);
       const author = owner || authorMatch?.[1] || "";
-      if (!author || !countMatch) continue;
+      if (!author) continue;
       chrome.runtime.sendMessage({
         type: "TLC_GIFT_MESSAGE",
         giftMessage: {
           author,
-          repeatCount: countMatch[1],
+          giftName: giftNameMatch?.[1] || "",
+          repeatCount: countMatch?.[1] || "1",
           rawText: raw,
           source: "dom",
           receivedAtUtc: new Date().toISOString()

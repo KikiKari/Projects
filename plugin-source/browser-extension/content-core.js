@@ -351,6 +351,7 @@
   }
 
   function composeSpeechText(item, options = {}) {
+    if (item?.systemSpeechText) return sanitizeChatText(item.systemSpeechText);
     const teamTag = options.teamTag || "";
     const speakNames = options.speakNames !== false;
     const shortenNames = Boolean(options.shortenNames && speakNames);
@@ -373,6 +374,48 @@
       return `${author} ${isQuestion ? "fragt" : "sagt zu"} ${recipient}${remainder ? ` ${remainder}` : ""}`.trim();
     }
     return `${author} ${isQuestion ? "fragt" : "sagt"}${body ? ` ${body}` : ""}`.trim();
+  }
+
+  function gameModeSpeechKey(value) {
+    return sanitizeChatText(value)
+      .toLocaleLowerCase()
+      .replace(/^@+/, "")
+      .replace(/[^\p{L}\p{N}]+/gu, "")
+      .trim();
+  }
+
+  function shouldFilterGameModeSpeech(item, participants = {}, recentItems = []) {
+    const contentKey = gameModeSpeechKey(item?.content || "");
+    if (!contentKey || contentKey.length < 2 || item?.systemSpeechText) return false;
+    const aliases = new Set();
+    for (const participant of Object.values(participants || {})) {
+      for (const value of [participant?.name, participant?.displayId]) {
+        const key = gameModeSpeechKey(value || "");
+        if (key) aliases.add(key);
+      }
+    }
+    if (!aliases.has(contentKey)) return false;
+    const now = Date.parse(item?.receivedAtUtc || "") || Date.now();
+    const repeats = (recentItems || []).filter((entry) => {
+      const entryAt = Date.parse(entry?.receivedAtUtc || "") || 0;
+      return Math.abs(now - entryAt) <= 45000 && gameModeSpeechKey(entry?.content || "") === contentKey;
+    }).length;
+    return repeats >= 2;
+  }
+
+  function gameEventSpeech(rawMessage = {}) {
+    const raw = sanitizeChatText(rawMessage.rawText || rawMessage.content || "");
+    const explicitName = sanitizeChatText(rawMessage.giftName || rawMessage.gift_name || rawMessage.gift || "");
+    const nameFromText =
+      raw.match(/hat\s+\d+\s+(.+?)\s+gesendet/i)?.[1] ||
+      raw.match(/hat\s+(.+?)\s+gesendet(?:\s*x\s*\d+)?/i)?.[1] ||
+      raw.match(/sent\s+\d+\s+(.+?)(?:\s*x\s*\d+)?$/i)?.[1] ||
+      "";
+    const giftName = sanitizeChatText(explicitName || nameFromText);
+    if (!giftName) return "";
+    if (/(?:booster|boosterhandschuh)/i.test(giftName)) return "Booster wurde gesetzt";
+    if (/(?:game|controller|handschuh|schild|schutz|boost)/i.test(giftName)) return `${giftName} wurde gesetzt`;
+    return "";
   }
 
   function numericString(value) {
@@ -579,6 +622,8 @@
     shortenNickname,
     resolveSpeechLanguage,
     composeSpeechText,
+    shouldFilterGameModeSpeech,
+    gameEventSpeech,
     normalizeProfileInfo,
     EMPTY_PROFILE_INFO,
     EMPTY_AI_SUMMARY_INFO,

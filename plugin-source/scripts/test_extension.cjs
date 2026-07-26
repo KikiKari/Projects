@@ -113,6 +113,22 @@ assert.strictEqual(core.composeSpeechText({ author: "Blitzerbiest", content: "@H
 assert.strictEqual(core.composeSpeechText({ author: "Miimii", content: "@ Stivinho danke" }, { speakNames: false }), "Stivinho danke");
 assert.strictEqual(core.composeSpeechText({ author: "Anja Schaarschmidt89", content: "Guten Morgen" }, { shortenNames: true }), "Anja sagt Guten Morgen");
 assert.strictEqual(core.composeSpeechText({ author: "Mia", content: "Hallo @" }), "Mia sagt Hallo @");
+assert.strictEqual(core.gameEventSpeech({ rawText: "Jacky hat 1 Boosterhandschuh gesendet" }), "Booster wurde gesetzt");
+assert.strictEqual(core.gameEventSpeech({ rawText: "Jacky hat Rose gesendet x 1" }), "");
+assert.strictEqual(core.composeSpeechText({ author: "System", content: "Booster wurde gesetzt", systemSpeechText: "Booster wurde gesetzt" }), "Booster wurde gesetzt");
+assert.strictEqual(core.shouldFilterGameModeSpeech(
+  { author: "A", content: "Jacky", receivedAtUtc: "2026-07-26T10:00:10.000Z" },
+  { jacky: { name: "🫶Jacky🫶", displayId: "jacky" } },
+  [
+    { content: "Jacky", receivedAtUtc: "2026-07-26T10:00:00.000Z" },
+    { content: "🫶 Jacky 🫶", receivedAtUtc: "2026-07-26T10:00:05.000Z" }
+  ]
+), true);
+assert.strictEqual(core.shouldFilterGameModeSpeech(
+  { author: "A", content: "@Jacky danke", receivedAtUtc: "2026-07-26T10:00:10.000Z" },
+  { jacky: { name: "Jacky", displayId: "jacky" } },
+  [{ content: "@Jacky danke", receivedAtUtc: "2026-07-26T10:00:05.000Z" }]
+), false);
 assert.strictEqual(core.composeSpeechText({ author: "user572838499281727393816181", content: "hahahahahahhhhahhhaaaa bald" }), "user572 sagt haha bald");
 assert.strictEqual(core.composeSpeechText({ author: "deroy", content: "@user572838499281727393816181 bald bist du nur noch ein sohn" }), "deroy sagt zu user572 bald bist du nur noch ein sohn");
 assert.strictEqual(core.composeSpeechText({ author: "Rebecca № 2 💕", content: "@Vanny_GioPrimetv hallo" }, { shortenNames: true }), "Rebecca sagt zu Vanny hallo");
@@ -352,8 +368,14 @@ assert.ok(panelHtml.includes('id="top-chatters"'));
 assert.ok(panelHtml.includes('id="audience-modal"'));
 assert.ok(panelHtml.includes('id="speech-language"'));
 assert.ok(panelHtml.includes('id="speech-voice"'));
+assert.ok(panelHtml.includes('id="game-mode"'));
+assert.ok(panelHtml.includes("Chatnamen"));
+assert.ok(panelHtml.includes("Chatnamen kürzen"));
+assert.ok(panelHtml.includes("Permanent aktiv"));
 assert.ok(sidepanelSource.includes("voiceName: speechVoiceName"));
+assert.ok(sidepanelSource.includes("gameModeEnabled"));
 assert.ok(backgroundSource.includes("speechVoiceName"));
+assert.ok(backgroundSource.includes("gameModeEnabled"));
 assert.ok(panelHtml.includes('id="speak-names"'));
 assert.ok(panelHtml.includes('id="shorten-names"'));
 assert.ok(panelHtml.includes('id="recognize-song"'));
