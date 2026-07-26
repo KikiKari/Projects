@@ -1,4 +1,4 @@
-# Lokaler Begleitdienst 0.7.0
+# Lokaler Begleitdienst 0.7.1
 
 Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschließlich manuell aufgenommene Audioausschnitte an AudD weiter. Er bindet nur an `127.0.0.1`.
 

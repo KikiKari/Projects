@@ -17,4 +17,10 @@ enum StreamNameNormalizer {
         guard let name = normalize(input) else { return nil }
         return URL(string: "https://www.tiktok.com/@\(name)/live")
     }
+
+    /// Liefert die TikTok-Embed-LIVE-URL oder nil bei ungültiger Eingabe.
+    static func embedURL(_ input: String) -> URL? {
+        guard let name = normalize(input) else { return nil }
+        return URL(string: "https://www.tiktok.com/embed/live/@\(name)")
+    }
 }

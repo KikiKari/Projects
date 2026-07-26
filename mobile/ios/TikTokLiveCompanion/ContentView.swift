@@ -121,7 +121,7 @@ struct ContentView: View {
                 commandButton("Neu laden", "reload-player", "arrow.clockwise")
             }
             Text("Pegelschutz").font(.headline)
-            Toggle("Digitalen Pegelschutz aktivieren", isOn: $state.limiterEnabled)
+            Toggle("Pegelschutz aktivieren", isOn: $state.limiterEnabled)
             HStack { Text("Grenzwert"); Spacer(); Text("\(state.limiterThreshold) dBFS").bold().monospacedDigit() }
             Slider(value: Binding(get: { Double(state.limiterThreshold) }, set: { state.limiterThreshold = Int($0) }), in: -30 ... -1, step: 1).disabled(!state.limiterEnabled)
             Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.").font(.footnote).foregroundStyle(.secondary)
@@ -139,6 +139,11 @@ struct ContentView: View {
             Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.borderedProminent)
             Button("Untertitel aktivieren") { state.sendCommand?("captions", [:]) }.buttonStyle(.bordered)
             Button("Refresh") { state.sendCommand?("refresh", [:]) }.buttonStyle(.bordered)
+            HStack {
+                Button("Embed") { state.openEmbedStream() }.buttonStyle(.bordered)
+                Button("Normal") { state.openNormalStream() }.buttonStyle(.bordered)
+            }
+            Toggle("Auto-Reconnect", isOn: $state.autoReconnectEnabled)
             Button(state.forceInProgress ? "Force läuft …" : "Force") { state.startForce() }.buttonStyle(.bordered).disabled(state.forceInProgress)
             if state.forceRecoveryURL != nil { Button("Manuell zum LIVE-Stream zurück") { state.recoverForce() }.buttonStyle(.bordered) }
             Button("Melden öffnen") { state.sendCommand?("open-report", [:]) }.buttonStyle(.bordered)

@@ -13,4 +13,6 @@ final class StreamNameNormalizerTests: XCTestCase {
     func testRejectsOverlongName() { XCTAssertNil(StreamNameNormalizer.normalize(String(repeating: "a", count: 25))) }
     func testBuildsLiveURL() { XCTAssertEqual(StreamNameNormalizer.liveURL("@Creator")?.absoluteString, "https://www.tiktok.com/@creator/live") }
     func testLiveURLNilForInvalid() { XCTAssertNil(StreamNameNormalizer.liveURL("!!")) }
+    func testBuildsEmbedURL() { XCTAssertEqual(StreamNameNormalizer.embedURL("@Creator")?.absoluteString, "https://www.tiktok.com/embed/live/@creator") }
+    func testEmbedURLNilForInvalid() { XCTAssertNil(StreamNameNormalizer.embedURL("!!")) }
 }

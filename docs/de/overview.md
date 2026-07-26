@@ -1,8 +1,8 @@
 # Überblick
 
-TikTok LIVE Companion 0.7.0 ist eine lokale Browser-Erweiterung für öffentliche TikTok-LIVE-Streams. Sie bündelt bereinigten Chattext, natürliches Vorlesen, Top-Chatter, beobachtete Personen, Geschenkzählung, native Untertitelprüfung, LIVE-Informationen, Playersteuerung, optional manuelle Songerkennung, digitalen Pegelschutz, Bildqualitäten und FLV-/HLS-Links in einem Seitenpanel.
+TikTok LIVE Companion 0.7.1 ist eine lokale Browser-Erweiterung für öffentliche TikTok-LIVE-Streams. Sie bündelt bereinigten Chattext, natürliches Vorlesen, Top-Chatter, beobachtete Personen, Geschenkzählung, native Untertitelprüfung, LIVE-Informationen, Playersteuerung, optional manuelle Songerkennung, digitalen Pegelschutz, Bildqualitäten und FLV-/HLS-Links in einem Seitenpanel.
 
-Ergänzend enthält 0.7.0 native Quellprojekte für iOS 15+ sowie Android/HyperOS ab API 21. Sie bilden die Companion-Funktionen in einer abgesicherten TikTok-WebView ab und verwenden ShazamKit für die ausschließlich manuell gestartete Songerkennung. Der Browser verwendet weiterhin AudD.
+Ergänzend enthält 0.7.1 native Quellprojekte für iOS 15+ sowie Android/HyperOS ab API 21. Sie bilden die Companion-Funktionen in einer abgesicherten TikTok-WebView ab und verwenden ShazamKit für die ausschließlich manuell gestartete Songerkennung. Der Browser verwendet weiterhin AudD.
 
 ## Was die Erweiterung leistet
 

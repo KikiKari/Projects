@@ -1,24 +1,24 @@
-# TikTok LIVE Companion 0.7.0
+# TikTok LIVE Companion 0.7.1
 
 > Plattformbranch `TikTok-Live-Companion-iOS`: enthält die native SwiftUI-/WKWebView-/ShazamKit-App. Der Android-/HyperOS-Quellstand liegt im Branch `TikTok-Live-Companion-Android`.
 
 TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chrome. Sie macht öffentliche TikTok-LIVE-Streams zugänglicher: Chatzeilen werden als bereinigter Text angezeigt und auf Wunsch lokal vorgelesen, native Untertitel werden geprüft, LIVE-Werte und Stream-Qualitäten werden sichtbar und der vorhandene Player lässt sich über ein Seitenpanel steuern.
 
-Version 0.7.0 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
+Version 0.7.1 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
 
-![Mobile-Entwurf 0.7.0 für iOS und Android/HyperOS](docs/mobile/mobile-0.7.0-concept.png)
+![Mobile-Entwurf 0.7.1 für iOS und Android/HyperOS](docs/mobile/mobile-0.7.1-concept.png)
 
 [![TikTok LIVE Companion – Plattformarchitektur für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
-Die Visualisierung zeigt den tatsächlichen 0.7.0-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, Mermaid-Diagramm und Three.js-Ansicht bilden denselben projektspezifischen Datenfluss ab.
+Die Visualisierung zeigt den tatsächlichen 0.7.1-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, Mermaid-Diagramm und Three.js-Ansicht bilden denselben projektspezifischen Datenfluss ab.
 
 - [Interaktive Three.js-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.0-concept.png)
+- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.1-concept.png)
 - [Visualisierungsvertrag und Textalternative](docs/diagrams/tiktok-live-companion-visualization-contract.md)
 
 ## Schnellstart
 
-1. Lade `release/0.7.0/tiktok-live-companion-extension-0.7.0.zip` herunter und entpacke die Datei.
+1. Lade `release/0.7.1/tiktok-live-companion-extension-0.7.1.zip` herunter und entpacke die Datei.
 2. Öffne `edge://extensions` oder `chrome://extensions` und aktiviere den Entwicklermodus.
 3. Wähle **Entpackte Erweiterung laden** und den Ordner mit `manifest.json`.
 4. Öffne einen öffentlichen TikTok-LIVE-Tab und klicke auf **TikTok LIVE Companion**.
@@ -89,7 +89,7 @@ Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachums
 
 - `plugin-source/` – reproduzierbarer Plugin-Quellstand einschließlich Browser-Erweiterung, Tests und Packaging-Script
 - `docs/` – deutsche und englische Dokumentation sowie Mermaid-Quellen
-- `release/` – reproduzierbare 0.7.0-Artefakte und SHA-256-Prüfsummen
+- `release/` – reproduzierbare 0.7.1-Artefakte und SHA-256-Prüfsummen
 - `plugin-source/companion-service/` – optionaler lokaler Windows-Dienst für verstärkte Sprachausgabe und manuelle Songerkennung
 - `site/` – statische React-/TypeScript-/Vite-Dokumentationssite
 - `mobile/ios/` – SwiftUI-, WKWebView- und ShazamKit-Xcode-Projekt ab iOS 15

@@ -47,6 +47,9 @@ import Foundation
     @Published var debugEnabled = false
     @Published var debugEvents: [String] = []
     @Published var streamName = ""
+    @Published var autoReconnectEnabled: Bool {
+        didSet { defaults.set(autoReconnectEnabled, forKey: Self.autoReconnectKey); pushAutoReconnect() }
+    }
     @Published private(set) var currentWebURL = URL(string: "https://www.tiktok.com/live")!
     var sendCommand: ((String, [String: Any]) -> Void)?
     var loadURL: ((URL) -> Void)?
@@ -64,6 +67,7 @@ import Foundation
     private static let ttsLanguageKey = "ttsLanguage"
     private static let ttsSpeakNamesKey = "ttsSpeakNames"
     private static let ttsShortenNamesKey = "ttsShortenNames"
+    private static let autoReconnectKey = "autoReconnect"
     private static let liveStatLabels: [String: String] = [
         "viewerCount": "Zuschauer*innen",
         "totalViewers": "Aufrufe gesamt",
@@ -91,6 +95,7 @@ import Foundation
         self.ttsLanguage = defaults.string(forKey: Self.ttsLanguageKey).flatMap(TTSLanguage.init(rawValue:)) ?? .automatic
         self.ttsSpeakNames = defaults.object(forKey: Self.ttsSpeakNamesKey) as? Bool ?? true
         self.ttsShortenNames = defaults.object(forKey: Self.ttsShortenNamesKey) as? Bool ?? true
+        self.autoReconnectEnabled = defaults.bool(forKey: Self.autoReconnectKey)
         recognizer.onResult = { [weak self] result in Task { @MainActor in
             self?.recognitionResult = result
             self?.recognitionStatus = result.matched ? "Song erkannt" : "Kein passender Song erkannt"
@@ -129,8 +134,23 @@ import Foundation
     }
 
     private static func validatedLiveURL(_ url: URL) -> URL? {
-        guard url.scheme == "https", url.host == "www.tiktok.com", url.path.range(of: #"^/@[^/]+/live(?:/|$)"#, options: .regularExpression) != nil else { return nil }
+        guard url.scheme == "https", url.host == "www.tiktok.com" else { return nil }
+        let isLive = url.path.range(of: #"^/@[^/]+/live(?:/|$)"#, options: .regularExpression) != nil
+        let isEmbed = url.path.range(of: #"^/embed/live/@[^/]+(?:/|$)"#, options: .regularExpression) != nil
+        guard isLive || isEmbed else { return nil }
         return url
+    }
+
+    private func activeStreamHandle() -> String? {
+        if let value = StreamNameNormalizer.normalize(streamName) { return value }
+        let path = currentWebURL.path
+        if let match = path.range(of: #"^/@([^/]+)/live(?:/|$)"#, options: .regularExpression) {
+            return StreamNameNormalizer.normalize(String(path[match]).replacingOccurrences(of: "/live", with: "").replacingOccurrences(of: "/", with: ""))
+        }
+        if let match = path.range(of: #"^/embed/live/@([^/]+)(?:/|$)"#, options: .regularExpression) {
+            return StreamNameNormalizer.normalize(String(path[match]).replacingOccurrences(of: "/embed/live/", with: "").replacingOccurrences(of: "/", with: ""))
+        }
+        return nil
     }
 
     func recoverForce(reason: String = "manuelle Rückkehr") {
@@ -158,6 +178,24 @@ import Foundation
         loadURL?(url)
     }
 
+    func openEmbedStream() {
+        guard let handle = activeStreamHandle(), let url = StreamNameNormalizer.embedURL(handle) else {
+            lastError = "Embed ist erst mit gültigem Streamnamen oder LIVE-Stream verfügbar"
+            return
+        }
+        currentWebURL = url
+        loadURL?(url)
+    }
+
+    func openNormalStream() {
+        guard let handle = activeStreamHandle(), let url = StreamNameNormalizer.liveURL(handle) else {
+            lastError = "Normal ist erst mit gültigem Streamnamen oder LIVE-Stream verfügbar"
+            return
+        }
+        currentWebURL = url
+        loadURL?(url)
+    }
+
     func enableStreamSound() {
         audibleStartRequested = true
         audibleStartBlocked = false
@@ -166,6 +204,10 @@ import Foundation
 
     func pushLimiter() {
         sendCommand?("set-limiter", ["enabled": limiterEnabled, "threshold": limiterThreshold])
+    }
+
+    private func pushAutoReconnect() {
+        sendCommand?("set-auto-reconnect", ["enabled": autoReconnectEnabled])
     }
 
     func recognize() {
@@ -189,6 +231,7 @@ import Foundation
         switch envelope.type {
         case "bridge-ready":
             pushLimiter()
+            pushAutoReconnect()
             sendCommand?("set-player-expanded", ["expanded": videoExpanded])
             if audibleStartRequested { sendCommand?("start-audible", [:]) }
         case "capability":
