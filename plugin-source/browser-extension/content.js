@@ -32,6 +32,7 @@
   let tabActive = false;
   let chatSourceOnly = false;
   let quickRecoverEnabled = false;
+  let quickRecoverArmed = false;
   let tabRuntimeStarted = false;
   let quickRecoverFailures = 0;
   let lastQuickRecoverAt = 0;
@@ -767,9 +768,13 @@
 
   function quickRecoverReason() {
     if (!quickRecoverEnabled || !tabActive || !isLivePage()) return "";
+    const video = primaryVideo();
+    if (video && !video.error && !video.ended && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      quickRecoverArmed = true;
+    }
+    if (!quickRecoverArmed) return "";
     const interruption = timedLiveInterruptionReason();
     if (interruption) return interruption;
-    const video = primaryVideo();
     if (!video) return "";
     if (video.error) return "video-error";
     if (video.ended) return "video-ended";
