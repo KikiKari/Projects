@@ -10,7 +10,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
 const sherpaVoicesPath = path.join(defaultConfigDir, "sherpa-voices.json");
-export const VERSION = "0.7.0";
+export const VERSION = "0.7.1";
 export { defaultConfigPath };
 
 let sherpaInstallPromise = null;
@@ -141,7 +141,6 @@ function cleanTtsText(value) {
     .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
     .replace(/[\ufe00-\ufe0f\u200d]/g, "")
     .replace(/[\u{1f000}-\u{1faff}\u{2600}-\u{27bf}]/gu, " ")
-    .replace(/\p{M}+/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 }

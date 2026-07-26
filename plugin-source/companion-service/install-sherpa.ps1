@@ -4,8 +4,8 @@ $configDir = Join-Path $env:LOCALAPPDATA "TikTokLiveCompanion"
 $modelRoot = Join-Path $configDir "sherpa-onnx"
 $voiceConfigPath = Join-Path $configDir "sherpa-voices.json"
 $releaseBase = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
-$runtimeReleaseBase = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.4"
-$runtimeArchiveName = "sherpa-onnx-v1.13.4-win-x64-shared-MT-Release.tar.bz2"
+$runtimeReleaseBase = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.2"
+$runtimeArchiveName = "sherpa-onnx-v1.13.2-win-x64-shared-MD-Release.tar.bz2"
 
 New-Item -ItemType Directory -Force -Path $modelRoot | Out-Null
 

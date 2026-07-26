@@ -147,7 +147,6 @@
       .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
       .replace(/[\ufe00-\ufe0f\u200d]/g, "")
       .replace(/[\u{1f000}-\u{1faff}\u{2600}-\u{27bf}]/gu, " ")
-      .replace(/\p{M}+/gu, "")
       .replace(/\s+/g, " ")
       .trim();
   }
