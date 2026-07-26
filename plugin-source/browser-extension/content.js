@@ -37,6 +37,7 @@
   let quickRecoverFailures = 0;
   let lastQuickRecoverAt = 0;
   let fullscreenWasActive = false;
+  let liveProSeenHandle = "";
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -59,6 +60,14 @@
       element?.getAttribute?.("data-e2e"),
       visibleText(element)
     ].filter(Boolean).join(" ").trim();
+  }
+
+  function elementTextBundle(element) {
+    return [
+      visibleText(element),
+      element?.getAttribute?.("aria-label"),
+      element?.getAttribute?.("title")
+    ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   }
 
   function isVisible(element) {
@@ -301,12 +310,19 @@
   function liveProBadgePresent(root = document) {
     if (!isLivePage()) return false;
     const handle = currentPathHandle().toLocaleLowerCase();
-    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"]')]
+    if (liveProSeenHandle === handle) return true;
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],[data-e2e="live-room-info"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"],div,span,p')]
       .filter((element) => isVisible(element));
-    for (const scope of scopes.slice(0, 20)) {
-      const text = visibleText(scope).replace(/\s+/g, " ").trim();
+    let checked = 0;
+    for (const scope of scopes) {
+      const text = elementTextBundle(scope);
       if (!/\bLIVE\s+Pro\b/i.test(text) && !/Anerkannt von TikTok LIVE/i.test(text)) continue;
-      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) return true;
+      checked += 1;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.closest('[data-e2e="live-header-container"],[data-e2e="live-room-info"]') || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) {
+        liveProSeenHandle = handle;
+        return true;
+      }
+      if (checked >= 20) break;
     }
     return false;
   }

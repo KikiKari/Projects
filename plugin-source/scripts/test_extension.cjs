@@ -357,6 +357,8 @@ assert.ok(contentSource.includes("function certifiedSvgBadge"));
 assert.ok(contentSource.includes('root.querySelectorAll("svg")'));
 assert.ok(!contentSource.includes("verified|verifiziert|zertifiziert|certified|official"));
 assert.ok(contentSource.includes("function liveProBadgePresent"));
+assert.ok(contentSource.includes("liveProSeenHandle"));
+assert.ok(contentSource.includes("function elementTextBundle"));
 assert.ok(contentSource.includes("LIVE\\s+Pro"));
 assert.ok(contentSource.includes("Live Pro"));
 assert.ok(contentSource.includes("liveProLabel"));
