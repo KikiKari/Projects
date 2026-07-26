@@ -38,6 +38,7 @@
   let lastQuickRecoverAt = 0;
   let fullscreenWasActive = false;
   let liveProSeenHandle = "";
+  let sponsoredContentSeenHandle = "";
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -210,7 +211,9 @@
       verified: Boolean(winner?.verified || current?.verified || candidate?.verified),
       verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || "",
       livePro: Boolean(winner?.livePro || current?.livePro || candidate?.livePro),
-      liveProLabel: winner?.liveProLabel || current?.liveProLabel || candidate?.liveProLabel || ""
+      liveProLabel: winner?.liveProLabel || current?.liveProLabel || candidate?.liveProLabel || "",
+      sponsoredContent: Boolean(winner?.sponsoredContent || current?.sponsoredContent || candidate?.sponsoredContent),
+      sponsoredContentLabel: winner?.sponsoredContentLabel || current?.sponsoredContentLabel || candidate?.sponsoredContentLabel || ""
     };
   }
 
@@ -327,6 +330,26 @@
     return false;
   }
 
+  function sponsoredContentBadgePresent(root = document) {
+    if (!isLivePage()) return false;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    if (sponsoredContentSeenHandle === handle) return true;
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],[data-e2e="live-room-info"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"],div,span,p')]
+      .filter((element) => isVisible(element));
+    let checked = 0;
+    for (const scope of scopes) {
+      const text = elementTextBundle(scope);
+      if (!/\bWerbeinhalt\b/i.test(text) && !/\bPaid\s+partnership\b/i.test(text) && !/\bPromotional\s+content\b/i.test(text)) continue;
+      checked += 1;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.closest('[data-e2e="live-header-container"],[data-e2e="live-room-info"]') || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) {
+        sponsoredContentSeenHandle = handle;
+        return true;
+      }
+      if (checked >= 20) break;
+    }
+    return false;
+  }
+
   function collectDomLiveStats() {
     const text = visibleText(document.body);
     const pattern = "([0-9][0-9.,\\s]*\\s*[KMB]?)";
@@ -352,9 +375,10 @@
     const likeCount = selectorText(['[data-e2e="likes-count"]']);
     const verified = certifiedBadgePresent();
     const livePro = livePage && liveProBadgePresent();
+    const sponsoredContent = livePage && sponsoredContentBadgePresent();
     const live = Boolean(livePage || document.querySelector('[data-e2e*="live" i]'));
-    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePro || livePage);
-    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", source: present ? "dom" : null };
+    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePro || sponsoredContent || livePage);
+    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", sponsoredContent, sponsoredContentLabel: sponsoredContent ? "Werbeinhalt" : "", source: present ? "dom" : null };
   }
 
   async function collectProfileFromHover(force = false) {
@@ -376,8 +400,9 @@
     const nickname = selectorText(['[data-e2e="user-title"] h1', '[data-e2e="user-title"]']) || visibleText(link);
     const verified = certifiedBadgePresent();
     const livePro = liveProBadgePresent();
+    const sponsoredContent = sponsoredContentBadgePresent();
     const present = Boolean(followingCount || followerCount || likeCount);
-    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", source: present ? "Profilkarte" : null };
+    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", sponsoredContent, sponsoredContentLabel: sponsoredContent ? "Werbeinhalt" : "", source: present ? "Profilkarte" : null };
   }
 
   async function fetchPublicProfile(force = false) {

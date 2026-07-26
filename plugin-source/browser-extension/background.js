@@ -217,7 +217,7 @@ function loopbackServiceUrl(value) {
 }
 
 function profileCompleteness(profile) {
-  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : "", profile?.livePro ? "livePro" : ""]
+  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : "", profile?.livePro ? "livePro" : "", profile?.sponsoredContent ? "sponsoredContent" : ""]
     .filter((value) => value != null && value !== "").length;
 }
 
@@ -232,7 +232,9 @@ function mergeProfile(current, incoming) {
     verified: Boolean(current?.verified || incoming.verified),
     verifiedLabel: current?.verifiedLabel || incoming.verifiedLabel || "",
     livePro: Boolean(current?.livePro || incoming.livePro),
-    liveProLabel: current?.liveProLabel || incoming.liveProLabel || ""
+    liveProLabel: current?.liveProLabel || incoming.liveProLabel || "",
+    sponsoredContent: Boolean(current?.sponsoredContent || incoming.sponsoredContent),
+    sponsoredContentLabel: current?.sponsoredContentLabel || incoming.sponsoredContentLabel || ""
   };
 }
 

@@ -582,6 +582,12 @@
         livePro.textContent = profile.liveProLabel || "Live Pro";
         elements["profile-info"].append(livePro);
       }
+      if (profile.sponsoredContent && livePageUrl) {
+        const sponsored = document.createElement("p");
+        sponsored.className = "profile-bio";
+        sponsored.textContent = profile.sponsoredContentLabel || "Werbeinhalt";
+        elements["profile-info"].append(sponsored);
+      }
       if (profile.signature) {
         const bio = document.createElement("p");
         bio.className = "profile-bio";
