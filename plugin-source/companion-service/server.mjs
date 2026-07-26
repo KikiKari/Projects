@@ -13,6 +13,15 @@ const sherpaVoicesPath = path.join(defaultConfigDir, "sherpa-voices.json");
 export const VERSION = "0.7.0";
 export { defaultConfigPath };
 
+let sherpaInstallPromise = null;
+let sherpaInstallStatus = {
+  running: false,
+  startedAtUtc: null,
+  finishedAtUtc: null,
+  ok: false,
+  error: ""
+};
+
 export async function ensureConfig(configPath = defaultConfigPath) {
   try { return JSON.parse(await fs.readFile(configPath, "utf8")); }
   catch (error) {
@@ -66,6 +75,53 @@ function runPowerShell(script, args, input) {
     child.on("close", (code) => code === 0 ? resolve(outputText) : reject(new Error(errorText.trim() || `PowerShell endete mit ${code}`)));
     child.stdin.end(input || "", "utf8");
   });
+}
+
+async function runSherpaInstaller() {
+  const script = path.join(root, "install-sherpa.ps1");
+  try { await fs.access(script); }
+  catch (_) { throw Object.assign(new Error("install-sherpa.ps1 fehlt."), { statusCode: 501 }); }
+  sherpaInstallStatus = {
+    running: true,
+    startedAtUtc: new Date().toISOString(),
+    finishedAtUtc: null,
+    ok: false,
+    error: ""
+  };
+  try {
+    await runPowerShell(script, [], "");
+    sherpaInstallStatus = {
+      ...sherpaInstallStatus,
+      running: false,
+      finishedAtUtc: new Date().toISOString(),
+      ok: true,
+      error: ""
+    };
+  } catch (error) {
+    sherpaInstallStatus = {
+      ...sherpaInstallStatus,
+      running: false,
+      finishedAtUtc: new Date().toISOString(),
+      ok: false,
+      error: String(error?.message || error).slice(0, 500)
+    };
+    throw error;
+  } finally {
+    sherpaInstallPromise = null;
+  }
+}
+
+async function ensureSherpaInstallStarted(installer = runSherpaInstaller, voices = listAvailableVoices) {
+  const voiceList = await voices();
+  if (voiceList.length) return false;
+  if (!sherpaInstallPromise) {
+    sherpaInstallPromise = Promise.resolve()
+      .then(() => installer())
+      .catch((error) => {
+        console.error(`Sherpa-Installation fehlgeschlagen: ${String(error?.message || error)}`);
+      });
+  }
+  return true;
 }
 
 function cleanVoiceName(value) {
@@ -224,7 +280,7 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, recognize = auddRecognize } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, recognize = auddRecognize, sherpaInstaller = runSherpaInstaller } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   return http.createServer(async (request, response) => {
     const currentConfig = configProvider ? await configProvider() : config;
@@ -244,17 +300,44 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
     if (authorization !== `Bearer ${currentConfig.pairingCode}`) return sendJson(response, 401, { error: "Pairing fehlgeschlagen." }, allowedOrigin);
     try {
       if (request.method === "GET" && request.url === "/v1/health") {
+        const voiceList = await voices();
         return sendJson(response, 200, {
           ok: true,
           version: VERSION,
-          tts: (await voices()).length ? "Sherpa-ONNX" : "Standard",
+          tts: voiceList.length ? "Sherpa-ONNX" : "Standard",
           ttsAvailable: process.platform === "win32",
+          sherpaConfigured: voiceList.length > 0,
+          sherpaVoiceCount: voiceList.length,
+          sherpaInstalling: sherpaInstallStatus.running,
+          canInstallSherpa: true,
           auddConfigured: Boolean(currentConfig.auddApiToken),
           songProvider: currentConfig.auddApiToken ? "AudD" : null
         }, allowedOrigin);
       }
       if (request.method === "GET" && request.url === "/v1/voices") {
         return sendJson(response, 200, { voices: await voices() }, allowedOrigin);
+      }
+      if (request.method === "GET" && request.url === "/v1/sherpa/status") {
+        const voiceList = await voices();
+        return sendJson(response, 200, {
+          ok: true,
+          running: sherpaInstallStatus.running,
+          configured: voiceList.length > 0,
+          voiceCount: voiceList.length,
+          startedAtUtc: sherpaInstallStatus.startedAtUtc,
+          finishedAtUtc: sherpaInstallStatus.finishedAtUtc,
+          error: sherpaInstallStatus.error
+        }, allowedOrigin);
+      }
+      if (request.method === "POST" && request.url === "/v1/sherpa/install") {
+        const started = await ensureSherpaInstallStarted(sherpaInstaller, voices);
+        const voiceList = await voices();
+        return sendJson(response, started ? 202 : 200, {
+          ok: true,
+          running: started || sherpaInstallStatus.running,
+          configured: voiceList.length > 0,
+          voiceCount: voiceList.length
+        }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/config/audd-token") {
         const raw = await readBody(request, 8 * 1024);
@@ -294,6 +377,7 @@ async function main() {
   server.listen(Number(config.port) || 43117, "127.0.0.1", () => {
     console.log(`TikTok LIVE Companion Dienst ${VERSION}: http://127.0.0.1:${Number(config.port) || 43117}`);
     console.log(config.auddApiToken ? "AudD ist eingerichtet." : "AudD-Token fehlt; npm run setup ausführen.");
+    ensureSherpaInstallStarted().catch((error) => console.error(`Sherpa-Installation konnte nicht gestartet werden: ${String(error?.message || error)}`));
   });
 }
 

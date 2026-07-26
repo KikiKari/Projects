@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "service-status",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -35,6 +35,7 @@
   let shortenNames = false;
   let serviceUrl = DEFAULT_SERVICE_URL;
   let pairingCode = "";
+  let sherpaInstallStarted = false;
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
@@ -254,6 +255,31 @@
       setSpeechVoiceOptions(payload.voices || []);
     } catch (_) {
       setSpeechVoiceOptions([]);
+    }
+  }
+
+  async function installSherpaVoices(manual = false) {
+    if (!pairingCode || sherpaInstallStarted) return false;
+    sherpaInstallStarted = true;
+    elements["sherpa-action"].disabled = true;
+    elements["service-status"].textContent = manual ? "Sherpa-ONNX wird installiert …" : "Sherpa-ONNX fehlt; Installation läuft im Hintergrund …";
+    try {
+      const response = await fetch(`${serviceUrl}/v1/sherpa/install`, { method: "POST", headers: serviceHeaders() });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      elements["service-status"].textContent = payload.running
+        ? "Sherpa-ONNX wird im Hintergrund installiert; Stimmen erscheinen nach Abschluss oder beim nächsten Öffnen."
+        : "Sherpa-ONNX ist bereits installiert.";
+      return true;
+    } catch (error) {
+      elements["service-status"].textContent = `Sherpa-Installation konnte nicht gestartet werden: ${String(error?.message || error)}`;
+      return false;
+    } finally {
+      setTimeout(() => {
+        sherpaInstallStarted = false;
+        elements["sherpa-action"].disabled = false;
+        loadSpeechVoices().catch(() => {});
+      }, 5000);
     }
   }
 
@@ -723,6 +749,7 @@
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       await loadSpeechVoices();
+      if (!health.sherpaConfigured && health.canInstallSherpa) installSherpaVoices(false).catch(() => {});
       return health;
     } catch (_) {
       elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
@@ -1043,11 +1070,13 @@
     try {
       await send("TLC_START_LOCAL_SERVICE");
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      await checkService();
+      const health = await checkService();
+      if (health?.canInstallSherpa && !health.sherpaConfigured) await installSherpaVoices(false);
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
     }
   });
+  elements["sherpa-action"].addEventListener("click", () => installSherpaVoices(true));
   elements["song-enabled"].addEventListener("change", async () => {
     const enabled = elements["song-enabled"].checked;
     elements["recognize-song"].disabled = !enabled;

@@ -3,15 +3,17 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { auddRecognize, createServer } from "../server.mjs";
 
-async function fixture() {
+async function fixture(options = {}) {
   const calls = [];
   const savedConfigs = [];
+  const voiceProvider = options.voices || (async () => [{ id: "sherpa-de-eva-k", name: "Sherpa Eva", culture: "de-DE", gender: "Female", engine: "sherpa-onnx" }]);
   const server = createServer({
     config: { pairingCode: "pair-test", auddApiToken: "audd-test" },
     configSaver: async (config) => { savedConfigs.push(config); return config; },
     tts: async (text, language, voiceName) => { calls.push(["tts", text, language, voiceName]); return Buffer.from("RIFFtest"); },
-    voices: async () => [{ id: "sherpa-de-eva-k", name: "Sherpa Eva", culture: "de-DE", gender: "Female", engine: "sherpa-onnx" }],
-    recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; }
+    voices: voiceProvider,
+    recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; },
+    sherpaInstaller: async () => { calls.push(["sherpa-install"]); }
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -30,6 +32,8 @@ test("health requires pairing and reports providers", async (t) => {
   const health = await response.json();
   assert.equal(health.version, "0.7.0");
   assert.equal(health.auddConfigured, true);
+  assert.equal(health.sherpaConfigured, true);
+  assert.equal(health.sherpaVoiceCount, 1);
 });
 
 test("rejects web origins", async (t) => {
@@ -56,6 +60,16 @@ test("lists available local voices", async (t) => {
   assert.deepEqual(await response.json(), {
     voices: [{ id: "sherpa-de-eva-k", name: "Sherpa Eva", culture: "de-DE", gender: "Female", engine: "sherpa-onnx" }]
   });
+});
+
+test("starts Sherpa installation through paired local endpoint", async (t) => {
+  const { server, base, calls } = await fixture({ voices: async () => [] });
+  t.after(() => server.close());
+  const response = await fetch(`${base}/v1/sherpa/install`, { method: "POST", headers });
+  assert.equal(response.status, 202);
+  assert.deepEqual(await response.json(), { ok: true, running: true, configured: false, voiceCount: 0 });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(calls[0], ["sherpa-install"]);
 });
 
 test("stores AudD token through the paired local config endpoint", async (t) => {
