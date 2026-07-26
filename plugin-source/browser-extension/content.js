@@ -20,6 +20,10 @@
   const ALL_QUALITY_LABELS = [...new Set(Object.values(QUALITY_ALIASES).flat().map(normalizedLabel))];
   const chatNodeText = new WeakMap();
   const giftNodeText = new WeakMap();
+  const POPUP_GUARD_GRACE_MS = 120;
+  const QUICK_RECOVER_INTERVAL_MS = 100;
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 1000;
+  const QUICK_RECOVER_LOCAL_PLAY_MS = 35;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -27,10 +31,12 @@
   let fallbackLimiter = null;
   let debugEnabled = false;
   let tabActive = false;
+  let chatSourceOnly = false;
   let quickRecoverEnabled = false;
   let tabRuntimeStarted = false;
   let quickRecoverFailures = 0;
   let lastQuickRecoverAt = 0;
+  let fullscreenWasActive = false;
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -734,7 +740,7 @@
   }
 
   function dismissTimedLiveInterruption() {
-    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return;
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return;
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
     const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (!interruption) return;
@@ -752,7 +758,7 @@
   }
 
   function timedLiveInterruptionReason() {
-    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return "";
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return "";
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
     const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (interruption) return "login-dialog";
@@ -768,7 +774,7 @@
     if (!video) return "";
     if (video.error) return "video-error";
     if (video.ended) return "video-ended";
-    if (Date.now() - popupGuardStartedAt < 2000) return "";
+    if (Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return "";
     if (video.paused) return "video-paused";
     if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return "video-not-ready";
     return "";
@@ -779,7 +785,7 @@
     const video = primaryVideo();
     if (video && !video.ended && !video.error) {
       await video.play().catch(() => {});
-      await sleep(150);
+      await sleep(QUICK_RECOVER_LOCAL_PLAY_MS);
       if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         quickRecoverFailures = 0;
         chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason: "quick-recover-local", playerState: getPlayerState() }).catch(() => {});
@@ -787,7 +793,7 @@
       }
     }
     quickRecoverFailures += 1;
-    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < 3000) return;
+    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
     quickRecoverFailures = 0;
     lastQuickRecoverAt = Date.now();
     chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason }).catch(() => {});
@@ -801,7 +807,16 @@
         return;
       }
       tryQuickRecover(reason).catch((error) => debug("quick-recover-error", { reason, error: String(error?.message || error).slice(0, 300) }));
-    }, 350);
+    }, QUICK_RECOVER_INTERVAL_MS);
+  }
+
+  function pushFullscreenState(reason) {
+    const fullscreenActive = Boolean(document.fullscreenElement);
+    if (fullscreenWasActive && !fullscreenActive) {
+      chrome.runtime.sendMessage({ type: "TLC_FULLSCREEN_EXITED", reason }).catch(() => {});
+    }
+    fullscreenWasActive = fullscreenActive;
+    setTimeout(() => pushPlayerState(reason), 50);
   }
 
   function pushPlayerState(reason) {
@@ -1201,6 +1216,7 @@
       tabActive = Boolean(message.enabled);
       debugEnabled = Boolean(message.debugEnabled);
       quickRecoverEnabled = Boolean(message.quickRecoverEnabled);
+      chatSourceOnly = Boolean(message.chatSourceOnly);
       if (tabActive) startTabRuntime();
       sendResponse({ enabled: tabActive });
       return false;
@@ -1274,10 +1290,10 @@
     scanDomChat();
     scanDomGifts();
     scanDomCaptions();
-    setInterval(dismissTimedLiveInterruption, 1000);
+    setInterval(dismissTimedLiveInterruption, QUICK_RECOVER_INTERVAL_MS);
     monitorQuickRecover();
     for (const eventName of ["fullscreenchange", "visibilitychange", "focus", "pageshow"]) {
-      window.addEventListener(eventName, () => setTimeout(() => pushPlayerState(eventName), 150));
+      window.addEventListener(eventName, () => pushFullscreenState(eventName));
     }
     scheduleScan(50);
     chrome.storage.local.get("tlc-settings").then(({ "tlc-settings": settings = {} }) => {
@@ -1289,9 +1305,14 @@
           return;
         }
         const volume = Math.max(0, Math.min(100, Number(settings.playerVolume ?? 100))) / 100;
-        video.volume = volume;
-        if (volume > 0) video.muted = false;
-        if (settings.limiterEnabled) await configureLimiter(video, true, core.limiterStrengthToDbfs(settings.limiterStrength ?? 30));
+        if (chatSourceOnly) {
+          video.volume = 0;
+          video.muted = true;
+        } else {
+          video.volume = volume;
+          if (volume > 0) video.muted = false;
+          if (settings.limiterEnabled) await configureLimiter(video, true, core.limiterStrengthToDbfs(settings.limiterStrength ?? 30));
+        }
       };
       apply().catch((error) => debug("audio-settings-restore", { error: String(error?.message || error).slice(0, 300) }));
     }).catch(() => {});

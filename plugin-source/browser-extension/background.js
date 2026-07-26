@@ -56,6 +56,9 @@ function emptyState() {
     media: [],
     captions: [],
     chatMessages: [],
+    chatSourceTabId: null,
+    chatTargetTabId: null,
+    chatSourceOnly: false,
     participants: {},
     participantsTruncated: false,
     streamMutes: [],
@@ -164,6 +167,7 @@ async function getSettings() {
     hookEnabled: false,
     autoHook: false,
     quickRecoverEnabled: false,
+    speechEnabled: false,
     waitingForTikTok: true,
     debugEnabled: false,
     permanentMutes: [],
@@ -392,6 +396,22 @@ function participantAliases(participant, fallbackKey = "") {
   ].filter(Boolean))];
 }
 
+function relayTargetTabId(state) {
+  const targetTabId = Number(state?.chatTargetTabId);
+  return Number.isInteger(targetTabId) && targetTabId >= 0 ? targetTabId : null;
+}
+
+async function relayToEmbedTab(sourceTabId, state, type, payload) {
+  const targetTabId = relayTargetTabId(state);
+  if (targetTabId == null || payload?.relayedFromTabId === sourceTabId) return;
+  const targetTab = await chrome.tabs.get(targetTabId).catch(() => null);
+  if (!targetTab?.url?.startsWith("https://www.tiktok.com/")) return;
+  const relayPayload = { ...payload, relayedFromTabId: sourceTabId };
+  if (type === "chat") await addChatMessage(targetTabId, relayPayload);
+  else if (type === "gift") await addGiftMessage(targetTabId, relayPayload);
+  else if (type === "live") await addLiveEvent(targetTabId, relayPayload);
+}
+
 function updateParticipant(state, raw, author, patch = {}) {
   const requestedKey = participantKey(raw, author);
   const matchedEntry = Object.entries(state.participants).find(([, participant]) =>
@@ -499,6 +519,7 @@ async function addChatMessage(tabId, rawMessage) {
     dedupeKey
   }].slice(-MAX_CHAT);
   await setState(tabId, state);
+  await relayToEmbedTab(tabId, state, "chat", rawMessage);
 }
 
 async function addGiftMessage(tabId, rawMessage) {
@@ -518,6 +539,7 @@ async function addGiftMessage(tabId, rawMessage) {
     participant.giftItemCount += count;
   }
   await setState(tabId, state);
+  await relayToEmbedTab(tabId, state, "gift", rawMessage);
 }
 
 function greaterNumericString(current, incoming) {
@@ -548,6 +570,7 @@ async function addLiveEvent(tabId, liveEvent) {
   stats.lastUpdatedUtc = liveEvent.receivedAtUtc || new Date().toISOString();
   state.liveStats = stats;
   await setState(tabId, state);
+  await relayToEmbedTab(tabId, state, "live", liveEvent);
 }
 
 async function injectTabRuntime(tabId) {
@@ -653,6 +676,55 @@ async function forceProfileRefresh(tabId) {
   }
 }
 
+function embedLiveUrl(handle) {
+  return `https://www.tiktok.com/embed/live/@${encodeURIComponent(handle)}`;
+}
+
+function normalLiveUrl(handle) {
+  return `https://www.tiktok.com/@${encodeURIComponent(handle)}/live`;
+}
+
+async function armLiveTab(tabId, handle, patch = {}) {
+  const settings = await getSettings();
+  const state = await getState(tabId);
+  state.enabled = true;
+  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+  state.hook = { ...state.hook, armed: true, lastError: null };
+  state.stream = { ...state.stream, handle: String(handle || state.stream?.handle || "").toLocaleLowerCase() };
+  state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
+  Object.assign(state, patch);
+  await setState(tabId, state);
+  return state;
+}
+
+async function closeEmbedChatSource(tabId, state = null) {
+  const current = state || await getState(tabId);
+  const sourceTabId = Number(current.chatSourceTabId);
+  if (!Number.isInteger(sourceTabId) || sourceTabId < 0) return;
+  const sourceState = await getState(sourceTabId);
+  current.chatSourceTabId = null;
+  await setState(tabId, current).catch(() => {});
+  if (Number(sourceState.chatTargetTabId) === tabId) {
+    await chrome.tabs.remove(sourceTabId).catch(() => {});
+  }
+}
+
+async function ensureEmbedChatSource(embedTabId, handle) {
+  const embedState = await getState(embedTabId);
+  const expectedUrl = normalLiveUrl(handle);
+  const existingId = Number(embedState.chatSourceTabId);
+  let sourceTab = Number.isInteger(existingId) && existingId >= 0
+    ? await chrome.tabs.get(existingId).catch(() => null)
+    : null;
+  if (!sourceTab?.url?.startsWith(expectedUrl)) {
+    sourceTab = await chrome.tabs.create({ url: expectedUrl, active: false, openerTabId: embedTabId });
+  }
+  await armLiveTab(sourceTab.id, handle, { chatTargetTabId: embedTabId, chatSourceOnly: true });
+  await armLiveTab(embedTabId, handle, { chatSourceTabId: sourceTab.id, chatSourceOnly: false });
+  await injectTabRuntime(sourceTab.id).catch(() => {});
+  return sourceTab;
+}
+
 async function openEmbedLive(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
@@ -661,11 +733,8 @@ async function openEmbedLive(tabId) {
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
   await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
-  state.enabled = true;
-  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
-  state.hook = { ...state.hook, armed: true, lastError: null };
-  await setState(tabId, state);
-  await chrome.tabs.update(tabId, { url: `https://www.tiktok.com/embed/live/@${encodeURIComponent(handle)}` });
+  await ensureEmbedChatSource(tabId, handle);
+  await chrome.tabs.update(tabId, { url: embedLiveUrl(handle) });
   return { activated: true, tabId, handle };
 }
 
@@ -677,11 +746,9 @@ async function openNormalLive(tabId) {
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle || state.profileInfo?.uniqueId;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
   await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
-  state.enabled = true;
-  if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
-  state.hook = { ...state.hook, armed: true, lastError: null };
-  await setState(tabId, state);
-  await chrome.tabs.update(tabId, { url: `https://www.tiktok.com/@${encodeURIComponent(handle)}/live` });
+  await closeEmbedChatSource(tabId, state);
+  await armLiveTab(tabId, handle, { chatSourceTabId: null, chatTargetTabId: null, chatSourceOnly: false });
+  await chrome.tabs.update(tabId, { url: normalLiveUrl(handle) });
   return { activated: true, tabId, handle };
 }
 
@@ -729,14 +796,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         type: "TLC_SET_TAB_ACTIVE",
         enabled: true,
         debugEnabled: Boolean(state.debug?.enabled),
-        quickRecoverEnabled: Boolean(settings.quickRecoverEnabled)
+        quickRecoverEnabled: Boolean(settings.quickRecoverEnabled),
+        chatSourceOnly: Boolean(state.chatSourceOnly)
       }));
     }).catch(() => {});
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.session.remove(stateKey(tabId)).catch(() => {});
+  getState(tabId).then((state) => {
+    const sourceTabId = Number(state.chatSourceTabId);
+    if (Number.isInteger(sourceTabId) && sourceTabId >= 0) chrome.tabs.remove(sourceTabId).catch(() => {});
+  }).catch(() => {}).finally(() => {
+    chrome.storage.session.remove(stateKey(tabId)).catch(() => {});
+  });
 });
 
 chrome.webRequest.onBeforeRequest.addListener(
@@ -785,7 +858,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           type: "TLC_SET_TAB_ACTIVE",
           enabled: true,
           debugEnabled: Boolean(state.debug?.enabled),
-          quickRecoverEnabled: Boolean(settings.quickRecoverEnabled)
+          quickRecoverEnabled: Boolean(settings.quickRecoverEnabled),
+          chatSourceOnly: Boolean(state.chatSourceOnly)
         }).catch(() => {});
         sendResponse({ ok: true, state });
         break;
@@ -822,6 +896,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.language == null ? {} : { speechLanguage: ["auto", "de-DE", "en-US"].includes(message.language) ? message.language : "auto" }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
+          ...(message.speechEnabled == null ? {} : { speechEnabled: Boolean(message.speechEnabled) }),
           ...(message.serviceUrl == null ? {} : { serviceUrl: loopbackServiceUrl(message.serviceUrl) || "http://127.0.0.1:43117" }),
           ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
@@ -970,6 +1045,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, response });
         break;
       }
+      case "TLC_FULLSCREEN_EXITED": {
+        const state = await getState(tabId);
+        state.enabled = true;
+        await setState(tabId, state);
+        await chrome.sidePanel.setOptions({ tabId, path: "sidepanel.html", enabled: true }).catch(() => {});
+        if (chrome.sidePanel.open) await chrome.sidePanel.open({ tabId }).catch(() => {});
+        sendResponse({ ok: true, state });
+        break;
+      }
       case "TLC_QUICK_RECOVER": {
         const settings = await getSettings();
         if (!settings.quickRecoverEnabled) {
@@ -978,7 +1062,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         const state = await getState(tabId);
         const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
-        if (Date.now() - lastAt < 3000) {
+        if (Date.now() - lastAt < 1000) {
           sendResponse({ ok: true, skipped: true, reason: "throttled" });
           break;
         }

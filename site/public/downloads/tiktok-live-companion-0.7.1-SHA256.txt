@@ -1,2 +1,2 @@
-dd2a91e183f16f1ebb97d3f77165f3846dd466db7e5c3b07dd4b7fb622cbde75  tiktok-live-companion-extension-0.7.1.zip
-02fc69355633f66a97ec2906806ae28a9f5a50b834e51d2f149cd1b43d7432fd  tiktok-live-companion-plugin-0.7.1.zip
+1a793e567e7e5391316a55ced77f00bb56063e4ce94770eeb6c4116a02d0d247  tiktok-live-companion-extension-0.7.1.zip
+c99614d735ba88eac744ec4d93ed975176c4b50b65af882bc65ee834c4341ed1  tiktok-live-companion-plugin-0.7.1.zip

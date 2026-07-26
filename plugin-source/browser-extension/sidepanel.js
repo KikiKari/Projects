@@ -92,6 +92,22 @@
     element.title = label;
   }
 
+  function persistSpeechEnabled(enabled) {
+    chrome.runtime.sendMessage({ type: "TLC_SET_SPEECH_PREFERENCE", speechEnabled: Boolean(enabled) }).catch(() => {});
+  }
+
+  function activateSpeech(message = "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", persist = true) {
+    speechEnabled = true;
+    speechTabId = activeTabId;
+    speechQueue = [];
+    for (const item of currentState?.chatMessages || []) knownSpeechKeys.add(chatKey(item));
+    elements["toggle-speech"].textContent = "Vorlesen aus";
+    elements["toggle-speech"].setAttribute("aria-pressed", "true");
+    setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
+    elements["speech-status"].textContent = message;
+    if (persist) persistSpeechEnabled(true);
+  }
+
   function stopSpeech(message = "Vorlesen ist ausgeschaltet.") {
     speechEnabled = false;
     speechBusy = false;
@@ -104,6 +120,7 @@
     elements["toggle-speech"].setAttribute("aria-pressed", "false");
     setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
+    persistSpeechEnabled(false);
   }
 
   function serviceHeaders(extra = {}) {
@@ -607,6 +624,7 @@
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     await checkService();
+    if (response.settings?.speechEnabled) activateSpeech("Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
   }
 
   async function checkService() {
@@ -873,14 +891,7 @@
       stopSpeech();
       return;
     }
-    speechEnabled = true;
-    speechTabId = activeTabId;
-    speechQueue = [];
-    for (const item of currentState?.chatMessages || []) knownSpeechKeys.add(chatKey(item));
-    elements["toggle-speech"].textContent = "Vorlesen aus";
-    elements["toggle-speech"].setAttribute("aria-pressed", "true");
-    setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
-    elements["speech-status"].textContent = "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.";
+    activateSpeech();
   });
   elements["speech-volume"].addEventListener("input", () => {
     elements["speech-volume-output"].textContent = `${elements["speech-volume"].value}%`;
