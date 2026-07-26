@@ -42,7 +42,7 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.7.0");
+assert.strictEqual(manifest.version, "0.7.1");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
@@ -249,29 +249,82 @@ assert.strictEqual(liveDecoded[2].followerCount, "238800");
 const backgroundSource = fs.readFileSync(path.join(extension, "background.js"), "utf8");
 const contentSource = fs.readFileSync(path.join(extension, "content.js"), "utf8");
 const hookSource = fs.readFileSync(path.join(extension, "hook.js"), "utf8");
+const sidepanelSource = fs.readFileSync(path.join(extension, "sidepanel.js"), "utf8");
+const protoMainSource = fs.readFileSync(path.join(extension, "proto-main.js"), "utf8");
 assert.ok(/const MAX_CHAT = 50;/.test(backgroundSource));
 assert.ok(backgroundSource.includes('case "TLC_CHAT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_PLAYER_STATE"'));
 assert.ok(backgroundSource.includes('case "TLC_CLEAR_CHAT"'));
 assert.ok(backgroundSource.includes('case "TLC_REFRESH_PAGE_INFO"'));
 assert.ok(backgroundSource.includes('case "TLC_FORCE_PROFILE"'));
+assert.ok(backgroundSource.includes('case "TLC_OPEN_EMBED_LIVE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_MUTE"'));
 assert.ok(backgroundSource.includes('case "TLC_GIFT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_AUTOSTART"'));
+assert.ok(backgroundSource.includes('case "TLC_SET_QUICK_RECOVER"'));
+assert.ok(backgroundSource.includes('case "TLC_QUICK_RECOVER"'));
+assert.ok(backgroundSource.includes('case "TLC_PLAYER_STATE_PUSH"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_DEBUG_REPORT"'));
 assert.ok(backgroundSource.includes('const PROFILE_PREFIX = "tlc-profile-"'));
+assert.ok(backgroundSource.includes("hookEnabled: false"));
+assert.ok(backgroundSource.includes("quickRecoverEnabled: false"));
+assert.ok(backgroundSource.includes("debugEnabled: false"));
+assert.ok(backgroundSource.includes("waitingForTikTok: true"));
+assert.ok(backgroundSource.includes("function normalizePlayerState"));
+assert.ok(backgroundSource.includes("available: booleanValue(playerState.available)"));
+assert.ok(backgroundSource.includes("await setSettings({ debugEnabled: Boolean(message.enabled) })"));
+assert.ok(backgroundSource.includes("enabled: true"));
+assert.ok(backgroundSource.includes("return { armed: Boolean(enabled), waitingForTikTok: settings.waitingForTikTok, reloading: false }"));
+assert.ok(backgroundSource.includes("await chrome.tabs.reload(tabId, { bypassCache: true })"));
+assert.ok(backgroundSource.includes("www\\.tiktok\\.com\\/@"));
+assert.ok(backgroundSource.includes("www\\.tiktok\\.com\\/embed\\/live"));
+assert.ok(backgroundSource.includes("function openEmbedLive"));
+assert.ok(!backgroundSource.includes("replacement = await chrome.tabs.create"));
+assert.ok(contentSource.includes("function isLivePage()"));
+assert.ok(contentSource.includes("^\\/@[^/]+\\/live"));
+assert.ok(contentSource.includes("^\\/embed\\/live"));
+assert.ok(contentSource.includes("if (!force || !isLivePage())"));
 assert.ok(contentSource.includes('action === "open-report"'));
 assert.ok(contentSource.includes('action === "set-volume"'));
 assert.ok(contentSource.includes('action === "set-limiter"'));
 assert.ok(contentSource.includes('createDynamicsCompressor'));
-assert.ok(contentSource.includes('Lautstärkedeckel'));
+assert.ok(contentSource.includes("createGain"));
+assert.ok(contentSource.includes("limiterMakeupCompensation"));
+assert.ok(contentSource.includes("captureStream"));
+assert.ok(contentSource.includes("createMediaStreamSource"));
+assert.ok(contentSource.includes("audio-context-resume-deferred"));
+assert.ok(contentSource.includes("continue watching"));
+assert.ok(contentSource.includes("video.play().catch"));
+assert.ok(contentSource.includes("function quickRecoverReason"));
+assert.ok(contentSource.includes('type: "TLC_QUICK_RECOVER"'));
+assert.ok(contentSource.includes('type: "TLC_PLAYER_STATE_PUSH"'));
+assert.ok(contentSource.includes("function playMediaFallback"));
+assert.ok(contentSource.includes("tlc-media-fallback"));
+assert.ok(contentSource.includes('"fullscreenchange"'));
+assert.ok(fs.readFileSync(path.join(extension, "popup-guard.js"), "utf8").includes("keepwatching"));
+assert.ok(fs.readFileSync(path.join(extension, "popup-guard.js"), "utf8").includes("^\\/embed\\/live"));
+assert.ok(!contentSource.includes("video.volume > cap"));
+assert.ok(!contentSource.includes("Lautstärkedeckel"));
+assert.ok(sidepanelSource.includes('`${volumePercent}%`'));
+assert.ok(sidepanelSource.includes('`${value}%`'));
+assert.ok(sidepanelSource.includes("function booleanValue"));
+assert.ok(sidepanelSource.includes("booleanValue(playerState.available)"));
+assert.ok(!sidepanelSource.includes("const available = Boolean(playerState.available)"));
 assert.ok(contentSource.includes('collectRecommendedSummary'));
 assert.ok(contentSource.includes('collectProfileFromHover'));
 assert.ok(contentSource.includes('credentials: "omit"'));
 assert.ok(contentSource.includes('auto: ["Automatisch", "Automatic", "Auto"]'));
 assert.ok(!contentSource.includes('credentials: "include"'));
+assert.ok(contentSource.includes('debug("dom-chat-scan-error"'));
+assert.ok(contentSource.includes('debug("dom-observer-error"'));
+assert.ok(contentSource.includes("document.addEventListener(\"DOMContentLoaded\", startTabRuntime, { once: true })"));
 assert.ok(!hookSource.includes('sessionStorage.getItem("tlc_ws_hook_enabled")'));
-assert.ok(backgroundSource.includes("persistAcrossSessions"));
+assert.ok(hookSource.includes("currentLiveHandle"));
+assert.ok(hookSource.includes("^\\/@([^/]+)\\/live"));
+assert.ok(hookSource.includes("^\\/embed\\/live"));
+assert.ok(protoMainSource.includes("else if (!root[protoKey])"));
+assert.ok(fs.existsSync(path.join(extension, "popup-guard.js")));
+assert.ok(backgroundSource.includes('"popup-guard.js", "proto-main.js", "hook.js"'));
 
 const panelHtml = fs.readFileSync(path.join(extension, "sidepanel.html"), "utf8");
 assert.ok(panelHtml.includes('id="chat-led"'));
@@ -288,13 +341,57 @@ assert.ok(panelHtml.includes('id="speak-names"'));
 assert.ok(panelHtml.includes('id="shorten-names"'));
 assert.ok(panelHtml.includes('id="recognize-song"'));
 assert.ok(panelHtml.includes('id="hook-autostart"'));
+assert.ok(panelHtml.includes("Permanent Hook"));
+assert.ok(panelHtml.includes('id="quick-recover"'));
+assert.ok(panelHtml.includes("Auto-Reconnect"));
+assert.ok(panelHtml.includes('id="open-embed-live"'));
+assert.ok(panelHtml.includes('id="open-normal-live"'));
+assert.ok(panelHtml.includes(">Embed</button>"));
+assert.ok(panelHtml.includes(">Normal</button>"));
+assert.ok(panelHtml.includes("Pegelschutz aktivieren"));
+assert.ok(panelHtml.includes('id="player-vlc-frame"'));
 assert.ok(panelHtml.includes('id="debug-enabled"'));
 assert.ok(panelHtml.includes('id="export-debug"'));
 assert.ok(panelHtml.includes('>Hook setzen</button>'));
 assert.ok(panelHtml.includes('id="reset-tab" class="secondary danger-outline">Refresh</button>'));
+assert.ok(!panelHtml.includes("Hook dauerhaft gesetzt lassen"));
+assert.ok(!panelHtml.includes("Unterbrechung automatisch schnell beheben"));
+assert.ok(!panelHtml.includes("Hook aktivieren"));
+assert.ok(!panelHtml.includes("Unterbrechungsfrei aktivieren"));
+assert.ok(!panelHtml.includes("Embed öffnen"));
+assert.ok(!panelHtml.includes("Digitalen Pegelschutz aktivieren"));
+assert.ok(!panelHtml.includes("Es wird nichts aufgenommen oder übertragen."));
+assert.ok(!panelHtml.includes("Noch keine manuelle Prüfung ausgeführt."));
+assert.ok(!sidepanelSource.includes("Es wird nichts aufgenommen oder übertragen."));
+const forbidden071Texts = [
+  "Lautstärke, Spitzenpegel und Schutzstärke werden als positive Werte von 0 bis 100 angezeigt.",
+  "Nach einem Klick werden etwa 12 Sekunden Tab-Audio über den lokalen Dienst an AudD übertragen. Anbietergebühren können anfallen.",
+  "Kein Untertitelschalter gefunden. TikTok stellt für diesen Stream derzeit keine native Untertitelfunktion bereit.",
+  "Der Hook wird vor dem Player-Code gesetzt. Der aktuelle Tab wird danach neu geladen.",
+  "Refresh leert nur die flüchtigen Daten dieses Tabs, aktiviert den Hook erneut und lädt TikTok ohne Seitencache. Cookies bleiben unverändert.",
+  "Follows werden ab Hook-Start gezählt.",
+  "Der WebSocket-Hook liefert die Werte nach dem Neuladen des Streams.",
+  "dBFS ist ein digitaler Signalpegel",
+  "Der Export entfernt Werte signierter URL-Parameter",
+  "Bitte einen TikTok-Tab aktivieren.",
+  "Das Seitenpanel arbeitet nur auf https://www.tiktok.com/.",
+  "Hook vorgemerkt; Tab wird neu geladen.",
+  "Hook dauerhaft vorgemerkt",
+  "Untertitelschalter gefunden",
+  "Untertitelschalter nicht gefunden",
+  "Verfügbare Bildqualitäten",
+  'id="quality-list"',
+  'id="quality-count"',
+  'id="quality-action-status"'
+];
+for (const text of forbidden071Texts) {
+  assert.ok(!panelHtml.includes(text), `sidepanel.html contains removed text: ${text}`);
+  assert.ok(!sidepanelSource.includes(text), `sidepanel.js contains removed text: ${text}`);
+  assert.ok(!contentSource.includes(text), `content.js contains removed text: ${text}`);
+}
 assert.ok(!panelHtml.includes('<p class="eyebrow">TikTok LIVE</p>'));
 assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 
-console.log(`PASS: manifest 0.7.0, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
+console.log(`PASS: manifest 0.7.1, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

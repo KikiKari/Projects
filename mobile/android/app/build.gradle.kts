@@ -15,8 +15,8 @@ android {
         applicationId = "app.tiktoklivecompanion.android"
         minSdk = 21
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.7.0"
+        versionCode = 8
+        versionName = "0.7.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SHAZAM_TOKEN_URL", "\"${tokenUrl.get().replace("\"", "\\\"")}\"")
     }

@@ -4,7 +4,7 @@
 
 The complete Codex Security scan on 17 July 2026 closed all nine review scopes. Result: no critical, high, or medium findings and two validated low residual risks (Low/P3). They concern missing byte budgets at the local page bridge and during decompression of observed WebSocket messages. Both paths already require code execution in the page tab or control of the WebSocket message and provide no account takeover, cookie, secret, or cross-origin access.
 
-Version 0.7.0 adds mobile WebView bridges, native microphone/PCM paths, and an Android token endpoint. These new boundaries are reviewed in addition to the browser extension; platform states not built or tested on real hardware are explicitly identified.
+Version 0.7.1 adds mobile WebView bridges, native microphone/PCM paths, and an Android token endpoint. These new boundaries are reviewed in addition to the browser extension; platform states not built or tested on real hardware are explicitly identified.
 
 ## Controls
 

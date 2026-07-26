@@ -116,7 +116,7 @@ export function createServer({ config, tts = windowsTts, recognize = auddRecogni
     if (authorization !== `Bearer ${config.pairingCode}`) return sendJson(response, 401, { error: "Pairing fehlgeschlagen." }, allowedOrigin);
     try {
       if (request.method === "GET" && request.url === "/v1/health") {
-        return sendJson(response, 200, { ok: true, version: "0.7.0", tts: "Windows-Stimmen", auddConfigured: Boolean(config.auddApiToken) }, allowedOrigin);
+        return sendJson(response, 200, { ok: true, version: "0.7.1", tts: "Windows-Stimmen", auddConfigured: Boolean(config.auddApiToken) }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/tts") {
         const raw = await readBody(request, 64 * 1024);
@@ -144,7 +144,7 @@ async function main() {
   const config = await ensureConfig();
   const server = createServer({ config });
   server.listen(Number(config.port) || 43117, "127.0.0.1", () => {
-    console.log(`TikTok LIVE Companion Dienst 0.7.0: http://127.0.0.1:${Number(config.port) || 43117}`);
+    console.log(`TikTok LIVE Companion Dienst 0.7.1: http://127.0.0.1:${Number(config.port) || 43117}`);
     console.log(`Pairing-Code: ${config.pairingCode}`);
     console.log(config.auddApiToken ? "AudD ist eingerichtet." : "AudD-Token fehlt; npm run setup ausführen.");
   });

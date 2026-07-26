@@ -44,7 +44,8 @@ data class CompanionUiState(
     val mediaUrls: List<StreamMediaUrl> = emptyList(),
     val debugEnabled: Boolean = false,
     val debugEvents: List<String> = emptyList(),
-    val streamName: String = ""
+    val streamName: String = "",
+    val autoReconnectEnabled: Boolean = false
 ) {
     val topChatters: List<TopChatter>
         get() = participants.entries.sortedWith(compareByDescending<Map.Entry<String, ParticipantStats>> { it.value.messages }.thenByDescending { it.value.words }.thenBy { it.key.lowercase() }).take(5).map { TopChatter(it.key, it.value.messages, it.value.words) }
@@ -84,6 +85,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.ttsLanguage.collectLatest { value -> mutable.update { it.copy(ttsLanguage = value) } } }
             viewModelScope.launch { stored.ttsSpeakNames.collectLatest { value -> mutable.update { it.copy(ttsSpeakNames = value) } } }
             viewModelScope.launch { stored.ttsShortenNames.collectLatest { value -> mutable.update { it.copy(ttsShortenNames = value) } } }
+            viewModelScope.launch { stored.autoReconnect.collectLatest { value -> mutable.update { it.copy(autoReconnectEnabled = value) }; pushAutoReconnect() } }
         }
     }
 
@@ -106,6 +108,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         sendCommand?.invoke("set-player-expanded", mapOf("expanded" to true))
     }
     fun setStreamName(name: String) = mutable.update { it.copy(streamName = name) }
+    private fun activeStreamHandle(): String? {
+        val fromInput = StreamNameNormalizer.normalize(mutable.value.streamName)
+        if (fromInput != null) return fromInput
+        val match = Regex("https://www\\.tiktok\\.com/(?:embed/live/)?@([^/?#]+)(?:/live)?(?:[/?#].*)?").find(currentWebUrl)
+        return match?.groupValues?.getOrNull(1)?.let { StreamNameNormalizer.normalize(it) }
+    }
     fun startForce() {
         val recovery = mutable.value.pageInfo["URL"]?.takeIf { it.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?")) }
             ?: StreamNameNormalizer.liveUrl(mutable.value.streamName)
@@ -125,13 +133,27 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         recovery?.let { currentWebUrl = it; loadUrl?.invoke(it) }
     }
     fun noteNavigation(url: String) {
-        if (url.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?"))) currentWebUrl = url
+        if (url.matches(Regex("https://www\\.tiktok\\.com/(?:@[^/]+/live|embed/live/@[^/?#]+)(?:[/?#].*)?"))) currentWebUrl = url
     }
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
         mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList()) }
         backgroundPlaybackChanged?.invoke(true)
+        currentWebUrl = url
+        loadUrl?.invoke(url)
+    }
+    fun openEmbedStream() {
+        val handle = activeStreamHandle()
+        val url = handle?.let { StreamNameNormalizer.embedUrl(it) }
+        if (url == null) { reportError("Embed ist erst mit gültigem Streamnamen oder LIVE-Stream verfügbar"); return }
+        currentWebUrl = url
+        loadUrl?.invoke(url)
+    }
+    fun openNormalStream() {
+        val handle = activeStreamHandle()
+        val url = handle?.let { StreamNameNormalizer.liveUrl(it) }
+        if (url == null) { reportError("Normal ist erst mit gültigem Streamnamen oder LIVE-Stream verfügbar"); return }
         currentWebUrl = url
         loadUrl?.invoke(url)
     }
@@ -163,6 +185,11 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun setTtsLanguage(language: TtsLanguage) { mutable.update { it.copy(ttsLanguage = language) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsLanguage(language) } } }
     fun setTtsSpeakNames(enabled: Boolean) { mutable.update { it.copy(ttsSpeakNames = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsSpeakNames(enabled) } } }
     fun setTtsShortenNames(enabled: Boolean) { mutable.update { it.copy(ttsShortenNames = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsShortenNames(enabled) } } }
+    fun setAutoReconnect(enabled: Boolean) {
+        mutable.update { it.copy(autoReconnectEnabled = enabled) }
+        preferences?.let { stored -> viewModelScope.launch { stored.setAutoReconnect(enabled) } }
+        pushAutoReconnect()
+    }
     fun requestSpeak(line: ChatLine) = enqueueSpeech(line)
     fun consumeSpeech(id: Long) = mutable.update { it.copy(speechQueue = it.speechQueue.filterNot { request -> request.id == id }) }
     private fun enqueueSpeech(line: ChatLine) {
@@ -176,6 +203,9 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     private fun pushLimiter() {
         val current = mutable.value
         sendCommand?.invoke("set-limiter", mapOf("enabled" to current.limiterEnabled, "threshold" to current.limiterThreshold))
+    }
+    private fun pushAutoReconnect() {
+        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled))
     }
     fun recognize() {
         mutable.update { it.copy(result = null, error = null, recognitionStatus = "Erkennung läuft · maximal 12 Sekunden") }
@@ -191,6 +221,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         when (envelope.type) {
             "bridge-ready" -> {
                 pushLimiter()
+                pushAutoReconnect()
                 sendCommand?.invoke("set-player-expanded", mapOf("expanded" to mutable.value.videoExpanded))
                 if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap())
             }

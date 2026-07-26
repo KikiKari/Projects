@@ -4,7 +4,7 @@
 
 - Microsoft Edge or Google Chrome 114 or newer
 - a public TikTok LIVE tab
-- the unpacked `tiktok-live-companion-extension-0.7.0.zip`
+- the unpacked `tiktok-live-companion-extension-0.7.1.zip`
 
 ## Steps
 
@@ -17,7 +17,7 @@
 
 ## Optional local speech and song service
 
-1. Extract `tiktok-live-companion-service-0.7.0.zip` and open PowerShell in that folder.
+1. Extract `tiktok-live-companion-service-0.7.1.zip` and open PowerShell in that folder.
 2. Run `npm run setup`; an AudD token is required only for song recognition.
 3. Start the service with `npm start`.
 4. Enter the displayed pairing code in the side panel. The service listens only on `127.0.0.1:43117`.
@@ -33,7 +33,7 @@
 
 ## iOS 15 or newer
 
-1. Extract `tiktok-live-companion-ios-0.7.0-source.zip` on macOS and open `TikTokLiveCompanion.xcodeproj` in Xcode.
+1. Extract `tiktok-live-companion-ios-0.7.1-source.zip` on macOS and open `TikTokLiveCompanion.xcodeproj` in Xcode.
 2. Select an Apple Developer team and an App ID with the ShazamKit capability enabled.
 3. Build on a physical device and grant microphone access only when recognition starts.
 
@@ -41,7 +41,7 @@ Windows cannot produce or sign a verified iOS/IPA build.
 
 ## Android and HyperOS
 
-1. Extract `tiktok-live-companion-android-0.7.0-source.zip`.
+1. Extract `tiktok-live-companion-android-0.7.1-source.zip`.
 2. Build `mockDebug` for UI and bridge testing. It deliberately reports **ShazamKit not configured**.
 3. For real recognition, provide Apple's AAR as `app/libs/shazamkit-android-release.aar` and set `TLC_SHAZAM_TOKEN_URL` to the configured HTTPS token endpoint.
 4. Build `shazamDebug` and grant microphone permission only when manual recognition starts.

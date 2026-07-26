@@ -14,7 +14,8 @@
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "reload-player", "captions", "refresh", "set-player-expanded", "reject-cookies",
-    "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter"
+    "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter",
+    "set-auto-reconnect"
   ]);
   let sequence = 0;
   let streamId = "";
@@ -30,6 +31,9 @@
   let focusedSecondScreen = null;
   let audibleStartRequested = false;
   let playerExpanded = false;
+  let autoReconnectEnabled = false;
+  let autoReconnectMisses = 0;
+  let lastAutoReconnectAt = 0;
   const contentCore = root.TLC_CONTENT_CORE;
 
   function nativePost(message) {
@@ -305,6 +309,28 @@
     emit("capability", { feature: "limiter", available: true, enabled: limiter.enabled, threshold: limiter.threshold });
   }
 
+  function quickReconnectCheck() {
+    if (!autoReconnectEnabled || !isTop) return;
+    const video = primaryVideo();
+    const unavailable = !video || Boolean(video.error) || (video.readyState === 0 && !video.currentSrc && !video.src);
+    if (!unavailable) {
+      autoReconnectMisses = 0;
+      return;
+    }
+    autoReconnectMisses += 1;
+    const now = Date.now();
+    if (autoReconnectMisses < 2 || now - lastAutoReconnectAt < 8_000) return;
+    lastAutoReconnectAt = now;
+    autoReconnectMisses = 0;
+    emit("auto-reconnect", { reason: video ? "player-unavailable" : "video-missing" });
+    try {
+      if (video) video.load();
+      else location.reload();
+    } catch (_) {
+      location.reload();
+    }
+  }
+
   async function stopAudioCapture(reason = "stopped") {
     if (!audioCapture) return;
     const current = audioCapture;
@@ -440,6 +466,11 @@
       else if (name === "start-webview-audio") await startAudioCapture();
       else if (name === "stop-webview-audio") await stopAudioCapture();
       else if (name === "set-limiter") await applyLimiter(payload);
+      else if (name === "set-auto-reconnect") {
+        autoReconnectEnabled = payload.enabled === true;
+        autoReconnectMisses = 0;
+        emit("capability", { feature: "auto-reconnect", available: true, enabled: autoReconnectEnabled });
+      }
       emit("command-result", { command: name, ok: true });
     } catch (error) {
       emit("command-result", { command: name, ok: false, error: text(error?.message || error, 512) });
@@ -465,7 +496,8 @@
       cookieAttempts += 1;
       if (rejectCookieConsent() || cookieAttempts >= 20) clearInterval(cookieTimer);
     }, 500);
+    setInterval(quickReconnectCheck, 1_500);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
-  emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true });
+  emit("bridge-ready", { version: "0.7.1", origin: location.origin, documentStart: true });
 })(globalThis);

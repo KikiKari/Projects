@@ -4,7 +4,7 @@
 
 Der vollständige Codex-Security-Scan vom 17. Juli 2026 hat alle neun Prüfumfänge abgeschlossen. Ergebnis: keine kritischen, hohen oder mittleren Findings; zwei validierte niedrige Restrisiken (Low/P3). Sie betreffen fehlende Größenbudgets an der lokalen Seiten-Bridge und bei der Dekompression beobachteter WebSocket-Nachrichten. Beide Pfade setzen bereits Codeausführung im Seitentab beziehungsweise Kontrolle über die WebSocket-Nachricht voraus und führen weder zu Kontoübernahme noch zu Cookie-, Secret- oder Cross-Origin-Zugriff.
 
-Version 0.7.0 ergänzt Mobile-WebView-Bridges, native Mikrofon-/PCM-Wege und einen Android-Token-Endpunkt. Diese neuen Grenzen werden zusätzlich zur Browser-Erweiterung geprüft; nicht auf realer Hardware gebaute oder getestete Plattformstände werden ausdrücklich gekennzeichnet.
+Version 0.7.1 ergänzt Mobile-WebView-Bridges, native Mikrofon-/PCM-Wege und einen Android-Token-Endpunkt. Diese neuen Grenzen werden zusätzlich zur Browser-Erweiterung geprüft; nicht auf realer Hardware gebaute oder getestete Plattformstände werden ausdrücklich gekennzeichnet.
 
 ## Sicherheitskontrollen
 

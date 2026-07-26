@@ -98,7 +98,7 @@
               return { ok: true };
             }
             if (message.type === "TLC_SET_MUTE") return { ok: true, state, settings: { permanentMutes: [] } };
-            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: { version: "0.7.0", debug: state.debug } };
+            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: { version: "0.7.1", debug: state.debug } };
             return { ok: true, response: { activated: true } };
           },
           onMessage: { addListener() {} }
@@ -113,7 +113,7 @@
       }
       const css = document.createElement("link");
       css.rel = "stylesheet";
-      css.href = "../browser-extension/sidepanel.css?v=0.7.0-1";
+      css.href = "../browser-extension/sidepanel.css?v=0.7.1-1";
       document.head.append(css);
       const coreScript = document.createElement("script");
       coreScript.src = "../browser-extension/content-core.js";

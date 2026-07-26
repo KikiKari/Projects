@@ -12,4 +12,7 @@ object StreamNameNormalizer {
 
     /** Liefert die vollständige LIVE-URL oder null bei ungültiger Eingabe. */
     fun liveUrl(input: String): String? = normalize(input)?.let { "https://www.tiktok.com/@$it/live" }
+
+    /** Liefert die TikTok-Embed-LIVE-URL oder null bei ungültiger Eingabe. */
+    fun embedUrl(input: String): String? = normalize(input)?.let { "https://www.tiktok.com/embed/live/@$it" }
 }

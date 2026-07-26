@@ -16,4 +16,6 @@ class StreamNameNormalizerTest {
     @Test fun `lehnt ueberlange Namen ab`() = assertNull(StreamNameNormalizer.normalize("a".repeat(25)))
     @Test fun `baut korrekte Live-URL`() = assertEquals("https://www.tiktok.com/@creator/live", StreamNameNormalizer.liveUrl("@Creator"))
     @Test fun `liveUrl null bei ungueltig`() = assertNull(StreamNameNormalizer.liveUrl("!!"))
+    @Test fun `baut korrekte Embed-URL`() = assertEquals("https://www.tiktok.com/embed/live/@creator", StreamNameNormalizer.embedUrl("@Creator"))
+    @Test fun `embedUrl null bei ungueltig`() = assertNull(StreamNameNormalizer.embedUrl("!!"))
 }

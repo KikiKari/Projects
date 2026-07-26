@@ -1,6 +1,6 @@
 ---
 name: tiktok-live-browser-companion
-description: Installiert und bedient TikTok LIVE Companion 0.7.0 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung und Streaminformationen.
+description: Installiert und bedient TikTok LIVE Companion 0.7.1 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung, Auto-Reconnect, Embed/Normal und Streaminformationen.
 ---
 
 # TikTok LIVE Browser Companion
@@ -22,13 +22,13 @@ Nutze die mitgelieferte Manifest-V3-Erweiterung, um einen öffentlichen TikTok-L
 1. Öffne das Seitenpanel im gewünschten TikTok-LIVE-Tab.
 2. Klicke **Seite prüfen**, um `caption_info`, sichtbare Untertitel-Steuerelemente, eingebettete Stream-Metadaten und bereits geladene Ressourcen auszuwerten.
 3. Klicke **Untertitel aktivieren**, um TikToks vorhandenen Menüpunkt aufzurufen. Fehlt `caption_info`, kann die Erweiterung keine nativen Untertitel erzwingen.
-4. Klicke **Hook setzen**, bevor der Stream-Player seine WebSocket-Verbindung aufbaut. Optional aktiviert **Hook beim Öffnen von TikTok automatisch starten** die Registrierung auch nach einem Browserneustart.
+4. Klicke **Hook setzen**, bevor der Stream-Player seine WebSocket-Verbindung aufbaut. Optional hält **Permanent Hook** die Registrierung auch nach einem Browserneustart aktiv.
 5. Lies unter **LIVE-Informationen** Zuschauerzahl, kumulierte Aufrufe, Likes, seit Hook-Start beobachtete Follows, Teilungen und die Followerzahl des Hosts ab.
 6. Nutze die bereinigten Chatzeilen, **Top-Chatter** und **Im Chat beobachtete Personen**. Stream-Mutes enden beim Streamwechsel; dauerhafte Mutes bleiben lokal gespeichert. Geschenkzeilen werden gezählt, aber nicht vorgelesen.
 7. Stelle **Auto**, **Deutsch** oder **Englisch**, das Vorlesen von Namen und die optionale Namenskürzung ein. Ohne Begleitdienst bleibt Browser-TTS aktiv; mit gepaartem Windows-Dienst entsprechen 50 % dem bisherigen Maximalpegel und 100 % bis zu +6 dB mit Limiter.
 8. Aktiviere **Songerkennung** nur bei Bedarf. **Jetzt erkennen** nimmt einmalig ungefähr zwölf Sekunden Tab-Audio auf und überträgt diesen Ausschnitt an AudD; mögliche Anbietergebühren beachten.
-9. Steuere Wiedergabe, Player-Neuladen, Lautstärke, Stumm, Bild-in-Bild oder Vollbild im Panel. Der optionale dBFS-Pegelschutz komprimiert digitale Spitzen lokal; er misst keinen physikalischen dB-SPL-Wert. **Melden öffnen** darf nur TikToks Dialog öffnen und nie eine Meldung absenden.
-10. Nutze Qualitätsauswahl, Caption-Protokoll und VLC-Links wie bisher. Signierte Links sind zeitlich begrenzt.
+9. Steuere Wiedergabe, Player-Neuladen, Lautstärke, Stumm, Bild-in-Bild oder Vollbild im Panel. **Pegelschutz aktivieren** komprimiert digitale Spitzen lokal; er misst keinen physikalischen dB-SPL-Wert. **Melden öffnen** darf nur TikToks Dialog öffnen und nie eine Meldung absenden.
+10. Nutze Auto-Reconnect, Embed / Normal, Qualitätsauswahl, Caption-Protokoll und VLC-Links wie bisher. Signierte Links sind zeitlich begrenzt.
 11. **Refresh** prüft Seiteninformationen ohne absichtlichen Profilumweg. **Force** besucht bewusst kurz die Profilseite und kehrt auch bei Timeout zum zuvor gespeicherten LIVE-Stream zurück; Hook und Player verbinden sich neu.
 12. Aktiviere **Debugmodus** nur zur Fehlersuche. Der JSON-Export entfernt Werte signierter URL-Parameter und enthält keinen Chattext, keine Cookies und keine API-Keys.
 

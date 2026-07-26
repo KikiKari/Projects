@@ -1,4 +1,4 @@
-# TikTok LIVE Companion Android/HyperOS 0.7.0
+# TikTok LIVE Companion Android/HyperOS 0.7.1
 
 Native Kotlin/Compose companion with an origin-restricted AndroidX WebKit bridge. It uses no Google Play Services and targets standard Android APIs, so the same APK is suitable for Android and HyperOS.
 
@@ -13,4 +13,4 @@ Set `TLC_SHAZAM_TOKEN_URL` as a Gradle property or environment variable to the d
 .\gradlew.bat testMockDebugUnitTest assembleMockDebug
 ```
 
-The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.0-debug.apk`. A real catalog build additionally requires the official AAR and configured token service.
+The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.1-debug.apk`. A real catalog build additionally requires the official AAR and configured token service.
