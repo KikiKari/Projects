@@ -57,23 +57,39 @@ function runPowerShell(script, args, input) {
       shell: false,
       stdio: ["pipe", "pipe", "pipe"]
     });
+    let outputText = "";
     let errorText = "";
+    child.stdout.on("data", (chunk) => { outputText += chunk.toString("utf8"); });
     child.stderr.on("data", (chunk) => { errorText += chunk.toString(); });
     child.on("error", reject);
-    child.on("close", (code) => code === 0 ? resolve() : reject(new Error(errorText.trim() || `PowerShell endete mit ${code}`)));
-    child.stdin.end(input, "utf8");
+    child.on("close", (code) => code === 0 ? resolve(outputText) : reject(new Error(errorText.trim() || `PowerShell endete mit ${code}`)));
+    child.stdin.end(input || "", "utf8");
   });
 }
 
-export async function windowsTts(text, language) {
+function cleanVoiceName(value) {
+  const voiceName = String(value || "").trim();
+  return /^[\p{L}\p{N}\p{P}\p{Zs}]{1,160}$/u.test(voiceName) ? voiceName : "";
+}
+
+export async function windowsTts(text, language, voiceName = "") {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tlc-tts-"));
+  const input = path.join(tempDir, "speech.txt");
   const output = path.join(tempDir, "speech.wav");
   try {
-    await runPowerShell(path.join(root, "synthesize.ps1"), [language || "auto", output], text);
+    await fs.writeFile(input, text, { encoding: "utf8", mode: 0o600 });
+    await runPowerShell(path.join(root, "synthesize.ps1"), [language || "auto", output, input, cleanVoiceName(voiceName)], "");
     return await fs.readFile(output);
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
   }
+}
+
+export async function listWindowsVoices() {
+  if (process.platform !== "win32") return [];
+  const output = await runPowerShell(path.join(root, "voices.ps1"), [], "");
+  const voices = JSON.parse(output || "[]");
+  return Array.isArray(voices) ? voices.filter((voice) => voice?.id && voice?.name) : [];
 }
 
 export async function auddRecognize(audio, contentType, apiToken, fetchImpl = fetch) {
@@ -105,7 +121,7 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, tts = windowsTts, recognize = auddRecognize } = {}) {
+export function createServer({ config, configProvider, tts = windowsTts, voices = listWindowsVoices, recognize = auddRecognize } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   return http.createServer(async (request, response) => {
     const currentConfig = configProvider ? await configProvider() : config;
@@ -134,13 +150,17 @@ export function createServer({ config, configProvider, tts = windowsTts, recogni
           songProvider: currentConfig.auddApiToken ? "AudD" : null
         }, allowedOrigin);
       }
+      if (request.method === "GET" && request.url === "/v1/voices") {
+        return sendJson(response, 200, { voices: await voices() }, allowedOrigin);
+      }
       if (request.method === "POST" && request.url === "/v1/tts") {
         const raw = await readBody(request, 64 * 1024);
         const body = JSON.parse(raw.toString("utf8"));
         const text = String(body.text || "").slice(0, 4000);
         const language = ["auto", "de-DE", "en-US"].includes(body.language) ? body.language : "auto";
+        const voiceName = cleanVoiceName(body.voiceName);
         if (!text.trim()) throw Object.assign(new Error("Leerer TTS-Text."), { statusCode: 400 });
-        const wav = await tts(text, language);
+        const wav = await tts(text, language, voiceName);
         response.writeHead(200, { "Content-Type": "audio/wav", "Content-Length": wav.length, "Cache-Control": "no-store", "Access-Control-Allow-Origin": allowedOrigin, "Vary": "Origin" });
         return response.end(wav);
       }

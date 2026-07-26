@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speak-names", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
+    "speech-language", "speech-voice", "speak-names", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -28,6 +28,7 @@
   let speechTabId = null;
   let speechVolume = 0.5;
   let speechLanguage = "auto";
+  let speechVoiceName = "";
   let speakNames = true;
   let shortenNames = false;
   let serviceUrl = "http://127.0.0.1:43117";
@@ -139,11 +140,18 @@
     return core.resolveSpeechLanguage(speechLanguage, item.contentLanguage);
   }
 
+  function browserVoiceByName(name) {
+    if (!name || !globalThis.speechSynthesis?.getVoices) return null;
+    return globalThis.speechSynthesis.getVoices().find((voice) => voice.name === name) || null;
+  }
+
   async function browserSpeech(text, lang) {
     if (!globalThis.speechSynthesis || typeof SpeechSynthesisUtterance !== "function") throw new Error("Keine Browser-Sprachausgabe verfügbar.");
     await new Promise((resolve) => {
       const utterance = new SpeechSynthesisUtterance(text);
       if (lang) utterance.lang = lang;
+      const voice = browserVoiceByName(speechVoiceName);
+      if (voice) utterance.voice = voice;
       utterance.volume = Math.min(1, speechVolume * 2);
       utterance.onend = resolve;
       utterance.onerror = resolve;
@@ -157,7 +165,7 @@
     const response = await fetch(`${serviceUrl}/v1/tts`, {
       method: "POST",
       headers: serviceHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ text, language: lang || "auto" })
+      body: JSON.stringify({ text, language: lang || "auto", voiceName: speechVoiceName })
     });
     if (!response.ok) throw new Error(`Sprachdienst HTTP ${response.status}`);
     const data = await response.arrayBuffer();
@@ -179,6 +187,49 @@
     await new Promise((resolve) => { source.onended = resolve; source.start(); });
     speechAudioSource = null;
     elements["service-status"].textContent = `Lokaler Sprachdienst aktiv · ${lang || "Auto"}.`;
+  }
+
+  function setSpeechVoiceOptions(voices = []) {
+    const select = elements["speech-voice"];
+    const selected = speechVoiceName || select.value || "";
+    clearChildren(select);
+    const standard = document.createElement("option");
+    standard.value = "";
+    standard.textContent = "Standard";
+    select.append(standard);
+    const seen = new Set();
+    for (const voice of voices) {
+      const name = String(voice?.name || voice?.id || "").trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = voice?.culture ? `${name} (${voice.culture})` : name;
+      select.append(option);
+    }
+    if (selected && !seen.has(selected)) {
+      const option = document.createElement("option");
+      option.value = selected;
+      option.textContent = `${selected} (nicht gemeldet)`;
+      select.append(option);
+    }
+    select.value = selected;
+  }
+
+  async function loadSpeechVoices() {
+    const browserVoices = globalThis.speechSynthesis?.getVoices?.().map((voice) => ({
+      id: voice.name,
+      name: voice.name,
+      culture: voice.lang
+    })) || [];
+    try {
+      const response = await fetch(`${serviceUrl}/v1/voices`, { headers: serviceHeaders() });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      setSpeechVoiceOptions(payload.voices || browserVoices);
+    } catch (_) {
+      setSpeechVoiceOptions(browserVoices);
+    }
   }
 
   async function speakItem(item) {
@@ -606,6 +657,7 @@
     keepSpeechActive = Boolean(response.settings?.keepSpeechActive);
     speechVolume = Math.max(0, Math.min(1, Number(response.settings?.speechVolume ?? 0.5)));
     speechLanguage = response.settings?.speechLanguage || "auto";
+    speechVoiceName = response.settings?.speechVoiceName || "";
     speakNames = response.settings?.speakNames !== false;
     shortenNames = Boolean(response.settings?.shortenNames);
     serviceUrl = response.settings?.serviceUrl || "http://127.0.0.1:43117";
@@ -615,6 +667,7 @@
     elements["speech-volume"].value = String(Math.round(speechVolume * 100));
     elements["speech-volume-output"].textContent = `${Math.round(speechVolume * 100)}%`;
     elements["speech-language"].value = speechLanguage;
+    setSpeechVoiceOptions();
     elements["speak-names"].checked = speakNames;
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
@@ -624,6 +677,7 @@
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     await checkService();
+    await loadSpeechVoices();
     if (response.settings?.speechEnabled) activateSpeech("Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
   }
 
@@ -633,6 +687,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Windows-Stimmen"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
+      await loadSpeechVoices();
       return health;
     } catch (_) {
       elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
@@ -904,6 +959,10 @@
     speechLanguage = elements["speech-language"].value;
     await send("TLC_SET_SPEECH_PREFERENCE", { language: speechLanguage });
   });
+  elements["speech-voice"].addEventListener("change", async () => {
+    speechVoiceName = elements["speech-voice"].value;
+    await send("TLC_SET_SPEECH_PREFERENCE", { voiceName: speechVoiceName });
+  });
   elements["speak-names"].addEventListener("change", async () => {
     speakNames = elements["speak-names"].checked;
     elements["shorten-names"].disabled = !speakNames;
@@ -918,6 +977,7 @@
     pairingCode = elements["pairing-code"].value.trim();
     await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl, pairingCode });
     await checkService();
+    await loadSpeechVoices();
   };
   elements["service-url"].addEventListener("change", saveServiceSettings);
   elements["pairing-code"].addEventListener("change", saveServiceSettings);
@@ -1005,6 +1065,7 @@
     if (message.tabId === activeTabId) render(message.state);
     else if (speechEnabled && keepSpeechActive && message.tabId === speechTabId) processSpeechItems(message.state?.chatMessages || []);
   });
+  globalThis.speechSynthesis?.addEventListener?.("voiceschanged", () => loadSpeechVoices().catch(() => {}));
   chrome.tabs.onActivated.addListener(() => refresh().catch(() => {}));
   window.addEventListener("beforeunload", () => globalThis.speechSynthesis?.cancel());
   refresh().then(loadSettings).then(refreshPlayer).catch((error) => { elements.notice.textContent = String(error?.message || error); });

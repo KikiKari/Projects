@@ -7,7 +7,8 @@ async function fixture() {
   const calls = [];
   const server = createServer({
     config: { pairingCode: "pair-test", auddApiToken: "audd-test" },
-    tts: async (text, language) => { calls.push(["tts", text, language]); return Buffer.from("RIFFtest"); },
+    tts: async (text, language, voiceName) => { calls.push(["tts", text, language, voiceName]); return Buffer.from("RIFFtest"); },
+    voices: async () => [{ id: "Microsoft Hedda Desktop", name: "Microsoft Hedda Desktop", culture: "de-DE", gender: "Female" }],
     recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; }
   });
   server.listen(0, "127.0.0.1");
@@ -39,10 +40,20 @@ test("rejects web origins", async (t) => {
 test("tts passes text via the fixed adapter", async (t) => {
   const { server, base, calls } = await fixture();
   t.after(() => server.close());
-  const response = await fetch(`${base}/v1/tts`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ text: "Hallo; Remove-Item", language: "de-DE" }) });
+  const response = await fetch(`${base}/v1/tts`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ text: "Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", language: "de-DE", voiceName: "Microsoft Hedda Desktop" }) });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "audio/wav");
-  assert.deepEqual(calls[0], ["tts", "Hallo; Remove-Item", "de-DE"]);
+  assert.deepEqual(calls[0], ["tts", "Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", "de-DE", "Microsoft Hedda Desktop"]);
+});
+
+test("lists available local voices", async (t) => {
+  const { server, base } = await fixture();
+  t.after(() => server.close());
+  const response = await fetch(`${base}/v1/voices`, { headers });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    voices: [{ id: "Microsoft Hedda Desktop", name: "Microsoft Hedda Desktop", culture: "de-DE", gender: "Female" }]
+  });
 });
 
 test("recognition accepts a bounded audio body", async (t) => {
