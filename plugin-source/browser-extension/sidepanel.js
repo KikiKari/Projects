@@ -37,6 +37,25 @@
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
+  const CURATED_VOICE_PATTERNS = Object.freeze({
+    "de-DE": [
+      { re: /\bhedda\b/i, gender: "Female" },
+      { re: /\bamala\b/i, gender: "Female" },
+      { re: /\bingrid\b/i, gender: "Female" },
+      { re: /\bconrad\b/i, gender: "Male" },
+      { re: /\bkillian\b/i, gender: "Male" },
+      { re: /\bjonas\b/i, gender: "Male" }
+    ],
+    "en-US": [
+      { re: /\baria\b/i, gender: "Female" },
+      { re: /\bjenny\b/i, gender: "Female" },
+      { re: /\bmichelle\b/i, gender: "Female" },
+      { re: /\bguy\b/i, gender: "Male" },
+      { re: /\bchristopher\b/i, gender: "Male" },
+      { re: /\beric\b/i, gender: "Male" }
+    ]
+  });
+  const BLOCKED_VOICE_NAMES = /\b(?:katja|stefan)\b/i;
   const knownSpeechKeys = new Set();
   const TAB_OPTIONAL_MESSAGES = new Set(["TLC_GET_SETTINGS", "TLC_SET_AUTOSTART", "TLC_SET_QUICK_RECOVER", "TLC_ENABLE_HOOK", "TLC_DISABLE_HOOK", "TLC_SET_DEBUG"]);
 
@@ -190,6 +209,37 @@
     elements["service-status"].textContent = `Lokaler Sprachdienst aktiv · ${lang || "Auto"}.`;
   }
 
+  function voiceCultureGroup(voice) {
+    const culture = String(voice?.culture || voice?.lang || "").toLowerCase();
+    const name = String(voice?.name || voice?.id || "").toLowerCase();
+    if (culture.startsWith("de") || /german|deutsch/.test(name)) return "de-DE";
+    if (culture.startsWith("en") || /english|englisch/.test(name)) return "en-US";
+    return "";
+  }
+
+  function curatedVoiceMatch(voice, group) {
+    const name = String(voice?.name || voice?.id || "").trim();
+    if (!name || BLOCKED_VOICE_NAMES.test(name)) return null;
+    return (CURATED_VOICE_PATTERNS[group] || []).find((entry) => entry.re.test(name)) || null;
+  }
+
+  function curatedSpeechVoices(voices = []) {
+    const buckets = { "de-DE": { Female: [], Male: [] }, "en-US": { Female: [], Male: [] } };
+    const seen = new Set();
+    for (const voice of voices) {
+      const name = String(voice?.name || voice?.id || "").trim();
+      if (!name || seen.has(name)) continue;
+      const group = voiceCultureGroup(voice);
+      const match = curatedVoiceMatch(voice, group);
+      if (!match) continue;
+      const bucket = buckets[group]?.[match.gender];
+      if (!bucket || bucket.length >= 3) continue;
+      seen.add(name);
+      bucket.push({ ...voice, id: voice?.id || name, name, culture: voice?.culture || group });
+    }
+    return [...buckets["de-DE"].Female, ...buckets["de-DE"].Male, ...buckets["en-US"].Female, ...buckets["en-US"].Male];
+  }
+
   function setSpeechVoiceOptions(voices = []) {
     const select = elements["speech-voice"];
     const selected = speechVoiceName || select.value || "";
@@ -199,7 +249,7 @@
     standard.textContent = "Standard";
     select.append(standard);
     const seen = new Set();
-    for (const voice of voices) {
+    for (const voice of curatedSpeechVoices(voices)) {
       const name = String(voice?.name || voice?.id || "").trim();
       if (!name || seen.has(name)) continue;
       seen.add(name);
@@ -209,12 +259,10 @@
       select.append(option);
     }
     if (selected && !seen.has(selected)) {
-      const option = document.createElement("option");
-      option.value = selected;
-      option.textContent = `${selected} (nicht gemeldet)`;
-      select.append(option);
+      speechVoiceName = "";
+      send("TLC_SET_SPEECH_PREFERENCE", { voiceName: "" }).catch(() => {});
     }
-    select.value = selected;
+    select.value = seen.has(selected) ? selected : "";
   }
 
   async function loadSpeechVoices() {

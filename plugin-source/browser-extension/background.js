@@ -1085,7 +1085,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         const state = await getState(tabId);
         const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
-        if (Date.now() - lastAt < 1000) {
+        if (Date.now() - lastAt < 120) {
           sendResponse({ ok: true, skipped: true, reason: "throttled" });
           break;
         }

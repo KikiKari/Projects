@@ -20,10 +20,9 @@
   const ALL_QUALITY_LABELS = [...new Set(Object.values(QUALITY_ALIASES).flat().map(normalizedLabel))];
   const chatNodeText = new WeakMap();
   const giftNodeText = new WeakMap();
-  const POPUP_GUARD_GRACE_MS = 120;
-  const QUICK_RECOVER_INTERVAL_MS = 100;
-  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 1000;
-  const QUICK_RECOVER_LOCAL_PLAY_MS = 35;
+  const POPUP_GUARD_GRACE_MS = 30;
+  const QUICK_RECOVER_INTERVAL_MS = 30;
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 120;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -782,16 +781,6 @@
 
   async function tryQuickRecover(reason) {
     dismissTimedLiveInterruption();
-    const video = primaryVideo();
-    if (video && !video.ended && !video.error) {
-      await video.play().catch(() => {});
-      await sleep(QUICK_RECOVER_LOCAL_PLAY_MS);
-      if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        quickRecoverFailures = 0;
-        chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason: "quick-recover-local", playerState: getPlayerState() }).catch(() => {});
-        return;
-      }
-    }
     quickRecoverFailures += 1;
     if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
     quickRecoverFailures = 0;
