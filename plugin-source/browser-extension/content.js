@@ -22,7 +22,7 @@
   const giftNodeText = new WeakMap();
   const POPUP_GUARD_GRACE_MS = 30;
   const QUICK_RECOVER_INTERVAL_MS = 30;
-  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 120;
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 500;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
