@@ -272,7 +272,10 @@
         : "Sherpa-ONNX ist bereits installiert.";
       return true;
     } catch (error) {
-      elements["service-status"].textContent = `Sherpa-Installation konnte nicht gestartet werden: ${String(error?.message || error)}`;
+      const message = String(error?.message || error);
+      elements["service-status"].textContent = message.includes("HTTP 404")
+        ? "Sherpa-Endpunkt fehlt: lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.7.1-Paket ausführen."
+        : `Sherpa-Installation konnte nicht gestartet werden: ${message}`;
       return false;
     } finally {
       setTimeout(() => {
@@ -749,6 +752,10 @@
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       await loadSpeechVoices();
+      if (!Object.prototype.hasOwnProperty.call(health, "canInstallSherpa")) {
+        elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.7.1-Paket ausführen.";
+        return health;
+      }
       if (!health.sherpaConfigured && health.canInstallSherpa) installSherpaVoices(false).catch(() => {});
       return health;
     } catch (_) {

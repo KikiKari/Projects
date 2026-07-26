@@ -267,22 +267,31 @@
     return blue >= 170 && green >= 120 && red <= 90;
   }
 
-  function certifiedBadgePresent(root = document) {
-    const labeled = [...root.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
-      isVisible(element) && /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
+  function certifiedSvgBadge(element) {
+    if (String(element?.tagName || "").toLowerCase() !== "svg") return false;
+    if (!isVisible(element)) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8 || rect.width > 24 || rect.height > 24) return false;
+    const circles = [...element.querySelectorAll("circle")];
+    const paths = [...element.querySelectorAll("path")];
+    const hasBlueCircle = circles.some((circle) =>
+      colorIsCertified(circle.getAttribute("fill")) || colorIsCertified(getComputedStyle(circle).fill)
     );
-    if (labeled) return true;
+    const hasWhiteMark = paths.some((path) => /(?:^|[;,\s])(?:#fff|#ffffff|white)(?:$|[;,\s])/i.test(String(path.getAttribute("fill") || getComputedStyle(path).fill || "")));
+    return hasBlueCircle && hasWhiteMark;
+  }
+
+  function certifiedBadgePresent(root = document) {
     const handle = currentPathHandle().toLocaleLowerCase();
-    const roots = [...root.querySelectorAll('header,[data-e2e*="user" i],[data-e2e*="profile" i],a[href^="/@"],a[href*="tiktok.com/@"]')]
-      .filter((element) => isVisible(element) && (!handle || visibleText(element).toLocaleLowerCase().includes(handle)));
-    for (const item of roots.slice(0, 12)) {
-      for (const element of item.querySelectorAll("svg, img, span, div")) {
-        if (!isVisible(element)) continue;
-        const rect = element.getBoundingClientRect();
-        if (rect.width < 6 || rect.height < 6 || rect.width > 32 || rect.height > 32) continue;
-        const style = getComputedStyle(element);
-        if (colorIsCertified(style.color) || colorIsCertified(style.backgroundColor) || colorIsCertified(style.fill) || colorIsCertified(style.stroke)) return true;
-      }
+    for (const svg of root.querySelectorAll("svg")) {
+      if (!certifiedSvgBadge(svg)) continue;
+      const profileLink = svg.closest('a[href^="/@"],a[href*="tiktok.com/@"]');
+      const textScope = svg.closest('h1,h2,h3,p,[data-e2e="user-title"],[data-e2e="user-subtitle"],[data-e2e*="user" i]') || svg.parentElement;
+      const nearby = visibleText(textScope?.parentElement || textScope || svg.parentElement).toLocaleLowerCase();
+      let linkedHandle = "";
+      try { linkedHandle = profileLink ? decodeURIComponent(new URL(profileLink.href, location.href).pathname).replace(/^\/@/, "").replace(/\/$/, "").toLocaleLowerCase() : ""; }
+      catch (_) { linkedHandle = ""; }
+      if (!handle || linkedHandle === handle || nearby.includes(handle)) return true;
     }
     return false;
   }
@@ -360,9 +369,7 @@
           profile = mergeProfile(profile, core.inspectMetadata(JSON.parse(value), { maxNodes: 20000, profileUniqueId: handle }).profileInfo);
         } catch (_) { /* Many profile scripts are not JSON. */ }
       }
-      const verified = [...page.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
-        /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
-      );
+      const verified = certifiedBadgePresent(page);
       if (profile.present || verified) profile = { ...profile, present: true, uniqueId: profile.uniqueId || handle, live: true, verified: Boolean(profile.verified || verified), verifiedLabel: profile.verifiedLabel || (verified ? "Zertifiziert" : ""), source: "öffentliche Profilseite" };
       profilePageCache = { handle, at: now, profile };
       return profile;
