@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "service-url", "pairing-code", "service-action", "service-status",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "service-status",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -15,6 +15,7 @@
     "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "export-log", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
   ].map((id) => [id, document.getElementById(id)]));
   const PLAYER_BUTTONS = ["player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report"];
+  const DEFAULT_SERVICE_URL = "http://127.0.0.1:43117";
   const core = globalThis.TLC_CONTENT_CORE;
   let activeTabId = null;
   let activeIsTikTok = false;
@@ -32,30 +33,11 @@
   let speakNames = true;
   let gameModeEnabled = false;
   let shortenNames = false;
-  let serviceUrl = "http://127.0.0.1:43117";
+  let serviceUrl = DEFAULT_SERVICE_URL;
   let pairingCode = "";
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
-  const CURATED_VOICE_PATTERNS = Object.freeze({
-    "de-DE": [
-      { re: /\bhedda\b/i, gender: "Female" },
-      { re: /\bamala\b/i, gender: "Female" },
-      { re: /\bingrid\b/i, gender: "Female" },
-      { re: /\bconrad\b/i, gender: "Male" },
-      { re: /\bkillian\b/i, gender: "Male" },
-      { re: /\bjonas\b/i, gender: "Male" }
-    ],
-    "en-US": [
-      { re: /\baria\b/i, gender: "Female" },
-      { re: /\bjenny\b/i, gender: "Female" },
-      { re: /\bmichelle\b/i, gender: "Female" },
-      { re: /\bguy\b/i, gender: "Male" },
-      { re: /\bchristopher\b/i, gender: "Male" },
-      { re: /\beric\b/i, gender: "Male" }
-    ]
-  });
-  const BLOCKED_VOICE_NAMES = /\b(?:katja|stefan)\b/i;
   const knownSpeechKeys = new Set();
   const TAB_OPTIONAL_MESSAGES = new Set(["TLC_GET_SETTINGS", "TLC_SET_AUTOSTART", "TLC_SET_QUICK_RECOVER", "TLC_ENABLE_HOOK", "TLC_DISABLE_HOOK", "TLC_SET_DEBUG"]);
 
@@ -149,11 +131,23 @@
   }
 
   function speechText(item) {
-    return core.composeSpeechText(item, {
+    return cleanSpeechPayload(core.composeSpeechText(item, {
       teamTag: currentState?.stream?.teamTag || "",
       speakNames,
       shortenNames
-    });
+    }));
+  }
+
+  function cleanSpeechPayload(value) {
+    return String(value || "")
+      .normalize("NFC")
+      .replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+      .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
+      .replace(/[\ufe00-\ufe0f\u200d]/g, "")
+      .replace(/[\u{1f000}-\u{1faff}\u{2600}-\u{27bf}]/gu, " ")
+      .replace(/\p{M}+/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   function speechLang(item) {
@@ -209,35 +203,22 @@
     elements["service-status"].textContent = `Lokaler Sprachdienst aktiv · ${lang || "Auto"}.`;
   }
 
-  function voiceCultureGroup(voice) {
-    const culture = String(voice?.culture || voice?.lang || "").toLowerCase();
-    const name = String(voice?.name || voice?.id || "").toLowerCase();
-    if (culture.startsWith("de") || /german|deutsch/.test(name)) return "de-DE";
-    if (culture.startsWith("en") || /english|englisch/.test(name)) return "en-US";
-    return "";
-  }
-
-  function curatedVoiceMatch(voice, group) {
-    const name = String(voice?.name || voice?.id || "").trim();
-    if (!name || BLOCKED_VOICE_NAMES.test(name)) return null;
-    return (CURATED_VOICE_PATTERNS[group] || []).find((entry) => entry.re.test(name)) || null;
-  }
-
-  function curatedSpeechVoices(voices = []) {
-    const buckets = { "de-DE": { Female: [], Male: [] }, "en-US": { Female: [], Male: [] } };
+  function sherpaSpeechVoices(voices = []) {
+    const buckets = { "de-DE": [], "en-US": [] };
     const seen = new Set();
     for (const voice of voices) {
       const name = String(voice?.name || voice?.id || "").trim();
       if (!name || seen.has(name)) continue;
-      const group = voiceCultureGroup(voice);
-      const match = curatedVoiceMatch(voice, group);
-      if (!match) continue;
-      const bucket = buckets[group]?.[match.gender];
-      if (!bucket || bucket.length >= 3) continue;
+      const engine = String(voice?.engine || voice?.provider || voice?.source || "").toLowerCase();
+      if (!/(?:sherpa|onnx)/.test(`${engine} ${name.toLowerCase()}`)) continue;
+      const culture = String(voice?.culture || voice?.lang || "").toLowerCase();
+      const group = culture.startsWith("de") ? "de-DE" : culture.startsWith("en") ? "en-US" : "";
+      const bucket = buckets[group];
+      if (!bucket || bucket.length >= 6) continue;
       seen.add(name);
       bucket.push({ ...voice, id: voice?.id || name, name, culture: voice?.culture || group });
     }
-    return [...buckets["de-DE"].Female, ...buckets["de-DE"].Male, ...buckets["en-US"].Female, ...buckets["en-US"].Male];
+    return [...buckets["de-DE"], ...buckets["en-US"]];
   }
 
   function setSpeechVoiceOptions(voices = []) {
@@ -249,7 +230,7 @@
     standard.textContent = "Standard";
     select.append(standard);
     const seen = new Set();
-    for (const voice of curatedSpeechVoices(voices)) {
+    for (const voice of sherpaSpeechVoices(voices)) {
       const name = String(voice?.name || voice?.id || "").trim();
       if (!name || seen.has(name)) continue;
       seen.add(name);
@@ -266,18 +247,13 @@
   }
 
   async function loadSpeechVoices() {
-    const browserVoices = globalThis.speechSynthesis?.getVoices?.().map((voice) => ({
-      id: voice.name,
-      name: voice.name,
-      culture: voice.lang
-    })) || [];
     try {
       const response = await fetch(`${serviceUrl}/v1/voices`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
-      setSpeechVoiceOptions(payload.voices || browserVoices);
+      setSpeechVoiceOptions(payload.voices || []);
     } catch (_) {
-      setSpeechVoiceOptions(browserVoices);
+      setSpeechVoiceOptions([]);
     }
   }
 
@@ -523,6 +499,12 @@
       : "Warte auf den TikTok-Player.";
   }
 
+  function audienceSelectActive() {
+    return !elements["audience-modal"].hidden
+      && document.activeElement?.tagName === "SELECT"
+      && elements["audience-modal"].contains(document.activeElement);
+  }
+
   function profileStat(value, label) {
     const card = document.createElement("div");
     card.className = "profile-stat";
@@ -651,7 +633,7 @@
     elements["page-title"].textContent = state.page?.title || state.page?.url || "TikTok LIVE";
     renderChat(state.chatMessages || [], !speechEnabled || speechTabId === activeTabId);
     renderTopChatters(state);
-    if (!elements["audience-modal"].hidden) renderAudience(state);
+    if (!elements["audience-modal"].hidden && !audienceSelectActive()) renderAudience(state);
     renderStatuses(state);
     renderLiveStats(state);
     renderPlayer(state.playerState || {});
@@ -712,7 +694,7 @@
     speakNames = response.settings?.speakNames !== false;
     gameModeEnabled = Boolean(response.settings?.gameModeEnabled);
     shortenNames = Boolean(response.settings?.shortenNames);
-    serviceUrl = response.settings?.serviceUrl || "http://127.0.0.1:43117";
+    serviceUrl = DEFAULT_SERVICE_URL;
     pairingCode = response.settings?.pairingCode || "";
     permanentMutes = new Set(response.settings?.permanentMutes || []);
     elements["keep-speech-active"].checked = keepSpeechActive;
@@ -724,7 +706,7 @@
     elements["game-mode"].checked = gameModeEnabled;
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
-    elements["service-url"].value = serviceUrl;
+    elements["audd-token"].value = "";
     elements["pairing-code"].value = pairingCode;
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
@@ -739,7 +721,7 @@
       const response = await fetch(`${serviceUrl}/v1/health`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
-      elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Windows-Stimmen"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
+      elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       await loadSpeechVoices();
       return health;
     } catch (_) {
@@ -1029,15 +1011,33 @@
     shortenNames = elements["shorten-names"].checked;
     await send("TLC_SET_SPEECH_PREFERENCE", { shortenNames });
   });
-  const saveServiceSettings = async () => {
-    serviceUrl = elements["service-url"].value.trim().replace(/\/$/, "") || "http://127.0.0.1:43117";
+  const savePairingCode = async () => {
     pairingCode = elements["pairing-code"].value.trim();
-    await send("TLC_SET_SPEECH_PREFERENCE", { serviceUrl, pairingCode });
+    await send("TLC_SET_SPEECH_PREFERENCE", { pairingCode });
     await checkService();
     await loadSpeechVoices();
   };
-  elements["service-url"].addEventListener("change", saveServiceSettings);
-  elements["pairing-code"].addEventListener("change", saveServiceSettings);
+  const saveAuddToken = async () => {
+    const token = elements["audd-token"].value.trim();
+    if (!pairingCode) {
+      elements["service-status"].textContent = "Pairing-Code zuerst eintragen.";
+      return;
+    }
+    try {
+      const response = await fetch(`${serviceUrl}/v1/config/audd-token`, {
+        method: "POST",
+        headers: serviceHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ auddApiToken: token })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      elements["audd-token"].value = "";
+      await checkService();
+    } catch (error) {
+      elements["service-status"].textContent = `AudD-Token konnte nicht gespeichert werden: ${String(error?.message || error)}`;
+    }
+  };
+  elements["pairing-code"].addEventListener("change", savePairingCode);
+  elements["audd-token"].addEventListener("change", saveAuddToken);
   elements["service-action"].addEventListener("click", async () => {
     elements["service-status"].textContent = "Lokaler Sprachdienst wird gestartet …";
     try {

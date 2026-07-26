@@ -5,16 +5,18 @@ import { auddRecognize, createServer } from "../server.mjs";
 
 async function fixture() {
   const calls = [];
+  const savedConfigs = [];
   const server = createServer({
     config: { pairingCode: "pair-test", auddApiToken: "audd-test" },
+    configSaver: async (config) => { savedConfigs.push(config); return config; },
     tts: async (text, language, voiceName) => { calls.push(["tts", text, language, voiceName]); return Buffer.from("RIFFtest"); },
-    voices: async () => [{ id: "Microsoft Hedda Desktop", name: "Microsoft Hedda Desktop", culture: "de-DE", gender: "Female" }],
+    voices: async () => [{ id: "sherpa-de-eva-k", name: "Sherpa Eva", culture: "de-DE", gender: "Female", engine: "sherpa-onnx" }],
     recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; }
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const base = `http://127.0.0.1:${server.address().port}`;
-  return { server, base, calls };
+  return { server, base, calls, savedConfigs };
 }
 
 const headers = { Authorization: "Bearer pair-test", Origin: `chrome-extension://${"a".repeat(32)}`, "X-TLC-Client": "test" };
@@ -40,10 +42,10 @@ test("rejects web origins", async (t) => {
 test("tts passes text via the fixed adapter", async (t) => {
   const { server, base, calls } = await fixture();
   t.after(() => server.close());
-  const response = await fetch(`${base}/v1/tts`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ text: "Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", language: "de-DE", voiceName: "Microsoft Hedda Desktop" }) });
+  const response = await fetch(`${base}/v1/tts`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ text: "👑 Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", language: "de-DE", voiceName: "Sherpa Eva" }) });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "audio/wav");
-  assert.deepEqual(calls[0], ["tts", "Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", "de-DE", "Microsoft Hedda Desktop"]);
+  assert.deepEqual(calls[0], ["tts", "Mädchen mögen süße Grüße: ä ö ü Ä Ö Ü ß; Remove-Item", "de-DE", "Sherpa Eva"]);
 });
 
 test("lists available local voices", async (t) => {
@@ -52,8 +54,22 @@ test("lists available local voices", async (t) => {
   const response = await fetch(`${base}/v1/voices`, { headers });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
-    voices: [{ id: "Microsoft Hedda Desktop", name: "Microsoft Hedda Desktop", culture: "de-DE", gender: "Female" }]
+    voices: [{ id: "sherpa-de-eva-k", name: "Sherpa Eva", culture: "de-DE", gender: "Female", engine: "sherpa-onnx" }]
   });
+});
+
+test("stores AudD token through the paired local config endpoint", async (t) => {
+  const { server, base, savedConfigs } = await fixture();
+  t.after(() => server.close());
+  const response = await fetch(`${base}/v1/config/audd-token`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ auddApiToken: "new-audd-token" })
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, auddConfigured: true });
+  assert.equal(savedConfigs.length, 1);
+  assert.equal(savedConfigs[0].auddApiToken, "new-audd-token");
 });
 
 test("recognition accepts a bounded audio body", async (t) => {

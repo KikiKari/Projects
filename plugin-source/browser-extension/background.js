@@ -495,16 +495,24 @@ async function addChatMessage(tabId, rawMessage) {
   const receivedAtUtc = rawMessage.receivedAtUtc || new Date().toISOString();
   const dedupeKey = chatKey(author, content);
   const receivedAt = Date.parse(receivedAtUtc) || Date.now();
+  const duplicateMessageId = rawMessage.messageId && (state.chatMessages || []).some((item) =>
+    item.messageId && String(item.messageId) === String(rawMessage.messageId)
+  );
+  if (duplicateMessageId) return;
   const duplicate = (state.chatMessages || []).some((item) => {
     const existingKey = item.dedupeKey || chatKey(item.author, item.content);
     const existingAt = Date.parse(item.receivedAtUtc) || 0;
     return existingKey === dedupeKey && Math.abs(receivedAt - existingAt) <= 15000;
   });
-  if (duplicate) return;
   const participantResult = updateParticipant(state, rawMessage, author);
   if (participantResult.participant) {
     participantResult.participant.messageCount += 1;
     participantResult.participant.wordCount += core.wordCount(content);
+  }
+  if (duplicate) {
+    await setState(tabId, state);
+    await relayToEmbedTab(tabId, state, "chat", rawMessage);
+    return;
   }
   const settings = await getSettings();
   state.chatMessages = [...(state.chatMessages || []), {
@@ -920,7 +928,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
           ...(message.speechEnabled == null ? {} : { speechEnabled: Boolean(message.speechEnabled) }),
-          ...(message.serviceUrl == null ? {} : { serviceUrl: loopbackServiceUrl(message.serviceUrl) || "http://127.0.0.1:43117" }),
           ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
         });
@@ -1085,7 +1092,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         const state = await getState(tabId);
         const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
-        if (Date.now() - lastAt < 500) {
+        if (Date.now() - lastAt < 300) {
           sendResponse({ ok: true, skipped: true, reason: "throttled" });
           break;
         }

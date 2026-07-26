@@ -22,7 +22,7 @@
   const giftNodeText = new WeakMap();
   const POPUP_GUARD_GRACE_MS = 30;
   const QUICK_RECOVER_INTERVAL_MS = 30;
-  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 500;
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 300;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -834,19 +834,28 @@
     });
   }
 
+  function setMediaFallbackStatus(text) {
+    const status = document.getElementById("tlc-media-fallback-status");
+    if (status) status.textContent = text;
+  }
+
   function ensureMediaFallbackVideo() {
     let holder = document.getElementById("tlc-media-fallback");
     if (!holder) {
       holder = document.createElement("div");
       holder.id = "tlc-media-fallback";
-      holder.style.cssText = "position:absolute;inset:0;z-index:2147483646;display:grid;place-items:center;background:#000;";
+      holder.style.cssText = "position:absolute;inset:0;z-index:2147483646;display:grid;grid-template-rows:minmax(0,1fr) auto;background:#000;";
       const video = document.createElement("video");
       video.controls = true;
       video.autoplay = true;
       video.playsInline = true;
       video.muted = false;
       video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;";
-      holder.append(video);
+      const status = document.createElement("div");
+      status.id = "tlc-media-fallback-status";
+      status.style.cssText = "padding:10px 14px;color:#fff;background:rgba(0,0,0,.82);font:600 13px system-ui,sans-serif;text-align:center;";
+      status.textContent = "VLC Ersatz wird geprüft.";
+      holder.append(video, status);
     }
     const surface = playerSurface();
     const style = getComputedStyle(surface);
@@ -882,19 +891,26 @@
 
   async function playMediaFallback(media = []) {
     const candidates = mediaFallbackCandidates(media);
-    if (!candidates.length) return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
     const video = ensureMediaFallbackVideo();
+    if (!candidates.length) {
+      setMediaFallbackStatus("Keine Video-Links erkannt.");
+      return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
+    }
+    setMediaFallbackStatus(`Prüfe ${candidates.length} Video-Link(s).`);
     const failures = [];
     for (const item of candidates) {
+      setMediaFallbackStatus(`Prüfe ${item.quality || "Video"} ${item.protocol || ""}.`.trim());
       const result = await tryMediaUrl(video, item);
       if (result.ok) {
+        setMediaFallbackStatus(`${item.quality || "Video"} wird abgespielt.`);
         debug("media-fallback", { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" });
         return { activated: true, action: "play-vlc-source", media: { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" }, playerState: getPlayerState() };
       }
       failures.push(`${item.quality || "?"} ${item.protocol || "?"}: ${result.reason}`);
     }
-    document.getElementById("tlc-media-fallback")?.remove();
-    return { activated: false, action: "play-vlc-source", reason: `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`, playerState: getPlayerState() };
+    const reason = `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`;
+    setMediaFallbackStatus(reason);
+    return { activated: false, action: "play-vlc-source", reason, playerState: getPlayerState() };
   }
 
   async function configureLimiter(video, enabled, thresholdDbfs) {

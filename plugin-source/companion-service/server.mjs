@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
+const sherpaVoicesPath = path.join(defaultConfigDir, "sherpa-voices.json");
 export const VERSION = "0.7.0";
 export { defaultConfigPath };
 
@@ -72,6 +73,49 @@ function cleanVoiceName(value) {
   return /^[\p{L}\p{N}\p{P}\p{Zs}]{1,160}$/u.test(voiceName) ? voiceName : "";
 }
 
+function cleanAuddToken(value) {
+  const token = String(value || "").trim();
+  return /^[A-Za-z0-9._~:/+=-]{0,512}$/.test(token) ? token : "";
+}
+
+function cleanTtsText(value) {
+  return String(value || "")
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
+    .replace(/[\ufe00-\ufe0f\u200d]/g, "")
+    .replace(/[\u{1f000}-\u{1faff}\u{2600}-\u{27bf}]/gu, " ")
+    .replace(/\p{M}+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function runProcess(command, args, input = "") {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"] });
+    const chunks = [];
+    let errorText = "";
+    child.stdout.on("data", (chunk) => chunks.push(chunk));
+    child.stderr.on("data", (chunk) => { errorText += chunk.toString(); });
+    child.on("error", reject);
+    child.on("close", (code) => code === 0 ? resolve(Buffer.concat(chunks)) : reject(new Error(errorText.trim() || `${command} endete mit ${code}`)));
+    child.stdin.end(input || "", "utf8");
+  });
+}
+
+async function firstExistingFile(directory, predicate) {
+  const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isFile() && predicate(entry.name)) return fullPath;
+    if (entry.isDirectory()) {
+      const nested = await firstExistingFile(fullPath, predicate);
+      if (nested) return nested;
+    }
+  }
+  return "";
+}
+
 export async function windowsTts(text, language, voiceName = "") {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tlc-tts-"));
   const input = path.join(tempDir, "speech.txt");
@@ -90,6 +134,65 @@ export async function listWindowsVoices() {
   const output = await runPowerShell(path.join(root, "voices.ps1"), [], "");
   const voices = JSON.parse(output || "[]");
   return Array.isArray(voices) ? voices.filter((voice) => voice?.id && voice?.name) : [];
+}
+
+export async function listSherpaVoices(configPath = sherpaVoicesPath) {
+  let payload;
+  try { payload = JSON.parse(await fs.readFile(configPath, "utf8")); }
+  catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+  const voices = Array.isArray(payload?.voices) ? payload.voices : [];
+  const result = [];
+  for (const voice of voices) {
+    const modelDir = String(voice?.modelDir || "");
+    if (!modelDir) continue;
+    try { await fs.access(modelDir); }
+    catch (_) { continue; }
+    result.push({
+      id: String(voice.id || voice.name || "").trim(),
+      name: String(voice.name || voice.id || "").trim(),
+      culture: String(voice.culture || "").trim(),
+      gender: String(voice.gender || "").trim(),
+      engine: "sherpa-onnx"
+    });
+  }
+  return result.filter((voice) => voice.id && voice.name);
+}
+
+export async function listAvailableVoices() {
+  return listSherpaVoices();
+}
+
+async function sherpaTts(text, language, voiceName) {
+  const voices = await listSherpaVoices();
+  const voice = voices.find((entry) => entry.name === voiceName || entry.id === voiceName);
+  if (!voice) throw Object.assign(new Error("Sherpa-Stimme nicht installiert."), { statusCode: 412 });
+  const payload = JSON.parse(await fs.readFile(sherpaVoicesPath, "utf8"));
+  const model = payload.voices.find((entry) => entry.name === voice.name || entry.id === voice.id);
+  const modelDir = String(model?.modelDir || "");
+  const executable = String(payload.sherpaExecutable || "sherpa-onnx-offline-tts");
+  const onnx = await firstExistingFile(modelDir, (name) => /\.onnx$/i.test(name));
+  const tokens = await firstExistingFile(modelDir, (name) => /^tokens\.txt$/i.test(name));
+  const dataDir = path.join(modelDir, "espeak-ng-data");
+  if (!onnx || !tokens) throw Object.assign(new Error("Sherpa-Modell unvollständig."), { statusCode: 412 });
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tlc-sherpa-tts-"));
+  const output = path.join(tempDir, "speech.wav");
+  try {
+    const args = [`--vits-model=${onnx}`, `--vits-tokens=${tokens}`, `--output-filename=${output}`];
+    if (await fs.access(dataDir).then(() => true).catch(() => false)) args.push(`--vits-data-dir=${dataDir}`);
+    args.push(text);
+    await runProcess(executable, args, "");
+    return await fs.readFile(output);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+export async function companionTts(text, language, voiceName = "") {
+  if (voiceName) return sherpaTts(text, language, voiceName);
+  return windowsTts(text, language, "");
 }
 
 export async function auddRecognize(audio, contentType, apiToken, fetchImpl = fetch) {
@@ -121,7 +224,7 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, tts = windowsTts, voices = listWindowsVoices, recognize = auddRecognize } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, recognize = auddRecognize } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   return http.createServer(async (request, response) => {
     const currentConfig = configProvider ? await configProvider() : config;
@@ -144,7 +247,7 @@ export function createServer({ config, configProvider, tts = windowsTts, voices 
         return sendJson(response, 200, {
           ok: true,
           version: VERSION,
-          tts: "Windows-Stimmen",
+          tts: (await voices()).length ? "Sherpa-ONNX" : "Standard",
           ttsAvailable: process.platform === "win32",
           auddConfigured: Boolean(currentConfig.auddApiToken),
           songProvider: currentConfig.auddApiToken ? "AudD" : null
@@ -153,10 +256,19 @@ export function createServer({ config, configProvider, tts = windowsTts, voices 
       if (request.method === "GET" && request.url === "/v1/voices") {
         return sendJson(response, 200, { voices: await voices() }, allowedOrigin);
       }
+      if (request.method === "POST" && request.url === "/v1/config/audd-token") {
+        const raw = await readBody(request, 8 * 1024);
+        const body = JSON.parse(raw.toString("utf8"));
+        const auddApiToken = cleanAuddToken(body.auddApiToken);
+        const nextConfig = { ...currentConfig, auddApiToken };
+        await configSaver(nextConfig);
+        if (currentConfig && typeof currentConfig === "object") currentConfig.auddApiToken = auddApiToken;
+        return sendJson(response, 200, { ok: true, auddConfigured: Boolean(auddApiToken) }, allowedOrigin);
+      }
       if (request.method === "POST" && request.url === "/v1/tts") {
         const raw = await readBody(request, 64 * 1024);
         const body = JSON.parse(raw.toString("utf8"));
-        const text = String(body.text || "").slice(0, 4000);
+        const text = cleanTtsText(String(body.text || "").slice(0, 4000));
         const language = ["auto", "de-DE", "en-US"].includes(body.language) ? body.language : "auto";
         const voiceName = cleanVoiceName(body.voiceName);
         if (!text.trim()) throw Object.assign(new Error("Leerer TTS-Text."), { statusCode: 400 });

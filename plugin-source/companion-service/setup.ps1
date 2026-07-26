@@ -12,13 +12,7 @@ if ($existing -and $existing.pairingCode) {
   try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
   $pairingCode = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 }
-$secureToken = Read-Host "AudD API-Token (leer lassen, wenn Songerkennung noch nicht genutzt wird)" -AsSecureString
-$tokenPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureToken)
-try {
-  $auddToken = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($tokenPtr)
-} finally {
-  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($tokenPtr)
-}
+$auddToken = if ($existing -and $null -ne $existing.auddApiToken) { [string]$existing.auddApiToken } else { "" }
 
 $config = [ordered]@{
   pairingCode = $pairingCode
@@ -31,6 +25,8 @@ Write-Host "Konfiguration gespeichert: $configPath"
 Write-Host "Pairing-Code für das Sidepanel: $pairingCode"
 
 $serviceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $serviceDir "install-sherpa.ps1")
+
 $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 $startScriptPath = Join-Path $configDir "start-service.ps1"
 $startScript = @"
