@@ -17,7 +17,7 @@
 
 ## Optionaler lokaler Sprach- und Songdienst
 
-1. Den Ordner `companion-service` aus dem aktuell entpackten `tiktok-live-companion-extension-0.7.1` öffnen und `npm run setup` ausführen.
+1. Den aktuell entpackten Ordner `tiktok-live-companion-extension-0.7.1` öffnen und `npm run setup` ausführen. Das Root-Skript startet das Setup aus `companion-service`.
 2. Das Setup speichert die Konfiguration, richtet den lokalen Startaufruf für den Sidepanel-Button ein und führt abschließend `npm start` im Hintergrund aus.
 3. Den ausgegebenen Pairing-Code im Sidepanel eintragen.
 4. Mit **Sprachdienst installieren** kann der eingerichtete Dienst später erneut im Hintergrund gestartet werden.
@@ -27,6 +27,14 @@ Wenn das Sidepanel `Lokaler Dienst ist veraltet` meldet, läuft noch ein alter D
 
 ```powershell
 cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
+npm run setup
+npm start
+```
+
+Alternativ kann im Hauptordner des entpackten Pakets gearbeitet werden:
+
+```powershell
+cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1"
 npm run setup
 npm start
 ```

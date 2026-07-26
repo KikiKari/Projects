@@ -7,7 +7,7 @@ Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschl
 Wenn das Sidepanel meldet `Lokaler Dienst ist veraltet`, läuft auf `127.0.0.1:43117` noch ein alter Dienst. In der alten PowerShell zuerst `Ctrl+C` drücken und danach aus dem aktuell entpackten 0.7.1-Paket starten:
 
 ```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
+cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1"
 npm run setup
 npm start
 ```

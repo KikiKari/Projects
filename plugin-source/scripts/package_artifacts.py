@@ -43,9 +43,20 @@ if resolved_extension_dir.parent != output_dir:
 if extension_dir.exists():
     shutil.rmtree(extension_dir)
 shutil.copytree(ROOT / "browser-extension", extension_dir)
+shutil.copytree(ROOT / "companion-service", extension_dir / "companion-service")
+(extension_dir / "package.json").write_text(json.dumps({
+    "name": "tiktok-live-companion-extension-package",
+    "private": True,
+    "version": version,
+    "scripts": {
+        "setup": "npm --prefix companion-service run setup",
+        "start": "npm --prefix companion-service start",
+        "test": "npm --prefix companion-service test"
+    }
+}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 with zipfile.ZipFile(extension_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, ROOT / "browser-extension")
+    add_tree(archive, extension_dir)
 
 with zipfile.ZipFile(plugin_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ROOT, "tiktok-live-companion")
