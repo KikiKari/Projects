@@ -38,6 +38,8 @@
     live: null,
     verified: false,
     verifiedLabel: "",
+    livePro: false,
+    liveProLabel: "",
     source: null
   });
 
@@ -452,6 +454,8 @@
       live,
       verified,
       verifiedLabel: verified ? "Zertifiziert" : "",
+      livePro: false,
+      liveProLabel: "",
       source: present ? source : null
     };
   }
@@ -461,7 +465,7 @@
     const preferred = preferredUniqueId && String(info.uniqueId).toLocaleLowerCase() === String(preferredUniqueId).toLocaleLowerCase() ? 100 : 0;
     return preferred + (info.uniqueId ? 4 : 0) + (info.nickname ? 2 : 0) +
       (info.followerCount != null ? 4 : 0) + (info.followingCount != null ? 2 : 0) +
-      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0);
+      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0) + (info.livePro ? 1 : 0);
   }
 
   function summaryFlagValue(value) {

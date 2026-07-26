@@ -35,6 +35,7 @@
   let shortenNames = false;
   let serviceUrl = DEFAULT_SERVICE_URL;
   let pairingCode = "";
+  let auddApiToken = "";
   let sherpaInstallStarted = false;
   let permanentMutes = new Set();
   let speechAudioContext = null;
@@ -549,6 +550,11 @@
     const profile = state.profileInfo || {};
     const summary = state.aiSummaryInfo || {};
     const visible = Boolean(profile.present || summary.featureFlagPresent || summary.text);
+    let livePageUrl = false;
+    try {
+      const path = decodeURIComponent(new URL(state.page?.url || "").pathname);
+      livePageUrl = /^\/@[^/]+\/live\/?$/i.test(path) || /^\/embed\/live\/@?[^/?#]+\/?$/i.test(path);
+    } catch (_) { livePageUrl = false; }
     elements["page-info-section"].hidden = false;
     elements["page-info-source"].textContent = profile.source || summary.source || "Diagnose";
     elements["profile-info"].hidden = !profile.present;
@@ -569,6 +575,12 @@
         verified.className = "profile-bio";
         verified.textContent = profile.verifiedLabel || "Zertifiziert";
         elements["profile-info"].append(verified);
+      }
+      if (profile.livePro && livePageUrl) {
+        const livePro = document.createElement("p");
+        livePro.className = "profile-bio";
+        livePro.textContent = profile.liveProLabel || "Live Pro";
+        elements["profile-info"].append(livePro);
       }
       if (profile.signature) {
         const bio = document.createElement("p");
@@ -725,6 +737,7 @@
     shortenNames = Boolean(response.settings?.shortenNames);
     serviceUrl = DEFAULT_SERVICE_URL;
     pairingCode = response.settings?.pairingCode || "";
+    auddApiToken = response.settings?.auddApiToken || "";
     permanentMutes = new Set(response.settings?.permanentMutes || []);
     elements["keep-speech-active"].checked = keepSpeechActive;
     elements["speech-volume"].value = String(Math.round(speechVolume * 100));
@@ -735,7 +748,7 @@
     elements["game-mode"].checked = gameModeEnabled;
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
-    elements["audd-token"].value = "";
+    elements["audd-token"].value = auddApiToken;
     elements["pairing-code"].value = pairingCode;
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
@@ -1053,8 +1066,10 @@
   };
   const saveAuddToken = async () => {
     const token = elements["audd-token"].value.trim();
+    auddApiToken = token;
+    await send("TLC_SET_SPEECH_PREFERENCE", { auddApiToken: token });
     if (!pairingCode) {
-      elements["service-status"].textContent = "Pairing-Code zuerst eintragen.";
+      elements["service-status"].textContent = token ? "AudD-Token lokal gespeichert; Pairing-Code fehlt für den Sprachdienst." : "AudD-Token geleert.";
       return;
     }
     try {
@@ -1064,7 +1079,6 @@
         body: JSON.stringify({ auddApiToken: token })
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      elements["audd-token"].value = "";
       await checkService();
     } catch (error) {
       elements["service-status"].textContent = `AudD-Token konnte nicht gespeichert werden: ${String(error?.message || error)}`;

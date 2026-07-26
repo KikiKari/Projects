@@ -199,7 +199,9 @@
       ...winner,
       live: Boolean(winner?.live || current?.live || candidate?.live),
       verified: Boolean(winner?.verified || current?.verified || candidate?.verified),
-      verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || ""
+      verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || "",
+      livePro: Boolean(winner?.livePro || current?.livePro || candidate?.livePro),
+      liveProLabel: winner?.liveProLabel || current?.liveProLabel || candidate?.liveProLabel || ""
     };
   }
 
@@ -296,6 +298,19 @@
     return false;
   }
 
+  function liveProBadgePresent(root = document) {
+    if (!isLivePage()) return false;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"]')]
+      .filter((element) => isVisible(element));
+    for (const scope of scopes.slice(0, 20)) {
+      const text = visibleText(scope).replace(/\s+/g, " ").trim();
+      if (!/\bLIVE\s+Pro\b/i.test(text) && !/Anerkannt von TikTok LIVE/i.test(text)) continue;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) return true;
+    }
+    return false;
+  }
+
   function collectDomLiveStats() {
     const text = visibleText(document.body);
     const pattern = "([0-9][0-9.,\\s]*\\s*[KMB]?)";
@@ -320,9 +335,10 @@
     const followerCount = selectorText(['[data-e2e="followers-count"]']);
     const likeCount = selectorText(['[data-e2e="likes-count"]']);
     const verified = certifiedBadgePresent();
+    const livePro = livePage && liveProBadgePresent();
     const live = Boolean(livePage || document.querySelector('[data-e2e*="live" i]'));
-    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePage);
-    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "dom" : null };
+    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePro || livePage);
+    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", source: present ? "dom" : null };
   }
 
   async function collectProfileFromHover(force = false) {
@@ -343,8 +359,9 @@
     const signature = selectorText(['[data-e2e="user-bio"]', '[data-e2e="user-signature"]']);
     const nickname = selectorText(['[data-e2e="user-title"] h1', '[data-e2e="user-title"]']) || visibleText(link);
     const verified = certifiedBadgePresent();
+    const livePro = liveProBadgePresent();
     const present = Boolean(followingCount || followerCount || likeCount);
-    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "Profilkarte" : null };
+    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", source: present ? "Profilkarte" : null };
   }
 
   async function fetchPublicProfile(force = false) {

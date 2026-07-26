@@ -162,6 +162,7 @@ async function getSettings() {
     shortenNames: false,
     serviceUrl: "http://127.0.0.1:43117",
     pairingCode: "",
+    auddApiToken: "",
     playerVolume: 100,
     limiterStrength: 30,
     limiterEnabled: false,
@@ -216,7 +217,7 @@ function loopbackServiceUrl(value) {
 }
 
 function profileCompleteness(profile) {
-  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : ""]
+  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : "", profile?.livePro ? "livePro" : ""]
     .filter((value) => value != null && value !== "").length;
 }
 
@@ -229,7 +230,9 @@ function mergeProfile(current, incoming) {
     ...merged,
     live: Boolean(current?.live || incoming.live),
     verified: Boolean(current?.verified || incoming.verified),
-    verifiedLabel: current?.verifiedLabel || incoming.verifiedLabel || ""
+    verifiedLabel: current?.verifiedLabel || incoming.verifiedLabel || "",
+    livePro: Boolean(current?.livePro || incoming.livePro),
+    liveProLabel: current?.liveProLabel || incoming.liveProLabel || ""
   };
 }
 
@@ -901,10 +904,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "TLC_GET_SETTINGS":
         sendResponse({ ok: true, settings: await getSettings() });
         break;
-      case "TLC_START_LOCAL_SERVICE":
-        await chrome.tabs.create({ url: "tiktok-live-companion://start" });
+      case "TLC_START_LOCAL_SERVICE": {
+        const serviceTab = await chrome.tabs.create({ url: "tiktok-live-companion://start", active: false });
+        setTimeout(() => {
+          if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
+        }, 1500);
         sendResponse({ ok: true });
         break;
+      }
       case "TLC_SET_AUTOSTART": {
         const result = await setHookFlag(tabId, Boolean(message.enabled));
         sendResponse({ ok: true, reloading: Boolean(result.reloading), result });
@@ -924,6 +931,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.volume == null ? {} : { speechVolume: Math.max(0, Math.min(1, Number(message.volume))) }),
           ...(message.language == null ? {} : { speechLanguage: ["auto", "de-DE", "en-US"].includes(message.language) ? message.language : "auto" }),
           ...(message.voiceName == null ? {} : { speechVoiceName: String(message.voiceName).slice(0, 160) }),
+          ...(message.auddApiToken == null ? {} : { auddApiToken: String(message.auddApiToken).trim().slice(0, 512) }),
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
