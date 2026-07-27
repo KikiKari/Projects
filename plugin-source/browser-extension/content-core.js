@@ -42,6 +42,8 @@
     liveProLabel: "",
     sponsoredContent: false,
     sponsoredContentLabel: "",
+    paidPartnership: false,
+    paidPartnershipLabel: "",
     source: null
   });
 
@@ -460,6 +462,8 @@
       liveProLabel: "",
       sponsoredContent: false,
       sponsoredContentLabel: "",
+      paidPartnership: false,
+      paidPartnershipLabel: "",
       source: present ? source : null
     };
   }
@@ -470,7 +474,7 @@
     return preferred + (info.uniqueId ? 4 : 0) + (info.nickname ? 2 : 0) +
       (info.followerCount != null ? 4 : 0) + (info.followingCount != null ? 2 : 0) +
       (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0) +
-      (info.livePro ? 1 : 0) + (info.sponsoredContent ? 1 : 0);
+      (info.livePro ? 1 : 0) + (info.sponsoredContent ? 1 : 0) + (info.paidPartnership ? 1 : 0);
   }
 
   function summaryFlagValue(value) {

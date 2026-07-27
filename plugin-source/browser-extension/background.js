@@ -102,6 +102,40 @@ function pageHandle(page) {
   catch (_) { return ""; }
 }
 
+function normalizeHandle(value) {
+  return String(value || "").replace(/^@/, "").toLocaleLowerCase();
+}
+
+function profileHandle(profile) {
+  return normalizeHandle(profile?.uniqueId || profile?.handle || "");
+}
+
+function stateIdentityHandle(state) {
+  return normalizeHandle(state?.stream?.handle || state?.profileInfo?.uniqueId || pageHandle(state?.page) || "");
+}
+
+function pageStateHandle(state, message = {}) {
+  return normalizeHandle(pageHandle(message.page || state?.page) || profileHandle(message.profileInfo) || state?.stream?.handle || "");
+}
+
+function profileMatchesHandle(profile, handle) {
+  const candidate = profileHandle(profile);
+  return !handle || !candidate || candidate === handle;
+}
+
+function resetPageIdentityState(state, handle) {
+  state.profileInfo = { ...core.EMPTY_PROFILE_INFO };
+  state.aiSummaryInfo = { ...core.EMPTY_AI_SUMMARY_INFO };
+  state.liveStats = { ...state.liveStats, followerCount: null };
+}
+
+function resetPageIdentityIfChanged(state, nextHandle) {
+  const currentHandle = stateIdentityHandle(state);
+  if (!nextHandle || !currentHandle || nextHandle === currentHandle) return false;
+  resetPageIdentityState(state, nextHandle);
+  return true;
+}
+
 function profileKey(handle) {
   return `${PROFILE_PREFIX}${String(handle || "").toLocaleLowerCase()}`;
 }
@@ -217,7 +251,7 @@ function loopbackServiceUrl(value) {
 }
 
 function profileCompleteness(profile) {
-  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : "", profile?.livePro ? "livePro" : "", profile?.sponsoredContent ? "sponsoredContent" : ""]
+  return [profile?.uniqueId, profile?.nickname, profile?.signature, profile?.followingCount, profile?.followerCount, profile?.likeCount, profile?.verified ? "verified" : "", profile?.livePro ? "livePro" : "", profile?.sponsoredContent ? "sponsoredContent" : "", profile?.paidPartnership ? "paidPartnership" : ""]
     .filter((value) => value != null && value !== "").length;
 }
 
@@ -234,7 +268,9 @@ function mergeProfile(current, incoming) {
     livePro: Boolean(current?.livePro || incoming.livePro),
     liveProLabel: current?.liveProLabel || incoming.liveProLabel || "",
     sponsoredContent: Boolean(current?.sponsoredContent || incoming.sponsoredContent),
-    sponsoredContentLabel: current?.sponsoredContentLabel || incoming.sponsoredContentLabel || ""
+    sponsoredContentLabel: current?.sponsoredContentLabel || incoming.sponsoredContentLabel || "",
+    paidPartnership: Boolean(current?.paidPartnership || incoming.paidPartnership),
+    paidPartnershipLabel: current?.paidPartnershipLabel || incoming.paidPartnershipLabel || ""
   };
 }
 
@@ -682,7 +718,8 @@ async function forceProfileRefresh(tabId) {
   const liveUrl = tab.url || "";
   const match = liveUrl.match(/^https:\/\/www\.tiktok\.com\/@([^/?#]+)\/live\/?/i) || liveUrl.match(/^https:\/\/www\.tiktok\.com\/embed\/live\/@?([^/?#]+)/i);
   if (!match) throw new Error("Force ist nur auf einer TikTok-LIVE-URL verfügbar.");
-  const profileUrl = `https://www.tiktok.com/@${match[1]}`;
+  const targetHandle = normalizeHandle(match[1]);
+  const profileUrl = `https://www.tiktok.com/@${targetHandle}`;
   let profileResult = null;
   await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   try {
@@ -691,9 +728,12 @@ async function forceProfileRefresh(tabId) {
     await profileLoaded;
     profileResult = await chrome.tabs.sendMessage(tabId, { type: "TLC_SCAN" });
     if (!profileResult?.profileInfo?.present) throw new Error("Die vollständig geladene Profilseite lieferte keine Profilwerte.");
+    if (!profileMatchesHandle(profileResult.profileInfo, targetHandle)) throw new Error("Die Profilseite lieferte Werte für einen anderen Stream.");
     await cacheProfile(profileResult.profileInfo);
     const state = await getState(tabId);
-    state.profileInfo = mergeProfile(state.profileInfo, profileResult.profileInfo);
+    resetPageIdentityIfChanged(state, targetHandle);
+    applyStreamIdentity(state, { handle: targetHandle });
+    state.profileInfo = mergeProfile({ ...core.EMPTY_PROFILE_INFO }, profileResult.profileInfo);
     if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
     await setState(tabId, state);
     return { activated: true, profileInfo: profileResult.profileInfo };
@@ -703,6 +743,7 @@ async function forceProfileRefresh(tabId) {
     const state = await getState(tabId);
     state.enabled = true;
     if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+    applyStreamIdentity(state, { handle: targetHandle });
     state.hook = { ...state.hook, armed: true, lastError: null };
     state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
     await setState(tabId, state);
@@ -946,16 +987,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_PAGE_STATE": {
         const state = await getState(tabId);
+        const nextHandle = pageStateHandle(state, message);
+        resetPageIdentityIfChanged(state, nextHandle);
         state.page = message.page || state.page;
-        applyStreamIdentity(state, { handle: pageHandle(state.page) });
+        applyStreamIdentity(state, { handle: nextHandle || pageHandle(state.page) });
         state.captionInfo = message.captionInfo || state.captionInfo;
-        state.profileInfo = mergeProfile(state.profileInfo, message.profileInfo);
+        if (profileMatchesHandle(message.profileInfo, nextHandle)) state.profileInfo = mergeProfile(state.profileInfo, message.profileInfo);
         await cacheProfile(state.profileInfo);
-        const cached = await cachedProfile(pageHandle(state.page));
+        const cached = await cachedProfile(nextHandle || pageHandle(state.page));
         if (cached) state.profileInfo = mergeProfile(state.profileInfo, cached);
         if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
         state.liveStats = mergeLiveStats(state.liveStats, message.liveStats);
-        mergeStreamSnapshot(state, await cachedStreamSnapshot(pageHandle(state.page) || state.stream?.handle));
+        mergeStreamSnapshot(state, await cachedStreamSnapshot(nextHandle || pageHandle(state.page) || state.stream?.handle));
         state.aiSummaryInfo = message.aiSummaryInfo || state.aiSummaryInfo;
         state.menuCaptionAvailable = Boolean(state.menuCaptionAvailable || message.menuCaptionAvailable);
         state.menuCaptionActive = Boolean(state.menuCaptionActive || message.menuCaptionActive);
@@ -1102,7 +1145,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         const state = await getState(tabId);
         const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
-        if (Date.now() - lastAt < 300) {
+        if (Date.now() - lastAt < 400) {
           sendResponse({ ok: true, skipped: true, reason: "throttled" });
           break;
         }

@@ -63,7 +63,7 @@ npm start
 
 ## iOS 15 oder neuer
 
-1. `tiktok-live-companion-ios-0.7.0-source.zip` auf macOS entpacken und `TikTokLiveCompanion.xcodeproj` in Xcode öffnen.
+1. `tiktok-live-companion-ios-0.7.1-source.zip` auf macOS entpacken und `TikTokLiveCompanion.xcodeproj` in Xcode öffnen.
 2. Ein Apple-Entwicklerteam und eine App-ID mit aktivierter ShazamKit-Capability auswählen.
 3. Auf einem echten Gerät bauen; für die Mikrofonerkennung den Systemdialog erst beim manuellen Start bestätigen.
 
@@ -71,7 +71,7 @@ Unter Windows kann kein verifiziertes iOS-/IPA-Build erzeugt oder signiert werde
 
 ## Android und HyperOS
 
-1. `tiktok-live-companion-android-0.7.0-source.zip` entpacken.
+1. `tiktok-live-companion-android-0.7.1-source.zip` entpacken.
 2. Für einen UI-/Bridge-Test `mockDebug` bauen. Dieser zeigt bewusst **ShazamKit nicht konfiguriert**.
 3. Für echte Erkennung Apples ShazamKit-AAR als `app/libs/shazamkit-android-release.aar` bereitstellen und `TLC_SHAZAM_TOKEN_URL` auf den konfigurierten HTTPS-Token-Endpunkt setzen.
 4. `shazamDebug` bauen und die Mikrofonberechtigung erst beim Erkennungsstart erteilen.

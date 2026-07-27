@@ -34,4 +34,4 @@ The optional debug mode exports sanitized events. Signed URL parameter values, c
 
 ## Profile Force
 
-Normal refresh remains non-disruptive. `Force` deliberately opens the profile page briefly, imports its public values, and then restores the LIVE URL.
+Normal refresh remains non-disruptive. After switching streams in the same tab, page information is bound to the current handle so host profile data and badges are not inherited from the previous stream. `Force` deliberately opens the profile page for the current handle, imports its public values, and then restores the LIVE URL.

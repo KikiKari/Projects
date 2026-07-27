@@ -151,7 +151,16 @@
       .trim();
   }
 
-  function speechLang(item) {
+  function hasGermanSpecialChars(value) {
+    const text = String(value || "");
+    for (const code of [0x00E4, 0x00F6, 0x00FC, 0x00C4, 0x00D6, 0x00DC, 0x00DF]) {
+      if (text.indexOf(String.fromCharCode(code)) >= 0) return true;
+    }
+    return false;
+  }
+
+  function speechLang(item, text = "") {
+    if (speechLanguage === "auto" && hasGermanSpecialChars(text)) return "de-DE";
     return core.resolveSpeechLanguage(speechLanguage, item.contentLanguage);
   }
 
@@ -289,7 +298,7 @@
   async function speakItem(item) {
     const text = speechText(item);
     if (!text) return;
-    const lang = speechLang(item);
+    const lang = speechLang(item, text);
     try { await serviceSpeech(text, lang); }
     catch (_) { await browserSpeech(text, lang); }
   }
@@ -586,6 +595,12 @@
         sponsored.className = "profile-bio";
         sponsored.textContent = profile.sponsoredContentLabel || "Werbeinhalt";
         elements["profile-info"].append(sponsored);
+      }
+      if (profile.paidPartnership && livePageUrl) {
+        const partnership = document.createElement("p");
+        partnership.className = "profile-bio";
+        partnership.textContent = profile.paidPartnershipLabel || "Bezahlte Partnerschaft";
+        elements["profile-info"].append(partnership);
       }
       if (profile.signature) {
         const bio = document.createElement("p");

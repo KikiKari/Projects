@@ -46,9 +46,9 @@ describe("documentation site", () => {
     render(<MemoryRouter initialEntries={["/en/downloads"]}><App/></MemoryRouter>);
     expect(screen.getByRole("link", { name: /Extension ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
     expect(screen.getByRole("link", { name: /Codex plugin ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-plugin-0.7.1.zip");
-    expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.0.zip");
-    expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.0-source.zip");
-    expect(screen.getByRole("link", { name: /Android\/HyperOS source/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.0-source.zip");
+    expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.7.1.zip");
+    expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.7.1-source.zip");
+    expect(screen.getByRole("link", { name: /Android\/HyperOS source/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.7.1-source.zip");
     expect(screen.getByRole("button", { name: "Copy checksums" })).toBeInTheDocument();
   });
 

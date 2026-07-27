@@ -34,4 +34,4 @@ Der abschaltbare Debugmodus exportiert bereinigte Ereignisse. Werte signierter U
 
 ## Profil-Force
 
-Der normale Refresh bleibt nicht unterbrechend. `Force` öffnet bewusst kurz die Profilseite, übernimmt die dort geladenen öffentlichen Werte und stellt anschließend die LIVE-URL wieder her.
+Der normale Refresh bleibt nicht unterbrechend. Nach einem Streamwechsel im selben Tab werden Seiteninformationen an den aktuellen Handle gebunden, damit Hostprofil und Badges nicht aus dem vorherigen Stream übernommen werden. `Force` öffnet bewusst kurz die Profilseite des aktuellen Handles, übernimmt die dort geladenen öffentlichen Werte und stellt anschließend die LIVE-URL wieder her.
