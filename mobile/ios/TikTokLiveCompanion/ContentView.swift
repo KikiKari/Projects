@@ -8,6 +8,7 @@ private enum Design {
 struct ContentView: View {
     @StateObject var state: CompanionState
 
+    @MainActor
     init(state: CompanionState = CompanionState()) { _state = StateObject(wrappedValue: state) }
 
     var body: some View {
