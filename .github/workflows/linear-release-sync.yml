@@ -1,0 +1,51 @@
+name: Linear Release Sync
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - TikTok-Live-Companion
+      - TikTok-Live-Companion-Android
+      - TikTok-Live-Companion-iOS
+
+permissions:
+  contents: read
+
+jobs:
+  linear-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync Browser release
+        if: github.ref_name == 'TikTok-Live-Companion'
+        uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: sync
+          name: TikTok LIVE Companion 0.7.1 Browser
+          version: 0.7.1-browser
+          include_paths: .publish-repo/**,plugin-source/**,site/**
+
+      - name: Sync Android release
+        if: github.ref_name == 'TikTok-Live-Companion-Android'
+        uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: sync
+          name: TikTok LIVE Companion 0.7.1 Android
+          version: 0.7.1-android
+          include_paths: android-implementation/**,mobile/android/**
+
+      - name: Sync iOS release
+        if: github.ref_name == 'TikTok-Live-Companion-iOS'
+        uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: sync
+          name: TikTok LIVE Companion 0.7.1 iOS
+          version: 0.7.1-ios
+          include_paths: ios-implementation/**,mobile/ios/**
