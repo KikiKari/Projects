@@ -8,6 +8,13 @@ final class BridgeValidatorTests: XCTestCase {
         XCTAssertEqual(try BridgeValidator.decode(data: ready, origin: "https://www.tiktok.com", isMainFrame: true).type, "bridge-ready")
     }
 
+    func testAcceptsMobileRuntimeEvents() throws {
+        for type in ["media-links", "quick-recover", "limiter"] {
+            let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: type).data(using: .utf8)!
+            XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, type)
+        }
+    }
+
     func testRejectsWrongOrigin() {
         XCTAssertThrowsError(try BridgeValidator.decode(data: ready, origin: "https://evil.example", isMainFrame: true))
     }

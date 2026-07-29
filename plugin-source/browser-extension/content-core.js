@@ -38,6 +38,12 @@
     live: null,
     verified: false,
     verifiedLabel: "",
+    livePro: false,
+    liveProLabel: "",
+    sponsoredContent: false,
+    sponsoredContentLabel: "",
+    paidPartnership: false,
+    paidPartnershipLabel: "",
     source: null
   });
 
@@ -177,19 +183,21 @@
 
   function limiterStrengthToDbfs(value) {
     const strength = Math.max(0, Math.min(100, Number(value) || 0));
-    return Math.round((-1 - (strength * 17 / 100)) * 100) / 100;
+    return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
   }
 
   function limiterDbfsToStrength(value) {
-    const threshold = Math.max(-18, Math.min(-1, Number(value) || -1));
-    return Math.round(((-1 - threshold) / 17) * 100);
+    const threshold = Math.max(-30, Math.min(-4, Number(value) || -4));
+    return Math.round(((-4 - threshold) / 26) * 100);
   }
 
   function limiterMakeupCompensation(thresholdDbfs, ratio = 20) {
     const threshold = Math.max(-100, Math.min(0, Number(thresholdDbfs) || 0));
     const safeRatio = Math.max(1, Number(ratio) || 1);
     const fullScaleOutputDb = threshold + ((0 - threshold) / safeRatio);
-    return Math.pow(10, (fullScaleOutputDb * 0.6) / 20);
+    const strength = limiterDbfsToStrength(threshold);
+    const compensation = strength >= 75 ? 0.75 : strength >= 50 ? 0.55 : 0.45;
+    return Math.pow(10, (fullScaleOutputDb * compensation) / 20);
   }
 
   function parseJsonValue(value) {
@@ -351,6 +359,7 @@
   }
 
   function composeSpeechText(item, options = {}) {
+    if (item?.systemSpeechText) return sanitizeChatText(item.systemSpeechText);
     const teamTag = options.teamTag || "";
     const speakNames = options.speakNames !== false;
     const shortenNames = Boolean(options.shortenNames && speakNames);
@@ -373,6 +382,48 @@
       return `${author} ${isQuestion ? "fragt" : "sagt zu"} ${recipient}${remainder ? ` ${remainder}` : ""}`.trim();
     }
     return `${author} ${isQuestion ? "fragt" : "sagt"}${body ? ` ${body}` : ""}`.trim();
+  }
+
+  function gameModeSpeechKey(value) {
+    return sanitizeChatText(value)
+      .toLocaleLowerCase()
+      .replace(/^@+/, "")
+      .replace(/[^\p{L}\p{N}]+/gu, "")
+      .trim();
+  }
+
+  function shouldFilterGameModeSpeech(item, participants = {}, recentItems = []) {
+    const contentKey = gameModeSpeechKey(item?.content || "");
+    if (!contentKey || contentKey.length < 2 || item?.systemSpeechText) return false;
+    const aliases = new Set();
+    for (const participant of Object.values(participants || {})) {
+      for (const value of [participant?.name, participant?.displayId]) {
+        const key = gameModeSpeechKey(value || "");
+        if (key) aliases.add(key);
+      }
+    }
+    if (!aliases.has(contentKey)) return false;
+    const now = Date.parse(item?.receivedAtUtc || "") || Date.now();
+    const repeats = (recentItems || []).filter((entry) => {
+      const entryAt = Date.parse(entry?.receivedAtUtc || "") || 0;
+      return Math.abs(now - entryAt) <= 45000 && gameModeSpeechKey(entry?.content || "") === contentKey;
+    }).length;
+    return repeats >= 2;
+  }
+
+  function gameEventSpeech(rawMessage = {}) {
+    const raw = sanitizeChatText(rawMessage.rawText || rawMessage.content || "");
+    const explicitName = sanitizeChatText(rawMessage.giftName || rawMessage.gift_name || rawMessage.gift || "");
+    const nameFromText =
+      raw.match(/hat\s+\d+\s+(.+?)\s+gesendet/i)?.[1] ||
+      raw.match(/hat\s+(.+?)\s+gesendet(?:\s*x\s*\d+)?/i)?.[1] ||
+      raw.match(/sent\s+\d+\s+(.+?)(?:\s*x\s*\d+)?$/i)?.[1] ||
+      "";
+    const giftName = sanitizeChatText(explicitName || nameFromText);
+    if (!giftName) return "";
+    if (/(?:booster|boosterhandschuh)/i.test(giftName)) return "Booster wurde gesetzt";
+    if (/(?:game|controller|handschuh|schild|schutz|boost)/i.test(giftName)) return `${giftName} wurde gesetzt`;
+    return "";
   }
 
   function numericString(value) {
@@ -409,6 +460,12 @@
       live,
       verified,
       verifiedLabel: verified ? "Zertifiziert" : "",
+      livePro: false,
+      liveProLabel: "",
+      sponsoredContent: false,
+      sponsoredContentLabel: "",
+      paidPartnership: false,
+      paidPartnershipLabel: "",
       source: present ? source : null
     };
   }
@@ -418,7 +475,8 @@
     const preferred = preferredUniqueId && String(info.uniqueId).toLocaleLowerCase() === String(preferredUniqueId).toLocaleLowerCase() ? 100 : 0;
     return preferred + (info.uniqueId ? 4 : 0) + (info.nickname ? 2 : 0) +
       (info.followerCount != null ? 4 : 0) + (info.followingCount != null ? 2 : 0) +
-      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0);
+      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0) +
+      (info.livePro ? 1 : 0) + (info.sponsoredContent ? 1 : 0) + (info.paidPartnership ? 1 : 0);
   }
 
   function summaryFlagValue(value) {
@@ -579,6 +637,8 @@
     shortenNickname,
     resolveSpeechLanguage,
     composeSpeechText,
+    shouldFilterGameModeSpeech,
+    gameEventSpeech,
     normalizeProfileInfo,
     EMPTY_PROFILE_INFO,
     EMPTY_AI_SUMMARY_INFO,

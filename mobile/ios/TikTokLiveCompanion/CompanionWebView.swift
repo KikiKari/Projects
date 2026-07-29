@@ -4,13 +4,14 @@ import WebKit
 
 struct CompanionWebView: UIViewRepresentable {
     @ObservedObject var state: CompanionState
+    let url = URL(string: "https://www.tiktok.com/live")!
+
     func makeCoordinator() -> Coordinator { Coordinator(state: state) }
 
     func makeUIView(context: Context) -> WKWebView {
         let controller = WKUserContentController()
         for resource in ["content-core", "proto-main", "webview-bridge"] {
             if let path = Bundle.main.path(forResource: resource, ofType: "js"), let script = try? String(contentsOfFile: path) {
-                // Auch Subframes injizieren: Der Webcast-WebSocket kann in einem Same-Origin-Iframe laufen (0PE-52).
                 controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false))
             }
         }
@@ -19,15 +20,23 @@ struct CompanionWebView: UIViewRepresentable {
         configuration.userContentController = controller
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
         let view = WKWebView(frame: .zero, configuration: configuration)
-        // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
-        view.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
         view.navigationDelegate = context.coordinator
-        view.uiDelegate = context.coordinator
         view.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = view
         state.sendCommand = { [weak view] command, payload in
+            if command == "refresh" {
+                let dataTypes: Set<String> = [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache]
+                WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {
+                    DispatchQueue.main.async {
+                        if let url = view?.url { view?.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command('unmute', {}); globalThis.TLC_MOBILE_BRIDGE?.command('play', {})")
+                        }
+                    }
+                }
+                return
+            }
             guard JSONSerialization.isValidJSONObject(payload),
                   let data = try? JSONSerialization.data(withJSONObject: payload),
                   let json = String(data: data, encoding: .utf8) else { return }
@@ -35,36 +44,24 @@ struct CompanionWebView: UIViewRepresentable {
                   let quoted = String(data: commandData, encoding: .utf8) else { return }
             view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command(\(quoted), \(json))")
         }
-        state.loadURL = { [weak view] target in
-            guard target.scheme == "https", target.host == "www.tiktok.com" else { return }
-            state.noteNavigation(target)
-            view?.load(URLRequest(url: target, cachePolicy: .reloadIgnoringLocalCacheData))
-        }
-        // Tap-Erkennung ohne die WebView-Bedienung zu stören: Events werden nicht konsumiert.
-        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
-        tap.cancelsTouchesInView = false
-        tap.delegate = context.coordinator
-        view.addGestureRecognizer(tap)
-        view.load(URLRequest(url: state.currentWebURL, cachePolicy: .reloadIgnoringLocalCacheData))
+        view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
         return view
     }
 
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, UIGestureRecognizerDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let state: CompanionState
         weak var webView: WKWebView?
         init(state: CompanionState) { self.state = state }
 
-        @objc func handleTap() { Task { @MainActor in state.expandVideo() } }
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
-
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard message.frameInfo.securityOrigin.protocol == "https",
+            guard message.frameInfo.isMainFrame,
+                  message.frameInfo.securityOrigin.protocol == "https",
                   message.frameInfo.securityOrigin.host == "www.tiktok.com",
                   JSONSerialization.isValidJSONObject(message.body),
                   let data = try? JSONSerialization.data(withJSONObject: message.body),
-                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: message.frameInfo.isMainFrame) else { return }
+                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: true) else { return }
             Task { @MainActor in state.handle(envelope) }
         }
 
@@ -72,25 +69,6 @@ struct CompanionWebView: UIViewRepresentable {
             guard let url = navigationAction.request.url else { return decisionHandler(.cancel) }
             if url.scheme == "https", url.host == "www.tiktok.com" { decisionHandler(.allow) }
             else { if url.scheme == "https" { UIApplication.shared.open(url) }; decisionHandler(.cancel) }
-        }
-
-        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-            if let url = webView.url { Task { @MainActor in state.noteNavigation(url) } }
-        }
-
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            for delay in [0.5, 1.5, 3.0] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak webView] in
-                    webView?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command('reject-cookies', {})")
-                }
-            }
-        }
-
-        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            if navigationAction.targetFrame == nil, let url = navigationAction.request.url, url.scheme == "https", url.host == "www.tiktok.com" {
-                webView.load(navigationAction.request)
-            }
-            return nil
         }
     }
 }

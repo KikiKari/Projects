@@ -11,32 +11,6 @@ enum RecognitionSource: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
 }
 
-enum TTSLanguage: String, CaseIterable, Identifiable {
-    case automatic = "Auto", german = "Deutsch", english = "Englisch"
-    var id: String { rawValue }
-    var voiceTag: String? { self == .german ? "de-DE" : self == .english ? "en-US" : nil }
-}
-
-struct ChatLine: Equatable, Identifiable {
-    let id: Int
-    let author: String
-    let content: String
-    let language: String
-    var visibleText: String { author.isEmpty ? content : "\(author): \(content)" }
-}
-
-struct SpeechRequest: Equatable, Identifiable {
-    let id: Int
-    let text: String
-    let languageTag: String?
-}
-
-struct StreamMediaURL: Equatable, Identifiable {
-    let url: URL
-    let kind: String
-    var id: String { url.absoluteString }
-}
-
 struct RecognitionResult: Equatable, Codable {
     let matched: Bool
     let title: String
@@ -58,6 +32,13 @@ struct BridgeEnvelope: Decodable, Equatable {
     let payload: [String: JSONValue]
 }
 
+struct MobileMediaLink: Equatable, Identifiable {
+    let id = UUID()
+    let url: URL
+    let type: String
+    let label: String
+}
+
 enum JSONValue: Decodable, Equatable {
     case string(String), number(Double), bool(Bool), object([String: JSONValue]), array([JSONValue]), null
 
@@ -74,4 +55,6 @@ enum JSONValue: Decodable, Equatable {
     var stringValue: String? { if case .string(let value) = self { return value }; return nil }
     var boolValue: Bool? { if case .bool(let value) = self { return value }; return nil }
     var numberValue: Double? { if case .number(let value) = self { return value }; return nil }
+    var objectValue: [String: JSONValue]? { if case .object(let value) = self { return value }; return nil }
+    var arrayValue: [JSONValue]? { if case .array(let value) = self { return value }; return nil }
 }

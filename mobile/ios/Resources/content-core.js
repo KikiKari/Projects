@@ -36,6 +36,14 @@
     followerCount: null,
     likeCount: null,
     live: null,
+    verified: false,
+    verifiedLabel: "",
+    livePro: false,
+    liveProLabel: "",
+    sponsoredContent: false,
+    sponsoredContentLabel: "",
+    paidPartnership: false,
+    paidPartnershipLabel: "",
     source: null
   });
 
@@ -113,7 +121,7 @@
 
   function normalizeCaptionInfo(value) {
     if (!value || typeof value !== "object") {
-      return { present: false, open: null, supportLang: [], location: null, showType: null };
+      return { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null };
     }
     const support = value.support_lang || value.supportLang || value.support_language || [];
     return {
@@ -121,8 +129,75 @@
       open: value.open ?? value.is_open ?? value.enabled ?? null,
       supportLang: Array.isArray(support) ? support.map(String) : [],
       location: value.location ?? null,
-      showType: value.show_type ?? value.showType ?? null
+      showType: value.show_type ?? value.showType ?? null,
+      observed: Boolean(value.observed),
+      source: value.source ?? null
     };
+  }
+
+  function mergeObservedCaptionInfo(value, captions) {
+    const base = normalizeCaptionInfo(value);
+    const items = (Array.isArray(captions) ? captions : [captions]).filter(Boolean);
+    const languages = items.flatMap((caption) => (caption.contents || []).map((content) => String(content.lang || "").trim())).filter(Boolean);
+    const observed = items.some((caption) => (caption.contents || []).some((content) => String(content.text || "").trim()));
+    if (!observed) return base;
+    const domOnly = items.every((caption) => caption.source === "dom" || caption.method === "DomCaption");
+    return {
+      ...base,
+      present: true,
+      open: true,
+      supportLang: [...new Set([...base.supportLang, ...languages])],
+      location: base.location || (domOnly ? "player-dom" : "WebcastCaptionMessage"),
+      observed: true,
+      source: domOnly ? "dom" : "websocket"
+    };
+  }
+
+  function normalizeCaptionText(value) {
+    return String(value || "")
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+  }
+
+  function captionText(caption) {
+    return normalizeCaptionText((caption?.contents || []).map((content) => content.text || "").join(" "));
+  }
+
+  function captionsOverlap(left, right) {
+    const a = typeof left === "string" ? normalizeCaptionText(left) : captionText(left);
+    const b = typeof right === "string" ? normalizeCaptionText(right) : captionText(right);
+    if (!a || !b) return false;
+    if (a.includes(b) || b.includes(a)) return true;
+    const aWords = a.split(" ");
+    const bWords = b.split(" ");
+    const max = Math.min(8, aWords.length, bWords.length);
+    for (let size = max; size >= 3; size -= 1) {
+      if (aWords.slice(-size).join(" ") === bWords.slice(0, size).join(" ")) return true;
+      if (bWords.slice(-size).join(" ") === aWords.slice(0, size).join(" ")) return true;
+    }
+    return false;
+  }
+
+  function limiterStrengthToDbfs(value) {
+    const strength = Math.max(0, Math.min(100, Number(value) || 0));
+    return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
+  }
+
+  function limiterDbfsToStrength(value) {
+    const threshold = Math.max(-30, Math.min(-4, Number(value) || -4));
+    return Math.round(((-4 - threshold) / 26) * 100);
+  }
+
+  function limiterMakeupCompensation(thresholdDbfs, ratio = 20) {
+    const threshold = Math.max(-100, Math.min(0, Number(thresholdDbfs) || 0));
+    const safeRatio = Math.max(1, Number(ratio) || 1);
+    const fullScaleOutputDb = threshold + ((0 - threshold) / safeRatio);
+    const strength = limiterDbfsToStrength(threshold);
+    const compensation = strength >= 75 ? 0.75 : strength >= 50 ? 0.55 : 0.45;
+    return Math.pow(10, (fullScaleOutputDb * compensation) / 20);
   }
 
   function parseJsonValue(value) {
@@ -284,6 +359,7 @@
   }
 
   function composeSpeechText(item, options = {}) {
+    if (item?.systemSpeechText) return sanitizeChatText(item.systemSpeechText);
     const teamTag = options.teamTag || "";
     const speakNames = options.speakNames !== false;
     const shortenNames = Boolean(options.shortenNames && speakNames);
@@ -308,6 +384,48 @@
     return `${author} ${isQuestion ? "fragt" : "sagt"}${body ? ` ${body}` : ""}`.trim();
   }
 
+  function gameModeSpeechKey(value) {
+    return sanitizeChatText(value)
+      .toLocaleLowerCase()
+      .replace(/^@+/, "")
+      .replace(/[^\p{L}\p{N}]+/gu, "")
+      .trim();
+  }
+
+  function shouldFilterGameModeSpeech(item, participants = {}, recentItems = []) {
+    const contentKey = gameModeSpeechKey(item?.content || "");
+    if (!contentKey || contentKey.length < 2 || item?.systemSpeechText) return false;
+    const aliases = new Set();
+    for (const participant of Object.values(participants || {})) {
+      for (const value of [participant?.name, participant?.displayId]) {
+        const key = gameModeSpeechKey(value || "");
+        if (key) aliases.add(key);
+      }
+    }
+    if (!aliases.has(contentKey)) return false;
+    const now = Date.parse(item?.receivedAtUtc || "") || Date.now();
+    const repeats = (recentItems || []).filter((entry) => {
+      const entryAt = Date.parse(entry?.receivedAtUtc || "") || 0;
+      return Math.abs(now - entryAt) <= 45000 && gameModeSpeechKey(entry?.content || "") === contentKey;
+    }).length;
+    return repeats >= 2;
+  }
+
+  function gameEventSpeech(rawMessage = {}) {
+    const raw = sanitizeChatText(rawMessage.rawText || rawMessage.content || "");
+    const explicitName = sanitizeChatText(rawMessage.giftName || rawMessage.gift_name || rawMessage.gift || "");
+    const nameFromText =
+      raw.match(/hat\s+\d+\s+(.+?)\s+gesendet/i)?.[1] ||
+      raw.match(/hat\s+(.+?)\s+gesendet(?:\s*x\s*\d+)?/i)?.[1] ||
+      raw.match(/sent\s+\d+\s+(.+?)(?:\s*x\s*\d+)?$/i)?.[1] ||
+      "";
+    const giftName = sanitizeChatText(explicitName || nameFromText);
+    if (!giftName) return "";
+    if (/(?:booster|boosterhandschuh)/i.test(giftName)) return "Booster wurde gesetzt";
+    if (/(?:game|controller|handschuh|schild|schutz|boost)/i.test(giftName)) return `${giftName} wurde gesetzt`;
+    return "";
+  }
+
   function numericString(value) {
     if (value == null || value === "") return null;
     if (typeof value === "object") {
@@ -328,6 +446,8 @@
     const roomId = value.roomId ?? value.room_id ?? value.liveRoomId ?? value.live_room_id ?? value.ownRoom?.roomId;
     const liveStatus = value.liveStatus ?? value.live_status ?? value.isLive ?? value.is_live;
     const live = liveStatus == null && roomId == null ? null : Boolean(liveStatus === true || Number(liveStatus) > 0 || String(roomId || "0") !== "0");
+    const verifiedValue = value.verified ?? value.isVerified ?? value.is_verified ?? value.author?.verified ?? value.user?.verified ?? value.user?.isVerified;
+    const verified = verifiedValue === true || verifiedValue === 1 || /^(?:true|1|yes|verified)$/i.test(String(verifiedValue || ""));
     const present = Boolean(uniqueId || nickname) && Boolean(followingCount != null || followerCount != null || likeCount != null || signature);
     return {
       present,
@@ -338,6 +458,14 @@
       followerCount,
       likeCount,
       live,
+      verified,
+      verifiedLabel: verified ? "Zertifiziert" : "",
+      livePro: false,
+      liveProLabel: "",
+      sponsoredContent: false,
+      sponsoredContentLabel: "",
+      paidPartnership: false,
+      paidPartnershipLabel: "",
       source: present ? source : null
     };
   }
@@ -347,7 +475,8 @@
     const preferred = preferredUniqueId && String(info.uniqueId).toLocaleLowerCase() === String(preferredUniqueId).toLocaleLowerCase() ? 100 : 0;
     return preferred + (info.uniqueId ? 4 : 0) + (info.nickname ? 2 : 0) +
       (info.followerCount != null ? 4 : 0) + (info.followingCount != null ? 2 : 0) +
-      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0);
+      (info.likeCount != null ? 2 : 0) + (info.signature ? 1 : 0) + (info.verified ? 1 : 0) +
+      (info.livePro ? 1 : 0) + (info.sponsoredContent ? 1 : 0) + (info.paidPartnership ? 1 : 0);
   }
 
   function summaryFlagValue(value) {
@@ -485,6 +614,13 @@
     QUALITY_LABELS,
     extractStreamVariants,
     normalizeCaptionInfo,
+    mergeObservedCaptionInfo,
+    normalizeCaptionText,
+    captionText,
+    captionsOverlap,
+    limiterStrengthToDbfs,
+    limiterDbfsToStrength,
+    limiterMakeupCompensation,
     sanitizeChatText,
     normalizedIdentity,
     wordCount,
@@ -501,6 +637,8 @@
     shortenNickname,
     resolveSpeechLanguage,
     composeSpeechText,
+    shouldFilterGameModeSpeech,
+    gameEventSpeech,
     normalizeProfileInfo,
     EMPTY_PROFILE_INFO,
     EMPTY_AI_SUMMARY_INFO,
