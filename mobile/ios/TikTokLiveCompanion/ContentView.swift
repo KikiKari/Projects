@@ -9,7 +9,14 @@ struct ContentView: View {
     @StateObject var state: CompanionState
 
     @MainActor
-    init(state: CompanionState = CompanionState()) { _state = StateObject(wrappedValue: state) }
+    init() {
+        _state = StateObject(wrappedValue: CompanionState())
+    }
+
+    @MainActor
+    init(state: CompanionState) {
+        _state = StateObject(wrappedValue: state)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
