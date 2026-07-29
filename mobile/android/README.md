@@ -13,4 +13,4 @@ Set `TLC_SHAZAM_TOKEN_URL` as a Gradle property or environment variable to the d
 .\gradlew.bat testMockDebugUnitTest assembleMockDebug
 ```
 
-The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.0-debug.apk`. A real catalog build additionally requires the official AAR and configured token service.
+The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.1.apk`. A real catalog build additionally requires the official AAR and configured token service.

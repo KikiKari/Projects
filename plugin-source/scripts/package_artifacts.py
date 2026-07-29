@@ -33,7 +33,7 @@ plugin_zip = args.output_dir / f"tiktok-live-companion-plugin-{version}.zip"
 service_zip = args.output_dir / f"tiktok-live-companion-service-{version}.zip"
 ios_source_zip = args.output_dir / f"tiktok-live-companion-ios-{version}-source.zip"
 android_source_zip = args.output_dir / f"tiktok-live-companion-android-{version}-source.zip"
-android_apk = args.output_dir / f"tiktok-live-companion-android-{version}-debug.apk"
+android_apk = args.output_dir / f"tiktok-live-companion-android-{version}.apk"
 extension_dir = args.output_dir / f"tiktok-live-companion-extension-{version}"
 checksum_file = args.output_dir / f"tiktok-live-companion-{version}-SHA256.txt"
 

@@ -7,7 +7,7 @@
 - `tiktok-live-companion-service-0.7.1.zip` – optionaler lokaler Windows-Dienst
 - `tiktok-live-companion-ios-0.7.1-source.zip` – vollständiges SwiftUI-/Xcode-Quellprojekt
 - `tiktok-live-companion-android-0.7.1-source.zip` – Kotlin-/Compose-Quellprojekt für Android und HyperOS
-- `tiktok-live-companion-android-0.7.0-debug.apk` – optionales Testpaket, wenn die Android-Toolchain verfügbar war
+- `tiktok-live-companion-android-0.7.1.apk` – optionales Testpaket, wenn die Android-Toolchain verfügbar war
 - `tiktok-live-companion-0.7.1-SHA256.txt` – Integritätswerte
 
 ## Änderungen
