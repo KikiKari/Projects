@@ -41,6 +41,39 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function mobilePlayerRoots() {
+    const selectors = [
+      "[data-e2e=\"live-content-container\"]",
+      "[data-e2e=\"live-room-content\"]",
+      "[data-e2e=\"live-second-screen-container\"]"
+    ];
+    const nodes = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
+    for (const node of [...document.querySelectorAll("*")]) {
+      if (node.shadowRoot) nodes.push(...selectors.flatMap((selector) => [...node.shadowRoot.querySelectorAll(selector)]));
+    }
+    return nodes;
+  }
+
+  function focusMobilePlayer() {
+    const roots = mobilePlayerRoots();
+    const video = primaryVideo();
+    const primary = roots[0] || video?.parentElement;
+    const secondScreen = roots.find((node) => node.matches?.("[data-e2e=\"live-second-screen-container\"]"));
+    if (primary) primary.setAttribute("data-tlc-mobile-content-root", "true");
+    if (video) video.setAttribute("data-tlc-mobile-primary-video", "true");
+    if (secondScreen) secondScreen.setAttribute("data-tlc-mobile-second-screen", "true");
+    const style = document.createElement("style");
+    style.textContent = "[data-tlc-mobile-second-screen=\"true\"]{display:none!important}";
+    document.documentElement.appendChild(style);
+  }
+
+  function dismissOptionalCookiePrompts() {
+    const pattern = /optionale cookies ablehnen|reject optional cookies/i;
+    for (const node of document.querySelectorAll("button,[role=button]")) {
+      if (pattern.test(node.textContent || "")) node.click();
+    }
+  }
+
   function limiterStrengthToDbfs(value) {
     const strength = Math.max(0, Math.min(100, Number(value) || 0));
     return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
@@ -74,6 +107,8 @@
   function inspect() {
     const video = primaryVideo();
     streamId = currentLiveHandle() || streamId;
+    focusMobilePlayer();
+    dismissOptionalCookiePrompts();
     installVideoMonitor(video);
     const captionButtons = [...document.querySelectorAll("button,[role=menuitem]")].filter((node) => /caption|untertitel/i.test(node.textContent || ""));
     emit("inspection", {
