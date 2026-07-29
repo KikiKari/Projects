@@ -2,15 +2,11 @@ package app.tiktoklivecompanion
 
 import android.content.Context
 import android.content.Intent
-import android.view.MotionEvent
-import android.view.ViewConfiguration
+import android.net.Uri
 import android.webkit.WebChromeClient
-import android.webkit.CookieManager
-import android.os.Message
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.FrameLayout
 import androidx.annotation.RawRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,49 +14,18 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import org.json.JSONObject
-import kotlin.math.abs
 
 private fun Context.raw(@RawRes id: Int) = resources.openRawResource(id).bufferedReader().use { it.readText() }
 
-/**
- * FrameLayout, das kurze Taps erkennt, ohne Touch-Events zu konsumieren:
- * Scrollen, Long-Press und Interaktion im WebView bleiben vollständig erhalten.
- */
-private class TapDetectingFrameLayout(context: Context, private val onTap: () -> Unit) : FrameLayout(context) {
-    private val slop = ViewConfiguration.get(context).scaledTouchSlop
-    private val tapTimeout = ViewConfiguration.getTapTimeout().toLong() + 100L
-    private var downX = 0f
-    private var downY = 0f
-    private var downTime = 0L
-    private var candidate = false
-
-    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { downX = event.x; downY = event.y; downTime = event.eventTime; candidate = event.pointerCount == 1 }
-            MotionEvent.ACTION_POINTER_DOWN -> candidate = false
-            MotionEvent.ACTION_MOVE -> if (abs(event.x - downX) > slop || abs(event.y - downY) > slop) candidate = false
-            MotionEvent.ACTION_UP -> if (candidate && event.eventTime - downTime <= tapTimeout) onTap()
-            MotionEvent.ACTION_CANCEL -> candidate = false
-        }
-        return false // Events nie abfangen, nur beobachten
-    }
-}
-
-@Composable fun CompanionWebView(viewModel: CompanionViewModel, modifier: Modifier = Modifier, onTap: () -> Unit = {}) {
+@Composable fun CompanionWebView(viewModel: CompanionViewModel, modifier: Modifier = Modifier) {
     AndroidView(modifier = modifier, factory = { context ->
-        val webView = WebView(context).apply {
+        WebView(context).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
-            settings.userAgentString = settings.userAgentString.replace("; wv", "").replace(Regex("Android [^;]+; [^)]+\\)"), "Windows NT 10.0; Win64; x64)").replace(Regex("Mobile Safari"), "Safari")
-            settings.useWideViewPort = false
-            settings.loadWithOverviewMode = false
-            settings.mediaPlaybackRequiresUserGesture = false
+            settings.mediaPlaybackRequiresUserGesture = true
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.setSupportMultipleWindows(false)
-            CookieManager.getInstance().setAcceptCookie(true)
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
             if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) WebViewCompat.startSafeBrowsing(context) {}
             val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
@@ -71,18 +36,6 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                 }
             }
             webViewClient = object : WebViewClient() {
-                override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
-                    url?.let(viewModel::noteNavigation)
-                    super.onPageStarted(view, url, favicon)
-                }
-                override fun onPageFinished(view: WebView, url: String?) {
-                    super.onPageFinished(view, url)
-                    for (delayMs in listOf(500L, 1_500L, 3_000L)) view.postDelayed({
-                        view.evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command('reject-cookies', {})") {
-                            CookieManager.getInstance().flush()
-                        }
-                    }, delayMs)
-                }
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     val uri = request.url
                     if (uri.scheme == "https" && uri.host == "www.tiktok.com") return false
@@ -90,26 +43,18 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                     return true
                 }
             }
-            webChromeClient = object : WebChromeClient() {
-                override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
-                    val popup = WebView(context)
-                    popup.webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(child: WebView, request: WebResourceRequest): Boolean {
-                            val target = request.url
-                            if (target.scheme == "https" && target.host == "www.tiktok.com") view.loadUrl(target.toString())
-                            child.destroy()
-                            return true
-                        }
-                    }
-                    (resultMsg.obj as? WebView.WebViewTransport)?.webView = popup
-                    resultMsg.sendToTarget()
-                    return true
+            webChromeClient = object : WebChromeClient() {}
+            viewModel.sendCommand = { command, payload -> post {
+                if (command == "refresh") {
+                    val current = url?.toString() ?: "https://www.tiktok.com/live"
+                    clearCache(true)
+                    loadUrl(current)
+                    postDelayed({ evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command('unmute', {}); globalThis.TLC_MOBILE_BRIDGE?.command('play', {})", null) }, 1500)
+                } else {
+                    evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null)
                 }
-            }
-            viewModel.sendCommand = { command, payload -> post { evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null) } }
-            viewModel.loadUrl = { url -> post { loadUrl(url) } }
-            loadUrl(viewModel.currentWebUrl)
+            } }
+            loadUrl("https://www.tiktok.com/live")
         }
-        TapDetectingFrameLayout(context, onTap).apply { addView(webView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)) }
     })
 }

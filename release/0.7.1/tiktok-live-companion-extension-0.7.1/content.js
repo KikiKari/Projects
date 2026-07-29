@@ -20,6 +20,9 @@
   const ALL_QUALITY_LABELS = [...new Set(Object.values(QUALITY_ALIASES).flat().map(normalizedLabel))];
   const chatNodeText = new WeakMap();
   const giftNodeText = new WeakMap();
+  const POPUP_GUARD_GRACE_MS = 30;
+  const QUICK_RECOVER_INTERVAL_MS = 30;
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -27,10 +30,16 @@
   let fallbackLimiter = null;
   let debugEnabled = false;
   let tabActive = false;
+  let chatSourceOnly = false;
   let quickRecoverEnabled = false;
+  let quickRecoverArmed = false;
   let tabRuntimeStarted = false;
   let quickRecoverFailures = 0;
   let lastQuickRecoverAt = 0;
+  let fullscreenWasActive = false;
+  let liveProSeenHandle = "";
+  let sponsoredContentSeenHandle = "";
+  let paidPartnershipSeenHandle = "";
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -53,6 +62,14 @@
       element?.getAttribute?.("data-e2e"),
       visibleText(element)
     ].filter(Boolean).join(" ").trim();
+  }
+
+  function elementTextBundle(element) {
+    return [
+      visibleText(element),
+      element?.getAttribute?.("aria-label"),
+      element?.getAttribute?.("title")
+    ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   }
 
   function isVisible(element) {
@@ -193,7 +210,13 @@
       ...winner,
       live: Boolean(winner?.live || current?.live || candidate?.live),
       verified: Boolean(winner?.verified || current?.verified || candidate?.verified),
-      verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || ""
+      verifiedLabel: winner?.verifiedLabel || current?.verifiedLabel || candidate?.verifiedLabel || "",
+      livePro: Boolean(winner?.livePro || current?.livePro || candidate?.livePro),
+      liveProLabel: winner?.liveProLabel || current?.liveProLabel || candidate?.liveProLabel || "",
+      sponsoredContent: Boolean(winner?.sponsoredContent || current?.sponsoredContent || candidate?.sponsoredContent),
+      sponsoredContentLabel: winner?.sponsoredContentLabel || current?.sponsoredContentLabel || candidate?.sponsoredContentLabel || "",
+      paidPartnership: Boolean(winner?.paidPartnership || current?.paidPartnership || candidate?.paidPartnership),
+      paidPartnershipLabel: winner?.paidPartnershipLabel || current?.paidPartnershipLabel || candidate?.paidPartnershipLabel || ""
     };
   }
 
@@ -261,22 +284,92 @@
     return blue >= 170 && green >= 120 && red <= 90;
   }
 
-  function certifiedBadgePresent(root = document) {
-    const labeled = [...root.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
-      isVisible(element) && /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
+  function certifiedSvgBadge(element) {
+    if (String(element?.tagName || "").toLowerCase() !== "svg") return false;
+    if (!isVisible(element)) return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8 || rect.width > 24 || rect.height > 24) return false;
+    const circles = [...element.querySelectorAll("circle")];
+    const paths = [...element.querySelectorAll("path")];
+    const hasBlueCircle = circles.some((circle) =>
+      colorIsCertified(circle.getAttribute("fill")) || colorIsCertified(getComputedStyle(circle).fill)
     );
-    if (labeled) return true;
+    const hasWhiteMark = paths.some((path) => /(?:^|[;,\s])(?:#fff|#ffffff|white)(?:$|[;,\s])/i.test(String(path.getAttribute("fill") || getComputedStyle(path).fill || "")));
+    return hasBlueCircle && hasWhiteMark;
+  }
+
+  function certifiedBadgePresent(root = document) {
     const handle = currentPathHandle().toLocaleLowerCase();
-    const roots = [...root.querySelectorAll('header,[data-e2e*="user" i],[data-e2e*="profile" i],a[href^="/@"],a[href*="tiktok.com/@"]')]
-      .filter((element) => isVisible(element) && (!handle || visibleText(element).toLocaleLowerCase().includes(handle)));
-    for (const item of roots.slice(0, 12)) {
-      for (const element of item.querySelectorAll("svg, img, span, div")) {
-        if (!isVisible(element)) continue;
-        const rect = element.getBoundingClientRect();
-        if (rect.width < 6 || rect.height < 6 || rect.width > 32 || rect.height > 32) continue;
-        const style = getComputedStyle(element);
-        if (colorIsCertified(style.color) || colorIsCertified(style.backgroundColor) || colorIsCertified(style.fill) || colorIsCertified(style.stroke)) return true;
+    for (const svg of root.querySelectorAll("svg")) {
+      if (!certifiedSvgBadge(svg)) continue;
+      const profileLink = svg.closest('a[href^="/@"],a[href*="tiktok.com/@"]');
+      const textScope = svg.closest('h1,h2,h3,p,[data-e2e="user-title"],[data-e2e="user-subtitle"],[data-e2e*="user" i]') || svg.parentElement;
+      const nearby = visibleText(textScope?.parentElement || textScope || svg.parentElement).toLocaleLowerCase();
+      let linkedHandle = "";
+      try { linkedHandle = profileLink ? decodeURIComponent(new URL(profileLink.href, location.href).pathname).replace(/^\/@/, "").replace(/\/$/, "").toLocaleLowerCase() : ""; }
+      catch (_) { linkedHandle = ""; }
+      if (!handle || linkedHandle === handle || nearby.includes(handle)) return true;
+    }
+    return false;
+  }
+
+  function liveProBadgePresent(root = document) {
+    if (!isLivePage()) return false;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    if (liveProSeenHandle === handle) return true;
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],[data-e2e="live-room-info"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"],div,span,p')]
+      .filter((element) => isVisible(element));
+    let checked = 0;
+    for (const scope of scopes) {
+      const text = elementTextBundle(scope);
+      if (/\bWerbeinhalt\b/i.test(text) || /\bPaid\s+partnership\b/i.test(text) || /\bPromotional\s+content\b/i.test(text) || /\bBezahlte\s+Partnerschaft\b/i.test(text)) continue;
+      if (!/\bLIVE\s+Pro\b/i.test(text) && !/Anerkannt von TikTok LIVE/i.test(text)) continue;
+      checked += 1;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.closest('[data-e2e="live-header-container"],[data-e2e="live-room-info"]') || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) {
+        liveProSeenHandle = handle;
+        return true;
       }
+      if (checked >= 20) break;
+    }
+    return false;
+  }
+
+  function sponsoredContentBadgePresent(root = document) {
+    if (!isLivePage()) return false;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    if (sponsoredContentSeenHandle === handle) return true;
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],[data-e2e="live-room-info"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"],div,span,p')]
+      .filter((element) => isVisible(element));
+    let checked = 0;
+    for (const scope of scopes) {
+      const text = elementTextBundle(scope);
+      if (!/\bWerbeinhalt\b/i.test(text) && !/\bPromotional\s+content\b/i.test(text)) continue;
+      checked += 1;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.closest('[data-e2e="live-header-container"],[data-e2e="live-room-info"]') || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) {
+        sponsoredContentSeenHandle = handle;
+        return true;
+      }
+      if (checked >= 20) break;
+    }
+    return false;
+  }
+
+  function paidPartnershipBadgePresent(root = document) {
+    if (!isLivePage()) return false;
+    const handle = currentPathHandle().toLocaleLowerCase();
+    if (paidPartnershipSeenHandle === handle) return true;
+    const scopes = [...root.querySelectorAll('[data-e2e="live-header-container"],[data-e2e="live-room-info"],header,[role="link"],a[href^="/@"],a[href*="tiktok.com/@"],div,span,p')]
+      .filter((element) => isVisible(element));
+    let checked = 0;
+    for (const scope of scopes) {
+      const text = elementTextBundle(scope);
+      if (!/\bBezahlte\s+Partnerschaft\b/i.test(text) && !/\bPaid\s+partnership\b/i.test(text)) continue;
+      checked += 1;
+      if (!handle || text.toLocaleLowerCase().includes(handle) || scope.closest('[data-e2e="live-header-container"],[data-e2e="live-room-info"]') || scope.querySelector('a[href^="/@"],a[href*="tiktok.com/@"],svg')) {
+        paidPartnershipSeenHandle = handle;
+        return true;
+      }
+      if (checked >= 20) break;
     }
     return false;
   }
@@ -305,9 +398,12 @@
     const followerCount = selectorText(['[data-e2e="followers-count"]']);
     const likeCount = selectorText(['[data-e2e="likes-count"]']);
     const verified = certifiedBadgePresent();
+    const livePro = livePage && liveProBadgePresent();
+    const sponsoredContent = livePage && sponsoredContentBadgePresent();
+    const paidPartnership = livePage && paidPartnershipBadgePresent();
     const live = Boolean(livePage || document.querySelector('[data-e2e*="live" i]'));
-    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePage);
-    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "dom" : null };
+    const present = Boolean(nickname || uniqueId) && Boolean(signature || followingCount || followerCount || likeCount || verified || livePro || sponsoredContent || paidPartnership || livePage);
+    return { present, nickname, uniqueId: uniqueId.replace(/^@/, ""), signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", sponsoredContent, sponsoredContentLabel: sponsoredContent ? "Werbeinhalt" : "", paidPartnership, paidPartnershipLabel: paidPartnership ? "Bezahlte Partnerschaft" : "", source: present ? "dom" : null };
   }
 
   async function collectProfileFromHover(force = false) {
@@ -328,8 +424,11 @@
     const signature = selectorText(['[data-e2e="user-bio"]', '[data-e2e="user-signature"]']);
     const nickname = selectorText(['[data-e2e="user-title"] h1', '[data-e2e="user-title"]']) || visibleText(link);
     const verified = certifiedBadgePresent();
+    const livePro = liveProBadgePresent();
+    const sponsoredContent = sponsoredContentBadgePresent();
+    const paidPartnership = paidPartnershipBadgePresent();
     const present = Boolean(followingCount || followerCount || likeCount);
-    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", source: present ? "Profilkarte" : null };
+    return { present, nickname, uniqueId: handle, signature, followingCount: followingCount || null, followerCount: followerCount || null, likeCount: likeCount || null, live: true, verified, verifiedLabel: verified ? "Zertifiziert" : "", livePro, liveProLabel: livePro ? "Live Pro" : "", sponsoredContent, sponsoredContentLabel: sponsoredContent ? "Werbeinhalt" : "", paidPartnership, paidPartnershipLabel: paidPartnership ? "Bezahlte Partnerschaft" : "", source: present ? "Profilkarte" : null };
   }
 
   async function fetchPublicProfile(force = false) {
@@ -354,9 +453,7 @@
           profile = mergeProfile(profile, core.inspectMetadata(JSON.parse(value), { maxNodes: 20000, profileUniqueId: handle }).profileInfo);
         } catch (_) { /* Many profile scripts are not JSON. */ }
       }
-      const verified = [...page.querySelectorAll('[aria-label],[title],[alt],[data-e2e]')].some((element) =>
-        /(verified|verifiziert|zertifiziert|certified|official)/i.test(elementLabel(element))
-      );
+      const verified = certifiedBadgePresent(page);
       if (profile.present || verified) profile = { ...profile, present: true, uniqueId: profile.uniqueId || handle, live: true, verified: Boolean(profile.verified || verified), verifiedLabel: profile.verifiedLabel || (verified ? "Zertifiziert" : ""), source: "öffentliche Profilseite" };
       profilePageCache = { handle, at: now, profile };
       return profile;
@@ -734,7 +831,7 @@
   }
 
   function dismissTimedLiveInterruption() {
-    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return;
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return;
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
     const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (!interruption) return;
@@ -752,7 +849,7 @@
   }
 
   function timedLiveInterruptionReason() {
-    if (!isLivePage() || Date.now() - popupGuardStartedAt < 2000) return "";
+    if (!isLivePage() || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return "";
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
     const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (interruption) return "login-dialog";
@@ -762,13 +859,17 @@
 
   function quickRecoverReason() {
     if (!quickRecoverEnabled || !tabActive || !isLivePage()) return "";
+    const video = primaryVideo();
+    if (video && !video.error && !video.ended && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      quickRecoverArmed = true;
+    }
+    if (!quickRecoverArmed) return "";
     const interruption = timedLiveInterruptionReason();
     if (interruption) return interruption;
-    const video = primaryVideo();
     if (!video) return "";
     if (video.error) return "video-error";
     if (video.ended) return "video-ended";
-    if (Date.now() - popupGuardStartedAt < 2000) return "";
+    if (Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return "";
     if (video.paused) return "video-paused";
     if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return "video-not-ready";
     return "";
@@ -776,18 +877,8 @@
 
   async function tryQuickRecover(reason) {
     dismissTimedLiveInterruption();
-    const video = primaryVideo();
-    if (video && !video.ended && !video.error) {
-      await video.play().catch(() => {});
-      await sleep(150);
-      if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        quickRecoverFailures = 0;
-        chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason: "quick-recover-local", playerState: getPlayerState() }).catch(() => {});
-        return;
-      }
-    }
     quickRecoverFailures += 1;
-    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < 3000) return;
+    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
     quickRecoverFailures = 0;
     lastQuickRecoverAt = Date.now();
     chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason }).catch(() => {});
@@ -801,7 +892,16 @@
         return;
       }
       tryQuickRecover(reason).catch((error) => debug("quick-recover-error", { reason, error: String(error?.message || error).slice(0, 300) }));
-    }, 350);
+    }, QUICK_RECOVER_INTERVAL_MS);
+  }
+
+  function pushFullscreenState(reason) {
+    const fullscreenActive = Boolean(document.fullscreenElement);
+    if (fullscreenWasActive && !fullscreenActive) {
+      chrome.runtime.sendMessage({ type: "TLC_FULLSCREEN_EXITED", reason }).catch(() => {});
+    }
+    fullscreenWasActive = fullscreenActive;
+    setTimeout(() => pushPlayerState(reason), 50);
   }
 
   function pushPlayerState(reason) {
@@ -825,19 +925,28 @@
     });
   }
 
+  function setMediaFallbackStatus(text) {
+    const status = document.getElementById("tlc-media-fallback-status");
+    if (status) status.textContent = text;
+  }
+
   function ensureMediaFallbackVideo() {
     let holder = document.getElementById("tlc-media-fallback");
     if (!holder) {
       holder = document.createElement("div");
       holder.id = "tlc-media-fallback";
-      holder.style.cssText = "position:absolute;inset:0;z-index:2147483646;display:grid;place-items:center;background:#000;";
+      holder.style.cssText = "position:absolute;inset:0;z-index:2147483646;display:grid;grid-template-rows:minmax(0,1fr) auto;background:#000;";
       const video = document.createElement("video");
       video.controls = true;
       video.autoplay = true;
       video.playsInline = true;
       video.muted = false;
       video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;";
-      holder.append(video);
+      const status = document.createElement("div");
+      status.id = "tlc-media-fallback-status";
+      status.style.cssText = "padding:10px 14px;color:#fff;background:rgba(0,0,0,.82);font:600 13px system-ui,sans-serif;text-align:center;";
+      status.textContent = "VLC Ersatz wird geprüft.";
+      holder.append(video, status);
     }
     const surface = playerSurface();
     const style = getComputedStyle(surface);
@@ -873,19 +982,26 @@
 
   async function playMediaFallback(media = []) {
     const candidates = mediaFallbackCandidates(media);
-    if (!candidates.length) return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
     const video = ensureMediaFallbackVideo();
+    if (!candidates.length) {
+      setMediaFallbackStatus("Keine Video-Links erkannt.");
+      return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
+    }
+    setMediaFallbackStatus(`Prüfe ${candidates.length} Video-Link(s).`);
     const failures = [];
     for (const item of candidates) {
+      setMediaFallbackStatus(`Prüfe ${item.quality || "Video"} ${item.protocol || ""}.`.trim());
       const result = await tryMediaUrl(video, item);
       if (result.ok) {
+        setMediaFallbackStatus(`${item.quality || "Video"} wird abgespielt.`);
         debug("media-fallback", { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" });
         return { activated: true, action: "play-vlc-source", media: { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" }, playerState: getPlayerState() };
       }
       failures.push(`${item.quality || "?"} ${item.protocol || "?"}: ${result.reason}`);
     }
-    document.getElementById("tlc-media-fallback")?.remove();
-    return { activated: false, action: "play-vlc-source", reason: `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`, playerState: getPlayerState() };
+    const reason = `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`;
+    setMediaFallbackStatus(reason);
+    return { activated: false, action: "play-vlc-source", reason, playerState: getPlayerState() };
   }
 
   async function configureLimiter(video, enabled, thresholdDbfs) {
@@ -911,8 +1027,10 @@
       pipeline.enabled = Boolean(enabled);
       pipeline.thresholdDbfs = threshold;
       pipeline.compressor.threshold.value = pipeline.enabled ? threshold : 0;
-      pipeline.compressor.knee.value = pipeline.enabled ? 1 : 0;
+      pipeline.compressor.knee.value = pipeline.enabled ? 0.5 : 0;
       pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
+      pipeline.compressor.attack.value = pipeline.enabled ? 0.0015 : 0.003;
+      pipeline.compressor.release.value = pipeline.enabled ? 0.08 : 0.25;
       pipeline.makeup.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
       debug("limiter", { mode: "compressor", enabled: pipeline.enabled, threshold });
       return pipeline;
@@ -1130,18 +1248,20 @@
     const candidates = [...document.querySelectorAll('[data-e2e*="gift" i],[data-e2e*="message" i]')].slice(-150);
     for (const element of candidates) {
       const raw = visibleText(element);
-      if (!raw || giftNodeText.get(element) === raw || !/(?:gesendet|sent)\s*x\s*\d+/i.test(raw)) continue;
+      if (!raw || giftNodeText.get(element) === raw || !/(?:gesendet|sent)(?:\s*x\s*\d+)?/i.test(raw)) continue;
       giftNodeText.set(element, raw);
-      const countMatch = raw.match(/(?:gesendet|sent)\s*x\s*(\d+)/i);
+      const countMatch = raw.match(/(?:gesendet|sent)\s*x\s*(\d+)/i) || raw.match(/\bhat\s+(\d+)\s+.+?\s+gesendet/i) || raw.match(/\bsent\s+(\d+)\s+.+/i);
       const owner = visibleText(element.querySelector('[data-e2e="message-owner-name"]'));
-      const authorMatch = raw.match(/^(.+?)\s+(?:hat\s+.+?\s+gesendet|sent\s+.+?)\s*x\s*\d+/i);
+      const authorMatch = raw.match(/^(.+?)\s+(?:hat\s+.+?\s+gesendet|sent\s+.+?)(?:\s*x\s*\d+)?/i);
+      const giftNameMatch = raw.match(/\bhat\s+\d+\s+(.+?)\s+gesendet/i) || raw.match(/\bhat\s+(.+?)\s+gesendet(?:\s*x\s*\d+)?/i);
       const author = owner || authorMatch?.[1] || "";
-      if (!author || !countMatch) continue;
+      if (!author) continue;
       chrome.runtime.sendMessage({
         type: "TLC_GIFT_MESSAGE",
         giftMessage: {
           author,
-          repeatCount: countMatch[1],
+          giftName: giftNameMatch?.[1] || "",
+          repeatCount: countMatch?.[1] || "1",
           rawText: raw,
           source: "dom",
           receivedAtUtc: new Date().toISOString()
@@ -1201,6 +1321,7 @@
       tabActive = Boolean(message.enabled);
       debugEnabled = Boolean(message.debugEnabled);
       quickRecoverEnabled = Boolean(message.quickRecoverEnabled);
+      chatSourceOnly = Boolean(message.chatSourceOnly);
       if (tabActive) startTabRuntime();
       sendResponse({ enabled: tabActive });
       return false;
@@ -1274,10 +1395,10 @@
     scanDomChat();
     scanDomGifts();
     scanDomCaptions();
-    setInterval(dismissTimedLiveInterruption, 1000);
+    setInterval(dismissTimedLiveInterruption, QUICK_RECOVER_INTERVAL_MS);
     monitorQuickRecover();
     for (const eventName of ["fullscreenchange", "visibilitychange", "focus", "pageshow"]) {
-      window.addEventListener(eventName, () => setTimeout(() => pushPlayerState(eventName), 150));
+      window.addEventListener(eventName, () => pushFullscreenState(eventName));
     }
     scheduleScan(50);
     chrome.storage.local.get("tlc-settings").then(({ "tlc-settings": settings = {} }) => {
@@ -1289,9 +1410,14 @@
           return;
         }
         const volume = Math.max(0, Math.min(100, Number(settings.playerVolume ?? 100))) / 100;
-        video.volume = volume;
-        if (volume > 0) video.muted = false;
-        if (settings.limiterEnabled) await configureLimiter(video, true, core.limiterStrengthToDbfs(settings.limiterStrength ?? 30));
+        if (chatSourceOnly) {
+          video.volume = 0;
+          video.muted = true;
+        } else {
+          video.volume = volume;
+          if (volume > 0) video.muted = false;
+          if (settings.limiterEnabled) await configureLimiter(video, true, core.limiterStrengthToDbfs(settings.limiterStrength ?? 30));
+        }
       };
       apply().catch((error) => debug("audio-settings-restore", { error: String(error?.message || error).slice(0, 300) }));
     }).catch(() => {});

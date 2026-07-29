@@ -29,14 +29,19 @@
       <input id="speech-volume" type="range" min="0" max="100" step="5" value="50">
       <div class="settings-grid speech-settings">
         <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option></select></label>
-        <label><span>Dienstadresse</span><input id="service-url" type="url" value="http://127.0.0.1:43117" spellcheck="false"></label>
+        <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
+        <label><span>AudD API-Token</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
         <label><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
       </div>
-      <button id="service-action" class="secondary">Sprachdienst installieren</button>
+      <div class="button-row">
+        <button id="service-action" class="secondary">Sprachdienst installieren</button>
+        <button id="sherpa-action" class="secondary">Sherpa installieren</button>
+      </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
-      <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen vorlesen</label>
-      <label class="option-row"><input id="shorten-names" type="checkbox"> Geeignete lange Namen kürzen</label>
-      <label class="option-row"><input id="keep-speech-active" type="checkbox"> Vorlesen bei Tabwechsel oder Minimieren aktiv lassen</label>
+      <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen</label>
+      <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
+      <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
+      <label class="option-row"><input id="keep-speech-active" type="checkbox"> Permanent aktiv</label>
     </section>
 
     <section aria-labelledby="top-chatters-heading">
