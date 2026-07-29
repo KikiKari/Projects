@@ -12,4 +12,6 @@
 
 ## Änderungen
 
-Die Browser-Erweiterung 0.7.1 ergänzt Permanent Hook, Auto-Reconnect, den direkten Wechsel zwischen Embed- und normaler LIVE-Seite, die Pegelschutz-Beschriftung, Zertifiziert-Anzeige in den Seiteninformationen und die Stummfunktion in Top-Chatter. Die bestehende VLC-Link-Liste bleibt unverändert. Der lokale Dienst bleibt beim bisherigen Pairing-Verfahren.
+Die Browser-Erweiterung 0.7.1 startet den bereits eingerichteten Sprachdienst über den lokalen Starter erneut im Hintergrund, zeigt Sherpa nach erfolgreicher Einrichtung als aktiv, filtert exakt wiederholte technische TTS-Dubletten und dämpft den Pegelschutz bei hoher Schutzstärke früher und stärker. Die bestehende Browser-VLC-Link-Liste bleibt unverändert.
+
+Die Mobile-Quellarchive 0.7.1 gleichen Chat/Game-Mode, TTS-Dedupe, Pegelschutz, Auto-Reconnect mit 400-ms-Mindestabstand, Refresh mit App-/WebView-Cache-Leerung ohne Cookie-Löschung und VLC-kompatiblere HLS-/FLV-/MP4-Kandidaten an den Browserstand an.

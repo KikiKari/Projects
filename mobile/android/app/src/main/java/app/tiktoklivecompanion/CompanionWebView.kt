@@ -44,7 +44,16 @@ private fun Context.raw(@RawRes id: Int) = resources.openRawResource(id).buffere
                 }
             }
             webChromeClient = object : WebChromeClient() {}
-            viewModel.sendCommand = { command, payload -> post { evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null) } }
+            viewModel.sendCommand = { command, payload -> post {
+                if (command == "refresh") {
+                    val current = url?.toString() ?: "https://www.tiktok.com/live"
+                    clearCache(true)
+                    loadUrl(current)
+                    postDelayed({ evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command('unmute', {}); globalThis.TLC_MOBILE_BRIDGE?.command('play', {})", null) }, 1500)
+                } else {
+                    evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null)
+                }
+            } }
             loadUrl("https://www.tiktok.com/live")
         }
     })

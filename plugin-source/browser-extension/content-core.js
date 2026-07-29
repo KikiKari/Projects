@@ -183,19 +183,21 @@
 
   function limiterStrengthToDbfs(value) {
     const strength = Math.max(0, Math.min(100, Number(value) || 0));
-    return Math.round((-1 - (strength * 17 / 100)) * 100) / 100;
+    return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
   }
 
   function limiterDbfsToStrength(value) {
-    const threshold = Math.max(-18, Math.min(-1, Number(value) || -1));
-    return Math.round(((-1 - threshold) / 17) * 100);
+    const threshold = Math.max(-30, Math.min(-4, Number(value) || -4));
+    return Math.round(((-4 - threshold) / 26) * 100);
   }
 
   function limiterMakeupCompensation(thresholdDbfs, ratio = 20) {
     const threshold = Math.max(-100, Math.min(0, Number(thresholdDbfs) || 0));
     const safeRatio = Math.max(1, Number(ratio) || 1);
     const fullScaleOutputDb = threshold + ((0 - threshold) / safeRatio);
-    return Math.pow(10, (fullScaleOutputDb * 0.6) / 20);
+    const strength = limiterDbfsToStrength(threshold);
+    const compensation = strength >= 75 ? 0.75 : strength >= 50 ? 0.55 : 0.45;
+    return Math.pow(10, (fullScaleOutputDb * compensation) / 20);
   }
 
   function parseJsonValue(value) {

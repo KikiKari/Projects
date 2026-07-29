@@ -22,3 +22,9 @@ data class BridgeEnvelope(
     val timestamp: String,
     val payload: Map<String, Any?>
 )
+
+data class MobileMediaLink(
+    val url: String,
+    val type: String,
+    val label: String
+)

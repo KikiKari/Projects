@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class CompanionUiState(
     val tab: CompanionTab = CompanionTab.SONG,
@@ -19,7 +21,14 @@ data class CompanionUiState(
     val captionsAvailable: Boolean = false,
     val chats: List<String> = emptyList(),
     val liveValues: Map<String, String> = emptyMap(),
+    val mediaLinks: List<MobileMediaLink> = emptyList(),
     val mutedAuthors: Set<String> = emptySet(),
+    val gameModeEnabled: Boolean = true,
+    val shortenNames: Boolean = true,
+    val keepSpeechActive: Boolean = true,
+    val autoReconnectEnabled: Boolean = true,
+    val limiterEnabled: Boolean = false,
+    val limiterStrength: Int = 30,
     val error: String? = null
 )
 
@@ -27,6 +36,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     private val mutable = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = mutable
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
+    private val recentSpeech = LinkedHashMap<String, Long>()
+    private val repeatWindowMs = 20_000L
 
     init {
         recognizer.onResult = { result -> mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") } }
@@ -38,6 +49,18 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     fun selectTab(tab: CompanionTab) = mutable.update { it.copy(tab = tab) }
+    fun setGameMode(enabled: Boolean) = mutable.update { it.copy(gameModeEnabled = enabled) }
+    fun setShortenNames(enabled: Boolean) = mutable.update { it.copy(shortenNames = enabled) }
+    fun setKeepSpeechActive(enabled: Boolean) = mutable.update { it.copy(keepSpeechActive = enabled) }
+    fun setAutoReconnect(enabled: Boolean) {
+        mutable.update { it.copy(autoReconnectEnabled = enabled) }
+        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to enabled))
+    }
+    fun setLimiter(enabled: Boolean, strength: Int = mutable.value.limiterStrength) {
+        val safeStrength = strength.coerceIn(0, 100)
+        mutable.update { it.copy(limiterEnabled = enabled, limiterStrength = safeStrength) }
+        sendCommand?.invoke("set-limiter", mapOf("enabled" to enabled, "strength" to safeStrength))
+    }
     fun selectSource(source: RecognitionSource) {
         mutable.update { it.copy(source = source) }
         preferences?.let { stored -> viewModelScope.launch { stored.setSource(source) } }
@@ -55,6 +78,18 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         mutable.update { it.copy(result = null, error = null, recognitionStatus = "Erkennung läuft · maximal 12 Sekunden") }
         if (mutable.value.source == RecognitionSource.MICROPHONE) recognizer.recognizeMicrophone()
         else { recognizer.startPcmStream(); sendCommand?.invoke("start-webview-audio", emptyMap()) }
+    }
+
+    fun spokenLineAllowed(line: String, now: Long = System.currentTimeMillis()): Boolean {
+        val normalized = line.lowercase().replace(Regex("\\s+"), " ").trim()
+        if (normalized.isEmpty()) return false
+        val iterator = recentSpeech.iterator()
+        while (iterator.hasNext()) {
+            if (now - iterator.next().value > repeatWindowMs) iterator.remove()
+        }
+        val last = recentSpeech[normalized] ?: 0L
+        recentSpeech[normalized] = now
+        return now - last > repeatWindowMs
     }
 
     fun handle(envelope: BridgeEnvelope) {
@@ -77,6 +112,23 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 mutable.update { it.copy(chats = (it.chats + line).takeLast(50)) }
             }
             "live-stats" -> mutable.update { current -> current.copy(liveValues = current.liveValues + envelope.payload.mapValues { it.value?.toString() ?: "" }) }
+            "media-links" -> {
+                val rawLinks = envelope.payload["links"]
+                val links = when (rawLinks) {
+                    is JSONArray -> (0 until rawLinks.length()).mapNotNull { rawLinks.optJSONObject(it) }
+                    is List<*> -> rawLinks.mapNotNull { it as? JSONObject }
+                    else -> emptyList()
+                }.mapNotNull { item ->
+                    val url = item.optString("url").takeIf { value -> value.isNotBlank() } ?: return@mapNotNull null
+                    val type = item.optString("type").takeIf { value -> value.isNotBlank() } ?: return@mapNotNull null
+                    val label = item.optString("label").takeIf { value -> value.isNotBlank() } ?: type
+                    if (!url.startsWith("https://")) return@mapNotNull null
+                    MobileMediaLink(url = url, type = type, label = label)
+                }
+                mutable.update { it.copy(mediaLinks = links.take(12)) }
+            }
+            "quick-recover" -> mutable.update { it.copy(liveValues = it.liveValues + ("Auto-Reconnect" to "aktiv")) }
+            "limiter" -> mutable.update { it.copy(liveValues = it.liveValues + ("Pegelschutz" to "${envelope.payload["strength"] ?: it.limiterStrength}%")) }
             "audio-chunk" -> {
                 val encoded = envelope.payload["data"] as? String ?: return
                 val sampleRate = (envelope.payload["sampleRate"] as? Number)?.toInt() ?: 48_000

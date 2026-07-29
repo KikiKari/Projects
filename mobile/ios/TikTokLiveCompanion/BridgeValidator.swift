@@ -7,7 +7,7 @@ struct BridgeValidator {
     static let maximumBytes = 64 * 1024
     static let allowedTypes: Set<String> = [
         "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift",
-        "bridge-error", "command-result", "audio-chunk", "audio-complete"
+        "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete"
     ]
 
     static func decode(data: Data, origin: String, isMainFrame: Bool) throws -> BridgeEnvelope {

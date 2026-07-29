@@ -52,6 +52,9 @@ assert.ok(!manifest.permissions.includes("cookies"));
 assert.ok(!manifest.permissions.includes("webRequestBlocking"));
 assert.ok(mobileBridge.includes('location.hostname !== "www.tiktok.com"'));
 assert.ok(!mobileBridge.includes("document.cookie"));
+assert.ok(mobileBridge.includes("QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400"));
+assert.ok(mobileBridge.includes('"set-auto-reconnect"'));
+assert.ok(mobileBridge.includes('"set-limiter"'));
 
 for (const relative of [
   manifest.background.service_worker,
@@ -108,6 +111,10 @@ assert.strictEqual(core.spokenNickname("Rebecca № 2 💕"), "Rebecca");
 assert.strictEqual(core.collapseLaughter("hahahahahahhhhahhhaaaa Gott du Plemmi"), "haha Gott du Plemmi");
 assert.strictEqual(core.resolveSpeechLanguage("auto", "de"), "de-DE");
 assert.strictEqual(core.resolveSpeechLanguage("en-US", "de"), "en-US");
+assert.strictEqual(core.limiterStrengthToDbfs(0), -4);
+assert.strictEqual(core.limiterStrengthToDbfs(100), -30);
+assert.strictEqual(core.limiterDbfsToStrength(-30), 100);
+assert.ok(core.limiterMakeupCompensation(-30, 20) < core.limiterMakeupCompensation(-10, 20));
 assert.strictEqual(core.composeSpeechText({ author: "Miimii tmm", content: "@Stivinho danke" }, { teamTag: "tmm" }), "Miimii sagt zu Stivinho danke");
 assert.strictEqual(core.composeSpeechText({ author: "Blitzerbiest", content: "@Honey tmm wo is mein Tee ?" }, { teamTag: "tmm" }), "Blitzerbiest fragt Honey wo is mein Tee");
 assert.strictEqual(core.composeSpeechText({ author: "Miimii", content: "@ Stivinho danke" }, { speakNames: false }), "Stivinho danke");

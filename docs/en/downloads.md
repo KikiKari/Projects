@@ -12,4 +12,6 @@
 
 ## What's new
 
-Browser extension 0.7.1 adds Permanent Hook, Auto-Reconnect, direct switching between Embed and the normal LIVE page, the peak-protection label, certified-account display in page information, and the top-chatter mute control. The existing VLC link list remains unchanged. The local service keeps the existing pairing flow.
+Browser extension 0.7.1 starts an already configured speech service through the local starter, marks Sherpa as active after setup, filters exact technical TTS repeats, and makes peak protection react earlier and dampen more at high strength. The existing browser VLC link list remains unchanged.
+
+Mobile source archives 0.7.1 align Chat/Game Mode, TTS dedupe, peak protection, Auto-Reconnect with a 400 ms minimum interval, Refresh with app/WebView cache clearing without cookie deletion, and more VLC-compatible HLS/FLV/MP4 candidates with the browser baseline.

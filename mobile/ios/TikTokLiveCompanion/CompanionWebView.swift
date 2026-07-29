@@ -12,7 +12,7 @@ struct CompanionWebView: UIViewRepresentable {
         let controller = WKUserContentController()
         for resource in ["content-core", "proto-main", "webview-bridge"] {
             if let path = Bundle.main.path(forResource: resource, ofType: "js"), let script = try? String(contentsOfFile: path) {
-                controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false))
             }
         }
         controller.add(context.coordinator, name: "tlcBridge")
@@ -25,6 +25,18 @@ struct CompanionWebView: UIViewRepresentable {
         view.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = view
         state.sendCommand = { [weak view] command, payload in
+            if command == "refresh" {
+                let dataTypes: Set<String> = [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache]
+                WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {
+                    DispatchQueue.main.async {
+                        if let url = view?.url { view?.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)) }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command('unmute', {}); globalThis.TLC_MOBILE_BRIDGE?.command('play', {})")
+                        }
+                    }
+                }
+                return
+            }
             guard JSONSerialization.isValidJSONObject(payload),
                   let data = try? JSONSerialization.data(withJSONObject: payload),
                   let json = String(data: data, encoding: .utf8) else { return }

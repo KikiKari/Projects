@@ -8,11 +8,18 @@
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "fullscreen", "picture-in-picture", "reload-player", "captions", "refresh",
-    "force-profile", "open-report", "start-webview-audio", "stop-webview-audio"
+    "force-profile", "open-report", "start-webview-audio", "stop-webview-audio",
+    "set-auto-reconnect", "set-limiter"
   ]);
+  const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
   let sequence = 0;
   let streamId = "";
   let audioCapture = null;
+  let autoReconnectEnabled = true;
+  let lastQuickRecoverAt = 0;
+  let quickRecoverFailures = 0;
+  let limiterStrength = 30;
+  const monitoredVideos = new WeakSet();
   const chat = [];
 
   function nativePost(message) {
@@ -34,8 +41,40 @@
     return [...document.querySelectorAll("video")].sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight))[0] || null;
   }
 
+  function limiterStrengthToDbfs(value) {
+    const strength = Math.max(0, Math.min(100, Number(value) || 0));
+    return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
+  }
+
+  function currentLiveHandle() {
+    const match = location.pathname.match(/^\/@([^/]+)\/live/);
+    return match ? decodeURIComponent(match[1]).toLowerCase() : "";
+  }
+
+  function playableMediaLinks() {
+    const seen = new Set();
+    const links = [];
+    const add = (url, label = "Video") => {
+      try {
+        const parsed = new URL(String(url || ""), location.href);
+        if (parsed.protocol !== "https:" || seen.has(parsed.href)) return;
+        const lower = parsed.pathname.toLowerCase();
+        const type = lower.includes(".m3u8") ? "HLS" : lower.includes(".flv") ? "FLV" : lower.includes(".mp4") ? "MP4" : "";
+        if (!type) return;
+        seen.add(parsed.href);
+        links.push({ url: parsed.href, type, label: text(label, 80) || type });
+      } catch (_) {}
+    };
+    const video = primaryVideo();
+    add(video?.currentSrc || video?.src, "Player");
+    for (const source of document.querySelectorAll("video source[src],a[href]")) add(source.src || source.href, source.type || source.textContent || "Video");
+    return links.slice(0, 12);
+  }
+
   function inspect() {
     const video = primaryVideo();
+    streamId = currentLiveHandle() || streamId;
+    installVideoMonitor(video);
     const captionButtons = [...document.querySelectorAll("button,[role=menuitem]")].filter((node) => /caption|untertitel/i.test(node.textContent || ""));
     emit("inspection", {
       title: text(document.title, 256),
@@ -44,6 +83,7 @@
       captionsControlPresent: captionButtons.length > 0,
       player: video ? { paused: video.paused, muted: video.muted, volume: video.volume, duration: Number.isFinite(video.duration) ? video.duration : null } : null
     });
+    emit("media-links", { links: playableMediaLinks() });
   }
 
   function emitDecoded(decoded) {
@@ -131,6 +171,36 @@
     }
   }
 
+  async function playAndUnmute(video = primaryVideo()) {
+    if (!video) return false;
+    video.muted = false;
+    try { await video.play(); return true; } catch (_) { return false; }
+  }
+
+  async function quickRecover(reason = "player-stall") {
+    if (!autoReconnectEnabled) return;
+    const now = Date.now();
+    if (now - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
+    lastQuickRecoverAt = now;
+    quickRecoverFailures += 1;
+    const video = primaryVideo();
+    const played = await playAndUnmute(video);
+    emit("quick-recover", { reason, handle: currentLiveHandle(), attempt: quickRecoverFailures, played });
+    if (!played || quickRecoverFailures >= 3) {
+      quickRecoverFailures = 0;
+      location.reload();
+    }
+  }
+
+  function installVideoMonitor(video = primaryVideo()) {
+    if (!video || monitoredVideos.has(video)) return;
+    monitoredVideos.add(video);
+    for (const eventName of ["stalled", "error", "waiting"]) {
+      video.addEventListener(eventName, () => quickRecover(eventName), { passive: true });
+    }
+    video.addEventListener("playing", () => { quickRecoverFailures = 0; }, { passive: true });
+  }
+
   async function command(name, payload = {}) {
     if (!ALLOWED_COMMANDS.has(name)) return emit("bridge-error", { operation: "command", message: "Unknown command" });
     const video = primaryVideo();
@@ -145,13 +215,18 @@
       else if (name === "picture-in-picture") await video?.requestPictureInPicture?.();
       else if (name === "reload-player" && video) video.load();
       else if (name === "captions") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /caption|untertitel/i.test(node.textContent || ""))?.click();
-      else if (name === "refresh") location.reload();
+      else if (name === "refresh") { location.reload(); setTimeout(() => playAndUnmute(), 800); }
       else if (name === "force-profile") {
         const match = location.pathname.match(/^\/@([^/]+)\/live/);
         if (match) location.assign(`/@${encodeURIComponent(match[1])}`);
       } else if (name === "open-report") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /report|melden/i.test(node.textContent || ""))?.click();
       else if (name === "start-webview-audio") await startAudioCapture();
       else if (name === "stop-webview-audio") await stopAudioCapture();
+      else if (name === "set-auto-reconnect") autoReconnectEnabled = Boolean(payload.enabled);
+      else if (name === "set-limiter") {
+        limiterStrength = Math.max(0, Math.min(100, Number(payload.strength) || 0));
+        emit("limiter", { enabled: Boolean(payload.enabled), strength: limiterStrength, thresholdDbfs: limiterStrengthToDbfs(limiterStrength), mode: "mobile-webview" });
+      }
       emit("command-result", { command: name, ok: true });
     } catch (error) {
       emit("command-result", { command: name, ok: false, error: text(error?.message || error, 512) });
@@ -160,6 +235,7 @@
 
   root.TLC_MOBILE_BRIDGE = Object.freeze({ command, inspect });
   installWebSocketHook();
+  setInterval(() => installVideoMonitor(), 2000);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", inspect, { once: true }); else inspect();
-  emit("bridge-ready", { version: "0.7.0", origin: location.origin });
+  emit("bridge-ready", { version: "0.7.1", origin: location.origin, autoReconnect: autoReconnectEnabled });
 })(globalThis);

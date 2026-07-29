@@ -13,12 +13,23 @@ import Foundation
     @Published var connected = false
     @Published var chatLines: [String] = []
     @Published var liveValues: [String: String] = [:]
+    @Published var mediaLinks: [MobileMediaLink] = []
     @Published var mutedAuthors: Set<String>
+    @Published var gameModeEnabled = true
+    @Published var shortenNames = true
+    @Published var keepSpeechActive = true
+    @Published var autoReconnectEnabled = true {
+        didSet { sendCommand?("set-auto-reconnect", ["enabled": autoReconnectEnabled]) }
+    }
+    @Published var limiterEnabled = false
+    @Published var limiterStrength = 30
     @Published var lastError: String?
     var sendCommand: ((String, [String: Any]) -> Void)?
     let recognizer: RecognitionService
     private let speaker = AVSpeechSynthesizer()
     private let defaults: UserDefaults
+    private var recentSpeech: [String: Date] = [:]
+    private let repeatWindow: TimeInterval = 20
     private static let sourceKey = "recognitionSource"
     private static let mutedAuthorsKey = "mutedAuthors"
 
@@ -69,6 +80,18 @@ import Foundation
             if chatLines.count > 50 { chatLines.removeFirst(chatLines.count - 50) }
         case "live-stats":
             for (key, value) in envelope.payload { if let text = value.stringValue { liveValues[key] = text } else if let number = value.numberValue { liveValues[key] = String(Int(number)) } }
+        case "media-links":
+            mediaLinks = envelope.payload["links"]?.arrayValue?.compactMap { item in
+                guard let object = item.objectValue,
+                      let rawURL = object["url"]?.stringValue,
+                      let url = URL(string: rawURL),
+                      url.scheme == "https",
+                      let type = object["type"]?.stringValue else { return nil }
+                return MobileMediaLink(url: url, type: type, label: object["label"]?.stringValue ?? type)
+            } ?? []
+        case "quick-recover": liveValues["Auto-Reconnect"] = "aktiv"
+        case "limiter":
+            if let strength = envelope.payload["strength"]?.numberValue { liveValues["Pegelschutz"] = "\(Int(strength))%" }
         case "audio-chunk":
             guard let encoded = envelope.payload["data"]?.stringValue,
                   let bytes = Data(base64Encoded: encoded) else { return }
@@ -82,10 +105,26 @@ import Foundation
 
     func speak(_ text: String) {
         guard !text.isEmpty else { return }
+        guard shouldSpeak(text) else { return }
         speaker.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: String(text.prefix(1_000)))
         utterance.voice = AVSpeechSynthesisVoice(language: "de-DE")
         speaker.speak(utterance)
+    }
+
+    func setLimiter(enabled: Bool? = nil, strength: Int? = nil) {
+        if let enabled { limiterEnabled = enabled }
+        if let strength { limiterStrength = max(0, min(100, strength)) }
+        sendCommand?("set-limiter", ["enabled": limiterEnabled, "strength": limiterStrength])
+    }
+
+    private func shouldSpeak(_ text: String, now: Date = Date()) -> Bool {
+        let normalized = text.lowercased().replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return false }
+        recentSpeech = recentSpeech.filter { now.timeIntervalSince($0.value) <= repeatWindow }
+        let last = recentSpeech[normalized]
+        recentSpeech[normalized] = now
+        return last.map { now.timeIntervalSince($0) > repeatWindow } ?? true
     }
 
     func muteAuthor(_ author: String) {

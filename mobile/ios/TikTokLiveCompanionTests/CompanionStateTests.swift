@@ -38,4 +38,17 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(restored.recognitionSource, .webview)
         XCTAssertTrue(restored.mutedAuthors.contains("spam-author"))
     }
+
+    func testLimiterAndAutoReconnectCommands() {
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: UserDefaults(suiteName: #function)!)
+        var commands: [(String, [String: Any])] = []
+        state.sendCommand = { command, payload in commands.append((command, payload)) }
+        state.autoReconnectEnabled = false
+        state.setLimiter(enabled: true, strength: 90)
+        XCTAssertFalse(state.autoReconnectEnabled)
+        XCTAssertTrue(state.limiterEnabled)
+        XCTAssertEqual(state.limiterStrength, 90)
+        XCTAssertEqual(commands.first?.0, "set-auto-reconnect")
+        XCTAssertEqual(commands.last?.0, "set-limiter")
+    }
 }

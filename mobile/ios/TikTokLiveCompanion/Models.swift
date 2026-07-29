@@ -32,6 +32,13 @@ struct BridgeEnvelope: Decodable, Equatable {
     let payload: [String: JSONValue]
 }
 
+struct MobileMediaLink: Equatable, Identifiable {
+    let id = UUID()
+    let url: URL
+    let type: String
+    let label: String
+}
+
 enum JSONValue: Decodable, Equatable {
     case string(String), number(Double), bool(Bool), object([String: JSONValue]), array([JSONValue]), null
 
@@ -48,4 +55,6 @@ enum JSONValue: Decodable, Equatable {
     var stringValue: String? { if case .string(let value) = self { return value }; return nil }
     var boolValue: Bool? { if case .bool(let value) = self { return value }; return nil }
     var numberValue: Double? { if case .number(let value) = self { return value }; return nil }
+    var objectValue: [String: JSONValue]? { if case .object(let value) = self { return value }; return nil }
+    var arrayValue: [JSONValue]? { if case .array(let value) = self { return value }; return nil }
 }

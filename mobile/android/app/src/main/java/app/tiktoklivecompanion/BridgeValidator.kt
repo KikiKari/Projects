@@ -6,7 +6,7 @@ import org.json.JSONObject
 object BridgeValidator {
     const val ALLOWED_ORIGIN = "https://www.tiktok.com"
     const val MAX_BYTES = 64 * 1024
-    private val allowedTypes = setOf("bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift", "bridge-error", "command-result", "audio-chunk", "audio-complete")
+    private val allowedTypes = setOf("bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift", "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete")
 
     fun decode(raw: String, origin: String, isMainFrame: Boolean): BridgeEnvelope? {
         if (origin != ALLOWED_ORIGIN || !isMainFrame || raw.toByteArray().size > MAX_BYTES) return null

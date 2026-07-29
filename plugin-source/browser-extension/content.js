@@ -1027,8 +1027,10 @@
       pipeline.enabled = Boolean(enabled);
       pipeline.thresholdDbfs = threshold;
       pipeline.compressor.threshold.value = pipeline.enabled ? threshold : 0;
-      pipeline.compressor.knee.value = pipeline.enabled ? 1 : 0;
+      pipeline.compressor.knee.value = pipeline.enabled ? 0.5 : 0;
       pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
+      pipeline.compressor.attack.value = pipeline.enabled ? 0.0015 : 0.003;
+      pipeline.compressor.release.value = pipeline.enabled ? 0.08 : 0.25;
       pipeline.makeup.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
       debug("limiter", { mode: "compressor", enabled: pipeline.enabled, threshold });
       return pipeline;

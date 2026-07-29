@@ -41,6 +41,8 @@
   let speechAudioContext = null;
   let speechAudioSource = null;
   const knownSpeechKeys = new Set();
+  const recentSpokenKeys = new Map();
+  const SPEECH_REPEAT_WINDOW_MS = 20000;
   const TAB_OPTIONAL_MESSAGES = new Set(["TLC_GET_SETTINGS", "TLC_SET_AUTOSTART", "TLC_SET_QUICK_RECOVER", "TLC_ENABLE_HOOK", "TLC_DISABLE_HOOK", "TLC_SET_DEBUG"]);
 
   async function activeTab() {
@@ -89,6 +91,21 @@
     return String(item.messageId || item.dedupeKey || `${item.receivedAtUtc || ""}|${item.author || ""}|${item.content || ""}`);
   }
 
+  function speechRepeatKey(item) {
+    return `${core.spokenNickname(item.author || item.nickname || item.displayId || "")}|${speechText(item)}`.toLocaleLowerCase("de-DE").replace(/\s+/g, " ").trim();
+  }
+
+  function shouldSkipRecentSpeech(item, now = Date.now()) {
+    const key = speechRepeatKey(item);
+    if (!key || key.endsWith("|")) return false;
+    for (const [existing, lastAt] of recentSpokenKeys) {
+      if (now - lastAt > SPEECH_REPEAT_WINDOW_MS) recentSpokenKeys.delete(existing);
+    }
+    const lastAt = recentSpokenKeys.get(key) || 0;
+    recentSpokenKeys.set(key, now);
+    return now - lastAt <= SPEECH_REPEAT_WINDOW_MS;
+  }
+
   function setLed(element, active, activeLabel, inactiveLabel) {
     element.classList.toggle("on", active);
     element.classList.toggle("off", !active);
@@ -118,6 +135,7 @@
     speechBusy = false;
     speechQueue = [];
     speechTabId = null;
+    recentSpokenKeys.clear();
     globalThis.speechSynthesis?.cancel();
     try { speechAudioSource?.stop(); } catch (_) { /* Already stopped. */ }
     speechAudioSource = null;
@@ -337,6 +355,7 @@
       knownSpeechKeys.add(key);
       if (item.muted) continue;
       if (gameModeEnabled && core.shouldFilterGameModeSpeech(item, currentState?.participants || {}, allItems)) continue;
+      if (shouldSkipRecentSpeech(item)) continue;
       enqueueSpeech(item);
     }
   }
@@ -784,6 +803,10 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
+      elements["service-action"].textContent = "Sprachdienst aktiv";
+      elements["service-action"].disabled = false;
+      elements["sherpa-action"].textContent = health.sherpaConfigured ? "Sherpa aktiv!" : "Sherpa installieren";
+      elements["sherpa-action"].disabled = Boolean(health.sherpaConfigured);
       await loadSpeechVoices();
       if (!Object.prototype.hasOwnProperty.call(health, "canInstallSherpa")) {
         elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.7.1-Paket ausführen.";
@@ -793,6 +816,10 @@
       return health;
     } catch (_) {
       elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
+      elements["service-action"].textContent = "Sprachdienst starten";
+      elements["service-action"].disabled = false;
+      elements["sherpa-action"].textContent = "Sherpa installieren";
+      elements["sherpa-action"].disabled = false;
       return null;
     }
   }
@@ -1107,12 +1134,18 @@
   elements["pairing-code"].addEventListener("change", savePairingCode);
   elements["audd-token"].addEventListener("change", saveAuddToken);
   elements["service-action"].addEventListener("click", async () => {
-    elements["service-status"].textContent = "Lokaler Sprachdienst wird gestartet …";
+    const ready = await checkService();
+    if (ready) {
+      elements["service-status"].textContent = `Lokaler Dienst bereit · ${ready.tts || "Standard"}${ready.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
+      return;
+    }
+    elements["service-status"].textContent = "Lokaler Sprachdienst wird im Hintergrund gestartet …";
     try {
       await send("TLC_START_LOCAL_SERVICE");
       await new Promise((resolve) => setTimeout(resolve, 1200));
       const health = await checkService();
       if (health?.canInstallSherpa && !health.sherpaConfigured) await installSherpaVoices(false);
+      if (!health) elements["service-status"].textContent = "Lokaler Starter nicht erreichbar. Bitte einmal setup.ps1 ausführen oder im Installationsverzeichnis npm start starten.";
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
     }
