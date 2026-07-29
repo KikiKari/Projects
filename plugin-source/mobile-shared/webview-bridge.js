@@ -43,9 +43,7 @@
 
   function mobilePlayerRoots() {
     const selectors = [
-      "[data-e2e=\"live-content-container\"]",
-      "[data-e2e=\"live-room-content\"]",
-      "[data-e2e=\"live-second-screen-container\"]"
+      "[data-e2e=\"live-content-container\"]",`n      "[data-e2e=\"live-room-content\"]",`n      "[data-e2e=\"live-second-screen-container\"]"
     ];
     const nodes = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
     for (const node of [...document.querySelectorAll("*")]) {

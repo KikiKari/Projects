@@ -84,7 +84,7 @@ Für echte Katalogerkennung sind Apple-Developer-Team, aktivierte ShazamKit-App-
 
 | Datei | Inhalt |
 |---|---|
-| `tiktok-live-companion-android-0.7.0-debug.apk` | reproduzierbare Debug-APK, 18,7 MiB |
+| `tiktok-live-companion-android-0.7.1.apk` | reproduzierbare Debug-APK, 18,7 MiB |
 | `tiktok-live-companion-android-0.7.0-source.zip` | vollständiger Quellcode |
 
 Es werden ausschließlich Android-Standard-APIs ohne Google-Play-Services-Abhängigkeit verwendet, damit HyperOS unterstützt bleibt.
@@ -439,7 +439,7 @@ Ablage: `tiktok-live-companion-project/release/0.7.0/`
 | `tiktok-live-companion-service-0.7.0.zip` | `4bb5df40229c72a0e93ab822709182542d31846cc865f89962da3769e652fd1c` |
 | `tiktok-live-companion-ios-0.7.0-source.zip` | `3b833ea2969487ea9a82571478a4f273f3e678cffb6a11bde51e94ee0e5bbff3` |
 | `tiktok-live-companion-android-0.7.0-source.zip` | `62e57e5d901ffb581fc40dc8a47454fb7e46531c57ffdbd71b82b071f76ad594` |
-| `tiktok-live-companion-android-0.7.0-debug.apk` | `00f8df107107661c5bb6204f0fedb9d1f485fdbe5085f19f27e0f8089481d0f5` |
+| `tiktok-live-companion-android-0.7.1.apk` | `38ad0bb204f945ba0be816e86150197c9375afb1c06fefd921ae90c3abbea3e2` |
 
 Alle sechs Werte wurden am 18.07.2026 gegen die tatsächlichen Dateien verifiziert.
 
