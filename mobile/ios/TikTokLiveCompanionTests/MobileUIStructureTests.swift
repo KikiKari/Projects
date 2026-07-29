@@ -38,7 +38,7 @@ final class MobileUIStructureTests: XCTestCase {
     func testMobilePlayerFocusUsesCenterFrameThenLiveOverviewAndPureFullscreen() throws {
         let testURL = URL(fileURLWithPath: #filePath)
         let mobileRoot = testURL.deletingLastPathComponent().deletingLastPathComponent()
-        let bridge = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/Resources/webview-bridge.js"))
+        let bridge = try String(contentsOf: mobileRoot.appendingPathComponent("Resources/webview-bridge.js"))
         XCTAssertTrue(bridge.contains("[data-e2e=\"live-content-container\"]"))
         XCTAssertTrue(bridge.contains("[data-e2e=\"live-room-content\"]"))
         XCTAssertTrue(bridge.contains("[data-e2e=\"live-second-screen-container\"]"))
