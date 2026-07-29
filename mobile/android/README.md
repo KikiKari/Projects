@@ -4,7 +4,7 @@ Native Kotlin/Compose companion with an origin-restricted AndroidX WebKit bridge
 
 ## Build variants
 
-- `mockDebug`: reproducible UI/bridge test build that reports **ShazamKit nicht konfiguriert** and requires no proprietary SDK.
+- `mockDebug`: reproducible UI/bridge fallback build that reports **ShazamKit nicht konfiguriert**, requires no proprietary SDK, and uses the main application ID for local 0.7.1 device installs.
 - `shazamDebug`: real ShazamKit build. Download Apple's Android 2.1.1 AAR and place it at `app/libs/shazamkit-android-release.aar` before building.
 
 Set `TLC_SHAZAM_TOKEN_URL` as a Gradle property or environment variable to the deployed HTTPS `/api/shazam-token` endpoint. No Apple private key belongs in the app.
@@ -13,4 +13,4 @@ Set `TLC_SHAZAM_TOKEN_URL` as a Gradle property or environment variable to the d
 .\gradlew.bat testMockDebugUnitTest assembleMockDebug
 ```
 
-The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.1-debug.apk`. A real catalog build additionally requires the official AAR and configured token service.
+The packaging script renames the verified mock debug output to `tiktok-live-companion-android-0.7.1.apk`. A real catalog build additionally requires the official AAR and configured token service.

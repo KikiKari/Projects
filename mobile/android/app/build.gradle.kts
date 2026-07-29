@@ -22,7 +22,7 @@ android {
     }
     flavorDimensions += "recognition"
     productFlavors {
-        create("mock") { dimension = "recognition"; applicationIdSuffix = ".test" }
+        create("mock") { dimension = "recognition" }
         create("shazam") { dimension = "recognition" }
     }
     buildFeatures { compose = true; buildConfig = true }
