@@ -45,18 +45,19 @@ final class MobileUIStructureTests: XCTestCase {
         ]
         for bridgeURL in bridgeURLs {
             let bridge = try String(contentsOf: bridgeURL)
-            XCTAssertTrue(bridge.contains("[data-e2e=\"live-content-container\"]"), "\(bridgeURL.path) missing live-content-container selector")
-            XCTAssertTrue(bridge.contains("[data-e2e=\"live-room-content\"]"), "\(bridgeURL.path) missing live-room-content selector")
-            XCTAssertTrue(bridge.contains("[data-e2e=\"live-second-screen-container\"]"), "\(bridgeURL.path) missing live-second-screen selector")
-            XCTAssertTrue(bridge.contains("data-tlc-mobile-content-root"), "\(bridgeURL.path) missing mobile content root marker")
-            XCTAssertTrue(bridge.contains("data-tlc-mobile-primary-video"), "\(bridgeURL.path) missing primary video marker")
-            XCTAssertTrue(bridge.contains("data-tlc-mobile-second-screen"), "\(bridgeURL.path) missing second screen marker")
-            XCTAssertTrue(bridge.contains("display:none!important"), "\(bridgeURL.path) missing second screen hide style")
-            XCTAssertFalse(bridge.contains("--tlc-scroll-y"), "\(bridgeURL.path) still uses scroll offset styling")
-            XCTAssertFalse(bridge.contains("object-fit:contain"), "\(bridgeURL.path) still uses contained player styling")
-            XCTAssertFalse(bridge.contains("[data-tlc-mobile-player=\"true\"] video"), "\(bridgeURL.path) still targets old mobile player marker")
-            XCTAssertTrue(bridge.contains("optionale cookies ablehnen"), "\(bridgeURL.path) missing optional cookie rejection copy")
-            XCTAssertTrue(bridge.contains("node.shadowRoot"), "\(bridgeURL.path) missing shadow root traversal")
+            let normalizedBridge = bridge.replacingOccurrences(of: "\\\"", with: "\"")
+            XCTAssertTrue(normalizedBridge.contains("[data-e2e=\"live-content-container\"]"), "\(bridgeURL.path) missing live-content-container selector")
+            XCTAssertTrue(normalizedBridge.contains("[data-e2e=\"live-room-content\"]"), "\(bridgeURL.path) missing live-room-content selector")
+            XCTAssertTrue(normalizedBridge.contains("[data-e2e=\"live-second-screen-container\"]"), "\(bridgeURL.path) missing live-second-screen selector")
+            XCTAssertTrue(normalizedBridge.contains("data-tlc-mobile-content-root"), "\(bridgeURL.path) missing mobile content root marker")
+            XCTAssertTrue(normalizedBridge.contains("data-tlc-mobile-primary-video"), "\(bridgeURL.path) missing primary video marker")
+            XCTAssertTrue(normalizedBridge.contains("data-tlc-mobile-second-screen"), "\(bridgeURL.path) missing second screen marker")
+            XCTAssertTrue(normalizedBridge.contains("display:none!important"), "\(bridgeURL.path) missing second screen hide style")
+            XCTAssertFalse(normalizedBridge.contains("--tlc-scroll-y"), "\(bridgeURL.path) still uses scroll offset styling")
+            XCTAssertFalse(normalizedBridge.contains("object-fit:contain"), "\(bridgeURL.path) still uses contained player styling")
+            XCTAssertFalse(normalizedBridge.contains("[data-tlc-mobile-player=\"true\"] video"), "\(bridgeURL.path) still targets old mobile player marker")
+            XCTAssertTrue(normalizedBridge.contains("optionale cookies ablehnen"), "\(bridgeURL.path) missing optional cookie rejection copy")
+            XCTAssertTrue(normalizedBridge.contains("node.shadowRoot"), "\(bridgeURL.path) missing shadow root traversal")
         }
     }
 }
