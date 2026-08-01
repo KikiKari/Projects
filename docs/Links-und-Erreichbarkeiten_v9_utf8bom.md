@@ -102,6 +102,8 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 | Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 | iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 
+OCI-Index-Digests: Browser `sha256:08193db44e1ba6c91a9e07cc45c25d6f64413647c88008a6b6ba2f6397a90412`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 
 Die Images enthalten die jeweiligen Release-Artefakte unter `/artifacts` auf einer gemeinsamen Alpine-Schicht. Alle drei Pakete sind auf dem Packages-Tab des Kontos gelistet.
@@ -433,7 +435,7 @@ Basis: `.publish-repo/`
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. Ein neues Vercel-Deployment und der bytegleiche öffentliche Downloadnachweis stehen noch aus. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
+Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert; die Website-Downloadkopien sind angeglichen. Ein neues Vercel-Deployment und dessen bytegleicher öffentlicher Downloadnachweis stehen noch aus. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
 
 Die APK trägt die Package-ID `app.tiktoklivecompanion.android` und überschreibt damit eine vorhandene Installation. Frühere `-mock-debug`- und `.test`-Varianten wurden entfernt.
 
@@ -607,11 +609,11 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | # | Punkt | Verantwortung | Status |
 |---|---|---|---|
 | 1 | **Browser: Vollbild beenden verliert die Erweiterung** (0PE-89) — Offscreen-TTS und Wiederherstellung aus dem Tabzustand sind lokal implementiert; reale Vollbild-Abnahme steht aus | Entwicklung | ⚠️ `In Progress` |
-| 2 | Dienststart über Setup-Bindung, Protokollstarter und Health-Check (0PE-73/87) | Entwicklung | ⚠️ implementiert und getestet; Browser-Push/Abnahme offen |
-| 3 | Zusätzliche bestätigte Sherpa-Schriftsysteme und sichere Auswahl-Installation (0PE-86) | Entwicklung | ⚠️ implementiert, 15/15 Diensttests; Browser-Push offen |
+| 2 | Dienststart über Setup-Bindung, Protokollstarter und Health-Check (0PE-73/87) | Entwicklung | ⚠️ implementiert, getestet und gepusht; reale Browserabnahme offen |
+| 3 | Zusätzliche bestätigte Sherpa-Schriftsysteme und sichere Auswahl-Installation (0PE-86) | Entwicklung | ⚠️ implementiert, 15/15 Diensttests und Push bestätigt; reale Browserabnahme offen |
 | 4 | Mobile Textentfernungen unter Player und Mehr (0PE-78, 0PE-79) | Entwicklung | ✅ Android `80d3cb1` gepusht; iOS-Abwesenheit in `2323a6f` und Actions bestätigt |
 | 5 | 0PE-41 und 0PE-43 umsetzen | Entwicklung | ⚠️ `Backlog` |
-| 6 | Formales Security-Seal für 0.7.1 | Security | ⚠️ Diff komplett, zwei Low/P3 behoben; Windows-`CreateFileW`-Fehler des Versieglers offen |
+| 6 | Formales Security-Seal für 0.7.1 | Security | ✅ abgeschlossen; 0 Critical, 0 High, 0 Medium, 2 Low/P3, beide behoben |
 | 7 | Android-Gesamtsuite normalisieren | Entwicklung | ⚠️ OPE-Tests und APK grün; ein bestehender fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren |
 | 8 | iOS-Build und XCTest lokal auf macOS mit Xcode | Nutzer | ⚠️ Plattform fehlt, CI deckt Simulator ab |
 | 9 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen | Nutzer | ⚠️ offen |

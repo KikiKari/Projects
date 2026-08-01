@@ -14,14 +14,20 @@ permissions:
 jobs:
   linear-release:
     runs-on: ubuntu-latest
+    env:
+      LINEAR_ACCESS_KEY: ${{ secrets.LINEAR_ACCESS_KEY }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Explain unavailable Linear release sync
+        if: env.LINEAR_ACCESS_KEY == ''
+        run: echo "Linear release sync skipped because repository secret LINEAR_ACCESS_KEY is not configured; issue updates use the authorized Linear connection."
+
       - name: Sync Browser release
-        if: github.ref_name == 'TikTok-Live-Companion'
+        if: env.LINEAR_ACCESS_KEY != '' && github.ref_name == 'TikTok-Live-Companion'
         uses: linear/linear-release-action@v0
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
@@ -31,7 +37,7 @@ jobs:
           include_paths: .publish-repo/**,plugin-source/**,site/**
 
       - name: Sync Android release
-        if: github.ref_name == 'TikTok-Live-Companion-Android'
+        if: env.LINEAR_ACCESS_KEY != '' && github.ref_name == 'TikTok-Live-Companion-Android'
         uses: linear/linear-release-action@v0
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
@@ -41,7 +47,7 @@ jobs:
           include_paths: android-implementation/**,mobile/android/**
 
       - name: Sync iOS release
-        if: github.ref_name == 'TikTok-Live-Companion-iOS'
+        if: env.LINEAR_ACCESS_KEY != '' && github.ref_name == 'TikTok-Live-Companion-iOS'
         uses: linear/linear-release-action@v0
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}

@@ -12,7 +12,7 @@
 
 Aktiv bearbeitet werden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89` und `0PE-90`. Browserseitig sind die neue Sidepanel-Reihenfolge, die Auswahl der größten sichtbaren zentralen Playerfläche, tabbezogener Laufzeitzustand und MV3-Offscreen-TTS lokal umgesetzt. Der vorhandene Sprachdienst nutzt weiterhin Setup, Startskript und Protokollhandler; Pairing wird nach dem einmaligen Setup über einen kurzlebigen lokalen Nonce übernommen. Deutsch und Englisch bleiben Standard, weitere bestätigte Stimmen werden erst bei Auswahl installiert. Android entfernt die zwei exakt bezeichneten Hinweise; iOS sichert deren Abwesenheit und verwendet `CURRENT_PROJECT_VERSION = 8` als Quelle von `CFBundleVersion`.
 
-Browser-Implementierung, Tests, Dokumente und reproduzierbare Release-Artefakte sind in Commit `35a06518658a6e5062de989758b89613e439fe5d` zusammengeführt. Android steht auf `80d3cb1368c09875be6697021b21c1bc04c79870`, iOS auf `2323a6faa6526ad9057bccf81253306b224c62c4`. Diese Angaben sind noch kein vollständiger Veröffentlichungsnachweis: Registry-Digests, Vercel-Neudeployment, reales Browserverhalten und das formale Security-Seal bleiben getrennte Gates.
+Browser-Implementierung und reproduzierbare Release-Artefakte sind ab Commit `35a06518658a6e5062de989758b89613e439fe5d` belegt; der bestätigte Browser-Dokumentationsstand ist `130200525305e62cd57bf0c4a8073ec9defaa421`. Android steht auf `80d3cb1368c09875be6697021b21c1bc04c79870`, iOS auf `2323a6faa6526ad9057bccf81253306b224c62c4`. GitHub Releases und die drei GHCR-Tags sind mit diesen Ständen aktualisiert. Das formale Security-Seal ist abgeschlossen. Als getrennte Gates bleiben das neue Vercel-Deployment und die reale Browserabnahme bestehen.
 
 ---
 
@@ -439,7 +439,7 @@ Die beiden Low/P3-Findings betreffen `proto-main.js:208-227` (unbegrenzte gzip-A
 | `security-scan/release-review-0.7.0.md` | Release-Review 0.7.0 |
 | `security-scan/canonical/`, `derived/`, `artifacts/` | Scan-Zwischenstände |
 
-**0.7.1-Diffprüfung:** Der aktuelle Diff wurde vollständig inventarisiert. Zwei Low/P3-Befunde wurden bestätigt und vor Paketierung behoben: Bootstrap-Pairing ohne Bindung an die Produkt-Extension sowie fehlende Größen-/SHA-256- und Link-/Pfadkontrollen bei Sherpa-Archiven. 15/15 Diensttests und die Extension-Prüfung bestätigen die Gegenmaßnahmen. Das kanonische Scan-Seal ist wegen eines lokalen Windows-`CreateFileW`-Fehlers des Versieglers noch nicht erfolgreich erzeugt; deshalb wird die Prüfung nicht als formal abgeschlossen bezeichnet.
+**0.7.1-Diffprüfung:** Der aktuelle Diff wurde vollständig inventarisiert. Zwei Low/P3-Befunde wurden bestätigt und vor Paketierung behoben: Bootstrap-Pairing ohne Bindung an die Produkt-Extension sowie fehlende Größen-/SHA-256- und Link-/Pfadkontrollen bei Sherpa-Archiven. 15/15 Diensttests und die Extension-Prüfung bestätigen die Gegenmaßnahmen. Der Versiegler wurde nach Freigabe der Schreibrechte erfolgreich abgeschlossen; das kanonische Ergebnis lautet **0 Critical, 0 High, 0 Medium, 2 Low/P3**, beide Befunde behoben.
 
 ### 6.3 Automatisierte Sicherheitsprüfungen
 
@@ -514,7 +514,7 @@ Lokal auf Windows sind `gh 2.76.2` und `vercel 58.3.0` verfügbar. `gh` wurde oh
 
 Der iOS-Workflow benötigt **keine** GitHub Secrets und kein Apple-Signing, weil er nur gegen den Simulator baut. Letzter bestätigter Lauf: `#14`, Commit `34e0dbb`, Status `success`. Voraussetzung ist das geteilte Scheme unter `mobile/ios/TikTokLiveCompanion.xcodeproj/xcshareddata/xcschemes/TikTokLiveCompanion.xcscheme` mit App- und XCTest-Target.
 
-Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linear Releases sind plan-gated, ohne Business-Plan lässt sich kein `LINEAR_ACCESS_KEY` erzeugen. Der Workflow bleibt bewusst im Repository und blockiert nichts. Sobald der Plan verfügbar ist, genügt das Hinterlegen des Pipeline-Access-Keys unter `Settings → Secrets and variables → Actions`.
+Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linear Releases sind plan-gated, ohne Business-Plan lässt sich kein `LINEAR_ACCESS_KEY` erzeugen. Ohne Secret protokolliert der Workflow nun einen erfolgreichen, ausdrücklichen Skip und blockiert die Weiterentwicklung nicht. Sobald der Plan verfügbar ist, genügt das Hinterlegen des Pipeline-Access-Keys unter `Settings → Secrets and variables → Actions`.
 
 ### 7.3 Auslieferungswege
 
@@ -527,6 +527,8 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 | Taildrop | APK-Übertragung an `100.94.134.39` im Tailnet, Exit-Code `0` |
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
+
+Bestätigte OCI-Index-Digests am 01.08.2026: Browser `sha256:08193db44e1ba6c91a9e07cc45c25d6f64413647c88008a6b6ba2f6397a90412`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
 
 ---
 
@@ -607,7 +609,7 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
 | `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Die produktiven Vercel-Downloadkopien tragen bis zu einem neuen Deployment noch den vorherigen Stand und sind daher nicht als bestätigt ausgewiesen.
+Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Die Website-Downloadkopien sind auf diese Bytes angeglichen; der öffentliche Nachweis folgt nach dem ausgelösten Vercel-Deployment.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 
@@ -643,13 +645,13 @@ Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegle
 | Pegelschutz mit `OfflineAudioContext` | Dauerpegel unverändert, Spitze `1,0` → `0,17188` |
 | Entfernte Qualitätsbox und sechs Texte | vollständig entfernt, keine leeren Container |
 | Persistente 0–100-Regler | bestätigt |
-| Release-Prüfsummen | 6/6 lokal reproduzierbar; Vercel-Neudeployment noch offen |
+| Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests bestätigt, Vercel-Neudeployment noch offen |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |
-| GHCR-Pakete Sichtbarkeit und Vererbung | 3/3 `public`, Quellrepository verifiziert |
+| GHCR-Pakete Sichtbarkeit und Vererbung | 3/3 `public`, Quellrepository und neue OCI-Index-Digests verifiziert |
 | Linear-Projektstand (CSV-Export 30.07.2026) | 36 `Done`, 4 `In Progress`, 2 `Backlog` |
 
 ### 9.4 Nicht durchgeführt
@@ -658,7 +660,6 @@ Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegle
 |---|---|
 | iOS-Build und XCTest lokal | benötigen macOS und Xcode; CI deckt den Simulator ab |
 | Echte Shazam-Katalogerkennung | benötigt Apple-Capability, Media-ID, privaten Schlüssel und Android-AAR |
-| Formales Security-Seal 0.7.1 | Diff vollständig geprüft und zwei Low/P3 lokal behoben; Versiegler endet noch mit Windows-`CreateFileW`-Fehler |
 | Reale Browser-Abnahme für Zwei-Tab, Embed und Vollbild/TTS | lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet; keine Umgehung vorgenommen |
 | Echter AudD-Aufruf am realen Stream | kein Token im Prüflauf hinterlegt |
 | Android-Gesamtsuite | ein bereits bestehender, fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren; gezielte OPE-78/OPE-79-Tests und `assembleMockDebug` sind grün |
