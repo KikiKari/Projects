@@ -602,14 +602,16 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `2652107fb1348972641331690c559a90cf77f20f9bc83a45a4728d32cef84361` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `3709d184966b941eb07b97657bec1582646fa817fdb67a834408382e1753e429` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `a0d9b7a6410096e2b30f51442e9ac21e456aed313fb2a7b5c91cc02570a40188` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `f4bde050bdf0f697de3ded2a44d75bd292727ad554243392c35099519be501c9` |
 | `tiktok-live-companion-service-0.7.1.zip` | `d69f9604c87997e67ed6c059f09329ef067441f076975ffa171b6075787a78a1` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
 | `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
 
 Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete sowie die Prüfsummendatei wurden anschließend über `tiktok-live-companion.vercel.app` bytegleich bestätigt.
+
+**Sidepanel-Hotfix:** Der im ausgelieferten Panel sichtbare Fehler `Cannot set properties of undefined (setting 'textContent')` beim Startversuch des Sprachdienstes wurde auf den fehlenden DOM-Bezug `service-setup-command` zurückgeführt und behoben. Ein Regressionstest prüft jetzt HTML-ID und zentrale Elementzuordnung. Extension- und Plugin-ZIP wurden danach zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen ihre vorherigen Stände.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 

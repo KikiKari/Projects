@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status", "service-setup", "copy-service-setup",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status", "service-setup", "service-setup-command", "copy-service-setup",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",

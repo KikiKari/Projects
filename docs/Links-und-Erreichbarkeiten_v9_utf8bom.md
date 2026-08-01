@@ -426,8 +426,8 @@ Basis: `.publish-repo/`
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `2652107fb1348972641331690c559a90cf77f20f9bc83a45a4728d32cef84361` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `3709d184966b941eb07b97657bec1582646fa817fdb67a834408382e1753e429` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `a0d9b7a6410096e2b30f51442e9ac21e456aed313fb2a7b5c91cc02570a40188` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `f4bde050bdf0f697de3ded2a44d75bd292727ad554243392c35099519be501c9` |
 | `tiktok-live-companion-service-0.7.1.zip` | `d69f9604c87997e67ed6c059f09329ef067441f076975ffa171b6075787a78a1` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
@@ -436,6 +436,8 @@ Basis: `.publish-repo/`
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
 Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
+
+Der Sidepanel-Hotfix für den fehlenden `service-setup-command`-DOM-Bezug wurde anschließend erneut reproduzierbar paketiert. Für Extension und Plugin gelten deshalb die aktualisierten SHA-256-Werte in der Tabelle; Mobile-, Dienst- und APK-Bytes bleiben unverändert.
 
 Die APK trägt die Package-ID `app.tiktoklivecompanion.android` und überschreibt damit eine vorhandene Installation. Frühere `-mock-debug`- und `.test`-Varianten wurden entfernt.
 

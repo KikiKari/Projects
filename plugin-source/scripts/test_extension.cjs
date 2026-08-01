@@ -420,6 +420,8 @@ assert.ok(panelHtml.includes('id="audd-token"'));
 assert.ok(panelHtml.includes("AudD API-Token"));
 assert.ok(!panelHtml.includes("Dienstadresse"));
 assert.ok(panelHtml.includes('id="sherpa-action"'));
+assert.ok(panelHtml.includes('id="service-setup-command"'));
+assert.ok(sidepanelSource.includes('"service-setup-command", "copy-service-setup"'));
 assert.ok(panelHtml.includes("Sherpa installieren"));
 assert.ok(panelHtml.includes('id="game-mode"'));
 assert.ok(panelHtml.includes("Chatnamen"));
