@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status", "service-setup", "service-setup-command", "copy-service-setup",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -1198,9 +1198,6 @@
     elements["service-status"].textContent = "Lokaler Sprachdienst wird im Hintergrund gestartet …";
     try {
       const startResult = await send("TLC_START_LOCAL_SERVICE");
-      const setupCommand = String(startResult.setupCommand || "");
-      elements["service-setup-command"].textContent = setupCommand;
-      elements["service-setup"].dataset.setupCommand = setupCommand;
       if (startResult.pairingCode) {
         pairingCode = startResult.pairingCode;
         elements["pairing-code"].value = pairingCode;
@@ -1211,18 +1208,31 @@
       if (health?.canInstallSherpa && !health.sherpaConfigured) await installSherpaVoices(false);
       if (!health) {
         elements["service-setup"].hidden = false;
-        elements["service-status"].textContent = "Einmaliges Setup fehlt. PowerShell im Dienstordner öffnen, beide Befehle ausführen und danach erneut auf den Button klicken.";
+        elements["service-status"].textContent = "Einmalige Installation erforderlich.";
       }
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
     }
   });
   elements["copy-service-setup"].addEventListener("click", async () => {
-    const setupCommand = String(elements["service-setup"].dataset.setupCommand || "");
-    if (!setupCommand) return;
-    await navigator.clipboard.writeText(setupCommand);
-    elements["copy-service-setup"].textContent = "Kopiert";
-    setTimeout(() => { elements["copy-service-setup"].textContent = "Befehle kopieren"; }, 1200);
+    const button = elements["copy-service-setup"];
+    button.disabled = true;
+    button.textContent = "Installation läuft …";
+    elements["service-status"].textContent = "PowerShell führt die Installation im Dienstverzeichnis aus …";
+    try {
+      const result = await send("TLC_INSTALL_LOCAL_SERVICE");
+      if (!result.pairingCode) throw new Error("Installation wurde nicht abgeschlossen.");
+      pairingCode = result.pairingCode;
+      elements["pairing-code"].value = pairingCode;
+      await send("TLC_SET_SPEECH_PREFERENCE", { pairingCode });
+      const health = await checkService();
+      if (!health) throw new Error("Der Sprachdienst wurde installiert, ist aber noch nicht erreichbar.");
+      elements["service-setup"].hidden = true;
+    } catch (error) {
+      elements["service-status"].textContent = String(error?.message || error);
+      button.disabled = false;
+      button.textContent = "Installation abschließen!";
+    }
   });
   elements["sherpa-action"].addEventListener("click", () => installSherpaVoices(true));
   elements["song-enabled"].addEventListener("change", async () => {

@@ -1,6 +1,6 @@
-a0d9b7a6410096e2b30f51442e9ac21e456aed313fb2a7b5c91cc02570a40188  tiktok-live-companion-extension-0.7.1.zip
-f4bde050bdf0f697de3ded2a44d75bd292727ad554243392c35099519be501c9  tiktok-live-companion-plugin-0.7.1.zip
-d69f9604c87997e67ed6c059f09329ef067441f076975ffa171b6075787a78a1  tiktok-live-companion-service-0.7.1.zip
+ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275  tiktok-live-companion-extension-0.7.1.zip
+48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26  tiktok-live-companion-plugin-0.7.1.zip
+a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a  tiktok-live-companion-service-0.7.1.zip
 ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302  tiktok-live-companion-ios-0.7.1-source.zip
 98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f  tiktok-live-companion-android-0.7.1-source.zip
 ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d  tiktok-live-companion-android-0.7.1.apk

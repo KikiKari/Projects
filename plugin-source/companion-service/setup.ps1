@@ -1,4 +1,7 @@
-param([string]$ExtensionId = "")
+param(
+  [string]$ExtensionId = "",
+  [string]$BootstrapNonce = ""
+)
 $ErrorActionPreference = "Stop"
 $configDir = Join-Path $env:LOCALAPPDATA "TikTokLiveCompanion"
 $configPath = Join-Path $configDir "service.json"
@@ -16,7 +19,7 @@ if ($existing -and $existing.pairingCode) {
 $auddToken = if ($existing -and $null -ne $existing.auddApiToken) { [string]$existing.auddApiToken } else { "" }
 $configuredExtensionId = if ($ExtensionId) { $ExtensionId } elseif ($existing -and $existing.extensionId) { [string]$existing.extensionId } else { "" }
 if ($configuredExtensionId -notmatch '^[a-p]{32}$') {
-  throw "Die Chrome-Erweiterungs-ID fehlt oder ist ungültig. Bitte den im Sidepanel angezeigten Setup-Befehl verwenden."
+  throw "Die Chrome-Erweiterungs-ID fehlt oder ist ungültig."
 }
 
 $config = [ordered]@{
@@ -24,6 +27,11 @@ $config = [ordered]@{
   auddApiToken = $auddToken
   extensionId = $configuredExtensionId
   port = 43117
+}
+if ($BootstrapNonce) {
+  if ($BootstrapNonce -notmatch '^[A-Za-z0-9_-]{32,128}$') { throw "Der Pairing-Nonce ist ungültig." }
+  $config.bootstrapNonce = $BootstrapNonce
+  $config.bootstrapExpiresAtUtc = [DateTime]::UtcNow.AddMinutes(2).ToString("o")
 }
 $json = $config | ConvertTo-Json
 [IO.File]::WriteAllText($configPath, $json, (New-Object Text.UTF8Encoding($false)))
@@ -35,9 +43,45 @@ $serviceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 $startScriptPath = Join-Path $configDir "start-service.ps1"
+$installScriptPath = Join-Path $configDir "install-service.ps1"
+$setupScriptPath = Join-Path $serviceDir "setup.ps1"
+$installScript = @"
+param(
+  [Parameter(Mandatory = `$true)][string]`$ExtensionId,
+  [Parameter(Mandatory = `$true)][string]`$BootstrapNonce
+)
+`$ErrorActionPreference = "Stop"
+Set-Location -LiteralPath "$serviceDir"
+try {
+  & "$setupScriptPath" -ExtensionId `$ExtensionId -BootstrapNonce `$BootstrapNonce
+  Write-Host "Installation abgeschlossen. Der Sprachdienst wurde gestartet."
+  Start-Sleep -Seconds 2
+} catch {
+  Write-Error `$_
+  Read-Host "Installation fehlgeschlagen. Eingabetaste zum Schließen"
+  exit 1
+}
+"@
+[IO.File]::WriteAllText($installScriptPath, $installScript, (New-Object Text.UTF8Encoding($false)))
 $startScript = @"
 param([string]`$LaunchUri = "")
 `$ErrorActionPreference = "Stop"
+if (`$LaunchUri -match '^tiktok-live-companion://install(?:[/?]|$)') {
+  `$extensionMatch = [regex]::Match(`$LaunchUri, '[?&]extensionId=([a-p]{32})')
+  `$nonceMatch = [regex]::Match(`$LaunchUri, '[?&]nonce=([A-Za-z0-9_-]{32,128})')
+  if (-not `$extensionMatch.Success -or -not `$nonceMatch.Success) { exit 2 }
+  `$shell = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+  if (-not `$shell) { `$shell = Get-Command powershell.exe -ErrorAction Stop }
+  `$arguments = @(
+    '-NoProfile',
+    '-ExecutionPolicy', 'Bypass',
+    '-File', '`"$installScriptPath`"',
+    '-ExtensionId', `$extensionMatch.Groups[1].Value,
+    '-BootstrapNonce', `$nonceMatch.Groups[1].Value
+  )
+  `$process = Start-Process -FilePath `$shell.Source -ArgumentList `$arguments -WorkingDirectory "$serviceDir" -Wait -PassThru
+  exit `$process.ExitCode
+}
 if (`$LaunchUri -match '[?&]nonce=([A-Za-z0-9_-]{32,128})') {
   `$serviceConfig = Get-Content -Raw -LiteralPath "$configPath" | ConvertFrom-Json
   `$serviceConfig | Add-Member -NotePropertyName bootstrapNonce -NotePropertyValue `$Matches[1] -Force
@@ -61,6 +105,45 @@ New-ItemProperty -Path $protocolKey -Name "(Default)" -Value "URL:TikTok LIVE Co
 New-ItemProperty -Path $protocolKey -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null
 $protocolCommand = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startScriptPath`" `"%1`""
 New-ItemProperty -Path "$protocolKey\shell\open\command" -Name "(Default)" -Value $protocolCommand -PropertyType String -Force | Out-Null
+
+if ($BootstrapNonce) {
+  $headers = @{
+    Origin = "chrome-extension://$configuredExtensionId"
+    Authorization = "Bearer $pairingCode"
+  }
+  $runningService = $null
+  try {
+    $runningService = Invoke-RestMethod -Uri "http://127.0.0.1:43117/v1/health" -Headers $headers -Method Get -TimeoutSec 2
+  } catch {
+    $runningService = $null
+  }
+  if ($runningService -and $runningService.version -eq "0.7.1" -and -not $runningService.bootstrapPairing) {
+    $listenerPid = 0
+    try {
+      $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort 43117 -State Listen -ErrorAction Stop | Select-Object -First 1
+      $listenerPid = [int]$listener.OwningProcess
+    } catch {
+      $netstatLine = netstat -ano -p tcp | Select-String -Pattern '^\s*TCP\s+127\.0\.0\.1:43117\s+\S+\s+LISTENING\s+(\d+)\s*$' | Select-Object -First 1
+      if ($netstatLine -and $netstatLine.Matches.Count) { $listenerPid = [int]$netstatLine.Matches[0].Groups[1].Value }
+    }
+    if ($listenerPid -le 0) { throw "Der laufende ältere Sprachdienst konnte nicht eindeutig ermittelt werden." }
+    $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $listenerPid"
+    if (-not $listenerProcess -or $listenerProcess.Name -ne "node.exe" -or $listenerProcess.CommandLine -notmatch '(?i)\bnode(?:\.exe)?\b\s+server\.mjs\b') {
+      throw "Port 43117 wird nicht vom erwarteten TikTok-LIVE-Companion-Dienst verwendet."
+    }
+    Stop-Process -Id $listenerPid -Force
+    for ($attempt = 0; $attempt -lt 20; $attempt += 1) {
+      Start-Sleep -Milliseconds 100
+      $probe = New-Object Net.Sockets.TcpClient
+      try {
+        $connection = $probe.BeginConnect("127.0.0.1", 43117, $null, $null)
+        if (-not ($connection.AsyncWaitHandle.WaitOne(100) -and $probe.Connected)) { break }
+      } finally {
+        $probe.Dispose()
+      }
+    }
+  }
+}
 
 & $startScriptPath
 Write-Host "Der Sprachdienst wurde mit npm start im Hintergrund gestartet."

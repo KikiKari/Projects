@@ -369,6 +369,7 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
         return sendJson(response, 200, {
           ok: true,
           version: VERSION,
+          bootstrapPairing: true,
           tts: voiceList.length ? "Sherpa-ONNX" : "Standard",
           ttsAvailable: process.platform === "win32",
           sherpaConfigured: voiceList.length > 0,

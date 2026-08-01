@@ -1027,18 +1027,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } });
         break;
       }
-      case "TLC_START_LOCAL_SERVICE": {
+      case "TLC_START_LOCAL_SERVICE":
+      case "TLC_INSTALL_LOCAL_SERVICE": {
         const settings = await getSettings();
-        const setupCommand = `npm run setup -- -ExtensionId ${chrome.runtime.id}\nnpm start`;
+        const install = message.type === "TLC_INSTALL_LOCAL_SERVICE";
         const nonce = `${newBrowserSessionId()}${newBrowserSessionId()}`;
-        const serviceTab = await chrome.tabs.create({ url: `tiktok-live-companion://start?nonce=${encodeURIComponent(nonce)}`, active: false });
+        const protocolUrl = install
+          ? `tiktok-live-companion://install?nonce=${encodeURIComponent(nonce)}&extensionId=${encodeURIComponent(chrome.runtime.id)}`
+          : `tiktok-live-companion://start?nonce=${encodeURIComponent(nonce)}`;
+        const serviceTab = await chrome.tabs.create({ url: protocolUrl, active: false });
         setTimeout(() => {
           if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
         }, 1500);
         const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
         let pairingCode = "";
-        for (let attempt = 0; attempt < 10 && !pairingCode; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 400));
+        const attempts = install ? 180 : 10;
+        for (let attempt = 0; attempt < attempts && !pairingCode; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, install ? 500 : 400));
           const response = await fetch(`${serviceUrl}/v1/pair?nonce=${encodeURIComponent(nonce)}`).catch(() => null);
           if (!response?.ok) continue;
           const payload = await response.json().catch(() => ({}));
@@ -1049,7 +1054,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ok: true,
           pairingCode,
           setupRequired: !pairingCode,
-          setupCommand
+          installationStarted: install
         });
         break;
       }

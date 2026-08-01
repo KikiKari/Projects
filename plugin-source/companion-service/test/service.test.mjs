@@ -35,6 +35,7 @@ test("health requires pairing and reports providers", async (t) => {
   assert.equal(response.status, 200);
   const health = await response.json();
   assert.equal(health.version, "0.7.1");
+  assert.equal(health.bootstrapPairing, true);
   assert.equal(health.auddConfigured, true);
   assert.equal(health.sherpaConfigured, true);
   assert.equal(health.sherpaVoiceCount, 1);

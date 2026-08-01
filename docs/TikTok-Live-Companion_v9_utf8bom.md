@@ -97,11 +97,11 @@ Das Manifest führt Version `0.7.1`. Nach einem Update aus einem älteren Ordner
 
 Der Dienst ist Teil des Extension-ZIPs und zusätzlich als eigenes Archiv verfügbar.
 
-1. `tiktok-live-companion-service-0.7.1.zip` entpacken und PowerShell in diesem Ordner öffnen.
-2. Im Sidepanel den erzeugten Befehl `npm run setup -- -ExtensionId <Erweiterungs-ID>` kopieren und einmalig ausführen. Ein AudD-Token ist ausschließlich für die Songerkennung erforderlich.
-3. Optional `install-sherpa.ps1` ausführen, um Sherpa-ONNX-Stimmen zu installieren.
-4. Das Setup registriert den vorhandenen Protokollstarter und startet den Dienst; spätere Buttonklicks prüfen zuerst den Health-Endpunkt und verwenden danach `tiktok-live-companion://start`.
-5. Ein kurzlebiger, einmaliger Nonce übergibt den lokal erzeugten Pairing-Code ausschließlich an die im Setup gebundene Erweiterungs-ID.
+1. Im Sidepanel **Sprachdienst starten** wählen. Falls die einmalige Einrichtung fehlt, erscheint ausschließlich **Installation abschließen!**; weder Shell-Befehle noch die Erweiterungs-ID werden angezeigt.
+2. **Installation abschließen!** öffnet PowerShell im tatsächlichen Dienstverzeichnis und führt das Setup mit der richtigen Erweiterungs-ID aus.
+3. Das Setup installiert die Standardstimmen, registriert den lokalen Starter und startet den Dienst automatisch. Ein bereits laufender Dienst wird erkannt und nicht doppelt gestartet.
+4. Der Pairing-Code wird über einen kurzlebigen, einmaligen Nonce automatisch in das Sidepanel übernommen; nach erfolgreichem Health-Check verschwindet der Installationsbutton.
+5. Spätere Buttonklicks prüfen den Health-Endpunkt und verwenden danach `tiktok-live-companion://start`.
 
 Der Dienst lauscht ausschließlich auf `127.0.0.1:43117` und benötigt Node.js ab Version 20.
 
@@ -602,9 +602,9 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `a0d9b7a6410096e2b30f51442e9ac21e456aed313fb2a7b5c91cc02570a40188` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `f4bde050bdf0f697de3ded2a44d75bd292727ad554243392c35099519be501c9` |
-| `tiktok-live-companion-service-0.7.1.zip` | `d69f9604c87997e67ed6c059f09329ef067441f076975ffa171b6075787a78a1` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26` |
+| `tiktok-live-companion-service-0.7.1.zip` | `a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
 | `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
@@ -612,6 +612,8 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete sowie die Prüfsummendatei wurden anschließend über `tiktok-live-companion.vercel.app` bytegleich bestätigt.
 
 **Sidepanel-Hotfix:** Der im ausgelieferten Panel sichtbare Fehler `Cannot set properties of undefined (setting 'textContent')` beim Startversuch des Sprachdienstes wurde auf den fehlenden DOM-Bezug `service-setup-command` zurückgeführt und behoben. Ein Regressionstest prüft jetzt HTML-ID und zentrale Elementzuordnung. Extension- und Plugin-ZIP wurden danach zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen ihre vorherigen Stände.
+
+**Installations-Hotfix:** Das Sidepanel zeigt weder npm-Befehle noch die Erweiterungs-ID. Der Button heißt **Installation abschließen!**, startet die validierte lokale PowerShell-Installation im tatsächlichen Dienstverzeichnis, übernimmt den Pairing-Code automatisch und wird nach erfolgreichem Health-Check ausgeblendet. Der Starter erkennt einen bereits belegten Dienstport, sodass kein zweiter `npm start`-Prozess und damit kein `EADDRINUSE` erzeugt wird. Extension, Plugin und Dienst wurden anschließend zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen die vorherigen Stände.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 

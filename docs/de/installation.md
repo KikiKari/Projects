@@ -17,38 +17,17 @@
 
 ## Optionaler lokaler Sprach- und Songdienst
 
-1. Im Sidepanel **Sprachdienst installieren** wählen und den dort erzeugten einmaligen Setup-Befehl kopieren. Er lautet `npm run setup -- -ExtensionId <Erweiterungs-ID>`; das Root-Skript startet das Setup aus `companion-service`.
-2. Das Setup speichert die Konfiguration, installiert die deutschen und englischen Standardstimmen, richtet den lokalen Startaufruf für den Sidepanel-Button ein und führt abschließend `npm start` im Hintergrund aus.
-3. Der Button startet den eingerichteten Dienst später über `tiktok-live-companion://start`; ein kurzlebiger lokaler Nonce übernimmt den bereits lokal erzeugten Pairing-Code automatisch.
-4. Falls die Protokollregistrierung noch fehlt, zeigt das Sidepanel den einmaligen PowerShell-Schritt mit Kopierfunktion an. Es wird kein weiterer Installer benötigt.
+1. Im Sidepanel **Sprachdienst starten** wählen. Falls die einmalige Einrichtung noch fehlt, erscheint ausschließlich **Installation abschließen!**; Befehle und Erweiterungs-ID werden nicht eingeblendet.
+2. **Installation abschließen!** öffnet PowerShell im tatsächlichen Dienstverzeichnis, führt das Setup mit der richtigen Erweiterungs-ID aus und startet den Dienst automatisch.
+3. Der lokal erzeugte Pairing-Code wird automatisch in das Sidepanel übernommen. Nach erfolgreichem Health-Check verschwindet der Installationsbutton.
+4. Spätere Starts verwenden den registrierten lokalen Aufruf `tiktok-live-companion://start`; ein kurzlebiger Nonce schützt die Pairing-Übergabe.
 5. Der Dienst lauscht ausschließlich auf `127.0.0.1:43117`.
 
-Wenn das Sidepanel `Lokaler Dienst ist veraltet` meldet, läuft noch ein alter Dienst aus einem früher entpackten Paket. In der alten PowerShell zuerst `Ctrl+C` drücken, dann den aktuellen Dienst starten:
+Wenn das Sidepanel `Lokaler Dienst ist veraltet` meldet, läuft noch ein Dienst aus einem früher entpackten Paket. Diesen Prozess beenden, die aktuelle entpackte Erweiterung laden und **Installation abschließen!** erneut wählen. Ein zusätzlicher manueller Start ist nicht erforderlich; ein bereits laufender Dienst wird erkannt, statt einen zweiten Prozess zu starten.
 
-```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
-npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
-npm start
-```
+Der Pairing-Code wird in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespeichert und bleibt normalerweise gleich. Er ändert sich nur, wenn diese Datei gelöscht oder neu erzeugt wird.
 
-Alternativ kann im Hauptordner des entpackten Pakets gearbeitet werden:
-
-```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1"
-npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
-npm start
-```
-
-Der Pairing-Code wird in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespeichert und bleibt normalerweise gleich. Er ändert sich nur, wenn diese Datei gelöscht oder neu erzeugt wird. Die PowerShell mit `npm start` muss laufen, solange der lokale Dienst nicht über den registrierten Protokollstarter im Hintergrund gestartet wurde.
-
-Das optionale Feld **AudD API-Token** speichert den AudD-Schlüssel dauerhaft in derselben lokalen Konfiguration. Deutsch und Englisch sind nach dem Grundsetup verfügbar. Weitere bestätigte Sherpa-ONNX-Stimmen werden erst bei Auswahl geladen; nicht bestätigte Modelle erscheinen nicht. Falls die Grundinstallation blockiert wird:
-
-```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sherpa.ps1
-npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
-npm start
-```
+Das optionale Feld **AudD API-Token** speichert den AudD-Schlüssel dauerhaft in derselben lokalen Konfiguration. Deutsch und Englisch sind nach dem Grundsetup verfügbar. Weitere bestätigte Sherpa-ONNX-Stimmen werden erst bei Auswahl geladen; nicht bestätigte Modelle erscheinen nicht.
 
 ## Erster Einsatz
 
