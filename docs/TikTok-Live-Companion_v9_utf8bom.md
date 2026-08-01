@@ -44,7 +44,7 @@ Mit 0.7.1 stehen **alle drei Plattformen auf demselben Versions- und Artefaktsta
 | Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `80d3cb1` |
 | iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `2323a6f` |
 
-Android `80d3cb1` und iOS `2323a6f` sind gepusht und gegen das Remote bestätigt. Die Browser-Implementierung ist lokal als `35a0651` committed; der Pushnachweis folgt getrennt.
+Android `80d3cb1`, iOS `2323a6f` und der Browser-Dokumentationsstand `ad1fef6` sind gepusht und gegen das Remote bestätigt. Die fachliche Browser-Implementierung ist separat als `35a0651` nachvollziehbar.
 
 ### Was 0.7.1 gegenüber 0.7.0 ändert
 
