@@ -102,7 +102,7 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 | Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 | iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 
-OCI-Index-Digests: Browser `sha256:08193db44e1ba6c91a9e07cc45c25d6f64413647c88008a6b6ba2f6397a90412`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+OCI-Index-Digests: Browser nach OPE-92 `sha256:b57d693e93dddcb766f0a6e851553409268e91cfe1bffb5680a87ad29ffdf48d`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
 
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 

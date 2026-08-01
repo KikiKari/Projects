@@ -528,7 +528,7 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
 
-Bestätigte OCI-Index-Digests am 01.08.2026: Browser `sha256:08193db44e1ba6c91a9e07cc45c25d6f64413647c88008a6b6ba2f6397a90412`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+Bestätigte OCI-Index-Digests am 01.08.2026: Browser nach OPE-92 `sha256:b57d693e93dddcb766f0a6e851553409268e91cfe1bffb5680a87ad29ffdf48d`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
 
 ---
 
