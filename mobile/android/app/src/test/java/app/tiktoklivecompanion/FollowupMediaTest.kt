@@ -63,6 +63,8 @@ class FollowupMediaTest {
         assertFalse(live.contains("Top-Chatter"))
         assertTrue(live.contains("Personen stummschalten"))
         assertTrue(ui.substringAfter("private fun MoreTab").contains("Debugmodus"))
+        assertFalse(ui.contains("Direkte TikTok-Media-URLs sind temporär"))
+        assertFalse(ui.contains("Es werden nur Ereignistyp und Zeit erfasst"))
         val manifest = File(sourceRoot, "AndroidManifest.xml").readText()
         assertTrue(manifest.contains("foregroundServiceType=\"mediaPlayback\""))
         assertTrue(File(sourceRoot, "java/app/tiktoklivecompanion/BackgroundPlaybackService.kt").readText().contains("startForeground"))

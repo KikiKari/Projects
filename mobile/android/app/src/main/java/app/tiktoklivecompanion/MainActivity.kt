@@ -197,7 +197,6 @@ class MainActivity : ComponentActivity() {
         if (state.mediaUrls.isEmpty()) Text("Noch keine direkte Media-URL erkannt. Sie erscheint, sobald TikTok den Player lädt.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.mediaUrls.forEach { media -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(media.kind, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(media.url, maxLines = 2) }; TextButton(onClick = { copyMedia("TikTok LIVE Media-URL", media.url) }) { Text("Kopieren") } } } }
         if (state.mediaUrls.isNotEmpty()) OutlinedButton(onClick = { copyMedia("TikTok LIVE Media-URLs", state.mediaUrls.joinToString("\n") { it.url }) }, modifier = Modifier.fillMaxWidth()) { Text("Alle kopieren") }
-        Text("Direkte TikTok-Media-URLs sind temporär, können ablaufen und funktionieren in VLC nicht in jedem Fall.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 @Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel) {
@@ -216,7 +215,6 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", state.debugEvents.joinToString("\n"))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
             OutlinedButton(onClick = model::clearDebugEvents, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Leeren") }
         }
-        Text("Es werden nur Ereignistyp und Zeit erfasst – keine Audio-Nutzdaten, Cookies oder URL-Parameter.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
