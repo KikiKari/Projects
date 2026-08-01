@@ -25,7 +25,7 @@ Die Umsetzung umfasst `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`
 
 | Branch | Adresse | Branchspitze | Status |
 |---|---|---|---|
-| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `280f478` | ✅ öffentlich sichtbar |
+| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | Implementierung `35a0651` | ⚠️ lokaler Commit; Pushnachweis folgt getrennt |
 | `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `80d3cb1` | ✅ Push und Remote bestätigt |
 | `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `2323a6f` | ✅ Push und Actions bestätigt |
 

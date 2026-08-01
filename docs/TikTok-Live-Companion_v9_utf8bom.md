@@ -12,7 +12,7 @@
 
 Aktiv bearbeitet werden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89` und `0PE-90`. Browserseitig sind die neue Sidepanel-Reihenfolge, die Auswahl der größten sichtbaren zentralen Playerfläche, tabbezogener Laufzeitzustand und MV3-Offscreen-TTS lokal umgesetzt. Der vorhandene Sprachdienst nutzt weiterhin Setup, Startskript und Protokollhandler; Pairing wird nach dem einmaligen Setup über einen kurzlebigen lokalen Nonce übernommen. Deutsch und Englisch bleiben Standard, weitere bestätigte Stimmen werden erst bei Auswahl installiert. Android entfernt die zwei exakt bezeichneten Hinweise; iOS sichert deren Abwesenheit und verwendet `CURRENT_PROJECT_VERSION = 8` als Quelle von `CFBundleVersion`.
 
-Diese Angaben sind noch kein Veröffentlichungsnachweis. Finale Branch-SHAs, CI-Läufe, Artefakt-Hashes, Registry-Digests und Vercel-Status werden erst nach erfolgreicher Abnahme ergänzt.
+Browser-Implementierung, Tests, Dokumente und reproduzierbare Release-Artefakte sind in Commit `35a06518658a6e5062de989758b89613e439fe5d` zusammengeführt. Android steht auf `80d3cb1368c09875be6697021b21c1bc04c79870`, iOS auf `2323a6faa6526ad9057bccf81253306b224c62c4`. Diese Angaben sind noch kein vollständiger Veröffentlichungsnachweis: Registry-Digests, Vercel-Neudeployment, reales Browserverhalten und das formale Security-Seal bleiben getrennte Gates.
 
 ---
 
@@ -40,11 +40,11 @@ Mit 0.7.1 stehen **alle drei Plattformen auf demselben Versions- und Artefaktsta
 
 | Plattform | Technik | Songerkennung | Branch | Branchspitze |
 |---|---|---|---|---|
-| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `280f478` |
+| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | Implementierung `35a0651` |
 | Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `80d3cb1` |
 | iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `2323a6f` |
 
-Android `80d3cb1` und iOS `2323a6f` sind gepusht und gegen das Remote bestätigt. Der Browserstand ist bis zum abschließenden Commit und Push weiterhin als lokaler Arbeitsstand auszuweisen.
+Android `80d3cb1` und iOS `2323a6f` sind gepusht und gegen das Remote bestätigt. Die Browser-Implementierung ist lokal als `35a0651` committed; der Pushnachweis folgt getrennt.
 
 ### Was 0.7.1 gegenüber 0.7.0 ändert
 
