@@ -17,17 +17,17 @@
 
 ## Optional local speech and song service
 
-1. Open the currently extracted `tiktok-live-companion-extension-0.7.1` folder and run `npm run setup`. The root script delegates to `companion-service`.
-2. Setup saves the configuration, registers the local start action for the side-panel button, and finally runs `npm start` in the background.
-3. Enter the displayed pairing code in the side panel.
-4. Use **Sprachdienst installieren** to start the configured service again in the background.
+1. Select **Sprachdienst installieren** in the side panel and copy its generated one-time setup command. It has the form `npm run setup -- -ExtensionId <extension-id>`; the root script delegates to `companion-service`.
+2. Setup binds the local configuration to that extension ID, registers the local start action, installs the German and English default voices, and finally runs `npm start` in the background.
+3. Later button presses start the configured service through `tiktok-live-companion://start`; a short-lived local nonce transfers the existing pairing code automatically.
+4. No separate installer or Native Messaging host is used.
 5. The service listens only on `127.0.0.1:43117`.
 
 If the side panel reports that the local service is outdated, an older extracted package is still running on `127.0.0.1:43117`. Press `Ctrl+C` in the old PowerShell window, then start the current service:
 
 ```powershell
 cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
-npm run setup
+npm run setup -- -ExtensionId <extension-id-from-side-panel>
 npm start
 ```
 
@@ -35,7 +35,7 @@ Alternatively, run the same commands from the extracted package root:
 
 ```powershell
 cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1"
-npm run setup
+npm run setup -- -ExtensionId <extension-id-from-side-panel>
 npm start
 ```
 
@@ -46,7 +46,7 @@ The **AudD API-Token** field stores the AudD key persistently in the same local 
 ```powershell
 cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sherpa.ps1
-npm run setup
+npm run setup -- -ExtensionId <extension-id-from-side-panel>
 npm start
 ```
 

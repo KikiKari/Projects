@@ -909,11 +909,31 @@
   }
 
   function playerSurface() {
-    return primaryVideo()?.closest('[data-e2e*="player" i]')
-      || document.querySelector('[data-e2e="control-bar-id-v2"]')?.parentElement
-      || document.querySelector("main")
-      || document.body
-      || document.documentElement;
+    const video = primaryVideo();
+    if (!video) return document.querySelector('[data-e2e="control-bar-id-v2"]')?.parentElement || document.querySelector("main") || document.body;
+    const videoRect = video.getBoundingClientRect();
+    const videoArea = Math.max(1, videoRect.width * videoRect.height);
+    const viewportArea = Math.max(1, innerWidth * innerHeight);
+    const candidates = new Set();
+    let ancestor = video.parentElement;
+    for (let depth = 0; ancestor && depth < 9; depth += 1, ancestor = ancestor.parentElement) candidates.add(ancestor);
+    for (const selector of [
+      '[data-e2e*="player" i]', '[data-testid*="player" i]',
+      '[data-e2e*="live-content" i]', '[data-e2e*="live-room" i]'
+    ]) {
+      for (const node of document.querySelectorAll(selector)) if (node.contains(video)) candidates.add(node);
+    }
+    const scored = [...candidates].flatMap((node) => {
+      if (node === document.body || node === document.documentElement || !isVisible(node)) return [];
+      const rect = node.getBoundingClientRect();
+      const area = rect.width * rect.height;
+      if (rect.width < 320 || rect.height < 180 || area < videoArea * 0.85) return [];
+      if (area > Math.min(viewportArea * 0.98, videoArea * 4.5)) return [];
+      const centerDistance = Math.hypot((rect.left + rect.width / 2) - innerWidth / 2, (rect.top + rect.height / 2) - innerHeight / 2);
+      const playerBonus = node.matches?.('[data-e2e*="player" i],[data-testid*="player" i]') ? viewportArea : 0;
+      return [{ node, score: area + playerBonus - centerDistance * 100 }];
+    }).sort((a, b) => b.score - a.score);
+    return scored[0]?.node || video.parentElement || document.querySelector("main") || document.body;
   }
 
   function mediaFallbackCandidates(media = []) {
@@ -950,7 +970,10 @@
     }
     const surface = playerSurface();
     const style = getComputedStyle(surface);
-    if (style.position === "static") surface.style.position = "relative";
+    if (style.position === "static") {
+      surface.dataset.tlcFallbackPositioned = "true";
+      surface.style.position = "relative";
+    }
     if (holder.parentElement !== surface) surface.append(holder);
     return holder.querySelector("video");
   }
@@ -1402,7 +1425,6 @@
     }
     scheduleScan(50);
     chrome.storage.local.get("tlc-settings").then(({ "tlc-settings": settings = {} }) => {
-      quickRecoverEnabled = Boolean(settings.quickRecoverEnabled);
       const apply = async () => {
         const video = primaryVideo();
         if (!video) {

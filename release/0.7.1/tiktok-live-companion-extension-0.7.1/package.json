@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.7.1",
   "scripts": {
-    "setup": "npm --prefix companion-service run setup",
+    "setup": "npm --prefix companion-service run setup --",
     "start": "npm --prefix companion-service start",
     "test": "npm --prefix companion-service test"
   }

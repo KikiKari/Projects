@@ -28,9 +28,9 @@
       <div class="control-label"><label for="speech-volume">Vorleselautstärke</label><output id="speech-volume-output" for="speech-volume">100%</output></div>
       <input id="speech-volume" type="range" min="0" max="100" step="5" value="50">
       <div class="settings-grid speech-settings">
-        <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option></select></label>
+        <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
         <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
-        <label><span>AudD API-Token</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
+        <label><span>AudD API-Token (optional)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
         <label><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
       </div>
       <div class="button-row">
@@ -38,6 +38,10 @@
         <button id="sherpa-action" class="secondary">Sherpa installieren</button>
       </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
+      <div id="service-setup" class="inline-status" hidden>
+        <code id="service-setup-command">Der Setup-Befehl wird beim Startversuch erzeugt.</code>
+        <button id="copy-service-setup" class="secondary compact">Befehle kopieren</button>
+      </div>
       <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen</label>
       <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
       <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
@@ -53,25 +57,17 @@
       <div id="top-chatters" class="top-chatters empty">Noch keine Personen im Chat beobachtet.</div>
     </section>
 
-    <section aria-labelledby="song-heading">
+    <section id="page-info-section" aria-labelledby="page-info-heading">
       <div class="section-title">
-        <h2 id="song-heading">Songerkennung</h2>
-        <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
+        <h2 id="page-info-heading">Seiteninformationen</h2>
+        <div class="title-actions">
+          <span id="page-info-source" class="live-indicator">Metadaten</span>
+          <button id="refresh-page-info" class="secondary compact">Refresh</button>
+          <button id="force-page-info" class="secondary compact danger-outline">Force</button>
+        </div>
       </div>
-      <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
-      <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
-      <p id="song-status" class="inline-status"></p>
-      <div id="song-result" class="song-result" hidden></div>
-    </section>
-
-    <section aria-labelledby="caption-heading">
-      <div class="section-title">
-        <h2 id="caption-heading">Untertitel</h2>
-        <button id="scan" class="secondary">Seite prüfen</button>
-      </div>
-      <div id="caption-status" class="status-grid"></div>
-      <button id="enable-captions" class="primary">Untertitel aktivieren</button>
-      <p id="caption-action-status" role="status" class="inline-status action-status"></p>
+      <div id="profile-info" class="profile-info" hidden></div>
+      <div id="summary-info" class="summary-info"></div>
     </section>
 
     <section aria-labelledby="hook-heading">
@@ -89,6 +85,16 @@
       <p id="hook-status" class="inline-status"></p>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
       <label class="option-row"><input id="quick-recover" type="checkbox"> Auto-Reconnect</label>
+    </section>
+
+    <section aria-labelledby="caption-heading">
+      <div class="section-title">
+        <h2 id="caption-heading">Untertitel</h2>
+        <button id="scan" class="secondary">Seite prüfen</button>
+      </div>
+      <div id="caption-status" class="status-grid"></div>
+      <button id="enable-captions" class="primary">Untertitel aktivieren</button>
+      <p id="caption-action-status" role="status" class="inline-status action-status"></p>
     </section>
 
     <section aria-labelledby="stats-heading">
@@ -126,17 +132,15 @@
       <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
     </section>
 
-    <section id="page-info-section" aria-labelledby="page-info-heading">
+    <section aria-labelledby="song-heading">
       <div class="section-title">
-        <h2 id="page-info-heading">Seiteninformationen</h2>
-        <div class="title-actions">
-          <span id="page-info-source" class="live-indicator">Metadaten</span>
-          <button id="refresh-page-info" class="secondary compact">Refresh</button>
-          <button id="force-page-info" class="secondary compact danger-outline">Force</button>
-        </div>
+        <h2 id="song-heading">Songerkennung</h2>
+        <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
       </div>
-      <div id="profile-info" class="profile-info" hidden></div>
-      <div id="summary-info" class="summary-info"></div>
+      <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
+      <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
+      <p id="song-status" class="inline-status"></p>
+      <div id="song-result" class="song-result" hidden></div>
     </section>
 
     <section aria-labelledby="links-heading">

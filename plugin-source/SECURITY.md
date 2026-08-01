@@ -8,6 +8,7 @@ The earlier formal scan closed all nine review scopes and validated two Low/P3 r
 
 - `activeTab`, `tabs`, and `scripting` are used only for the user-selected TikTok tab and hook reload workflow.
 - `sidePanel` hosts the local interface.
+- `offscreen` keeps the tab-scoped speech queue and local audio playback alive while the side panel is hidden during fullscreen; it does not grant network access.
 - `storage.session` holds tab state, public profile cache and optional diagnostics. `storage.local` contains only Autostart, speech continuity and speech volume preferences; URLs, chat and captions are not persisted there.
 - `webRequest` is passive. The extension does not request `webRequestBlocking` and cannot modify traffic.
 - Host permissions are limited to `www.tiktok.com` and named TikTok CDN suffixes.
@@ -18,10 +19,10 @@ The earlier formal scan closed all nine review scopes and validated two Low/P3 r
 - No remote scripts, analytics, telemetry, fetch uploads, API keys, or third-party API calls. A credentials-free GET to the creator's public TikTok profile page is allowed to refresh public profile values.
 - No `eval`, `new Function`, or assignment to `innerHTML`.
 - UI output is created with DOM nodes and `textContent`.
-- Public chat is sanitized and limited to 50 session-only records per tab. Optional speech remains local to the browser.
+- Public chat is sanitized and limited to 50 session-only records per tab. Optional speech remains local to the browser or paired loopback service and is queued per tab in the offscreen document.
 - Diagnostic exports redact signed URL query values and contain neither chat contents nor cookies or API keys.
 - Audio analysis, TTS gain and compression use local APIs. A song sample is transferred to AudD only after an explicit recognition click; the AudD token remains in the local service configuration.
-- The companion service binds to `127.0.0.1`, requires a high-entropy pairing code, rejects non-extension browser origins, caps TTS bodies at 64 KiB and recognition bodies at 10 MiB, and deletes temporary speech files in `finally` cleanup.
+- The companion service binds to `127.0.0.1`, requires a high-entropy pairing code, rejects non-extension browser origins, caps TTS bodies at 64 KiB and recognition bodies at 10 MiB, and deletes temporary speech files in `finally` cleanup. The protocol starter exposes pairing only through a one-time, short-lived high-entropy nonce. Voice listing and installation remain authenticated; installers accept only IDs from the bundled allowlist catalog.
 - The WebSocket wrapper adds only `open`, `close`, and `message` listeners. It does not wrap or replace `send()`.
 - The report control only opens TikTok's own dialog; it never selects a category or submits a report.
 - Native WebViews accept bridge messages only from the HTTPS TikTok main frame, enforce a 64 KiB envelope limit and expose only fixed commands. Audio capture is explicit and capped at twelve seconds.

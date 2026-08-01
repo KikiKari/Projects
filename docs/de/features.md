@@ -2,7 +2,7 @@
 
 ## Chat und Vorlesen
 
-Öffentliche Chatnachrichten werden bereinigt und als zugänglicher Text dargestellt. Emoji-Sequenzen und sicher erkannte, pro Stream feste Teamkürzel werden beim Vorlesen entfernt. `@`-Empfänger und Fragen werden natürlich formuliert. Für die Sprachausgabe entfallen Sonderzeichen und Zahlen in Nicknamen; technische `user…`-Namen werden auf `user` plus höchstens drei Ziffern begrenzt. Die optionale geeignete Namenskürzung erkennt zusätzlich klare Hauptteile wie `Traumtänzer`, `Vanny`, `Löwin` oder `Maskenaufsicht`. Dieselbe Regel gilt für `@`-Empfänger. Überlange Lachfolgen werden als kurzes `haha` gesprochen. Sprache, Namensansage und geeignete Namenskürzung sind einstellbar. Der optionale lokale Windows-Dienst ermöglicht Verstärkung; ohne Dienst bleibt der Browser-TTS-Fallback erhalten.
+Öffentliche Chatnachrichten werden bereinigt und als zugänglicher Text dargestellt. Emoji-Sequenzen und sicher erkannte, pro Stream feste Teamkürzel werden beim Vorlesen entfernt. `@`-Empfänger und Fragen werden natürlich formuliert. Für die Sprachausgabe entfallen Sonderzeichen und Zahlen in Nicknamen; technische `user…`-Namen werden auf `user` plus höchstens drei Ziffern begrenzt. Die optionale geeignete Namenskürzung erkennt zusätzlich klare Hauptteile wie `Traumtänzer`, `Vanny`, `Löwin` oder `Maskenaufsicht`. Dieselbe Regel gilt für `@`-Empfänger. Überlange Lachfolgen werden als kurzes `haha` gesprochen. Sprache, Namensansage und geeignete Namenskürzung sind einstellbar. TTS und Warteschlange laufen im MV3-Offscreen-Dokument tabbezogen weiter, wenn das Sidepanel während Vollbild nicht sichtbar ist. Der optionale lokale Windows-Dienst ermöglicht Verstärkung und zusätzliche, erst bei Auswahl installierte Sherpa-Stimmen; ohne Dienst bleibt der Browser-TTS-Fallback erhalten.
 
 ## Top-Chatter und beobachtete Personen
 
@@ -22,7 +22,11 @@ Der Hook beobachtet `WebcastRoomUserSeqMessage`, `WebcastLikeMessage` und `Webca
 
 ## Player und Pegelschutz
 
-Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild und Vollbild bedienen TikToks vorhandenen Player. Der optionale lokale Kompressor begrenzt digitale Spitzen. dBFS ist kein kalibrierter dB-SPL-Wert.
+Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild und Vollbild bedienen TikToks vorhandenen Player. Ein VLC-Ersatz belegt die größte sichtbare zentrale Playerfläche und lässt Originalvideo, Mini-Player sowie Media-/VLC-Links unangetastet. Der optionale lokale Kompressor begrenzt digitale Spitzen. dBFS ist kein kalibrierter dB-SPL-Wert.
+
+## Sidepanel und Tab-Isolation
+
+Die Reihenfolge ist: Chat, Top-Chatter, Seiteninformationen; WebSocket-Hook, Untertitel; Playersteuerung, Songerkennung. Hook, Streamstatus, Chat, TTS, Player-Recovery, Debugmodus und Modulaktivität werden pro Tab geführt. Nur Benutzerpräferenzen und Zugangsdaten bleiben global; eine Embed-/Normal-Verknüpfung ist die einzige ausdrückliche Beziehung zwischen zwei Tabs.
 
 ## Bildqualität und VLC
 

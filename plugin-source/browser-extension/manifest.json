@@ -6,6 +6,7 @@
   "minimum_chrome_version": "114",
   "permissions": [
     "activeTab",
+    "offscreen",
     "scripting",
     "sidePanel",
     "storage",

@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
@@ -37,6 +37,7 @@
   let pairingCode = "";
   let auddApiToken = "";
   let sherpaInstallStarted = false;
+  let voiceCatalog = [];
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
@@ -114,8 +115,9 @@
     element.title = label;
   }
 
-  function persistSpeechEnabled(enabled) {
-    chrome.runtime.sendMessage({ type: "TLC_SET_SPEECH_PREFERENCE", speechEnabled: Boolean(enabled) }).catch(() => {});
+  function persistSpeechEnabled(enabled, tabId = speechTabId ?? activeTabId) {
+    if (!Number.isInteger(tabId)) return Promise.resolve();
+    return chrome.runtime.sendMessage({ type: "TLC_SET_TAB_SPEECH", tabId, enabled: Boolean(enabled) }).catch(() => {});
   }
 
   function activateSpeech(message = "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", persist = true) {
@@ -130,7 +132,7 @@
     if (persist) persistSpeechEnabled(true);
   }
 
-  function stopSpeech(message = "Vorlesen ist ausgeschaltet.") {
+  function stopSpeech(message = "Vorlesen ist ausgeschaltet.", persist = true, tabId = speechTabId ?? activeTabId) {
     speechEnabled = false;
     speechBusy = false;
     speechQueue = [];
@@ -143,7 +145,7 @@
     elements["toggle-speech"].setAttribute("aria-pressed", "false");
     setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
-    persistSpeechEnabled(false);
+    if (persist) persistSpeechEnabled(false, tabId);
   }
 
   function serviceHeaders(extra = {}) {
@@ -231,25 +233,22 @@
     elements["service-status"].textContent = `Lokaler Sprachdienst aktiv · ${lang || "Auto"}.`;
   }
 
-  function sherpaSpeechVoices(voices = []) {
-    const buckets = { "de-DE": [], "en-US": [] };
-    const seen = new Set();
-    for (const voice of voices) {
-      const name = String(voice?.name || voice?.id || "").trim();
-      if (!name || seen.has(name)) continue;
-      const engine = String(voice?.engine || voice?.provider || voice?.source || "").toLowerCase();
-      if (!/(?:sherpa|onnx)/.test(`${engine} ${name.toLowerCase()}`)) continue;
-      const culture = String(voice?.culture || voice?.lang || "").toLowerCase();
-      const group = culture.startsWith("de") ? "de-DE" : culture.startsWith("en") ? "en-US" : "";
-      const bucket = buckets[group];
-      if (!bucket || bucket.length >= 6) continue;
-      seen.add(name);
-      bucket.push({ ...voice, id: voice?.id || name, name, culture: voice?.culture || group });
-    }
-    return [...buckets["de-DE"], ...buckets["en-US"]];
+  function sherpaSpeechVoices(voices = [], catalog = voiceCatalog) {
+    const installedById = new Map(voices.map((voice) => [String(voice.id || voice.name || ""), voice]));
+    return (catalog.length ? catalog : voices).map((voice) => {
+      const id = String(voice.id || voice.name || "").trim();
+      const installedVoice = installedById.get(id);
+      return {
+        ...voice,
+        ...installedVoice,
+        id,
+        name: String(voice.name || installedVoice?.name || id),
+        installed: Boolean(voice.installed || installedVoice)
+      };
+    }).filter((voice) => voice.id && voice.name).sort((a, b) => String(a.culture).localeCompare(String(b.culture)) || a.name.localeCompare(b.name));
   }
 
-  function setSpeechVoiceOptions(voices = []) {
+  function setSpeechVoiceOptions(voices = [], catalog = voiceCatalog) {
     const select = elements["speech-voice"];
     const selected = speechVoiceName || select.value || "";
     clearChildren(select);
@@ -258,20 +257,24 @@
     standard.textContent = "Standard";
     select.append(standard);
     const seen = new Set();
-    for (const voice of sherpaSpeechVoices(voices)) {
+    let resolvedSelected = selected;
+    for (const voice of sherpaSpeechVoices(voices, catalog)) {
       const name = String(voice?.name || voice?.id || "").trim();
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
+      const id = String(voice?.id || name).trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
       const option = document.createElement("option");
-      option.value = name;
-      option.textContent = voice?.culture ? `${name} (${voice.culture})` : name;
+      option.value = id;
+      option.dataset.installed = String(Boolean(voice.installed));
+      option.textContent = `${name}${voice?.culture ? ` (${voice.culture})` : ""}${voice.installed ? "" : " · installieren"}`;
       select.append(option);
+      if (selected === name) resolvedSelected = id;
     }
-    if (selected && !seen.has(selected)) {
+    if ((voices.length || catalog.length) && resolvedSelected && !seen.has(resolvedSelected)) {
       speechVoiceName = "";
       send("TLC_SET_SPEECH_PREFERENCE", { voiceName: "" }).catch(() => {});
     }
-    select.value = seen.has(selected) ? selected : "";
+    select.value = seen.has(resolvedSelected) ? resolvedSelected : "";
   }
 
   async function loadSpeechVoices() {
@@ -279,9 +282,43 @@
       const response = await fetch(`${serviceUrl}/v1/voices`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
-      setSpeechVoiceOptions(payload.voices || []);
+      voiceCatalog = payload.catalog || [];
+      setSpeechVoiceOptions(payload.voices || [], voiceCatalog);
     } catch (_) {
+      voiceCatalog = [];
       setSpeechVoiceOptions([]);
+    }
+  }
+
+  async function installSpeechVoice(voiceId) {
+    const entry = voiceCatalog.find((voice) => String(voice.id || "") === voiceId);
+    if (!entry || entry.installed) return false;
+    elements["speech-voice"].disabled = true;
+    elements["service-status"].textContent = `${entry.name || voiceId} wird installiert …`;
+    try {
+      const response = await fetch(`${serviceUrl}/v1/voices/install`, {
+        method: "POST",
+        headers: { ...serviceHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ voiceId })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      elements["service-status"].textContent = `${entry.name || voiceId} wird im Hintergrund installiert.`;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await loadSpeechVoices();
+        const current = voiceCatalog.find((voice) => String(voice.id || "") === voiceId);
+        if (current?.installed) {
+          elements["service-status"].textContent = `Sprachdienst aktiv! ${current.name || voiceId} ist installiert.`;
+          return true;
+        }
+      }
+      elements["service-status"].textContent = "Installation läuft weiter; die Stimme erscheint nach Abschluss oder beim nächsten Öffnen.";
+      return true;
+    } catch (error) {
+      elements["service-status"].textContent = `Stimme konnte nicht installiert werden: ${String(error?.message || error)}`;
+      return false;
+    } finally {
+      elements["speech-voice"].disabled = false;
     }
   }
 
@@ -710,8 +747,24 @@
 
   function render(state) {
     currentState = state;
+    const tabSpeechEnabled = Boolean(state.speech?.enabled);
+    if (tabSpeechEnabled) {
+      speechEnabled = true;
+      speechTabId = activeTabId;
+      elements["toggle-speech"].textContent = "Vorlesen aus";
+      elements["toggle-speech"].setAttribute("aria-pressed", "true");
+      setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
+      elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist aktiv; warte auf neue Chatzeilen.";
+    } else {
+      speechEnabled = false;
+      speechTabId = null;
+      elements["toggle-speech"].textContent = "Vorlesen an";
+      elements["toggle-speech"].setAttribute("aria-pressed", "false");
+      setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
+      elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist ausgeschaltet.";
+    }
     elements["page-title"].textContent = state.page?.title || state.page?.url || "TikTok LIVE";
-    renderChat(state.chatMessages || [], !speechEnabled || speechTabId === activeTabId);
+    renderChat(state.chatMessages || [], false);
     renderTopChatters(state);
     if (!elements["audience-modal"].hidden && !audienceSelectActive()) renderAudience(state);
     renderStatuses(state);
@@ -735,12 +788,14 @@
 
   async function refresh() {
     const tab = await activeTab();
-    activeTabId = tab?.id ?? null;
-    if (previousTabId != null && previousTabId !== activeTabId && speechEnabled && !keepSpeechActive) {
-      stopSpeech("Vorlesen wurde wegen des Tabwechsels ausgeschaltet.");
+    const nextTabId = tab?.id ?? null;
+    if (activeTabId != null && activeTabId !== nextTabId && speechEnabled && !keepSpeechActive) {
+      await persistSpeechEnabled(false, activeTabId);
+      stopSpeech("Vorlesen wurde wegen des Tabwechsels ausgeschaltet.", false, activeTabId);
       speechInitialized = false;
       knownSpeechKeys.clear();
     }
+    activeTabId = nextTabId;
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
@@ -794,7 +849,7 @@
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     await checkService();
     await loadSpeechVoices();
-    if (response.settings?.speechEnabled) activateSpeech("Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
+    if (currentState?.speech?.enabled) activateSpeech(currentState.speech.status || "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
   }
 
   async function checkService() {
@@ -803,7 +858,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
-      elements["service-action"].textContent = "Sprachdienst aktiv";
+      elements["service-action"].textContent = "Sprachdienst aktiv!";
       elements["service-action"].disabled = false;
       elements["sherpa-action"].textContent = health.sherpaConfigured ? "Sherpa aktiv!" : "Sherpa installieren";
       elements["sherpa-action"].disabled = Boolean(health.sherpaConfigured);
@@ -1091,6 +1146,7 @@
   elements["speech-voice"].addEventListener("change", async () => {
     speechVoiceName = elements["speech-voice"].value;
     await send("TLC_SET_SPEECH_PREFERENCE", { voiceName: speechVoiceName });
+    await installSpeechVoice(speechVoiceName);
   });
   elements["speak-names"].addEventListener("change", async () => {
     speakNames = elements["speak-names"].checked;
@@ -1141,14 +1197,32 @@
     }
     elements["service-status"].textContent = "Lokaler Sprachdienst wird im Hintergrund gestartet …";
     try {
-      await send("TLC_START_LOCAL_SERVICE");
+      const startResult = await send("TLC_START_LOCAL_SERVICE");
+      const setupCommand = String(startResult.setupCommand || "");
+      elements["service-setup-command"].textContent = setupCommand;
+      elements["service-setup"].dataset.setupCommand = setupCommand;
+      if (startResult.pairingCode) {
+        pairingCode = startResult.pairingCode;
+        elements["pairing-code"].value = pairingCode;
+        elements["service-setup"].hidden = true;
+      }
       await new Promise((resolve) => setTimeout(resolve, 1200));
       const health = await checkService();
       if (health?.canInstallSherpa && !health.sherpaConfigured) await installSherpaVoices(false);
-      if (!health) elements["service-status"].textContent = "Lokaler Starter nicht erreichbar. Bitte einmal setup.ps1 ausführen oder im Installationsverzeichnis npm start starten.";
+      if (!health) {
+        elements["service-setup"].hidden = false;
+        elements["service-status"].textContent = "Einmaliges Setup fehlt. PowerShell im Dienstordner öffnen, beide Befehle ausführen und danach erneut auf den Button klicken.";
+      }
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
     }
+  });
+  elements["copy-service-setup"].addEventListener("click", async () => {
+    const setupCommand = String(elements["service-setup"].dataset.setupCommand || "");
+    if (!setupCommand) return;
+    await navigator.clipboard.writeText(setupCommand);
+    elements["copy-service-setup"].textContent = "Kopiert";
+    setTimeout(() => { elements["copy-service-setup"].textContent = "Befehle kopieren"; }, 1200);
   });
   elements["sherpa-action"].addEventListener("click", () => installSherpaVoices(true));
   elements["song-enabled"].addEventListener("change", async () => {
@@ -1223,11 +1297,9 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type !== "TLC_STATE_UPDATED") return;
     if (message.tabId === activeTabId) render(message.state);
-    else if (speechEnabled && keepSpeechActive && message.tabId === speechTabId) processSpeechItems(message.state?.chatMessages || []);
   });
   globalThis.speechSynthesis?.addEventListener?.("voiceschanged", () => loadSpeechVoices().catch(() => {}));
   chrome.tabs.onActivated.addListener(() => refresh().catch(() => {}));
-  window.addEventListener("beforeunload", () => globalThis.speechSynthesis?.cancel());
   refresh().then(loadSettings).then(refreshPlayer).catch((error) => { elements.notice.textContent = String(error?.message || error); });
   setInterval(refreshPlayer, 1500);
   setInterval(() => refresh().catch(() => {}), 5000);

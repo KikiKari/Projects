@@ -10,6 +10,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
 const sherpaVoicesPath = path.join(defaultConfigDir, "sherpa-voices.json");
+const voiceCatalogPath = path.join(root, "voice-catalog.json");
 export const VERSION = "0.7.1";
 export { defaultConfigPath };
 
@@ -19,7 +20,8 @@ let sherpaInstallStatus = {
   startedAtUtc: null,
   finishedAtUtc: null,
   ok: false,
-  error: ""
+  error: "",
+  voiceId: ""
 };
 
 export async function ensureConfig(configPath = defaultConfigPath) {
@@ -77,7 +79,7 @@ function runPowerShell(script, args, input) {
   });
 }
 
-async function runSherpaInstaller() {
+async function runSherpaInstaller(voiceId = "") {
   const script = path.join(root, "install-sherpa.ps1");
   try { await fs.access(script); }
   catch (_) { throw Object.assign(new Error("install-sherpa.ps1 fehlt."), { statusCode: 501 }); }
@@ -86,10 +88,11 @@ async function runSherpaInstaller() {
     startedAtUtc: new Date().toISOString(),
     finishedAtUtc: null,
     ok: false,
-    error: ""
+    error: "",
+    voiceId: String(voiceId || "")
   };
   try {
-    await runPowerShell(script, [], "");
+    await runPowerShell(script, voiceId ? ["-VoiceId", voiceId] : [], "");
     sherpaInstallStatus = {
       ...sherpaInstallStatus,
       running: false,
@@ -106,20 +109,19 @@ async function runSherpaInstaller() {
       error: String(error?.message || error).slice(0, 500)
     };
     throw error;
-  } finally {
-    sherpaInstallPromise = null;
   }
 }
 
-async function ensureSherpaInstallStarted(installer = runSherpaInstaller, voices = listAvailableVoices) {
+async function ensureSherpaInstallStarted(installer = runSherpaInstaller, voices = listAvailableVoices, voiceId = "") {
   const voiceList = await voices();
-  if (voiceList.length) return false;
+  if (voiceId ? voiceList.some((voice) => voice.id === voiceId) : voiceList.length) return false;
   if (!sherpaInstallPromise) {
     sherpaInstallPromise = Promise.resolve()
-      .then(() => installer())
+      .then(() => installer(voiceId))
       .catch((error) => {
         console.error(`Sherpa-Installation fehlgeschlagen: ${String(error?.message || error)}`);
-      });
+      })
+      .finally(() => { sherpaInstallPromise = null; });
   }
   return true;
 }
@@ -210,7 +212,10 @@ export async function listSherpaVoices(configPath = sherpaVoicesPath) {
       name: String(voice.name || voice.id || "").trim(),
       culture: String(voice.culture || "").trim(),
       gender: String(voice.gender || "").trim(),
-      engine: "sherpa-onnx"
+      engine: "sherpa-onnx",
+      family: String(voice.family || "vits-piper"),
+      languageCode: String(voice.languageCode || ""),
+      model: String(voice.model || "")
     });
   }
   return result.filter((voice) => voice.id && voice.name);
@@ -218,6 +223,19 @@ export async function listSherpaVoices(configPath = sherpaVoicesPath) {
 
 export async function listAvailableVoices() {
   return listSherpaVoices();
+}
+
+export async function listVoiceCatalog(catalogPath = voiceCatalogPath, installedProvider = listSherpaVoices) {
+  const payload = JSON.parse(await fs.readFile(catalogPath, "utf8"));
+  const installed = new Set((await installedProvider()).map((voice) => voice.id));
+  return (Array.isArray(payload?.voices) ? payload.voices : []).map((voice) => ({
+    id: String(voice.id || ""),
+    name: String(voice.name || voice.id || ""),
+    culture: String(voice.culture || ""),
+    gender: String(voice.gender || ""),
+    family: String(voice.family || "vits-piper"),
+    installed: installed.has(String(voice.id || ""))
+  })).filter((voice) => voice.id && voice.name);
 }
 
 async function sherpaTts(text, language, voiceName) {
@@ -228,15 +246,41 @@ async function sherpaTts(text, language, voiceName) {
   const model = payload.voices.find((entry) => entry.name === voice.name || entry.id === voice.id);
   const modelDir = String(model?.modelDir || "");
   const executable = String(payload.sherpaExecutable || "sherpa-onnx-offline-tts");
-  const onnx = await firstExistingFile(modelDir, (name) => /\.onnx$/i.test(name));
-  const tokens = await firstExistingFile(modelDir, (name) => /^tokens\.txt$/i.test(name));
-  const dataDir = path.join(modelDir, "espeak-ng-data");
-  if (!onnx || !tokens) throw Object.assign(new Error("Sherpa-Modell unvollständig."), { statusCode: 412 });
+  const family = String(model?.family || "vits-piper");
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tlc-sherpa-tts-"));
   const output = path.join(tempDir, "speech.wav");
   try {
-    const args = [`--vits-model=${onnx}`, `--vits-tokens=${tokens}`, `--output-filename=${output}`];
-    if (await fs.access(dataDir).then(() => true).catch(() => false)) args.push(`--vits-data-dir=${dataDir}`);
+    const args = [`--output-filename=${output}`];
+    if (family === "supertonic") {
+      const required = {
+        durationPredictor: "duration_predictor.int8.onnx",
+        textEncoder: "text_encoder.int8.onnx",
+        vectorEstimator: "vector_estimator.int8.onnx",
+        vocoder: "vocoder.int8.onnx",
+        ttsJson: "tts.json",
+        unicodeIndexer: "unicode_indexer.bin",
+        voiceStyle: "voice.bin"
+      };
+      for (const file of Object.values(required)) await fs.access(path.join(modelDir, file)).catch(() => { throw Object.assign(new Error(`Supertonic-Modell unvollständig: ${file}`), { statusCode: 412 }); });
+      args.push(
+        `--supertonic-duration-predictor=${path.join(modelDir, required.durationPredictor)}`,
+        `--supertonic-text-encoder=${path.join(modelDir, required.textEncoder)}`,
+        `--supertonic-vector-estimator=${path.join(modelDir, required.vectorEstimator)}`,
+        `--supertonic-vocoder=${path.join(modelDir, required.vocoder)}`,
+        `--supertonic-tts-json=${path.join(modelDir, required.ttsJson)}`,
+        `--supertonic-unicode-indexer=${path.join(modelDir, required.unicodeIndexer)}`,
+        `--supertonic-voice-style=${path.join(modelDir, required.voiceStyle)}`,
+        `--sid=${Number(model?.sid || 0)}`,
+        `--lang=${String(model?.languageCode || language || "en").split("-")[0]}`
+      );
+    } else {
+      const onnx = await firstExistingFile(modelDir, (name) => /\.onnx$/i.test(name));
+      const tokens = await firstExistingFile(modelDir, (name) => /^tokens\.txt$/i.test(name));
+      const dataDir = path.join(modelDir, "espeak-ng-data");
+      if (!onnx || !tokens) throw Object.assign(new Error("Sherpa-Modell unvollständig."), { statusCode: 412 });
+      args.push(`--vits-model=${onnx}`, `--vits-tokens=${tokens}`);
+      if (await fs.access(dataDir).then(() => true).catch(() => false)) args.push(`--vits-data-dir=${dataDir}`);
+    }
     args.push(text);
     await runProcess(executable, args, "");
     return await fs.readFile(output);
@@ -279,8 +323,9 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, recognize = auddRecognize, sherpaInstaller = runSherpaInstaller } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, sherpaInstaller = runSherpaInstaller } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
+  const catalogProvider = catalog || (() => listVoiceCatalog(voiceCatalogPath, voices));
   return http.createServer(async (request, response) => {
     const currentConfig = configProvider ? await configProvider() : config;
     const origin = String(request.headers.origin || "");
@@ -294,6 +339,27 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
         "Access-Control-Max-Age": "600"
       });
       return response.end();
+    }
+    const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+    if (request.method === "GET" && requestUrl.pathname === "/v1/pair") {
+      const pairingOrigin = `chrome-extension://${String(currentConfig.extensionId || "")}`;
+      if (!allowedOrigin || allowedOrigin !== pairingOrigin) {
+        return sendJson(response, 403, { error: "Erweiterungs-ID stimmt nicht mit der lokalen Einrichtung überein." }, allowedOrigin);
+      }
+      const nonce = String(requestUrl.searchParams.get("nonce") || "");
+      const expiresAt = Date.parse(currentConfig.bootstrapExpiresAtUtc || "") || 0;
+      if (!/^[A-Za-z0-9_-]{32,128}$/.test(nonce) || nonce !== currentConfig.bootstrapNonce || Date.now() > expiresAt) {
+        return sendJson(response, 401, { error: "Pairing-Anfrage ungültig oder abgelaufen." }, allowedOrigin);
+      }
+      const nextConfig = { ...currentConfig };
+      delete nextConfig.bootstrapNonce;
+      delete nextConfig.bootstrapExpiresAtUtc;
+      await configSaver(nextConfig);
+      if (currentConfig && typeof currentConfig === "object") {
+        delete currentConfig.bootstrapNonce;
+        delete currentConfig.bootstrapExpiresAtUtc;
+      }
+      return sendJson(response, 200, { ok: true, pairingCode: nextConfig.pairingCode }, allowedOrigin);
     }
     const authorization = String(request.headers.authorization || "");
     if (authorization !== `Bearer ${currentConfig.pairingCode}`) return sendJson(response, 401, { error: "Pairing fehlgeschlagen." }, allowedOrigin);
@@ -314,7 +380,7 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
         }, allowedOrigin);
       }
       if (request.method === "GET" && request.url === "/v1/voices") {
-        return sendJson(response, 200, { voices: await voices() }, allowedOrigin);
+        return sendJson(response, 200, { voices: await voices(), catalog: await catalogProvider() }, allowedOrigin);
       }
       if (request.method === "GET" && request.url === "/v1/sherpa/status") {
         const voiceList = await voices();
@@ -325,7 +391,8 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
           voiceCount: voiceList.length,
           startedAtUtc: sherpaInstallStatus.startedAtUtc,
           finishedAtUtc: sherpaInstallStatus.finishedAtUtc,
-          error: sherpaInstallStatus.error
+          error: sherpaInstallStatus.error,
+          voiceId: sherpaInstallStatus.voiceId
         }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/sherpa/install") {
@@ -336,6 +403,21 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
           running: started || sherpaInstallStatus.running,
           configured: voiceList.length > 0,
           voiceCount: voiceList.length
+        }, allowedOrigin);
+      }
+      if (request.method === "POST" && request.url === "/v1/voices/install") {
+        const raw = await readBody(request, 8 * 1024);
+        const body = JSON.parse(raw.toString("utf8"));
+        const voiceId = String(body.voiceId || "").trim();
+        const voiceCatalog = await catalogProvider();
+        const voice = voiceCatalog.find((entry) => entry.id === voiceId);
+        if (!voice) throw Object.assign(new Error("Unbekannte oder nicht freigegebene Sherpa-Stimme."), { statusCode: 404 });
+        const started = await ensureSherpaInstallStarted(sherpaInstaller, voices, voiceId);
+        return sendJson(response, started ? 202 : 200, {
+          ok: true,
+          voiceId,
+          running: started || sherpaInstallStatus.running,
+          installed: !started
         }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/config/audd-token") {
@@ -351,7 +433,8 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
         const raw = await readBody(request, 64 * 1024);
         const body = JSON.parse(raw.toString("utf8"));
         const text = cleanTtsText(String(body.text || "").slice(0, 4000));
-        const language = ["auto", "de-DE", "en-US"].includes(body.language) ? body.language : "auto";
+        const requestedLanguage = String(body.language || "auto");
+        const language = requestedLanguage === "auto" || /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(requestedLanguage) ? requestedLanguage : "auto";
         const voiceName = cleanVoiceName(body.voiceName);
         if (!text.trim()) throw Object.assign(new Error("Leerer TTS-Text."), { statusCode: 400 });
         const wav = await tts(text, language, voiceName);

@@ -1,3 +1,4 @@
+param([string]$ExtensionId = "")
 $ErrorActionPreference = "Stop"
 $configDir = Join-Path $env:LOCALAPPDATA "TikTokLiveCompanion"
 $configPath = Join-Path $configDir "service.json"
@@ -13,10 +14,15 @@ if ($existing -and $existing.pairingCode) {
   $pairingCode = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 }
 $auddToken = if ($existing -and $null -ne $existing.auddApiToken) { [string]$existing.auddApiToken } else { "" }
+$configuredExtensionId = if ($ExtensionId) { $ExtensionId } elseif ($existing -and $existing.extensionId) { [string]$existing.extensionId } else { "" }
+if ($configuredExtensionId -notmatch '^[a-p]{32}$') {
+  throw "Die Chrome-Erweiterungs-ID fehlt oder ist ungültig. Bitte den im Sidepanel angezeigten Setup-Befehl verwenden."
+}
 
 $config = [ordered]@{
   pairingCode = $pairingCode
   auddApiToken = $auddToken
+  extensionId = $configuredExtensionId
   port = 43117
 }
 $json = $config | ConvertTo-Json
@@ -30,7 +36,14 @@ $serviceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 $startScriptPath = Join-Path $configDir "start-service.ps1"
 $startScript = @"
+param([string]`$LaunchUri = "")
 `$ErrorActionPreference = "Stop"
+if (`$LaunchUri -match '[?&]nonce=([A-Za-z0-9_-]{32,128})') {
+  `$serviceConfig = Get-Content -Raw -LiteralPath "$configPath" | ConvertFrom-Json
+  `$serviceConfig | Add-Member -NotePropertyName bootstrapNonce -NotePropertyValue `$Matches[1] -Force
+  `$serviceConfig | Add-Member -NotePropertyName bootstrapExpiresAtUtc -NotePropertyValue ([DateTime]::UtcNow.AddMinutes(2).ToString("o")) -Force
+  [IO.File]::WriteAllText("$configPath", (`$serviceConfig | ConvertTo-Json), (New-Object Text.UTF8Encoding(`$false)))
+}
 `$client = New-Object Net.Sockets.TcpClient
 try {
   `$connect = `$client.BeginConnect("127.0.0.1", 43117, `$null, `$null)
