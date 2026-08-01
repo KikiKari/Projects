@@ -435,7 +435,7 @@ Basis: `.publish-repo/`
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert; die Website-Downloadkopien sind angeglichen. Ein neues Vercel-Deployment und dessen bytegleicher öffentlicher Downloadnachweis stehen noch aus. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
+Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
 
 Die APK trägt die Package-ID `app.tiktoklivecompanion.android` und überschreibt damit eine vorhandene Installation. Frühere `-mock-debug`- und `.test`-Varianten wurden entfernt.
 
@@ -523,6 +523,8 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | Produktionsbranch | `TikTok-Live-Companion` |
 | Root Directory | `site` |
 | Production | ✅ `Ready` |
+| Release-Deployment | ✅ `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY` |
+| Dashboard-Issue | [0PE-91](https://linear.app/0penclaw/issue/0PE-91/071-vercel-ios-deployment-bleibt-im-dashboard-auf-building) — Serverstatus und Logs waren bereits erfolgreich; veraltete „Building“-Anzeige dokumentiert |
 | Inspector | https://vercel.com/openclaw-vercel-project/tiktok-live-companion |
 | Funktionen | `/api/shazam-token` |
 | Interaktive Architektur | `/de/architecture-3d`, `/en/architecture-3d` |

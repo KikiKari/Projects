@@ -609,7 +609,7 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
 | `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Die Website-Downloadkopien sind auf diese Bytes angeglichen; der öffentliche Nachweis folgt nach dem ausgelösten Vercel-Deployment.
+Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete sowie die Prüfsummendatei wurden anschließend über `tiktok-live-companion.vercel.app` bytegleich bestätigt.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 
@@ -645,9 +645,10 @@ Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegle
 | Pegelschutz mit `OfflineAudioContext` | Dauerpegel unverändert, Spitze `1,0` → `0,17188` |
 | Entfernte Qualitätsbox und sechs Texte | vollständig entfernt, keine leeren Container |
 | Persistente 0–100-Regler | bestätigt |
-| Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests bestätigt, Vercel-Neudeployment noch offen |
+| Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests und 7/7 öffentliche Vercel-Dateien bytegleich bestätigt |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
+| Vercel Release-Deployment | `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY`; OPE-91 dokumentiert den zuvor veralteten Dashboardstatus |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |
