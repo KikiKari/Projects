@@ -1,12 +1,34 @@
 ﻿# TikTok LIVE Companion – Dokumentation v0.7.1
 
-**Version:** 0.7.1 · **Dokumentrevision:** v8 · **Status:** veröffentlicht · **Stand:** 30. Juli 2026
+**Version:** 0.7.1 · **Dokumentrevision:** v8 · **Status:** finalisiert · **Stand:** 2. August 2026
 **Projektwurzel:** `C:\Users\silve\Documents\Codex\TikTok-Live-Companion`
 **Veröffentlichter Checkout:** `.publish-repo/` · **Mobile-Worktrees:** `android-implementation/`, `ios-implementation/`
 **Kanonische Quelle:** GitHub · `KikiKari/Projects`
 **Dokumentationssite:** https://tiktok-live-companion.vercel.app/de
+**Fortschreibende Codex-Sitzung:** `019fbedc-9c0a-79c2-810f-8a32946de772` · `codex://threads/019fbedc-9c0a-79c2-810f-8a32946de772`
+**CoAuthoring:** Claude Dispatcher (Versenden) · Übergabe an Codex zur Ausarbeitung von 0.8.0 am 08.08.2026
 
 > Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
+
+### Fortschreibung 30.07. – 02.08.2026 · finalisiert
+
+Diese Revision v8 ist die **abgeschlossene, übergabefähige Fassung** des 0.7.1-Standes. Sie ersetzt die zuvor als „veröffentlicht" markierte v8-Fassung vom 30.07.2026 vollständig und führt den gesamten weiteren Arbeitsverlauf der Codex-Sitzung `019fbedc-9c0a-79c2-810f-8a32946de772` nach. Die Zwischenrevision v9 im veröffentlichten Checkout bleibt als Arbeitsspur bestehen; maßgeblich für die Übergabe ist dieses Dokument.
+
+**Bearbeitete Issues.** `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89`, `0PE-90` sowie die während der Sitzung neu erfassten `0PE-91` und `0PE-92`. Abgeschlossen sind `0PE-73`, `0PE-78`, `0PE-79`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-91` und `0PE-92`. `0PE-85` steht auf `In Review`, `0PE-89` und `0PE-90` auf `In Progress` — jeweils wegen der noch fehlenden realen Browserabnahme. `0PE-42` wurde auf Anweisung des Nutzers auf `Canceled` gesetzt; das bereits erstellte formale Security-Seal für 0.7.1 bleibt davon unberührt.
+
+**Browser.** Neue Sidepanel-Reihenfolge (Seiteninformationen unter Top-Chatter, Songerkennung unter Playersteuerung, Untertitel unter WebSocket-Hook), VLC-Ersatz in der größten sichtbaren zentralen Playerfläche, tabbezogener Laufzeitzustand für Hook, Chat, TTS, Player-Recovery und Modulaktivität, MV3-Offscreen-Dokument für Speech-Queue und Ausgabe. Der Chatpuffer wurde von 50 auf **500 Zeilen je Tab** erweitert; der rote Zähler ist anklickbar und öffnet die vollständige Chatübersicht. Neu sind `Auto-Chat Refresh` mit 1–60 Minuten, die Umbenennung von `Chatnamen` zu `Chatnamen sprechen` sowie die feste Anordnung `Chatnamen sprechen` → `Chatnamen kürzen` → `Game-Mode` → `Auto-Chat Refresh`.
+
+**Sprachdienst und Installation.** Der Sidepanel-Button heißt **Installation abschließen!**, zeigt weder Shell-Befehle noch die Erweiterungs-ID und führt die Installation **primär über CMD** im tatsächlichen Installationsverzeichnis aus; PowerShell ist ausschließlich Rückfallebene. Beide Wege lassen das Konsolenfenster nach der Installation geöffnet stehen und weisen den Pairing-Code mit Kopieranweisung aus. Eine veraltete zweite `setup.ps1` im Installationsstamm, die den CMD-Handler wieder durch PowerShell ersetzte, wurde entfernt. Bestehende Installationen werden erkannt: nur der verifizierte Dienst auf Port `43117` wird beendet, Pairing-Code, AudD-Token, Stimmen und Benutzerkonfiguration bleiben erhalten. Pairing-Code und AudD-Token werden **vor** dem Speichern geprüft; ungültige oder nicht prüfbare Werte werden verworfen. Sind Sprachdienst und Sherpa aktiv, blendet das Sidepanel beide Eingabefelder samt Beschriftung aus.
+
+**Stimmen.** Der Sherpa-Katalog umfasst 26 bestätigte Stimmen in fester Reihenfolge: zuerst Deutsch und Englisch beginnend mit `Sherpa Eva`, danach die getrennten Sammelbereiche **Kyrillisch**, **Asiatisch**, **Abjad** und **Indisch**. Der Installationsstatus verändert diese Reihenfolge nicht mehr; installierte Stimmen springen nicht nach oben.
+
+**Mobil.** Die beiden wörtlich benannten Hinweise unter *Player* und *Mehr* sind in Android ersatzlos entfernt; für iOS ist ihre Abwesenheit durch Tests abgesichert. iOS verwendet `CURRENT_PROJECT_VERSION = 8` als einzige Quelle für `CFBundleVersion`; die öffentliche Version bleibt 0.7.1. Die APK wurde per Tailscale Taildrop an `Redmi Note 11S` (`100.94.134.39`) übergeben, Exit-Code `0`.
+
+**Veröffentlichter Stand.** Browser `039ec54c62f3b28760a7c8137e17d17a5a0a0b14`, Android `80d3cb1368c09875be6697021b21c1bc04c79870`, iOS `2323a6faa6526ad9057bccf81253306b224c62c4`. GitHub Releases, die drei GHCR-Pakete und das Vercel-Produktionsdeployment sind auf diesen Stand gebracht und bestätigt.
+
+**Nach dem letzten Push.** Die zuletzt umgesetzten Änderungen — 500 Chatzeilen, Chat-Popup, Auto-Chat Refresh, Checkbox-Anordnung, Stimmen-Gruppierung, AudD-Beschriftungen, Feld-Ausblendung, Validierung, CMD-Installation, `localService`-Debugfelder und die Timings `40 / 40 / 400 ms` — liegen **lokal umgesetzt, getestet und paketiert** vor, sind aber bewusst **nicht committet und nicht veröffentlicht**. Sie sind Gegenstand der Übergabe an Codex (Kapitel 10).
+
+**Offene Gates.** Die reale Zwei-Tab-, Embed- und Vollbild-TTS-Abnahme im Browser steht weiterhin aus; die lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet, eine Umgehung wurde nicht vorgenommen.
 
 ---
 
@@ -21,6 +43,7 @@
 7. [Entwicklungsumgebung, CI und Auslieferungswege](#7-entwicklungsumgebung-ci-und-auslieferungswege)
 8. [Fehlerbehebung](#8-fehlerbehebung)
 9. [Downloads, Release und Abnahme](#9-downloads-release-und-abnahme)
+10. [Übergabe an Codex für Version 0.8.0](#10-übergabe-an-codex-für-version-080)
 
 ---
 
@@ -34,11 +57,13 @@ Mit 0.7.1 stehen **alle drei Plattformen auf demselben Versions- und Artefaktsta
 
 | Plattform | Technik | Songerkennung | Branch | Branchspitze |
 |---|---|---|---|---|
-| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `280f478` |
-| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `05d581e` |
-| iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `bd4c206` |
+| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `039ec54` |
+| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `80d3cb1` |
+| iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `2323a6f` |
 
-Alle drei Branchspitzen sind gegen das Remote bestätigt: für Browser und iOS über den Push in der Sitzung (iOS: `34e0dbb..bd4c206`), für Android über `git fetch --all` und `git ls-remote --heads origin`. Eine nicht aktualisierte Arbeitskopie kann für Android weiterhin das ältere Remote-Tracking-Ref `3eda9ef` vom 19.07.2026 anzeigen; maßgeblich ist das Ergebnis von `git ls-remote`.
+Android `80d3cb1`, iOS `2323a6f` und der Browser-Stand `039ec54` sind gepusht und gegen das Remote bestätigt. Zwischenstände der Browser-Implementierung sind separat als `35a0651` (Fachimplementierung), `29f1d8a` (Sidepanel-Hotfix `0PE-92`) und `faabada` (Dokumentationsstand) nachvollziehbar.
+
+Der lokale Arbeitsbaum in `.publish-repo/` enthält darüber hinaus den in Kapitel 10 beschriebenen, **nicht committeten** Folgestand vom 02.08.2026.
 
 ### Was 0.7.1 gegenüber 0.7.0 ändert
 
@@ -48,7 +73,7 @@ Alle drei Branchspitzen sind gegen das Remote bestätigt: für Browser und iOS �
 | Badge-Erkennung | `Live Pro`, `Werbeinhalt` und `Bezahlte Partnerschaft` werden getrennt erkannt und getrennt angezeigt. |
 | Untertitel | Caption-Koaleszierung sowie Deduplikation über DOM **und** WebSocket; Playertext und Datenstrom bleiben als getrennte Quellen sichtbar. |
 | Chat-Sprachausgabe | **Game Mode** filtert Nickname-Spam vor der Ausgabe; unmittelbare 1:1-Duplikate werden im Vorleseweg unterdrückt. |
-| Stimmen | Persistente Stimmauswahl über den lokalen Dienst inklusive Sherpa-ONNX-Stimmen; die Auswahl bleibt in der Erweiterung gespeichert. Das 3+3-Profildropdown aus `0PE-71` ist noch offen. |
+| Stimmen | Die persistente 3+3-Stimmauswahl aus `0PE-71` ist laut aktuellem Linear-Stand abgeschlossen. `0PE-86` ergänzt ausschließlich bestätigte, bei Auswahl installierte Sherpa-Modelle; nicht verifizierte Sprachen werden nicht angeboten. |
 | Lautstärke und Pegelschutz | Sichtbar als positive Werte **0–100**, dauerhaft gespeichert. Negative dBFS-Werte bleiben ausschließlich intern. Der Lautstärkedeckel ist entfallen. |
 | Oberfläche | Die Qualitätsbox und sechs Erklärungstexte wurden ersatzlos entfernt, ohne leere Container zu hinterlassen. TikToks eigenes Qualitätsmenü bleibt unberührt. |
 | Verbindung | Auto-Reconnect mit Mindest-Cooldown von `400 ms`, scharfgestellt erst nach Player-Start. |
@@ -91,13 +116,18 @@ Das Manifest führt Version `0.7.1`. Nach einem Update aus einem älteren Ordner
 
 Der Dienst ist Teil des Extension-ZIPs und zusätzlich als eigenes Archiv verfügbar.
 
-1. `tiktok-live-companion-service-0.7.1.zip` entpacken und PowerShell in diesem Ordner öffnen.
-2. `npm run setup` ausführen. Ein AudD-Token ist ausschließlich für die Songerkennung erforderlich.
-3. Optional `install-sherpa.ps1` ausführen, um Sherpa-ONNX-Stimmen zu installieren.
-4. Den Dienst starten. `npm start` im Dienstordner ist der verlässliche Weg; der Startbutton im Sidepanel ist vorhanden, arbeitet laut `0PE-73` aber noch nicht in allen Fällen zuverlässig.
-5. Den ausgegebenen Pairing-Code im Sidepanel eintragen.
+1. Im Sidepanel **Sprachdienst starten** wählen. Falls die einmalige Einrichtung fehlt, erscheint ausschließlich **Installation abschließen!**; weder Shell-Befehle noch die Erweiterungs-ID werden angezeigt.
+2. **Installation abschließen!** öffnet ein Konsolenfenster im tatsächlichen Installationsverzeichnis und führt das Setup mit der richtigen Erweiterungs-ID aus. **Primärweg ist CMD**; nur wenn der CMD-Aufruf fehlschlägt, wird derselbe Vorgang über PowerShell wiederholt.
+3. Das Setup installiert die Standardstimmen, registriert den lokalen Starter und startet den Dienst automatisch. Ein bereits laufender, verifizierter Dienst auf Port `43117` wird kontrolliert beendet und ersetzt; ein zweiter `npm start` und damit `EADDRINUSE` entstehen nicht.
+4. Das Konsolenfenster **bleibt nach der Installation geöffnet** und zeigt den individuellen Pairing-Code mit der Anweisung, ihn mit `Strg+C` zu kopieren und mit `Strg+V` im Sidepanel einzufügen. Das gilt für den CMD-Weg wie für den PowerShell-Rückfall.
+5. Nach erfolgreichem Health-Check verschwindet der Installationsbutton. Die Anzeige lautet dann **Sprachdienst aktiv!** und ist — wie **Sherpa aktiv!** — grau und nicht mehr anklickbar.
+6. Spätere Buttonklicks prüfen zuerst den Health-Endpunkt und verwenden danach `tiktok-live-companion://start`.
 
 Der Dienst lauscht ausschließlich auf `127.0.0.1:43117` und benötigt Node.js ab Version 20.
+
+**Bestandsschutz bei erneuter Installation.** Eine vorhandene Installation wird erkannt. Ersetzt werden ausschließlich die generierten Start- und Installationsskripte; **Pairing-Code, AudD-Token, installierte Stimmen und die Benutzerkonfiguration bleiben erhalten.**
+
+**Pairing-Code und AudD-Token nachträglich ändern.** Sind Sprachdienst und Sherpa aktiv, blendet das Sidepanel die Eingabefelder für Pairing-Code und AudD-Token samt ihren Beschriftungen aus, damit der Bereich *Chatzeilen* kompakter bleibt. Zum Ändern oder erneuten Setzen dieser Werte wird die Erweiterung entfernt und neu hinzugefügt; danach erscheinen die Einrichtungsfelder wieder. Falsche Pairing-Codes und AudD-Token werden bereits vor dem Speichern abgewiesen, damit keine unbrauchbaren Werte abgelegt werden und keine Neuinstallation nötig wird.
 
 ### 2.3 Android / HyperOS
 
@@ -166,7 +196,7 @@ Reine **Ausgabetransformation**. Chat-Anzeige und Statistik behalten immer den O
 
 Die Kürzung greift nur, wenn ein klarer erster alphabetischer Hauptteil vorhanden ist. Generische Präfixe wie „Team", „Official" oder „The" sowie einteilige Namen bleiben unverändert.
 
-**TTS-Einstellungen:** Sprache `Auto` / `Deutsch` / `Englisch`; persistente Stimmauswahl aus den Stimmen des lokalen Dienstes; `Chatnamen vorlesen` (Standard: an); `Geeignete Namen kürzen` (Standard: aus, nur bei aktivierten Chatnamen verfügbar); `Game Mode`; `Vorlesen bei Tabwechsel oder Minimieren aktiv lassen`.
+**TTS- und Chat-Einstellungen:** Sprache `Auto` / `Deutsch` / `Englisch`; persistente Stimmauswahl aus den Stimmen des lokalen Dienstes; `Chatnamen sprechen` (Standard: an); `Chatnamen kürzen` (Standard: aus, nur bei aktivierten Chatnamen verfügbar); `Game-Mode`; `Auto-Chat Refresh` mit 1 bis 60 Minuten; `Permanent aktiv`. Pro Tab bleiben die neuesten 500 Chatzeilen erhalten. Der anklickbare rote Zähler öffnet sie neueste zuerst in einer eigenen Übersicht; die Hauptansicht bleibt auf fünf Zeilen begrenzt. Auto-Chat Refresh leert nur die Chatanzeige und löst keinen Tab-Reload aus.
 
 Enthält eine Zeile deutsche Sonderzeichen, wird `de-DE` erzwungen, auch wenn `Auto` gewählt ist.
 
@@ -200,7 +230,7 @@ Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild, Vollbild und Melden-öff
 
 **Auto-Reconnect** greift mit einem Mindest-Cooldown von `400 ms` und wird erst nach dem Start des Players scharfgestellt, damit ein noch nicht verbundener Player keine Reconnect-Schleife auslöst.
 
-**Bekannter Fehler beim Vollbild (Browser).** Der Vollbildmodus lässt sich aus der Erweiterung heraus starten. Beim Beenden und der Rückkehr zur normalen Ansicht ist die Erweiterung anschließend nicht mehr sichtbar und muss für den laufenden Stream erneut geöffnet beziehungsweise aktiviert werden. Der Stream selbst läuft dabei weiter. Auf Android und iOS ist das entsprechende Verhalten mit `0PE-70` behoben; für die Browser-Erweiterung ist der Befund offen und noch nicht als Issue erfasst.
+**Vollbild-Rückkehr (Browser, 0PE-89).** Die Speech-Queue und Ausgabe laufen in einem MV3-Offscreen-Dokument weiter. Das neu geöffnete Sidepanel stellt TTS- und Tabzustand nach dem Verlassen des Vollbilds aus dem tabbezogenen Speicher wieder her. Struktur- und Logiktests sind grün; die reale Abnahme mit geladener Erweiterung steht noch aus.
 
 ### 3.6 Medienquellen, VLC, Diagnose, Profil-Force
 
@@ -371,13 +401,37 @@ Drei Wege, in dieser Rangfolge:
 2. **Lokaler Dienst mit Windows-Systemstimmen** — DE-/EN-Stimmen über feste PowerShell-Synthese.
 3. **Web Speech im Browser** — Rückfallebene ohne laufenden Dienst.
 
-Die gewählte Stimme wird in der Erweiterung gespeichert und bleibt über Sitzungen hinweg erhalten. Die Stimmliste stammt aus `GET /v1/voices` und enthält Kultur- und Geschlechtsangaben, damit eine feste Auswahl möglich ist.
+Die gewählte Stimme wird in der Erweiterung gespeichert und bleibt über Sitzungen hinweg erhalten. Die Stimmliste stammt aus `GET /v1/voices`. Deutsche und englische Stimmen stehen zuerst, beginnend mit `Sherpa Eva`; weitere bestätigte Modelle sind in die Sammelbereiche **Kyrillisch**, **Asiatisch**, **Abjad** und **Indisch** getrennt. Der Installationsstatus verändert diese feste Reihenfolge **nicht** — bereits installierte Stimmen wie `Sherpa Kareem` oder `Sherpa Bulgarian` springen nicht mehr an den Anfang der Liste.
 
-Das unter `0PE-71` spezifizierte Dropdown mit genau sechs Profilen — drei Frauen- und drei Männerstimmen, vorher gegen die tatsächlich verfügbaren SHERPA-Modelle inventarisiert und ohne erfundene Profilnamen — ist noch nicht abgeschlossen.
+**Katalog 0.7.1 — 26 bestätigte Stimmen**
+
+| Bereich | Stimmen |
+|---|---|
+| Deutsch / Englisch (Standard, oben) | `Sherpa Eva`, `Sherpa Kerstin`, `Sherpa Ramona`, `Sherpa Thorsten`, `Sherpa Karlsson`, `Sherpa Pavoque`, `Sherpa Amy`, `Sherpa Lessac`, `Sherpa LibriTTS`, `Sherpa Ryan`, `Sherpa Danny`, `Sherpa Alan` |
+| Kyrillisch | `Sherpa Bulgarian`, `Sherpa Iseke`, `Sherpa Irina`, `Sherpa Serbian`, `Sherpa Ukrainian` |
+| Asiatisch | `Sherpa Chaowen`, `Sherpa Japanese`, `Sherpa Korean` |
+| Abjad | `Sherpa Kareem`, `Sherpa Amir`, `Sherpa Fasih` |
+| Indisch | `Sherpa Priyamvada`, `Sherpa Meera`, `Sherpa Chitwan` |
+
+Deutsch und Englisch sind sofort verfügbar. Alle übrigen Stimmen werden erst bei Auswahl über den authentifizierten Loopback-Endpunkt installiert. Nicht verifizierte Modelle — insbesondere Mazedonisch — werden nicht angeboten.
+
+Das unter `0PE-71` spezifizierte Dropdown mit genau sechs Profilen wird in Linear seit 01.08.2026 als `Done` geführt. Die Erweiterung unter `0PE-86` betrifft zusätzliche bestätigte Schriftsysteme und verändert diesen Abschlussstatus nicht.
 
 ### 5.2 Browser: AudD
 
 Nach ausdrücklicher Aktivierung und Klick nimmt die Erweiterung etwa zwölf Sekunden Tab-Audio auf. Das Tab-Audio bleibt während der Aufnahme hörbar. Der lokale Dienst sendet nur diesen Ausschnitt an AudD und löscht temporäre Audiodaten unmittelbar nach Erfolg oder Fehler. Ohne Klick findet keine Aufnahme oder Übertragung statt. Eine automatische Dauerüberwachung ist nicht enthalten.
+
+Pairing-Code und AudD-Token werden vor dem Speichern gegen den offiziellen AudD-Fehlervertrag geprüft; ungültige, deaktivierte oder nicht prüfbare Werte werden verworfen und **nicht** gespeichert. Sind Sprachdienst und Sherpa aktiv, blendet das Sidepanel beide Eingabefelder samt Beschriftung aus. Zum späteren Ändern oder erneuten Setzen von Pairing-Code oder AudD-Token wird die Erweiterung entfernt und neu hinzugefügt; anschließend erscheinen die Einrichtungsfelder wieder.
+
+**Beschriftung des Token-Feldes**
+
+| Zustand | Beschriftung |
+|---|---|
+| leer | `AudD API-Token (optional - https://AudD.io Trial/Paid )` |
+| Token `test` | `AudD API-Token Trail Plan (Songerkennung)` |
+| beliebiger anderer Token | `AudD API-Token (Songerkennung)` |
+
+Der Verweis `https://AudD.io` ist ein echter Link und öffnet einen neuen Tab. Eine zuverlässige automatische Unterscheidung zwischen Trial- und Paid-Plan ist für persönliche Tokens **nicht** möglich: die öffentlich dokumentierte AudD-API kennt lediglich den öffentlichen `test`-Token und echte Dashboard-Tokens. Belege sind die [AudD-Referenz](https://audd.io/resources/reference/glossary) und die [AudD-Preisinformationen](https://audd.io/resources/articles/music-recognition-api-pricing).
 
 Die Oberfläche weist vor der ersten Nutzung ausdrücklich auf die externe Übertragung und mögliche Anbietergebühren hin.
 
@@ -433,7 +487,7 @@ Die beiden Low/P3-Findings betreffen `proto-main.js:208-227` (unbegrenzte gzip-A
 | `security-scan/release-review-0.7.0.md` | Release-Review 0.7.0 |
 | `security-scan/canonical/`, `derived/`, `artifacts/` | Scan-Zwischenstände |
 
-**Offen:** Ein vollständiger formaler Codex-Security-Scan ist weder für 0.7.0 noch für 0.7.1 durchgeführt. Die 9/9-Bewertung bezieht sich unverändert auf 0.5.0. Für 0.7.1 kommt `popup-guard.js` als neue Angriffsfläche hinzu — ein Prototype-Patch auf `window.setTimeout` und `window.setInterval` innerhalb der isolierten Welt — und ist im Scan gesondert zu betrachten.
+**0.7.1-Diffprüfung:** Der aktuelle Diff wurde vollständig inventarisiert. Zwei Low/P3-Befunde wurden bestätigt und vor Paketierung behoben: Bootstrap-Pairing ohne Bindung an die Produkt-Extension sowie fehlende Größen-/SHA-256- und Link-/Pfadkontrollen bei Sherpa-Archiven. 15/15 Diensttests und die Extension-Prüfung bestätigen die Gegenmaßnahmen. Der Versiegler wurde nach Freigabe der Schreibrechte erfolgreich abgeschlossen; das kanonische Ergebnis lautet **0 Critical, 0 High, 0 Medium, 2 Low/P3**, beide Befunde behoben.
 
 ### 6.3 Automatisierte Sicherheitsprüfungen
 
@@ -508,7 +562,7 @@ Lokal auf Windows sind `gh 2.76.2` und `vercel 58.3.0` verfügbar. `gh` wurde oh
 
 Der iOS-Workflow benötigt **keine** GitHub Secrets und kein Apple-Signing, weil er nur gegen den Simulator baut. Letzter bestätigter Lauf: `#14`, Commit `34e0dbb`, Status `success`. Voraussetzung ist das geteilte Scheme unter `mobile/ios/TikTokLiveCompanion.xcodeproj/xcshareddata/xcschemes/TikTokLiveCompanion.xcscheme` mit App- und XCTest-Target.
 
-Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linear Releases sind plan-gated, ohne Business-Plan lässt sich kein `LINEAR_ACCESS_KEY` erzeugen. Der Workflow bleibt bewusst im Repository und blockiert nichts. Sobald der Plan verfügbar ist, genügt das Hinterlegen des Pipeline-Access-Keys unter `Settings → Secrets and variables → Actions`.
+Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linear Releases sind plan-gated, ohne Business-Plan lässt sich kein `LINEAR_ACCESS_KEY` erzeugen. Ohne Secret protokolliert der Workflow nun einen erfolgreichen, ausdrücklichen Skip und blockiert die Weiterentwicklung nicht. Sobald der Plan verfügbar ist, genügt das Hinterlegen des Pipeline-Access-Keys unter `Settings → Secrets and variables → Actions`.
 
 ### 7.3 Auslieferungswege
 
@@ -521,6 +575,8 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 | Taildrop | APK-Übertragung an `100.94.134.39` im Tailnet, Exit-Code `0` |
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
+
+Bestätigte OCI-Index-Digests am 02.08.2026: Browser nach dem Installations-Hotfix `sha256:6b33a791e8de9bbdc3bfa4ca838cc5a04aaa82f0a6a07225a92e40f337cac58f`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
 
 ---
 
@@ -580,6 +636,22 @@ Die ausgelieferte APK ist die Mock-Variante. Für echte Erkennung das ShazamKit-
 
 `popup-guard.js` fängt verzögerte Login-, Watch-Limit- und App-Prompts auf LIVE- und Embed-Seiten ab. Erscheint ein Overlay trotzdem, hat TikTok es synchron eingehängt oder umbenannt. Auf Mobilgeräten ist die Cookie-/Consent-Abfrage zusätzlich dauerhaft behandelt.
 
+### Installation wurde nicht abgeschlossen
+
+Der Klick auf **Installation abschließen!** muss ein Konsolenfenster im Installationsverzeichnis öffnen. Bleibt es aus, prüfen, ob im Installationsstamm eine zweite, veraltete `setup.ps1` liegt — sie überschreibt den registrierten CMD-Handler und muss entfernt werden. Der Windows-Protokollhandler wird über den aktiven Tab aus dem Buttonklick heraus aufgerufen; ein inaktiver, nach kurzer Zeit geschlossener Tab wird von Edge nicht an Windows weitergereicht.
+
+### Pairing-Code steht nicht im Eingabefeld
+
+Das Konsolenfenster bleibt nach der Installation offen und zeigt den Pairing-Code. Er wird dort mit `Strg+C` markiert und kopiert und mit `Strg+V` im Sidepanel eingefügt. Ein falscher Code wird abgewiesen und nicht gespeichert.
+
+### Token oder Pairing-Code wird nicht angenommen
+
+Das ist beabsichtigt. Werte, die die Vorabprüfung nicht bestehen oder nicht prüfbar sind, werden verworfen, damit keine unbrauchbaren Zugangsdaten abgelegt werden.
+
+### Eingabefelder für Pairing-Code und AudD-Token fehlen
+
+Bei aktivem Sprachdienst **und** aktivem Sherpa werden beide Felder bewusst ausgeblendet. Zum Ändern die Erweiterung entfernen und neu hinzufügen.
+
 ### Diagnoseexport
 
 Debugmodus erst zur Fehlersuche aktivieren. Der Export enthält keinen Chattext und entfernt Werte signierter URL-Parameter. Auf Mobilgeräten ist ein eigener Debugmodus ergänzt.
@@ -592,16 +664,41 @@ Debugmodus erst zur Fehlersuche aktivieren. Der Export enthält keinen Chattext 
 
 Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`
 
+**Veröffentlichter Stand (Commit `039ec54`, GitHub Release, GHCR, Vercel):**
+
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `83c672046a90e7cfa1c1bf5d02c4db09be0ada9cfcd6ebd39b632703c4b8a97e` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `e99ae3ecbc74ca7b0864d4002691624e560ef20304369107ef5d132e17874519` |
-| `tiktok-live-companion-service-0.7.1.zip` | `8a7fce8bbdb017ce1ccfbbacfcc31e0185389cda45d9ebb76344f8bec8569244` |
-| `tiktok-live-companion-ios-0.7.1-source.zip` | `8a3049d6977bd0db0576d45f8dfb187145df75a4863d1e5fd1034ec6bba76dcf` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `90f787cc58507f871dd37601cee412c034472f01d9ddd5186d3c0a616a705880` |
-| `tiktok-live-companion-android-0.7.1.apk` | `38ad0bb204f945ba0be816e86150197c9375afb1c06fefd921ae90c3abbea3e2` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26` |
+| `tiktok-live-companion-service-0.7.1.zip` | `a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a` |
+| `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
+| `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
 
-Alle sechs Werte wurden am 29./30.07.2026 gegen die tatsächlichen Dateien und gegen die Downloadkopien auf Vercel verifiziert. Das Extension-ZIP enthält den Companion-Service mit.
+**Lokaler Folgestand vom 02.08.2026 — gebaut, geprüft, nicht veröffentlicht:**
+
+| Artefakt | SHA-256 |
+|---|---|
+| `tiktok-live-companion-extension-0.7.1.zip` | `b8f814a660408aefb74696983e9948e04928527aeae685e0f08fd0231fb92bdb` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `ebc11e946cc2df8974dbf2b84dc91a2df7a935ee3f1aa92186b1ac1a8731b0b4` |
+| `tiktok-live-companion-service-0.7.1.zip` | `c48af6d574ecd7169bb0312093fa2cef53cda6ac8306c7ec3c2c01fe6a2d0ed5` |
+| `tiktok-live-companion-ios-0.7.1-source.zip` | `9d0e69699128ab941cd244ecc79173af61af53d2316d4342d9e95e7fd72b628b` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `907637ff20eff5b803c75ad083dfe65f1f86bd042e90ed6ae634b4188d9e8fc7` |
+| `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
+
+Der lokale Folgestand liegt in `release/0.7.1/` und in der Projektwurzel, wurde zweimal bytegleich reproduziert und in die vorhandene Testinstallation unter `C:\Users\silve\Documents\TikTok-Live-Companion` übernommen. Die APK ist gegenüber dem veröffentlichten Stand unverändert. Diese Werte sind **nicht** Gegenstand eines GitHub Release und **nicht** über die Website beziehbar.
+
+Alle sechs veröffentlichten Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete sowie die Prüfsummendatei wurden anschließend über `tiktok-live-companion.vercel.app` bytegleich bestätigt.
+
+**Sidepanel-Hotfix:** Der im ausgelieferten Panel sichtbare Fehler `Cannot set properties of undefined (setting 'textContent')` beim Startversuch des Sprachdienstes wurde auf den fehlenden DOM-Bezug `service-setup-command` zurückgeführt und behoben. Ein Regressionstest prüft jetzt HTML-ID und zentrale Elementzuordnung. Extension- und Plugin-ZIP wurden danach zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen ihre vorherigen Stände.
+
+**Installations-Hotfix (veröffentlicht):** Das Sidepanel zeigt weder npm-Befehle noch die Erweiterungs-ID. Der Button heißt **Installation abschließen!**, startet die validierte lokale Installation im tatsächlichen Dienstverzeichnis und wird nach erfolgreichem Health-Check ausgeblendet. Der Starter erkennt einen bereits belegten Dienstport, sodass kein zweiter `npm start`-Prozess und damit kein `EADDRINUSE` erzeugt wird.
+
+**CMD-Umstellung (lokal, 02.08.2026):** Der Installationsweg läuft primär über CMD im tatsächlichen Installationsverzeichnis; PowerShell bleibt reiner Rückfall. Ursache des vorherigen Fehlschlags war eine veraltete zweite `setup.ps1` im Installationsstamm, die den CMD-Handler wieder durch PowerShell ersetzte. Nachweis: CMD-Installation mit Exitcode `0`, zurückgegebener Pairing-Code identisch zur Dienstkonfiguration, Dienst erreichbar als 0.7.1, CMD als registrierter Primärhandler.
+
+**Debug-Export erweitert (lokal, 02.08.2026):** Der Export enthält zusätzlich den Abschnitt `localService` mit Erreichbarkeit, Version, Setup-Status, CMD-/PowerShell-Modus, Pairing- und AudD-Konfigurationsstatus, Sherpa, Bootstrap und laufender Installation — **ohne** Pairing-Code und **ohne** AudD-Token.
+
+**Timings:** Startschutz `40 ms`, Prüfintervall `40 ms`, Reload-Abstand `400 ms`. Diese drei Werte sind ausdrücklich vom Nutzer vorgegeben und bleiben unverändert.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 
@@ -627,24 +724,27 @@ Alle sechs Werte wurden am 29./30.07.2026 gegen die tatsächlichen Dateien und g
 |---|---|
 | Syntaxprüfung `node --check` für `content.js`, `sidepanel.js`, `background.js`, `server.mjs` | bestanden |
 | Extension-Struktur und Decoder (`test_extension.cjs`) | bestanden |
-| Companion-Service (`npm test`) | bestanden |
+| Companion-Service (`npm test`) | 15/15 im veröffentlichten Stand; 18/18 im lokalen Folgestand, einschließlich „ungültiges AudD-Token wird nicht gespeichert" und „bei nicht möglicher Prüfung wird nichts gespeichert" |
 | Mobile-Bridge (`test_mobile_bridge.cjs`) | bestanden |
 | Native Projektprüfung (`test_mobile_projects.py`) | bestanden |
 | Token-Dienst (`shazam-token.test.mjs`) | bestanden |
 | Website-Tests und Produktionsbuild | bestanden |
-| iOS-Workflow auf GitHub Actions | Run `#14`, Commit `34e0dbb`, `success` |
-| Android Mock-Build (`assembleMockDebug`) im Container | APK erzeugt, 18,8 MiB, Package-ID `app.tiktoklivecompanion.android` |
+| iOS-Workflow auf GitHub Actions | Run `30717416888`, Commit `2323a6f`, Simulator-Build und Tests `success` |
+| Android Mock-Build (`assembleMockDebug`) im Container | APK erzeugt, 19.673.934 Bytes, SHA-256 `ebda082a…`, Package-ID `app.tiktoklivecompanion.android` |
 | Pegelschutz mit `OfflineAudioContext` | Dauerpegel unverändert, Spitze `1,0` → `0,17188` |
 | Entfernte Qualitätsbox und sechs Texte | vollständig entfernt, keine leeren Container |
 | Persistente 0–100-Regler | bestätigt |
-| Release-Prüfsummen | 6/6 gegen Dateien und Vercel-Downloads bestätigt |
+| Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests und 7/7 öffentliche Vercel-Dateien bytegleich bestätigt |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
+| Vercel Release-Deployment | `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY`; OPE-91 dokumentiert den zuvor veralteten Dashboardstatus |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |
-| GHCR-Pakete Sichtbarkeit und Vererbung | 3/3 `public`, Quellrepository verifiziert |
-| Linear-Projektstand (CSV-Export 30.07.2026) | 36 `Done`, 4 `In Progress`, 2 `Backlog` |
+| GHCR-Pakete Sichtbarkeit und Vererbung | 3/3 `public`, Quellrepository und neue OCI-Index-Digests verifiziert |
+| Reproduzierbarkeit des lokalen Folgestandes | zwei unabhängige Paketläufe bytegleich |
+| Lokale Testinstallation | Kern-Dateien byteidentisch zum Paket; Dienst meldet 0.7.1, Sherpa mit 13 installierten Stimmen, AudD konfiguriert |
+| Linear-Projektstand (live, 02.08.2026) | 41 `Done`, 1 `In Review`, 2 `In Progress`, 2 `Todo`, 3 `Backlog`, 2 `Canceled` |
 
 ### 9.4 Nicht durchgeführt
 
@@ -652,10 +752,11 @@ Alle sechs Werte wurden am 29./30.07.2026 gegen die tatsächlichen Dateien und g
 |---|---|
 | iOS-Build und XCTest lokal | benötigen macOS und Xcode; CI deckt den Simulator ab |
 | Echte Shazam-Katalogerkennung | benötigt Apple-Capability, Media-ID, privaten Schlüssel und Android-AAR |
-| Formaler Security-Scan 0.7.0 / 0.7.1 | steht aus; `0PE-42` ist `Done`, betrifft aber 0.5.0 |
-| Behebung des Browser-Vollbildfehlers | offen, siehe Abschnitt 3.5 |
+| Reale Browser-Abnahme für Zwei-Tab, Embed und Vollbild/TTS | lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet; keine Umgehung vorgenommen |
+| Commit, Push und Veröffentlichung des lokalen Folgestandes vom 02.08.2026 | ausdrücklich zurückgestellt; Übergabe an Codex (Kapitel 10) |
+| Zweiter formaler Security-Scan | vom Nutzer abgebrochen; `0PE-42` steht auf `Canceled`. Das bereits erstellte Seal für 0.7.1 bleibt gültig |
 | Echter AudD-Aufruf am realen Stream | kein Token im Prüflauf hinterlegt |
-| Android `testMockDebugUnitTest` im letzten Durchlauf | hing im Container und wurde abgebrochen; nur `assembleMockDebug` lief durch |
+| Android-Gesamtsuite | ein bereits bestehender, fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren; gezielte OPE-78/OPE-79-Tests und `assembleMockDebug` sind grün |
 | Linear-Release-Sync produktiv | Linear Releases plan-gated, kein `LINEAR_ACCESS_KEY` |
 | Öffentliche Bestätigung der Linear-/Notion-Seiten | ohne Login nur App-Shell, Inhalt nicht öffentlich lesbar |
 
@@ -699,11 +800,69 @@ xcodebuild test \
 
 ---
 
+## 10. Übergabe an Codex für Version 0.8.0
+
+Dieses Dokument wird Codex vor der finalen Ausarbeitung aller Komponenten auf **Version 0.8.0 am 08.08.2026** zur Verwendung und Miteinarbeitung übergeben.
+
+### 10.1 Ausgangslage der Übergabe
+
+| Ebene | Stand |
+|---|---|
+| Veröffentlicht | Browser `039ec54`, Android `80d3cb1`, iOS `2323a6f`; GitHub Releases, GHCR und Vercel bestätigt |
+| Lokal, nicht committet | Folgestand vom 02.08.2026 in `.publish-repo/` und in der Projektwurzel; getestet und zweimal reproduzierbar paketiert |
+| Testinstallation | `C:\Users\silve\Documents\TikTok-Live-Companion`, byteidentisch zum lokalen Paket, Dienst gesund als 0.7.1 |
+| Mobilgerät | `Redmi Note 11S` (`100.94.134.39`), aktuelle APK per Taildrop übergeben |
+
+### 10.2 Nicht committeter Arbeitsstand
+
+Die folgenden Änderungen sind lokal umgesetzt, getestet und paketiert, aber weder committet noch veröffentlicht. Sie sind vor 0.8.0 zu übernehmen, zu committen, zu pushen und über CI, GHCR und Vercel zu verifizieren.
+
+| Bereich | Änderung |
+|---|---|
+| Chat | Puffer 50 → 500 Zeilen je Tab; anklickbarer roter Zähler öffnet die vollständige Chatübersicht; Hauptansicht bleibt bei fünf Zeilen |
+| Chat | `Auto-Chat Refresh` mit 1–60 Minuten; leert ausschließlich die Chatanzeige, löst keinen Tab-Reload aus |
+| Chat | Reihenfolge `Chatnamen sprechen` → `Chatnamen kürzen` → `Game-Mode` → `Auto-Chat Refresh`; `Chatnamen` umbenannt zu `Chatnamen sprechen` |
+| Stimmen | feste Gruppierung DE/EN zuerst ab `Sherpa Eva`, danach Kyrillisch, Asiatisch, Abjad, Indisch; Installationsstatus ohne Einfluss auf die Reihenfolge |
+| Installation | CMD als Primärweg, PowerShell als Rückfall; Konsolenfenster bleibt mit Pairing-Code und Kopieranweisung geöffnet |
+| Installation | Bestandsschutz für Pairing-Code, AudD-Token, Stimmen und Benutzerkonfiguration |
+| Sicherheit | Pairing-Code und AudD-Token werden vor dem Speichern geprüft; ungültige Werte werden verworfen |
+| Oberfläche | Pairing- und AudD-Felder werden bei aktivem Sprachdienst und Sherpa ausgeblendet |
+| Oberfläche | `Sprachdienst aktiv!` wird wie `Sherpa aktiv!` grau und nicht mehr anklickbar; `https://AudD.io` öffnet als echter Link einen neuen Tab |
+| Oberfläche | AudD-Beschriftungen je Token-Zustand |
+| Diagnose | Debug-Export um `localService` erweitert, ohne Geheimnisse |
+| Timings | `40 / 40 / 400 ms` — vom Nutzer vorgegeben, unverändert zu belassen |
+
+### 10.3 Verbindliche Schutzgrenzen
+
+- Der Workspace-Stamm ist **kein** gültiges Git-Repository. Alle Git-Operationen laufen über `.publish-repo/` oder die beiden Worktrees `android-implementation/` und `ios-implementation/`.
+- Die Timings `40 / 40 / 400 ms` sind ausdrücklich angeordnet und dürfen nicht eigeninitiativ verändert werden.
+- Der Installationsablauf mit sichtbarem Pairing-Code und manueller Übernahme per `Strg+C` / `Strg+V` bleibt bestehen; Zugangsdaten des Nutzers werden ihm nicht vorenthalten.
+- Bestehende Docker-Volumes, Tailscale-Konfigurationen, Logins und fachfremde Container bleiben unangetastet.
+- Frühere Dokumentrevisionen v6 und v7 werden nicht überschrieben.
+
+### 10.4 Offene Punkte für 0.8.0
+
+| # | Punkt | Bezug |
+|---|---|---|
+| 1 | Reale Zwei-Tab-, Embed- und Vollbild-TTS-Abnahme im Browser durchführen | `0PE-85`, `0PE-89`, `0PE-90` |
+| 2 | Lokalen Folgestand vom 02.08.2026 committen, pushen und über CI, GHCR und Vercel verifizieren | Kapitel 10.2 |
+| 3 | Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar | `0PE-93` am 02.08.2026 angelegt; CSS-Ursache (`display: grid` überschreibt `hidden`) lokal behoben, Veröffentlichung noch offen |
+| 4 | `0PE-41` und `0PE-43` aus dem Backlog umsetzen | Low/P3 |
+| 5 | Mobile Backlog-Issues `0PE-58`, `0PE-70`, `0PE-80` bearbeiten | mobile |
+| 6 | Android-Gesamtsuite normalisieren; ein bestehender fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren | Test |
+| 7 | Mobile-Entwurfsbild von `0.7.0` auf `0.8.0` fortschreiben | Design |
+| 8 | Meilenstein-Prozentwerte in Linear neu erheben; Stand ist der 18.07.2026 | Projekt |
+| 9 | Linear-Release-Sync aktivieren, sobald `LINEAR_ACCESS_KEY` verfügbar ist | Business-Plan erforderlich |
+| 10 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen; danach Shazam-Produktvariante statt Mock-APK bauen | Nutzer |
+
+---
+
 ## Versionshistorie
 
 | Version | Schwerpunkt | Status |
 |---|---|---|
-| 0.7.1 | einheitlicher Stand aller Komponenten; Vollbild-Toggle auf Mobilgeräten; Streamidentität für Refresh/Force, getrennte Badges, Game Mode, TTS-Dedupe, Sherpa-Stimmen, 0–100-Regler, entfernte Qualitätsbox, `popup-guard.js`, persistente Container-Umgebung, iOS-CI, GitHub Releases und GHCR-Pakete | veröffentlicht |
+| 0.8.0 | geplante Ausarbeitung aller Komponenten am 08.08.2026 | vorbereitet, siehe Kapitel 10 |
+| 0.7.1 | einheitlicher Stand aller Komponenten; tabbezogene Browsermodule, Offscreen-TTS, CMD-gestützter Dienststart, kuratierter Sherpa-Katalog mit 26 Stimmen, 500 Chatzeilen mit Verlaufsansicht, Auto-Chat Refresh, Validierung von Pairing-Code und AudD-Token, Mobile-Textentfernungen, iOS-Buildnummer und reproduzierbare Pakete | veröffentlicht bis `039ec54`; lokaler Folgestand vom 02.08.2026 zur Übergabe |
 | 0.7.0 | iOS, Android/HyperOS, ShazamKit, Token-Dienst, WebView-Bridge sowie reproduzierbare SVG-, GIF- und Three.js-Architektur | in 0.7.1 aufgegangen |
 | 0.6.0 | Chat-TTS-Aufbereitung, Zuschauerstatistik, Songerkennung, Profil-Force, lokaler Dienst, sprechfreundliche Nicknamen | archiviert |
 | 0.5.0 | zweisprachige Dokumentation und Website; Bezug des formalen Security-Scans | archiviert |
@@ -721,4 +880,4 @@ xcodebuild test \
 
 ---
 
-*Ende der Dokumentation · TikTok LIVE Companion 0.7.1 · Dokumentrevision v8 · Stand 30. Juli 2026*
+*Ende der Dokumentation · TikTok LIVE Companion 0.7.1 · Dokumentrevision v8, finalisiert · Stand 2. August 2026 · CoAuthoring Claude Dispatcher (Versenden) · Übergabe an Codex für 0.8.0 am 08.08.2026*

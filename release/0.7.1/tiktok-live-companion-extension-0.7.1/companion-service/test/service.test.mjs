@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import fs from "node:fs/promises";
-import { auddRecognize, createServer } from "../server.mjs";
+import { auddRecognize, auddValidateToken, createServer } from "../server.mjs";
 
 async function fixture(options = {}) {
   const calls = [];
@@ -17,6 +17,7 @@ async function fixture(options = {}) {
     voices: voiceProvider,
     catalog: catalogProvider,
     recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; },
+    validateAuddToken: options.validateAuddToken || (async () => ({ valid: true })),
     sherpaInstaller: async (voiceId) => { calls.push(["sherpa-install", voiceId || ""]); }
   });
   server.listen(0, "127.0.0.1");
@@ -37,6 +38,8 @@ test("health requires pairing and reports providers", async (t) => {
   assert.equal(health.version, "0.7.1");
   assert.equal(health.bootstrapPairing, true);
   assert.equal(health.auddConfigured, true);
+  assert.equal(health.bootstrapPending, false);
+  assert.equal(health.extensionConfigured, true);
   assert.equal(health.sherpaConfigured, true);
   assert.equal(health.sherpaVoiceCount, 1);
 });
@@ -149,6 +152,30 @@ test("stores AudD token through the paired local config endpoint", async (t) => 
   assert.equal(savedConfigs[0].auddApiToken, "new-audd-token");
 });
 
+test("does not store an invalid AudD token", async (t) => {
+  const { server, base, savedConfigs } = await fixture({ validateAuddToken: async () => ({ valid: false, code: 900 }) });
+  t.after(() => server.close());
+  const response = await fetch(`${base}/v1/config/audd-token`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ auddApiToken: "invalid-token" })
+  });
+  assert.equal(response.status, 422);
+  assert.equal(savedConfigs.length, 0);
+});
+
+test("does not store an AudD token when validation is unavailable", async (t) => {
+  const { server, base, savedConfigs } = await fixture({ validateAuddToken: async () => { throw new Error("offline"); } });
+  t.after(() => server.close());
+  const response = await fetch(`${base}/v1/config/audd-token`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ auddApiToken: "unverified-token" })
+  });
+  assert.equal(response.status, 502);
+  assert.equal(savedConfigs.length, 0);
+});
+
 test("recognition accepts a bounded audio body", async (t) => {
   const { server, base, calls } = await fixture();
   t.after(() => server.close());
@@ -180,4 +207,19 @@ test("surfaces AudD provider errors", async () => {
     json: async () => ({ status: "error", error: { error_message: "quota exceeded" } })
   });
   await assert.rejects(() => auddRecognize(Buffer.from("audio"), "audio/webm", "token", fakeFetch), /quota exceeded/);
+});
+
+test("validates AudD credentials without audio and rejects provider code 900", async () => {
+  const accepted = await auddValidateToken("token", async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ status: "error", error: { error_code: 700, error_message: "missing file" } })
+  }));
+  assert.equal(accepted.valid, true);
+  const rejected = await auddValidateToken("token", async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ status: "error", error: { error_code: 900, error_message: "invalid token" } })
+  }));
+  assert.deepEqual(rejected, { valid: false, code: 900 });
 });

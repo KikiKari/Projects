@@ -18,6 +18,8 @@ Der Pairing-Code wird aus `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` wied
 
 Der Dienst bleibt fest auf `http://127.0.0.1:43117`. Das AudD-Token ist optional und wird nur für die manuelle Songerkennung in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespeichert. Sherpa-Modelle und die kuratierte Stimmenliste liegen unter `%LOCALAPPDATA%\TikTokLiveCompanion\sherpa-onnx` und `%LOCALAPPDATA%\TikTokLiveCompanion\sherpa-voices.json`. Deutsch und Englisch werden beim Grundsetup installiert. Weitere im mitgelieferten `voice-catalog.json` bestätigte Stimmen werden erst nach ihrer Auswahl über den authentifizierten Loopback-Endpunkt `/v1/voices/install` geladen. Jedes freigegebene Archiv ist an Größe und SHA-256 gebunden, wird vor dem Entpacken auf sichere Pfade und Linkeinträge geprüft und erst aus einem temporären Staging-Verzeichnis übernommen. Nicht bestätigte Modelle werden nicht angeboten.
 
+Manuell eingegebene Pairing-Codes werden erst nach einem erfolgreichen Health-Check gespeichert. Ein AudD-Token wird vor dem Speichern beim Anbieter geprüft; ungültige, deaktivierte oder nicht prüfbare Werte verändern weder Dienstkonfiguration noch Erweiterungsspeicher. Sind Sprachdienst und Sherpa aktiv, werden die beiden Felder im Sidepanel ausgeblendet. Zum späteren Ändern oder erneuten Setzen von Pairing-Code oder AudD-Token das Plugin entfernen und neu hinzufügen.
+
 Falls die automatische Installation auf einem System blockiert wird, kann sie manuell aus dem entpackten Paket gestartet werden:
 
 ```powershell

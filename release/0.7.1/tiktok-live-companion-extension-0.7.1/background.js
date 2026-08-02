@@ -3,11 +3,12 @@ importScripts("content-core.js");
 const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
+const SERVICE_INSTALL_KEY = "tlc-service-install";
 const PROFILE_PREFIX = "tlc-profile-";
 const STREAM_CACHE_PREFIX = "tlc-stream-";
 const MAX_MEDIA = 60;
 const MAX_CAPTIONS = 2000;
-const MAX_CHAT = 50;
+const MAX_CHAT = 500;
 const MAX_EVENT_IDS = 500;
 const MAX_DEBUG = 500;
 const MAX_PARTICIPANTS = 5000;
@@ -199,6 +200,8 @@ async function getSettings() {
     gameModeEnabled: false,
     speakNames: true,
     shortenNames: false,
+    autoChatRefreshEnabled: false,
+    autoChatRefreshMinutes: 5,
     serviceUrl: "http://127.0.0.1:43117",
     pairingCode: "",
     auddApiToken: "",
@@ -1027,23 +1030,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } });
         break;
       }
-      case "TLC_START_LOCAL_SERVICE":
       case "TLC_INSTALL_LOCAL_SERVICE": {
+        const nonce = String(message.nonce || "");
+        if (!/^[A-Za-z0-9_-]{32,128}$/.test(nonce)) throw new Error("Der Installations-Nonce ist ungültig.");
+        await chrome.storage.session.set({
+          [SERVICE_INSTALL_KEY]: { nonce, startedAt: Date.now() }
+        });
+        sendResponse({ ok: true, installationStarted: true });
+        break;
+      }
+      case "TLC_POLL_LOCAL_SERVICE_INSTALL": {
+        const stored = await chrome.storage.session.get(SERVICE_INSTALL_KEY);
+        const pending = stored[SERVICE_INSTALL_KEY];
+        const nonce = String(pending?.nonce || "");
         const settings = await getSettings();
-        const install = message.type === "TLC_INSTALL_LOCAL_SERVICE";
-        const nonce = `${newBrowserSessionId()}${newBrowserSessionId()}`;
-        const protocolUrl = install
-          ? `tiktok-live-companion://install?nonce=${encodeURIComponent(nonce)}&extensionId=${encodeURIComponent(chrome.runtime.id)}`
-          : `tiktok-live-companion://start?nonce=${encodeURIComponent(nonce)}`;
-        const serviceTab = await chrome.tabs.create({ url: protocolUrl, active: false });
-        setTimeout(() => {
-          if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
-        }, 1500);
+        const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
+        const knownPairingCode = String(settings.pairingCode || "");
+        if (knownPairingCode) {
+          const healthResponse = await fetch(`${serviceUrl}/v1/health`, {
+            headers: { Authorization: `Bearer ${knownPairingCode}` }
+          }).catch(() => null);
+          if (healthResponse?.ok) {
+            await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+            sendResponse({ ok: true, pending: false, pairingCode: knownPairingCode });
+            break;
+          }
+        }
+        if (!nonce || Date.now() - Number(pending?.startedAt || 0) > 120000) {
+          await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+          sendResponse({ ok: true, pending: false, pairingCode: "" });
+          break;
+        }
+        const response = await fetch(`${serviceUrl}/v1/pair?nonce=${encodeURIComponent(nonce)}`).catch(() => null);
+        if (!response?.ok) {
+          sendResponse({ ok: true, pending: true, pairingCode: "" });
+          break;
+        }
+        const payload = await response.json().catch(() => ({}));
+        const pairingCode = String(payload.pairingCode || "");
+        if (!pairingCode) {
+          sendResponse({ ok: true, pending: true, pairingCode: "" });
+          break;
+        }
+        await setSettings({ pairingCode });
+        await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+        sendResponse({ ok: true, pending: false, pairingCode });
+        break;
+      }
+      case "TLC_START_LOCAL_SERVICE": {
+        const settings = await getSettings();
+        const nonce = String(message.nonce || "");
+        if (!/^[A-Za-z0-9_-]{32,128}$/.test(nonce)) throw new Error("Der Start-Nonce ist ungültig.");
         const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
         let pairingCode = "";
-        const attempts = install ? 180 : 10;
+        const attempts = 10;
         for (let attempt = 0; attempt < attempts && !pairingCode; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, install ? 500 : 400));
+          await new Promise((resolve) => setTimeout(resolve, 400));
           const response = await fetch(`${serviceUrl}/v1/pair?nonce=${encodeURIComponent(nonce)}`).catch(() => null);
           if (!response?.ok) continue;
           const payload = await response.json().catch(() => ({}));
@@ -1054,7 +1096,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ok: true,
           pairingCode,
           setupRequired: !pairingCode,
-          installationStarted: install
+          installationStarted: false
         });
         break;
       }
@@ -1083,6 +1125,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
+          ...(message.autoChatRefreshEnabled == null ? {} : { autoChatRefreshEnabled: Boolean(message.autoChatRefreshEnabled) }),
+          ...(message.autoChatRefreshMinutes == null ? {} : { autoChatRefreshMinutes: Math.max(1, Math.min(60, Math.round(Number(message.autoChatRefreshMinutes) || 5))) }),
           ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
         });
@@ -1369,6 +1413,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_GET_DEBUG_REPORT": {
         const state = await getState(tabId);
+        const settings = await getSettings();
+        const pairingCode = String(settings.pairingCode || "");
+        const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
+        const storedInstall = await chrome.storage.session.get(SERVICE_INSTALL_KEY);
+        const pendingInstall = storedInstall[SERVICE_INSTALL_KEY];
+        const localService = {
+          serviceUrl,
+          pairingConfigured: Boolean(pairingCode),
+          auddTokenConfigured: Boolean(settings.auddApiToken),
+          expectedProtocolHandler: "cmd-primary-powershell-fallback",
+          installationPending: Boolean(pendingInstall?.startedAt),
+          installationAgeMs: pendingInstall?.startedAt ? Math.max(0, Date.now() - Number(pendingInstall.startedAt)) : null,
+          reachable: false,
+          healthStatus: null
+        };
+        if (pairingCode) {
+          const healthResponse = await fetch(`${serviceUrl}/v1/health`, {
+            headers: { Authorization: `Bearer ${pairingCode}` }
+          }).catch(() => null);
+          localService.reachable = Boolean(healthResponse?.ok);
+          localService.healthStatus = healthResponse?.status || null;
+          if (healthResponse?.ok) {
+            const health = await healthResponse.json().catch(() => ({}));
+            localService.runtime = {
+              version: health.version || null,
+              tts: health.tts || null,
+              ttsAvailable: Boolean(health.ttsAvailable),
+              sherpaConfigured: Boolean(health.sherpaConfigured),
+              sherpaInstalling: Boolean(health.sherpaInstalling),
+              auddConfigured: Boolean(health.auddConfigured),
+              songProvider: health.songProvider || null,
+              bootstrapPending: Boolean(health.bootstrapPending),
+              extensionConfigured: Boolean(health.extensionConfigured)
+            };
+          }
+        }
         sendResponse({ ok: true, report: {
           generatedAtUtc: new Date().toISOString(), version: chrome.runtime.getManifest().version,
           browserSessionId: state.browserSessionId,
@@ -1377,6 +1457,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           playerState: state.playerState, selectedQuality: state.selectedQuality,
           media: state.media.map((item) => ({ ...item, url: redactUrl(item.url) })),
           counts: { chat: state.chatMessages.length, captions: state.captions.length },
+          localService,
           debug: state.debug
         } });
         break;

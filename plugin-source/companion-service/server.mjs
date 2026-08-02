@@ -314,6 +314,20 @@ export async function auddRecognize(audio, contentType, apiToken, fetchImpl = fe
   } : { match: false };
 }
 
+export async function auddValidateToken(apiToken, fetchImpl = fetch) {
+  const token = cleanAuddToken(apiToken);
+  if (!token) return { valid: true, cleared: true };
+  const form = new FormData();
+  form.append("api_token", token);
+  const response = await fetchImpl("https://api.audd.io/", { method: "POST", body: form });
+  const payload = await response.json();
+  const code = Number(payload?.error?.error_code);
+  if ([900, 901, 903].includes(code)) return { valid: false, code };
+  if (payload?.status === "success" || code === 700 || [902, 904, 905].includes(code)) return { valid: true, code: Number.isFinite(code) ? code : null };
+  if (!response.ok) throw new Error(`AudD HTTP ${response.status}`);
+  throw new Error(payload?.error?.error_message || "AudD-Token konnte nicht geprüft werden.");
+}
+
 function sendJson(response, status, payload, origin = "") {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -323,7 +337,7 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, sherpaInstaller = runSherpaInstaller } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, validateAuddToken = auddValidateToken, sherpaInstaller = runSherpaInstaller } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   const catalogProvider = catalog || (() => listVoiceCatalog(voiceCatalogPath, voices));
   return http.createServer(async (request, response) => {
@@ -377,7 +391,9 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
           sherpaInstalling: sherpaInstallStatus.running,
           canInstallSherpa: true,
           auddConfigured: Boolean(currentConfig.auddApiToken),
-          songProvider: currentConfig.auddApiToken ? "AudD" : null
+          songProvider: currentConfig.auddApiToken ? "AudD" : null,
+          bootstrapPending: Boolean(currentConfig.bootstrapNonce),
+          extensionConfigured: /^[a-p]{32}$/.test(String(currentConfig.extensionId || ""))
         }, allowedOrigin);
       }
       if (request.method === "GET" && request.url === "/v1/voices") {
@@ -425,6 +441,15 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
         const raw = await readBody(request, 8 * 1024);
         const body = JSON.parse(raw.toString("utf8"));
         const auddApiToken = cleanAuddToken(body.auddApiToken);
+        let validation;
+        try {
+          validation = await validateAuddToken(auddApiToken);
+        } catch (_) {
+          return sendJson(response, 502, { error: "AudD-Token konnte nicht geprüft werden; er wurde nicht gespeichert." }, allowedOrigin);
+        }
+        if (!validation?.valid) {
+          return sendJson(response, 422, { error: "AudD API-Token ist ungültig oder deaktiviert; er wurde nicht gespeichert." }, allowedOrigin);
+        }
         const nextConfig = { ...currentConfig, auddApiToken };
         await configSaver(nextConfig);
         if (currentConfig && typeof currentConfig === "object") currentConfig.auddApiToken = auddApiToken;

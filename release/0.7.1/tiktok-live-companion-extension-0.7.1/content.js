@@ -20,8 +20,8 @@
   const ALL_QUALITY_LABELS = [...new Set(Object.values(QUALITY_ALIASES).flat().map(normalizedLabel))];
   const chatNodeText = new WeakMap();
   const giftNodeText = new WeakMap();
-  const POPUP_GUARD_GRACE_MS = 30;
-  const QUICK_RECOVER_INTERVAL_MS = 30;
+  const POPUP_GUARD_GRACE_MS = 40;
+  const QUICK_RECOVER_INTERVAL_MS = 40;
   const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
   let lastDomCaptionText = "";
   let scanTimer = null;

@@ -29,6 +29,8 @@ Der Pairing-Code wird in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespe
 
 Das optionale Feld **AudD API-Token** speichert den AudD-Schlüssel dauerhaft in derselben lokalen Konfiguration. Deutsch und Englisch sind nach dem Grundsetup verfügbar. Weitere bestätigte Sherpa-ONNX-Stimmen werden erst bei Auswahl geladen; nicht bestätigte Modelle erscheinen nicht.
 
+Pairing-Code und AudD-Token werden vor dem Speichern geprüft; leere, falsche, deaktivierte oder nicht prüfbare Werte werden nicht übernommen. Sobald Sprachdienst und Sherpa erfolgreich aktiv sind, blendet das Sidepanel beide Eingabefelder platzsparend aus. Sollen Pairing-Code oder AudD-Token später geändert oder neu gesetzt werden, das Plugin entfernen und anschließend erneut hinzufügen; danach werden die Einrichtungsfelder wieder angezeigt.
+
 ## Erster Einsatz
 
 1. **Seite prüfen** liest Caption-Metadaten, sichtbare Bedienelemente und Stream-Informationen.
