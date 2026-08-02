@@ -4,7 +4,7 @@
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
     "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "service-action", "sherpa-action", "service-status", "service-setup", "copy-service-setup",
-    "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
+    "top-chatters", "top-chatters-actions", "top-chatters-reset", "top-chatters-more", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
@@ -52,6 +52,7 @@
   let sherpaInstallStarted = false;
   let voiceCatalog = [];
   let permanentMutes = new Set();
+  const topChatterViews = new Map();
   let speechAudioContext = null;
   let speechAudioSource = null;
   const knownSpeechKeys = new Set();
@@ -544,8 +545,25 @@
     if (response.state) render(response.state);
   }
 
+  function topChatterStreamKey(state = currentState, tabId = activeTabId) {
+    const stream = state?.stream || {};
+    return `${Number.isInteger(tabId) ? tabId : "none"}:${stream.pageHandle || stream.liveUrl || stream.startedAtUtc || "current"}`;
+  }
+
+  function topChatterLimit(state = currentState) {
+    return topChatterViews.get(topChatterStreamKey(state)) || 5;
+  }
+
+  function setTopChatterLimit(limit) {
+    const allowed = [5, 15, 25, 35, 45, 50];
+    topChatterViews.set(topChatterStreamKey(), allowed.includes(limit) ? limit : 5);
+    renderTopChatters(currentState);
+  }
+
   function renderTopChatters(state) {
-    const items = sortedParticipants(state).slice(0, 5);
+    const participants = sortedParticipants(state);
+    const limit = topChatterLimit(state);
+    const items = participants.slice(0, limit);
     clearChildren(elements["top-chatters"]);
     elements["top-chatters"].classList.toggle("empty", !items.length);
     elements["team-tag-status"].textContent = state.stream?.teamTag
@@ -553,6 +571,7 @@
       : "Teamkürzel: noch nicht sicher erkannt.";
     if (!items.length) {
       elements["top-chatters"].textContent = "Noch keine Personen im Chat beobachtet.";
+      elements["top-chatters-actions"].hidden = true;
       return;
     }
     for (const participant of items) {
@@ -575,6 +594,9 @@
       row.append(name, metrics, label);
       elements["top-chatters"].append(row);
     }
+    elements["top-chatters-actions"].hidden = participants.length <= 5 && limit === 5;
+    elements["top-chatters-reset"].hidden = limit === 5;
+    elements["top-chatters-more"].hidden = limit >= 50 || participants.length <= limit;
   }
 
   function renderAudience(state = currentState) {
@@ -1071,6 +1093,20 @@
     }
   }
 
+  async function installVlcIfNeeded() {
+    if (!pairingCode) return;
+    try {
+      const statusResponse = await fetch(`${serviceUrl}/v1/vlc/status`, { headers: serviceHeaders() });
+      const status = await statusResponse.json().catch(() => ({}));
+      if (!statusResponse.ok || status.available || !status.canInstall) return;
+      const installResponse = await fetch(`${serviceUrl}/v1/vlc/install`, { method: "POST", headers: serviceHeaders() });
+      const install = await installResponse.json().catch(() => ({}));
+      if (installResponse.ok && install.running) elements["player-status"].textContent = "VLC-Installation wurde mit Systembestätigung gestartet.";
+    } catch (_) {
+      // Der interne VLC-Ersatz bleibt auch ohne erreichbaren lokalen Dienst verfügbar.
+    }
+  }
+
   async function clearChatDisplay() {
     knownSpeechKeys.clear();
     speechInitialized = false;
@@ -1189,6 +1225,11 @@
     renderAudience();
     elements["audience-modal"].hidden = false;
     elements["close-audience"].focus();
+  });
+  elements["top-chatters-reset"].addEventListener("click", () => setTopChatterLimit(5));
+  elements["top-chatters-more"].addEventListener("click", () => {
+    const current = topChatterLimit();
+    setTopChatterLimit(current === 5 ? 15 : Math.min(50, current + 10));
   });
   elements["close-audience"].addEventListener("click", () => {
     elements["audience-modal"].hidden = true;
@@ -1427,7 +1468,10 @@
   elements["player-pip"].addEventListener("click", () => runPlayer("toggle-pip", elements["player-pip"]));
   elements["player-fullscreen"].addEventListener("click", () => runPlayer("toggle-fullscreen", elements["player-fullscreen"]));
   elements["player-report"].addEventListener("click", () => runPlayer("open-report", elements["player-report"]));
-  elements["player-vlc-frame"].addEventListener("click", () => runPlayer("play-vlc-source", elements["player-vlc-frame"]));
+  elements["player-vlc-frame"].addEventListener("click", async () => {
+    await installVlcIfNeeded();
+    await runPlayer("play-vlc-source", elements["player-vlc-frame"]);
+  });
   elements["player-volume"].addEventListener("input", () => {
     const value = Number(elements["player-volume"].value);
     elements["player-volume-output"].textContent = `${value}%`;

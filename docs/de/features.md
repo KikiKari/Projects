@@ -6,7 +6,7 @@
 
 ## Top-Chatter und beobachtete Personen
 
-Die Erweiterung zählt pro Stream Nachrichten, Wörter und Geschenkereignisse für bis zu 5.000 im Chat sichtbare Personen. Stream-Mutes werden beim Streamwechsel verworfen, dauerhafte Mutes bleiben lokal gespeichert. Diese Liste ist keine vollständige TikTok-Zuschauerliste.
+Die Erweiterung zählt pro Stream Nachrichten, Wörter und Geschenkereignisse für bis zu 5.000 im Chat sichtbare Personen. Die Box startet mit fünf Einträgen; **mehr…** erweitert auf 15, 25, 35, 45 und höchstens 50, **Reset** stellt fünf Einträge wieder her. Stream-Mutes werden beim Streamwechsel verworfen, dauerhafte Mutes bleiben lokal gespeichert. Diese Liste ist keine vollständige TikTok-Zuschauerliste.
 
 ## Songerkennung
 
@@ -22,11 +22,11 @@ Der Hook beobachtet `WebcastRoomUserSeqMessage`, `WebcastLikeMessage` und `Webca
 
 ## Player und Pegelschutz
 
-Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild und Vollbild bedienen TikToks vorhandenen Player. Ein VLC-Ersatz belegt die größte sichtbare zentrale Playerfläche und lässt Originalvideo, Mini-Player sowie Media-/VLC-Links unangetastet. Der optionale lokale Kompressor begrenzt digitale Spitzen. dBFS ist kein kalibrierter dB-SPL-Wert.
+Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild und Vollbild bedienen TikToks vorhandenen Player. **VLC Ersatz** steht unter **WebSocket-Hook** rechts neben **Normal**, belegt die größte sichtbare zentrale Playerfläche und lässt Originalvideo, Mini-Player sowie Media-/VLC-Links unangetastet. Fehlt VLC unter Windows, kann der gepaarte Dienst nach dem Klick ausschließlich den aktuellen stabilen, hash- und signaturgeprüften VideoLAN-Installer mit normaler Systembestätigung ausführen. Der optionale lokale Kompressor begrenzt digitale Spitzen. dBFS ist kein kalibrierter dB-SPL-Wert.
 
 ## Sidepanel und Tab-Isolation
 
-Die Reihenfolge ist: Chat, Top-Chatter, Seiteninformationen; WebSocket-Hook, Untertitel; Playersteuerung, Songerkennung. Hook, Streamstatus, Chat, TTS, Player-Recovery, Debugmodus und Modulaktivität werden pro Tab geführt. Nur Benutzerpräferenzen und Zugangsdaten bleiben global; eine Embed-/Normal-Verknüpfung ist die einzige ausdrückliche Beziehung zwischen zwei Tabs.
+Die Reihenfolge ist: Chat, Top-Chatter, Seiteninformationen, LIVE-Informationen, WebSocket-Hook, Untertitel, Playersteuerung, Songerkennung. Hook, Streamstatus, Chat, TTS, Player-Recovery, Debugmodus und Modulaktivität werden pro Tab geführt. Nur Benutzerpräferenzen und Zugangsdaten bleiben global; eine Embed-/Normal-Verknüpfung ist die einzige ausdrückliche Beziehung zwischen zwei Tabs.
 
 ## Bildqualität und VLC
 

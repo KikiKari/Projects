@@ -20,6 +20,8 @@ Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertra
 
 Mobile Bridge-Nachrichten werden nur vom Hauptframe der Origin `https://www.tiktok.com` angenommen, sind auf 64 KiB begrenzt und verwenden eine feste Ereignis- und Befehlsliste. Die Apps lesen weder Cookies noch Web-Storage aus. Streamdaten bleiben flüchtig; Einstellungen und dauerhafte Mutes liegen in UserDefaults beziehungsweise DataStore.
 
+Der gepaarte Loopback-Dienst stellt `GET /v1/vlc/status` und `POST /v1/vlc/install` bereit. Parallele Installationsaufrufe werden zusammengeführt. Android bindet die stabile LibVLC-AAR `3.7.5` ein; iOS verwendet MobileVLCKit `3.7.3`. Eingebetteter VLC-Zustand und ausgewählte Media-URL bleiben streambezogen und werden beim Streamwechsel verworfen.
+
 Die Mikrofonerkennung läuft nur nach einem Klick und höchstens zwölf Sekunden. WebView-PCM ist experimentell; bei CORS-, Codec- oder WebView-Fehlern wird die Funktion beendet und das Mikrofon angeboten.
 
 Siehe [Mermaid-Quelle](../diagrams/architecture.mmd).

@@ -20,6 +20,8 @@ The hook never replaces `WebSocket.send()`. Page content is untrusted and displa
 
 Mobile bridge messages are accepted only from the `https://www.tiktok.com` main frame, are bounded to 64 KiB, and use fixed event and command allowlists. The apps never read cookies or Web Storage. Stream state is volatile; preferences and permanent mutes use UserDefaults or DataStore.
 
+The paired loopback service exposes `GET /v1/vlc/status` and `POST /v1/vlc/install`, coalescing concurrent installation requests. Android pins the stable LibVLC AAR `3.7.5`; iOS pins MobileVLCKit `3.7.3`. Embedded VLC state and the selected media URL remain stream-scoped and reset when the stream changes.
+
 Microphone recognition starts only after a click and runs for at most twelve seconds. WebView PCM is experimental; CORS, codec, or WebView failure stops capture and offers the microphone path.
 
 See the [Mermaid source](../diagrams/architecture.mmd).
