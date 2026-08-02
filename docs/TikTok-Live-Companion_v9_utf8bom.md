@@ -20,7 +20,7 @@ Android verwendet `org.videolan.android:libvlc-all:3.7.5`, iOS `MobileVLCKit 3.7
 
 Aktiv bearbeitet werden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89` und `0PE-90`. Browserseitig sind die neue Sidepanel-Reihenfolge, die Auswahl der größten sichtbaren zentralen Playerfläche, tabbezogener Laufzeitzustand und MV3-Offscreen-TTS lokal umgesetzt. Der vorhandene Sprachdienst nutzt weiterhin Setup, Startskript und Protokollhandler; Pairing wird nach dem einmaligen Setup über einen kurzlebigen lokalen Nonce übernommen. Deutsch und Englisch bleiben Standard, weitere bestätigte Stimmen werden erst bei Auswahl installiert. Android entfernt die zwei exakt bezeichneten Hinweise; iOS sichert deren Abwesenheit und verwendet `CURRENT_PROJECT_VERSION = 8` als Quelle von `CFBundleVersion`.
 
-Browser-Implementierung und reproduzierbare Release-Artefakte sind ab Commit `35a06518658a6e5062de989758b89613e439fe5d` belegt; der bestätigte Browser-Dokumentationsstand ist `130200525305e62cd57bf0c4a8073ec9defaa421`. Android steht auf `80d3cb1368c09875be6697021b21c1bc04c79870`, iOS auf `2323a6faa6526ad9057bccf81253306b224c62c4`. GitHub Releases und die drei GHCR-Tags sind mit diesen Ständen aktualisiert. Das formale Security-Seal ist abgeschlossen. Als getrennte Gates bleiben das neue Vercel-Deployment und die reale Browserabnahme bestehen.
+Für OPE-97, OPE-98 und OPE-102 ist die Browser-Implementierung durch `3476d17c099227f94459d4ace67b5fa338a8e98d` belegt; Release, Downloads und v9-Dokumentation stehen ab `4fda3fdcdc4e9f74f3334364b1bfe4a5957d54d2` bereit. Android verwendet den Funktionsstand `b27f39fd9ece151348763cd70c7556642bdb8909`, iOS `f812d1c185fc390f4d8315cff57f89f645a89e41`. GitHub-Prereleases, Vercel und die drei GHCR-Tags sind aktualisiert. Linear führt die drei Issues seit 02.08.2026 als `Done`. Die reale Browser-/Windows-UAC-Abnahme bleibt getrennt von den bestandenen Struktur-, Dienst- und Buildtests ausgewiesen.
 
 ---
 
@@ -538,7 +538,7 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
 
-Bestätigte OCI-Index-Digests am 02.08.2026: Browser nach dem Installations-Hotfix `sha256:6b33a791e8de9bbdc3bfa4ca838cc5a04aaa82f0a6a07225a92e40f337cac58f`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+Bestätigte OCI-Digests am 02.08.2026: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:89d812d6197d9832b104210ac41f292c6c493c55e567dcd9a8b3fd321a6c370b`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
 
 ---
 
@@ -619,7 +619,7 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 | `tiktok-live-companion-android-0.7.1-source.zip` | `d3fcc9f063aecf29f722435ac9247eb497fdf73cd54580a6537b29176deddfb6` |
 | `tiktok-live-companion-android-0.7.1.apk` | `30ed3b3b367f1af643246bc84fb3f848ab4fa928aadd45786591bab93c4e3af0` |
 
-Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` sowie `site/public/downloads/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Browser-Produktionsdeployment `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK` für Commit `3476d17` ist `READY`; die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` und `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind ebenfalls `READY`.
+Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` sowie `site/public/downloads/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Browser-Produktionsdeployment `dpl_9xkFZBKZexpPYyM4oqG1bdPcSsrx` für Release-/Dokumentationscommit `4fda3fd` ist `READY`; die fünf Website-ZIPs und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` und `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind ebenfalls `READY`.
 
 **Sidepanel-Hotfix:** Der im ausgelieferten Panel sichtbare Fehler `Cannot set properties of undefined (setting 'textContent')` beim Startversuch des Sprachdienstes wurde auf den fehlenden DOM-Bezug `service-setup-command` zurückgeführt und behoben. Ein Regressionstest prüft jetzt HTML-ID und zentrale Elementzuordnung. Extension- und Plugin-ZIP wurden danach zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen ihre vorherigen Stände.
 
@@ -662,7 +662,7 @@ Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegle
 | Release-Prüfsummen | 6/6 in zwei Paketläufen bytegleich; GitHub-Prerelease-Digests bestätigt |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
-| Vercel Release-Deployments | Browser Production `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK`, Android Preview `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G`, iOS Preview `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
+| Vercel Release-Deployments | Browser Production `dpl_9xkFZBKZexpPYyM4oqG1bdPcSsrx` (`4fda3fd`), Android Preview `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G`, iOS Preview `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |
