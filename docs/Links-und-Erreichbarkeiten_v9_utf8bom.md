@@ -102,7 +102,7 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 | Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 | iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 
-OCI-Index-Digests: Browser nach dem Installations-Hotfix `sha256:6b33a791e8de9bbdc3bfa4ca838cc5a04aaa82f0a6a07225a92e40f337cac58f`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+OCI-Digests: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:89d812d6197d9832b104210ac41f292c6c493c55e567dcd9a8b3fd321a6c370b`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
 
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 
@@ -193,9 +193,9 @@ Grundlage dieses Abschnitts ist der CSV-Export des Linear-Projekts vom 30.07.202
 | [0PE-88](https://linear.app/0penclaw/issue/0PE-88) | `In Progress` | Medium | Sidepanel-Elemente in die vorgegebene Reihenfolge bringen |
 | [0PE-89](https://linear.app/0penclaw/issue/0PE-89) | `In Progress` | High | Vollbild darf Sidepanel-Zustand und Vorlesen nicht deaktivieren |
 | [0PE-90](https://linear.app/0penclaw/issue/0PE-90) | `In Progress` | High | Tabs vollständig getrennt betreiben; Embed-Verknüpfung bleibt explizit |
-| [0PE-97](https://linear.app/0penclaw/issue/0PE-97) | `In Progress` | Low | VLC-Ersatz umplatzieren und stabile VLC-Installation bei Bedarf anbieten |
-| [0PE-98](https://linear.app/0penclaw/issue/0PE-98) | `In Progress` | Low | LIVE-Informationen direkt unter Seiteninformationen platzieren |
-| [0PE-102](https://linear.app/0penclaw/issue/0PE-102) | `In Progress` | Medium | Top-Chatter um mehr…, Reset und Stummschaltung bis höchstens 50 erweitern |
+| [0PE-97](https://linear.app/0penclaw/issue/0PE-97) | `Done` | Low | VLC-Ersatz umplatziert; stabile VLC-Installation bei Bedarf umgesetzt und belegt |
+| [0PE-98](https://linear.app/0penclaw/issue/0PE-98) | `Done` | Low | LIVE-Informationen direkt unter Seiteninformationen platziert |
+| [0PE-102](https://linear.app/0penclaw/issue/0PE-102) | `Done` | Medium | Top-Chatter um mehr…, Reset und Stummschaltung bis höchstens 50 erweitert |
 
 Fachliche Präzisierung aus den Issue-Beschreibungen:
 
@@ -438,7 +438,7 @@ Basis: `.publish-repo/`
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
-Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` sowie `site/public/downloads/` geprüft. Die drei bestehenden GitHub-Prereleases wurden mit den neuen Assets aktualisiert. Browser-Produktionsdeployment `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK` und die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` sowie `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind `READY`.
+Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` sowie `site/public/downloads/` geprüft. Die drei bestehenden GitHub-Prereleases wurden mit den neuen Assets aktualisiert. Browser-Produktionsdeployment `dpl_9xkFZBKZexpPYyM4oqG1bdPcSsrx` für `4fda3fd` und die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` sowie `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind `READY`. Die fünf Website-ZIPs und die Prüfsummendatei wurden öffentlich bytegleich bestätigt; die APK wird wegen der Git-Dateigrenze direkt aus dem Android-Prerelease geladen.
 
 Der Sidepanel-Hotfix für den fehlenden `service-setup-command`-DOM-Bezug wurde anschließend erneut reproduzierbar paketiert. Für Extension und Plugin gelten deshalb die aktualisierten SHA-256-Werte in der Tabelle; Mobile-, Dienst- und APK-Bytes bleiben unverändert.
 
@@ -528,7 +528,7 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | Produktionsbranch | `TikTok-Live-Companion` |
 | Root Directory | `site` |
 | Production | ✅ `Ready` |
-| Release-Deployments | ✅ Browser Production `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK`; Android/iOS Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` / `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
+| Release-Deployments | ✅ Browser Production `dpl_9xkFZBKZexpPYyM4oqG1bdPcSsrx` für `4fda3fd`; Android/iOS Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` / `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
 | Dashboard-Issue | [0PE-91](https://linear.app/0penclaw/issue/0PE-91/071-vercel-ios-deployment-bleibt-im-dashboard-auf-building) — Serverstatus und Logs waren bereits erfolgreich; veraltete „Building“-Anzeige dokumentiert |
 | Inspector | https://vercel.com/openclaw-vercel-project/tiktok-live-companion |
 | Funktionen | `/api/shazam-token` |
