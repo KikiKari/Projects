@@ -3,8 +3,8 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "audd-token", "pairing-code", "service-action", "sherpa-action", "service-status",
-    "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "service-action", "sherpa-action", "service-status", "service-setup", "copy-service-setup",
+    "top-chatters", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "media-list", "media-count", "caption-list", "caption-count",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
@@ -16,6 +16,16 @@
   ].map((id) => [id, document.getElementById(id)]));
   const PLAYER_BUTTONS = ["player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report"];
   const DEFAULT_SERVICE_URL = "http://127.0.0.1:43117";
+  const BASE_VOICE_ORDER = [
+    "sherpa-de-eva-k", "sherpa-de-karlsson", "sherpa-de-kerstin", "sherpa-de-pavoque", "sherpa-de-ramona", "sherpa-de-thorsten",
+    "sherpa-en-alan", "sherpa-en-amy", "sherpa-en-danny", "sherpa-en-lessac", "sherpa-en-libritts", "sherpa-en-ryan"
+  ];
+  const VOICE_GROUPS = [
+    ["Kyrillisch", ["sherpa-bg-supertonic", "sherpa-kk-iseke", "sherpa-ru-irina", "sherpa-sr-institut", "sherpa-uk-ukrainian"]],
+    ["Asiatisch", ["sherpa-zh-chaowen", "sherpa-ja-supertonic", "sherpa-ko-supertonic"]],
+    ["Abjad", ["sherpa-ar-kareem", "sherpa-fa-amir", "sherpa-ur-fasih"]],
+    ["Indisch", ["sherpa-hi-priyamvada", "sherpa-ml-meera", "sherpa-ne-chitwan"]]
+  ];
   const core = globalThis.TLC_CONTENT_CORE;
   let activeTabId = null;
   let activeIsTikTok = false;
@@ -33,10 +43,14 @@
   let speakNames = true;
   let gameModeEnabled = false;
   let shortenNames = false;
+  let autoChatRefreshEnabled = false;
+  let autoChatRefreshMinutes = 5;
+  let autoChatRefreshTimer = null;
   let serviceUrl = DEFAULT_SERVICE_URL;
   let pairingCode = "";
   let auddApiToken = "";
   let sherpaInstallStarted = false;
+  let voiceCatalog = [];
   let permanentMutes = new Set();
   let speechAudioContext = null;
   let speechAudioSource = null;
@@ -55,6 +69,38 @@
     const response = await chrome.runtime.sendMessage({ type, ...(Number.isInteger(activeTabId) ? { tabId: activeTabId } : {}), ...payload });
     if (!response?.ok) throw Object.assign(new Error(response?.error || "Aktion fehlgeschlagen"), { code: response?.code || "UNKNOWN" });
     return response;
+  }
+
+  function serviceNonce() {
+    const first = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : [...crypto.getRandomValues(new Uint8Array(16))].map((value) => value.toString(16).padStart(2, "0")).join("");
+    const second = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : [...crypto.getRandomValues(new Uint8Array(16))].map((value) => value.toString(16).padStart(2, "0")).join("");
+    return `${first}${second}`;
+  }
+
+  function updateAuddTokenLabel(token) {
+    const normalized = String(token || "").trim();
+    const label = elements["audd-token-label"];
+    clearChildren(label);
+    if (!normalized) {
+      label.append(document.createTextNode("AudD API-Token (optional - "));
+      const link = document.createElement("a");
+      link.href = "https://audd.io/";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "https://AudD.io";
+      label.append(link, document.createTextNode(" Trial/Paid )"));
+      return;
+    }
+    label.textContent = normalized.toLowerCase() === "test"
+      ? "AudD API-Token Trail Plan (Songerkennung)"
+      : "AudD API-Token (Songerkennung)";
+  }
+
+  function openServiceProtocol(mode, nonce) {
+    const path = mode === "install"
+      ? `${encodeURIComponent(nonce)}/${encodeURIComponent(chrome.runtime.id)}`
+      : encodeURIComponent(nonce);
+    return chrome.tabs.create({ url: `tiktok-live-companion://${mode}/${path}`, active: true });
   }
 
   function clearChildren(node) {
@@ -114,8 +160,9 @@
     element.title = label;
   }
 
-  function persistSpeechEnabled(enabled) {
-    chrome.runtime.sendMessage({ type: "TLC_SET_SPEECH_PREFERENCE", speechEnabled: Boolean(enabled) }).catch(() => {});
+  function persistSpeechEnabled(enabled, tabId = speechTabId ?? activeTabId) {
+    if (!Number.isInteger(tabId)) return Promise.resolve();
+    return chrome.runtime.sendMessage({ type: "TLC_SET_TAB_SPEECH", tabId, enabled: Boolean(enabled) }).catch(() => {});
   }
 
   function activateSpeech(message = "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", persist = true) {
@@ -130,7 +177,7 @@
     if (persist) persistSpeechEnabled(true);
   }
 
-  function stopSpeech(message = "Vorlesen ist ausgeschaltet.") {
+  function stopSpeech(message = "Vorlesen ist ausgeschaltet.", persist = true, tabId = speechTabId ?? activeTabId) {
     speechEnabled = false;
     speechBusy = false;
     speechQueue = [];
@@ -143,7 +190,7 @@
     elements["toggle-speech"].setAttribute("aria-pressed", "false");
     setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
-    persistSpeechEnabled(false);
+    if (persist) persistSpeechEnabled(false, tabId);
   }
 
   function serviceHeaders(extra = {}) {
@@ -231,25 +278,22 @@
     elements["service-status"].textContent = `Lokaler Sprachdienst aktiv · ${lang || "Auto"}.`;
   }
 
-  function sherpaSpeechVoices(voices = []) {
-    const buckets = { "de-DE": [], "en-US": [] };
-    const seen = new Set();
-    for (const voice of voices) {
-      const name = String(voice?.name || voice?.id || "").trim();
-      if (!name || seen.has(name)) continue;
-      const engine = String(voice?.engine || voice?.provider || voice?.source || "").toLowerCase();
-      if (!/(?:sherpa|onnx)/.test(`${engine} ${name.toLowerCase()}`)) continue;
-      const culture = String(voice?.culture || voice?.lang || "").toLowerCase();
-      const group = culture.startsWith("de") ? "de-DE" : culture.startsWith("en") ? "en-US" : "";
-      const bucket = buckets[group];
-      if (!bucket || bucket.length >= 6) continue;
-      seen.add(name);
-      bucket.push({ ...voice, id: voice?.id || name, name, culture: voice?.culture || group });
-    }
-    return [...buckets["de-DE"], ...buckets["en-US"]];
+  function sherpaSpeechVoices(voices = [], catalog = voiceCatalog) {
+    const installedById = new Map(voices.map((voice) => [String(voice.id || voice.name || ""), voice]));
+    return (catalog.length ? catalog : voices).map((voice) => {
+      const id = String(voice.id || voice.name || "").trim();
+      const installedVoice = installedById.get(id);
+      return {
+        ...voice,
+        ...installedVoice,
+        id,
+        name: String(voice.name || installedVoice?.name || id),
+        installed: Boolean(voice.installed || installedVoice)
+      };
+    }).filter((voice) => voice.id && voice.name);
   }
 
-  function setSpeechVoiceOptions(voices = []) {
+  function setSpeechVoiceOptions(voices = [], catalog = voiceCatalog) {
     const select = elements["speech-voice"];
     const selected = speechVoiceName || select.value || "";
     clearChildren(select);
@@ -258,20 +302,34 @@
     standard.textContent = "Standard";
     select.append(standard);
     const seen = new Set();
-    for (const voice of sherpaSpeechVoices(voices)) {
+    let resolvedSelected = selected;
+    const available = new Map(sherpaSpeechVoices(voices, catalog).map((voice) => [voice.id, voice]));
+    const appendVoice = (voice, parent = select) => {
+      if (!voice || seen.has(voice.id)) return;
       const name = String(voice?.name || voice?.id || "").trim();
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
+      const id = String(voice?.id || name).trim();
+      if (!id) return;
+      seen.add(id);
       const option = document.createElement("option");
-      option.value = name;
-      option.textContent = voice?.culture ? `${name} (${voice.culture})` : name;
-      select.append(option);
+      option.value = id;
+      option.dataset.installed = String(Boolean(voice.installed));
+      option.textContent = `${name}${voice?.culture ? ` (${voice.culture})` : ""}${voice.installed ? "" : " · installieren"}`;
+      parent.append(option);
+      if (selected === name) resolvedSelected = id;
+    };
+    for (const id of BASE_VOICE_ORDER) appendVoice(available.get(id));
+    for (const [label, ids] of VOICE_GROUPS) {
+      const group = document.createElement("optgroup");
+      group.label = label;
+      for (const id of ids) appendVoice(available.get(id), group);
+      if (group.children.length) select.append(group);
     }
-    if (selected && !seen.has(selected)) {
+    for (const voice of available.values()) appendVoice(voice);
+    if ((voices.length || catalog.length) && resolvedSelected && !seen.has(resolvedSelected)) {
       speechVoiceName = "";
       send("TLC_SET_SPEECH_PREFERENCE", { voiceName: "" }).catch(() => {});
     }
-    select.value = seen.has(selected) ? selected : "";
+    select.value = seen.has(resolvedSelected) ? resolvedSelected : "";
   }
 
   async function loadSpeechVoices() {
@@ -279,14 +337,56 @@
       const response = await fetch(`${serviceUrl}/v1/voices`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
-      setSpeechVoiceOptions(payload.voices || []);
+      voiceCatalog = payload.catalog || [];
+      setSpeechVoiceOptions(payload.voices || [], voiceCatalog);
     } catch (_) {
+      voiceCatalog = [];
       setSpeechVoiceOptions([]);
     }
   }
 
+  async function installSpeechVoice(voiceId) {
+    const entry = voiceCatalog.find((voice) => String(voice.id || "") === voiceId);
+    if (!entry || entry.installed) return false;
+    elements["speech-voice"].disabled = true;
+    elements["service-status"].textContent = `${entry.name || voiceId} wird installiert …`;
+    try {
+      const response = await fetch(`${serviceUrl}/v1/voices/install`, {
+        method: "POST",
+        headers: { ...serviceHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ voiceId })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      elements["service-status"].textContent = `${entry.name || voiceId} wird im Hintergrund installiert.`;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await loadSpeechVoices();
+        const current = voiceCatalog.find((voice) => String(voice.id || "") === voiceId);
+        if (current?.installed) {
+          elements["service-status"].textContent = `Sprachdienst aktiv! ${current.name || voiceId} ist installiert.`;
+          return true;
+        }
+      }
+      elements["service-status"].textContent = "Installation läuft weiter; die Stimme erscheint nach Abschluss oder beim nächsten Öffnen.";
+      return true;
+    } catch (error) {
+      elements["service-status"].textContent = `Stimme konnte nicht installiert werden: ${String(error?.message || error)}`;
+      return false;
+    } finally {
+      elements["speech-voice"].disabled = false;
+    }
+  }
+
   async function installSherpaVoices(manual = false) {
-    if (!pairingCode || sherpaInstallStarted) return false;
+    if (!pairingCode) {
+      elements["service-status"].textContent = "Sherpa benötigt zuerst den automatisch gekoppelten Sprachdienst.";
+      elements["service-setup"].hidden = false;
+      return false;
+    }
+    if (sherpaInstallStarted) {
+      elements["service-status"].textContent = "Sherpa-ONNX wird bereits installiert …";
+      return false;
+    }
     sherpaInstallStarted = true;
     elements["sherpa-action"].disabled = true;
     elements["service-status"].textContent = manual ? "Sherpa-ONNX wird installiert …" : "Sherpa-ONNX fehlt; Installation läuft im Hintergrund …";
@@ -399,6 +499,33 @@
     }
 
     if (allowSpeech) processSpeechItems(items);
+  }
+
+  function renderChatHistory(items = currentState?.chatMessages || []) {
+    clearChildren(elements["chat-history-list"]);
+    const messages = (items || []).slice(-500).reverse();
+    elements["chat-history-limit"].textContent = `${messages.length} von maximal 500 gespeicherten Chatzeilen · neueste zuerst.`;
+    if (!messages.length) {
+      elements["chat-history-list"].textContent = "Noch keine Chatnachrichten erkannt.";
+      return;
+    }
+    for (const item of messages) {
+      const row = document.createElement("article");
+      row.className = "chat-history-row";
+      const meta = document.createElement("span");
+      meta.className = "chat-history-meta";
+      const time = item.receivedAtUtc ? new Date(item.receivedAtUtc).toLocaleTimeString() : "–";
+      meta.textContent = `${time} · ${item.author || "Chat"}`;
+      const content = document.createElement("span");
+      content.textContent = item.content || "";
+      row.append(meta, content);
+      elements["chat-history-list"].append(row);
+    }
+  }
+
+  function setIntegrationFieldsHidden(hidden) {
+    elements["audd-token-setting"].hidden = hidden;
+    elements["pairing-code-setting"].hidden = hidden;
   }
 
   function sortedParticipants(state = currentState) {
@@ -710,10 +837,27 @@
 
   function render(state) {
     currentState = state;
+    const tabSpeechEnabled = Boolean(state.speech?.enabled);
+    if (tabSpeechEnabled) {
+      speechEnabled = true;
+      speechTabId = activeTabId;
+      elements["toggle-speech"].textContent = "Vorlesen aus";
+      elements["toggle-speech"].setAttribute("aria-pressed", "true");
+      setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
+      elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist aktiv; warte auf neue Chatzeilen.";
+    } else {
+      speechEnabled = false;
+      speechTabId = null;
+      elements["toggle-speech"].textContent = "Vorlesen an";
+      elements["toggle-speech"].setAttribute("aria-pressed", "false");
+      setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
+      elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist ausgeschaltet.";
+    }
     elements["page-title"].textContent = state.page?.title || state.page?.url || "TikTok LIVE";
-    renderChat(state.chatMessages || [], !speechEnabled || speechTabId === activeTabId);
+    renderChat(state.chatMessages || [], false);
     renderTopChatters(state);
     if (!elements["audience-modal"].hidden && !audienceSelectActive()) renderAudience(state);
+    if (!elements["chat-history-modal"].hidden) renderChatHistory(state.chatMessages || []);
     renderStatuses(state);
     renderLiveStats(state);
     renderPlayer(state.playerState || {});
@@ -735,12 +879,14 @@
 
   async function refresh() {
     const tab = await activeTab();
-    activeTabId = tab?.id ?? null;
-    if (previousTabId != null && previousTabId !== activeTabId && speechEnabled && !keepSpeechActive) {
-      stopSpeech("Vorlesen wurde wegen des Tabwechsels ausgeschaltet.");
+    const nextTabId = tab?.id ?? null;
+    if (activeTabId != null && activeTabId !== nextTabId && speechEnabled && !keepSpeechActive) {
+      await persistSpeechEnabled(false, activeTabId);
+      stopSpeech("Vorlesen wurde wegen des Tabwechsels ausgeschaltet.", false, activeTabId);
       speechInitialized = false;
       knownSpeechKeys.clear();
     }
+    activeTabId = nextTabId;
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
@@ -774,6 +920,8 @@
     speakNames = response.settings?.speakNames !== false;
     gameModeEnabled = Boolean(response.settings?.gameModeEnabled);
     shortenNames = Boolean(response.settings?.shortenNames);
+    autoChatRefreshEnabled = Boolean(response.settings?.autoChatRefreshEnabled);
+    autoChatRefreshMinutes = Math.max(1, Math.min(60, Math.round(Number(response.settings?.autoChatRefreshMinutes) || 5)));
     serviceUrl = DEFAULT_SERVICE_URL;
     pairingCode = response.settings?.pairingCode || "";
     auddApiToken = response.settings?.auddApiToken || "";
@@ -787,14 +935,19 @@
     elements["game-mode"].checked = gameModeEnabled;
     elements["shorten-names"].checked = shortenNames;
     elements["shorten-names"].disabled = !speakNames;
+    elements["auto-chat-refresh"].checked = autoChatRefreshEnabled;
+    elements["auto-chat-refresh-minutes"].value = String(autoChatRefreshMinutes);
+    elements["auto-chat-refresh-minutes"].disabled = !autoChatRefreshEnabled;
     elements["audd-token"].value = auddApiToken;
+    updateAuddTokenLabel(auddApiToken);
     elements["pairing-code"].value = pairingCode;
     elements["song-enabled"].checked = Boolean(response.settings?.songRecognitionEnabled);
     elements["recognize-song"].disabled = !elements["song-enabled"].checked;
     setLed(elements["song-led"], elements["song-enabled"].checked, "Songerkennung aktiviert", "Songerkennung inaktiv");
     await checkService();
     await loadSpeechVoices();
-    if (response.settings?.speechEnabled) activateSpeech("Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
+    scheduleAutoChatRefresh();
+    if (currentState?.speech?.enabled) activateSpeech(currentState.speech.status || "Vorlesen ist aktiv; neue Chatzeilen werden vorgelesen.", false);
   }
 
   async function checkService() {
@@ -803,16 +956,16 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
-      elements["service-action"].textContent = "Sprachdienst aktiv";
-      elements["service-action"].disabled = false;
+      elements["service-action"].textContent = "Sprachdienst aktiv!";
+      elements["service-action"].disabled = true;
       elements["sherpa-action"].textContent = health.sherpaConfigured ? "Sherpa aktiv!" : "Sherpa installieren";
       elements["sherpa-action"].disabled = Boolean(health.sherpaConfigured);
+      setIntegrationFieldsHidden(Boolean(health.sherpaConfigured));
       await loadSpeechVoices();
       if (!Object.prototype.hasOwnProperty.call(health, "canInstallSherpa")) {
         elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.7.1-Paket ausführen.";
         return health;
       }
-      if (!health.sherpaConfigured && health.canInstallSherpa) installSherpaVoices(false).catch(() => {});
       return health;
     } catch (_) {
       elements["service-status"].textContent = "Lokaler Dienst nicht erreichbar; Vorlesen nutzt den Browser-Fallback.";
@@ -820,6 +973,7 @@
       elements["service-action"].disabled = false;
       elements["sherpa-action"].textContent = "Sherpa installieren";
       elements["sherpa-action"].disabled = false;
+      setIntegrationFieldsHidden(false);
       return null;
     }
   }
@@ -917,6 +1071,21 @@
     }
   }
 
+  async function clearChatDisplay() {
+    knownSpeechKeys.clear();
+    speechInitialized = false;
+    await run("TLC_CLEAR_CHAT", "Chatanzeige wurde geleert.");
+  }
+
+  function scheduleAutoChatRefresh() {
+    if (autoChatRefreshTimer) clearInterval(autoChatRefreshTimer);
+    autoChatRefreshTimer = null;
+    if (!autoChatRefreshEnabled) return;
+    autoChatRefreshTimer = setInterval(() => {
+      if (activeIsTikTok) clearChatDisplay().catch((error) => { elements.notice.textContent = String(error?.message || error); });
+    }, autoChatRefreshMinutes * 60 * 1000);
+  }
+
   async function recognizeSong() {
     const button = elements["recognize-song"];
     button.disabled = true;
@@ -983,11 +1152,7 @@
   elements["open-embed-live"].addEventListener("click", () => run("TLC_OPEN_EMBED_LIVE", "Embed-LIVE wird geöffnet."));
   elements["open-normal-live"].addEventListener("click", () => run("TLC_OPEN_NORMAL_LIVE", "Normale LIVE-Seite wird geöffnet."));
   elements.clear.addEventListener("click", () => run("TLC_CLEAR"));
-  elements["refresh-chat"].addEventListener("click", async () => {
-    knownSpeechKeys.clear();
-    speechInitialized = false;
-    await run("TLC_CLEAR_CHAT", "Chatanzeige wurde geleert.");
-  });
+  elements["refresh-chat"].addEventListener("click", clearChatDisplay);
   elements["refresh-page-info"].addEventListener("click", async () => {
     const button = elements["refresh-page-info"];
     const original = button.textContent;
@@ -1032,10 +1197,24 @@
   elements["audience-modal"].addEventListener("click", (event) => {
     if (event.target === elements["audience-modal"]) elements["close-audience"].click();
   });
+  elements["chat-count"].addEventListener("click", () => {
+    renderChatHistory();
+    elements["chat-history-modal"].hidden = false;
+    elements["close-chat-history"].focus();
+  });
+  elements["close-chat-history"].addEventListener("click", () => {
+    elements["chat-history-modal"].hidden = true;
+    elements["chat-count"].focus();
+  });
+  elements["chat-history-modal"].addEventListener("click", (event) => {
+    if (event.target === elements["chat-history-modal"]) elements["close-chat-history"].click();
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements["audience-modal"].hidden) elements["close-audience"].click();
-    if (event.key === "Tab" && !elements["audience-modal"].hidden) {
-      const focusable = [...elements["audience-modal"].querySelectorAll('button,select,[href],input:not([disabled])')];
+    else if (event.key === "Escape" && !elements["chat-history-modal"].hidden) elements["close-chat-history"].click();
+    const openModal = !elements["audience-modal"].hidden ? elements["audience-modal"] : !elements["chat-history-modal"].hidden ? elements["chat-history-modal"] : null;
+    if (event.key === "Tab" && openModal) {
+      const focusable = [...openModal.querySelectorAll('button,select,[href],input:not([disabled])')];
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable.at(-1);
@@ -1091,6 +1270,7 @@
   elements["speech-voice"].addEventListener("change", async () => {
     speechVoiceName = elements["speech-voice"].value;
     await send("TLC_SET_SPEECH_PREFERENCE", { voiceName: speechVoiceName });
+    await installSpeechVoice(speechVoiceName);
   });
   elements["speak-names"].addEventListener("change", async () => {
     speakNames = elements["speak-names"].checked;
@@ -1105,18 +1285,47 @@
     shortenNames = elements["shorten-names"].checked;
     await send("TLC_SET_SPEECH_PREFERENCE", { shortenNames });
   });
+  elements["auto-chat-refresh"].addEventListener("change", async () => {
+    autoChatRefreshEnabled = elements["auto-chat-refresh"].checked;
+    elements["auto-chat-refresh-minutes"].disabled = !autoChatRefreshEnabled;
+    await send("TLC_SET_SPEECH_PREFERENCE", { autoChatRefreshEnabled });
+    scheduleAutoChatRefresh();
+  });
+  elements["auto-chat-refresh-minutes"].addEventListener("change", async () => {
+    autoChatRefreshMinutes = Math.max(1, Math.min(60, Math.round(Number(elements["auto-chat-refresh-minutes"].value) || 5)));
+    elements["auto-chat-refresh-minutes"].value = String(autoChatRefreshMinutes);
+    await send("TLC_SET_SPEECH_PREFERENCE", { autoChatRefreshMinutes });
+    scheduleAutoChatRefresh();
+  });
   const savePairingCode = async () => {
-    pairingCode = elements["pairing-code"].value.trim();
-    await send("TLC_SET_SPEECH_PREFERENCE", { pairingCode });
-    await checkService();
-    await loadSpeechVoices();
+    const candidate = elements["pairing-code"].value.trim();
+    const previous = pairingCode;
+    if (!candidate) {
+      elements["pairing-code"].value = previous;
+      elements["service-status"].textContent = "Leere Pairing-Codes werden nicht gespeichert.";
+      return;
+    }
+    try {
+      const response = await fetch(`${serviceUrl}/v1/health`, {
+        headers: { "Authorization": `Bearer ${candidate}`, "X-TLC-Client": "sidepanel-0.7.1" }
+      });
+      if (!response.ok) throw new Error(response.status === 401 ? "Pairing-Code ungültig." : `Sprachdienst HTTP ${response.status}`);
+      pairingCode = candidate;
+      await send("TLC_SET_SPEECH_PREFERENCE", { pairingCode });
+      await checkService();
+      await loadSpeechVoices();
+    } catch (error) {
+      elements["pairing-code"].value = previous;
+      elements["service-status"].textContent = `Pairing-Code wurde nicht gespeichert: ${String(error?.message || error)}`;
+    }
   };
   const saveAuddToken = async () => {
     const token = elements["audd-token"].value.trim();
-    auddApiToken = token;
-    await send("TLC_SET_SPEECH_PREFERENCE", { auddApiToken: token });
+    const previous = auddApiToken;
     if (!pairingCode) {
-      elements["service-status"].textContent = token ? "AudD-Token lokal gespeichert; Pairing-Code fehlt für den Sprachdienst." : "AudD-Token geleert.";
+      elements["audd-token"].value = previous;
+      updateAuddTokenLabel(previous);
+      elements["service-status"].textContent = "AudD-Token wurde nicht gespeichert: gültiger Pairing-Code fehlt.";
       return;
     }
     try {
@@ -1125,10 +1334,17 @@
         headers: serviceHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ auddApiToken: token })
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+      auddApiToken = token;
+      elements["audd-token"].value = token;
+      updateAuddTokenLabel(token);
+      await send("TLC_SET_SPEECH_PREFERENCE", { auddApiToken: token });
       await checkService();
     } catch (error) {
-      elements["service-status"].textContent = `AudD-Token konnte nicht gespeichert werden: ${String(error?.message || error)}`;
+      elements["audd-token"].value = previous;
+      updateAuddTokenLabel(previous);
+      elements["service-status"].textContent = `AudD-Token wurde nicht gespeichert: ${String(error?.message || error)}`;
     }
   };
   elements["pairing-code"].addEventListener("change", savePairingCode);
@@ -1141,16 +1357,62 @@
     }
     elements["service-status"].textContent = "Lokaler Sprachdienst wird im Hintergrund gestartet …";
     try {
-      await send("TLC_START_LOCAL_SERVICE");
+      const nonce = serviceNonce();
+      const startRequest = send("TLC_START_LOCAL_SERVICE", { nonce });
+      const serviceTabRequest = openServiceProtocol("start", nonce);
+      const [startResult, serviceTab] = await Promise.all([startRequest, serviceTabRequest]);
+      if (startResult.pairingCode) {
+        pairingCode = startResult.pairingCode;
+        elements["pairing-code"].value = pairingCode;
+        elements["service-setup"].hidden = true;
+        if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
+      }
       await new Promise((resolve) => setTimeout(resolve, 1200));
       const health = await checkService();
       if (health?.canInstallSherpa && !health.sherpaConfigured) await installSherpaVoices(false);
-      if (!health) elements["service-status"].textContent = "Lokaler Starter nicht erreichbar. Bitte einmal setup.ps1 ausführen oder im Installationsverzeichnis npm start starten.";
+      if (!health) {
+        elements["service-setup"].hidden = false;
+        elements["service-status"].textContent = "Einrichtung oder erneute Kopplung erforderlich.";
+      }
     } catch (error) {
       elements["service-status"].textContent = String(error?.message || error);
     }
   });
-  elements["sherpa-action"].addEventListener("click", () => installSherpaVoices(true));
+  elements["copy-service-setup"].addEventListener("click", async () => {
+    const button = elements["copy-service-setup"];
+    button.disabled = true;
+    button.textContent = "Installation läuft …";
+    elements["service-status"].textContent = "CMD richtet den vorhandenen oder neuen Sprachdienst ein …";
+    try {
+      const nonce = serviceNonce();
+      const installRequest = send("TLC_INSTALL_LOCAL_SERVICE", { nonce });
+      const serviceTabRequest = openServiceProtocol("install", nonce);
+      const [, serviceTab] = await Promise.all([installRequest, serviceTabRequest]);
+      let result = null;
+      for (let attempt = 0; attempt < 180; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        result = await send("TLC_POLL_LOCAL_SERVICE_INSTALL");
+        if (result.pairingCode || !result.pending) break;
+      }
+      if (!result?.pairingCode) throw new Error("Einrichtung oder erneute Kopplung wurde nicht abgeschlossen.");
+      pairingCode = result.pairingCode;
+      elements["pairing-code"].value = pairingCode;
+      await send("TLC_SET_SPEECH_PREFERENCE", { pairingCode });
+      const health = await checkService();
+      if (!health) throw new Error("Der Sprachdienst wurde eingerichtet, ist aber noch nicht erreichbar.");
+      elements["service-setup"].hidden = true;
+      if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
+    } catch (error) {
+      elements["service-status"].textContent = String(error?.message || error);
+      button.disabled = false;
+      button.textContent = "Installation abschließen!";
+    }
+  });
+  elements["sherpa-action"].addEventListener("click", () => {
+    installSherpaVoices(true).catch((error) => {
+      elements["service-status"].textContent = `Sherpa-Installation konnte nicht gestartet werden: ${String(error?.message || error)}`;
+    });
+  });
   elements["song-enabled"].addEventListener("change", async () => {
     const enabled = elements["song-enabled"].checked;
     elements["recognize-song"].disabled = !enabled;
@@ -1223,11 +1485,9 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type !== "TLC_STATE_UPDATED") return;
     if (message.tabId === activeTabId) render(message.state);
-    else if (speechEnabled && keepSpeechActive && message.tabId === speechTabId) processSpeechItems(message.state?.chatMessages || []);
   });
   globalThis.speechSynthesis?.addEventListener?.("voiceschanged", () => loadSpeechVoices().catch(() => {}));
   chrome.tabs.onActivated.addListener(() => refresh().catch(() => {}));
-  window.addEventListener("beforeunload", () => globalThis.speechSynthesis?.cancel());
   refresh().then(loadSettings).then(refreshPlayer).catch((error) => { elements.notice.textContent = String(error?.message || error); });
   setInterval(refreshPlayer, 1500);
   setInterval(() => refresh().catch(() => {}), 5000);
