@@ -728,14 +728,16 @@ Alle sechs veröffentlichten Werte wurden am 02.08.2026 in zwei unabhängigen Pa
 | Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests und 7/7 öffentliche Vercel-Dateien bytegleich bestätigt |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
-| Vercel Release-Deployment | `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386`, Commit `f44f946`, Ziel `production`, `READY`; Android- und iOS-Previews ebenfalls `READY` |
+| Vercel Produkt-Deployment | `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386`, Commit `f44f946`, Ziel `production`, `READY` |
+| Vercel Dokumentation | Production `dpl_76mjqgPmG6DF6NSADmvKqURfFyNN` (`8039ae4`) sowie Android- und iOS-Dokumentationspreviews `READY` |
+| Native iOS-Abnahme | OPE-83 / GitHub Actions Run `30717416888`, Commit `2323a6f`: vollständiger Simulator-Build und Tests `success`; dieser Nachweis ist vom Vercel-Preview getrennt |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |
 | GHCR-Pakete Sichtbarkeit und Vererbung | 3/3 `public`, Quellrepository und neue OCI-Index-Digests verifiziert |
 | Reproduzierbarkeit des lokalen Folgestandes | zwei unabhängige Paketläufe bytegleich |
 | Lokale Testinstallation | Kern-Dateien byteidentisch zum Paket; Dienst meldet 0.7.1, Sherpa mit 13 installierten Stimmen, AudD konfiguriert |
-| Linear-Projektstand (live, 02.08.2026) | 41 `Done`, 1 `In Review`, 2 `In Progress`, 2 `Todo`, 3 `Backlog`, 2 `Canceled` |
+| Linear-Projektstand (live nach Anlage von OPE-94 bis OPE-96, 02.08.2026) | 42 `Done`, 1 `In Review`, 2 `In Progress`, 5 `Todo`, 3 `Backlog`, 1 `Canceled` |
 
 ### 9.4 Nicht durchgeführt
 
@@ -836,7 +838,7 @@ Die folgenden Änderungen sind mit Browser-Commit `f44f946` umgesetzt, getestet,
 | # | Punkt | Bezug |
 |---|---|---|
 | 1 | Reale Zwei-Tab-, Embed- und Vollbild-TTS-Abnahme im Browser durchführen | `0PE-85`, `0PE-89`, `0PE-90` |
-| 2 | Android-Gesamtsuite normalisieren; ein bestehender Strukturtest erwartet Player-Fokus-Selektoren, die der aktuelle Android-Bridge-Stand nicht enthält | Test |
+| 2 | Android-Gesamtsuite normalisieren; 30 Tests, ein bekannter Strukturtestfehler bei unveränderten nativen Quellen | `0PE-94` |
 | 3 | Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar | `0PE-93` am 02.08.2026 angelegt; CSS-Ursache (`display: grid` überschreibt `hidden`) mit `f44f946` veröffentlicht |
 | 4 | `0PE-41` und `0PE-43` aus dem Backlog umsetzen | Low/P3 |
 | 5 | Mobile Backlog-Issues `0PE-58`, `0PE-70`, `0PE-80` bearbeiten | mobile |
@@ -845,6 +847,8 @@ Die folgenden Änderungen sind mit Browser-Commit `f44f946` umgesetzt, getestet,
 | 8 | Meilenstein-Prozentwerte in Linear neu erheben; Stand ist der 18.07.2026 | Projekt |
 | 9 | Linear-Release-Sync aktivieren, sobald `LINEAR_ACCESS_KEY` verfügbar ist | Business-Plan erforderlich |
 | 10 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen; danach Shazam-Produktvariante statt Mock-APK bauen | Nutzer |
+| 11 | Alle 16 sichtbaren `workflow:iOS`-Läufe prüfen und einen vollständigen nativen iOS-Actions-Lauf für den finalen Stand ausführen | `0PE-95`, `0PE-83` |
+| 12 | Browser, Android und iOS samt Software-, Versions-, Funktions-, Komponenten-, Modul- und Installationsständen für 0.8.0 konsolidieren | `0PE-96`, Ziel 08.08.2026 |
 
 ---
 
