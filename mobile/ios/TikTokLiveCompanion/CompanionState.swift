@@ -14,6 +14,7 @@ import Foundation
     @Published var chatLines: [String] = []
     @Published var liveValues: [String: String] = [:]
     @Published var mediaLinks: [MobileMediaLink] = []
+    @Published var vlcReplacementURL: URL?
     @Published var mutedAuthors: Set<String>
     @Published var gameModeEnabled = true
     @Published var shortenNames = true
@@ -81,7 +82,7 @@ import Foundation
         case "live-stats":
             for (key, value) in envelope.payload { if let text = value.stringValue { liveValues[key] = text } else if let number = value.numberValue { liveValues[key] = String(Int(number)) } }
         case "media-links":
-            mediaLinks = envelope.payload["links"]?.arrayValue?.compactMap { item in
+            let nextLinks = envelope.payload["links"]?.arrayValue?.compactMap { item in
                 guard let object = item.objectValue,
                       let rawURL = object["url"]?.stringValue,
                       let url = URL(string: rawURL),
@@ -89,6 +90,8 @@ import Foundation
                       let type = object["type"]?.stringValue else { return nil }
                 return MobileMediaLink(url: url, type: type, label: object["label"]?.stringValue ?? type)
             } ?? []
+            mediaLinks = nextLinks
+            if vlcReplacementURL != nil { vlcReplacementURL = bestVlcMediaURL(in: nextLinks) }
         case "quick-recover": liveValues["Auto-Reconnect"] = "aktiv"
         case "limiter":
             if let strength = envelope.payload["strength"]?.numberValue { liveValues["Pegelschutz"] = "\(Int(strength))%" }
@@ -133,5 +136,18 @@ import Foundation
         mutedAuthors.insert(normalized)
         chatLines.removeAll { $0.hasPrefix("\(normalized):") }
         defaults.set(Array(mutedAuthors).sorted(), forKey: Self.mutedAuthorsKey)
+    }
+
+    func toggleVlcReplacement() {
+        if vlcReplacementURL != nil { vlcReplacementURL = nil; return }
+        guard let url = bestVlcMediaURL(in: mediaLinks) else { lastError = "Keine Media-URL verfügbar"; return }
+        vlcReplacementURL = url
+    }
+
+    func bestVlcMediaURL() -> URL? { bestVlcMediaURL(in: mediaLinks) }
+
+    private func bestVlcMediaURL(in links: [MobileMediaLink]) -> URL? {
+        links.first(where: { $0.url.absoluteString.localizedCaseInsensitiveContains(".m3u8") })?.url
+            ?? links.first(where: { !$0.url.absoluteString.localizedCaseInsensitiveContains("only_audio=1") })?.url
     }
 }

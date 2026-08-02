@@ -63,4 +63,18 @@ final class MobileUIStructureTests: XCTestCase {
             XCTAssertTrue(normalizedBridge.contains("node.shadowRoot"), "\(bridgeURL.path) missing shadow root traversal")
         }
     }
+
+    func testMobileVlcButtonsAreStackedAndUseOfficialIntegrations() throws {
+        let testURL = URL(fileURLWithPath: #filePath)
+        let mobileRoot = testURL.deletingLastPathComponent().deletingLastPathComponent()
+        let content = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/ContentView.swift"))
+        let surface = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/VlcVideoSurface.swift"))
+        let podfile = try String(contentsOf: mobileRoot.appendingPathComponent("Podfile"))
+        XCTAssertLessThan(content.range(of: "Button(\"VLC Ersatz\"")!.lowerBound, content.range(of: "Button(\"VLC Player\"")!.lowerBound)
+        XCTAssertTrue(content.contains("vlc-x-callback://x-callback-url/stream"))
+        XCTAssertTrue(content.contains("itms-apps://itunes.apple.com/app/id650377962"))
+        XCTAssertTrue(surface.contains("import MobileVLCKit"))
+        XCTAssertTrue(surface.contains("VLCMediaPlayer"))
+        XCTAssertTrue(podfile.contains("pod 'MobileVLCKit', '3.7.3'"))
+    }
 }

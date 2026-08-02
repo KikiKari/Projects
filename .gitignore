@@ -12,3 +12,4 @@ mobile/android/**/build/
 mobile/android/app/libs/*.aar
 mobile/ios/**/DerivedData/
 mobile/ios/**/xcuserdata/
+mobile/ios/Pods/

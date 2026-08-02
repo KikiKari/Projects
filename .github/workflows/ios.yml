@@ -41,6 +41,12 @@ jobs:
       - name: Validate mobile project contracts
         run: python3 plugin-source/scripts/test_mobile_projects.py
 
+      - name: Install pinned MobileVLCKit
+        run: |
+          gem install cocoapods --no-document
+          cd mobile/ios
+          pod install --repo-update
+
       - name: Resolve available iOS simulator
         id: simulator
         run: |
@@ -56,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           xcodebuild test \
-            -project mobile/ios/TikTokLiveCompanion.xcodeproj \
+            -workspace mobile/ios/TikTokLiveCompanion.xcworkspace \
             -scheme TikTokLiveCompanion \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
