@@ -82,7 +82,7 @@ import Foundation
         case "live-stats":
             for (key, value) in envelope.payload { if let text = value.stringValue { liveValues[key] = text } else if let number = value.numberValue { liveValues[key] = String(Int(number)) } }
         case "media-links":
-            let nextLinks = envelope.payload["links"]?.arrayValue?.compactMap { item in
+            let nextLinks: [MobileMediaLink] = envelope.payload["links"]?.arrayValue?.compactMap { item -> MobileMediaLink? in
                 guard let object = item.objectValue,
                       let rawURL = object["url"]?.stringValue,
                       let url = URL(string: rawURL),
