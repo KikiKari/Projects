@@ -14,7 +14,7 @@ Der Browserstand `3476d17c099227f94459d4ace67b5fa338a8e98d` platziert **VLC Ersa
 
 Der gepaarte lokale Dienst ergänzt authentifizierte, idempotente VLC-Status- und Installationsoperationen. Unter Windows wird ausschließlich der aktuelle stabile VideoLAN-x64-Installer von `get.videolan.org` verwendet; SHA-256 und VideoLAN-Authenticode-Signatur werden vor der normalen Windows-Systembestätigung geprüft. Der Installationspfad folgt den offiziellen PowerShell-7.6- und PSScriptAnalyzer-Referenzen.
 
-Android verwendet `org.videolan.android:libvlc-all:3.7.5`, iOS `MobileVLCKit 3.7.3`. Im mobilen Player-Tab stehen ohne zusätzliche Beschreibung **VLC Ersatz** und darunter **VLC Player**. Der erste Button schaltet zwischen WebView und eingebettetem VLC um; der zweite übergibt die beste erkannte Media-URL an die externe VLC-App und öffnet bei fehlender App ausschließlich den offiziellen Store-Eintrag. Der Zustand wird beim Streamwechsel zurückgesetzt. iOS ist durch den vollständigen Actions-Lauf `30748478805` bestätigt. Android-Lauf `30748539909` erzeugte die APK; der abschließende Fehler ist ausschließlich das getrennt geführte OPE-94-Strukturgate. Lauf `30749884929` übernahm genau dieses APK-Artefakt ohne Neubau in das bestehende Prerelease.
+Android verwendet `org.videolan.android:libvlc-all:3.7.5`, iOS `MobileVLCKit 3.7.3`. Im mobilen Player-Tab stehen ohne zusätzliche Beschreibung **VLC Ersatz** und darunter **VLC Player**. Der erste Button schaltet zwischen WebView und eingebettetem VLC um; der zweite übergibt die beste erkannte Media-URL an die externe VLC-App und öffnet bei fehlender App ausschließlich den offiziellen Store-Eintrag. Der Zustand wird beim Streamwechsel zurückgesetzt. iOS ist durch den vollständigen Actions-Lauf `30748478805` bestätigt. OPE-94 ist mit Android-Lauf `30752210199` abgeschlossen: 31/31 Tests, Shared-Mobile-Verträge und `assembleMockDebug` sind erfolgreich; das APK-Artefakt wurde in dasselbe Prerelease übernommen.
 
 ### Fortschreibung 01.08.2026 · in Bearbeitung
 
@@ -49,10 +49,10 @@ Mit 0.7.1 stehen **alle drei Plattformen auf demselben Versions- und Artefaktsta
 | Plattform | Technik | Songerkennung | Branch | Branchspitze |
 |---|---|---|---|---|
 | Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | Implementierung `35a0651` |
-| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `80d3cb1` |
+| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `8cd5c3d` |
 | iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `2323a6f` |
 
-Android `80d3cb1`, iOS `2323a6f` und der Browser-Dokumentationsstand `ad1fef6` sind gepusht und gegen das Remote bestätigt. Die fachliche Browser-Implementierung ist separat als `35a0651` nachvollziehbar.
+Android `8cd5c3d`, iOS `2323a6f` und der Browser-Dokumentationsstand `ad1fef6` sind gepusht und gegen das Remote bestätigt. Die fachliche Browser-Implementierung ist separat als `35a0651` nachvollziehbar. OPE-94 stellt dabei die bereits in OPE-65/OPE-67 bestätigte Android-Player-Bridge wieder her, synchronisiert die Shared-Mobile-Kopie und korrigiert den Workflow-Pfad für diese gemeinsame Quelle.
 
 ### Was 0.7.1 gegenüber 0.7.0 ändert
 
@@ -538,7 +538,7 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
 
-Bestätigte OCI-Digests am 02.08.2026: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:89d812d6197d9832b104210ac41f292c6c493c55e567dcd9a8b3fd321a6c370b`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
+Bestätigte OCI-Digests am 02.08.2026: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:1a34ab9849769aa8c3bc86a29197ab5a3aa0bffeb39b58635303393c50981df1`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
 
 ---
 
@@ -616,8 +616,8 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 | `tiktok-live-companion-plugin-0.7.1.zip` | `6f8b0334240d1e3c0b9ff2ba012d87c63102b54c5b2e4dc992294cbffa3f9894` |
 | `tiktok-live-companion-service-0.7.1.zip` | `53370c64966ba6f323f276e5b9c305968533e0cc513c11b8e78b4dbbe6947ce2` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `8aecd3fb450f9e0c00d67fe10dd9de41bae82a099d689709627012204a79c1cf` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `d3fcc9f063aecf29f722435ac9247eb497fdf73cd54580a6537b29176deddfb6` |
-| `tiktok-live-companion-android-0.7.1.apk` | `30ed3b3b367f1af643246bc84fb3f848ab4fa928aadd45786591bab93c4e3af0` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `b9547af7c086f72f76999a4ddcb34f04f50dedc24113d3a9892218102ec52583` |
+| `tiktok-live-companion-android-0.7.1.apk` | `dcbda38884534a899cc71c0a5fdfbba302153f3b478065cbbc75f6f3d275c65d` |
 
 Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` sowie `site/public/downloads/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Browser-Produktionsdeployment `dpl_9xkFZBKZexpPYyM4oqG1bdPcSsrx` für Release-/Dokumentationscommit `4fda3fd` ist `READY`; die fünf Website-ZIPs und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` und `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind ebenfalls `READY`.
 
@@ -655,7 +655,7 @@ Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegle
 | Token-Dienst (`shazam-token.test.mjs`) | bestanden |
 | Website-Tests und Produktionsbuild | bestanden |
 | iOS-Workflow auf GitHub Actions | Run `30748478805`, Commit `f812d1c`, vollständiger Simulator-Build und Tests `success` |
-| Android Mock-Build (`assembleMockDebug`) | Run `30748539909`, APK erzeugt, 119.644.545 Bytes, SHA-256 `30ed3b3b…`; separates OPE-94-Strukturgate bleibt offen |
+| Android-Gesamtlauf (`testMockDebugUnitTest assembleMockDebug`) | Run `30752210199`, 31/31 Tests bestanden, APK 119.648.191 Bytes, SHA-256 `dcbda388…`; OPE-94 abgeschlossen |
 | Pegelschutz mit `OfflineAudioContext` | Dauerpegel unverändert, Spitze `1,0` → `0,17188` |
 | Entfernte Qualitätsbox und sechs Texte | vollständig entfernt, keine leeren Container |
 | Persistente 0–100-Regler | bestätigt |
@@ -677,7 +677,7 @@ Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegle
 | Echte Shazam-Katalogerkennung | benötigt Apple-Capability, Media-ID, privaten Schlüssel und Android-AAR |
 | Reale Browser-Abnahme für Zwei-Tab, Embed und Vollbild/TTS | lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet; keine Umgehung vorgenommen |
 | Echter AudD-Aufruf am realen Stream | kein Token im Prüflauf hinterlegt |
-| Android-Gesamtsuite | ein bereits bestehender, fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren; gezielte OPE-78/OPE-79-Tests und `assembleMockDebug` sind grün |
+| Android-Größenoptimierung | verlustfreie native Komprimierungsvariante geprüft und verworfen, da das APK 3.793 Bytes größer wurde; R8/Resource-Shrinking ohne vollständige Geräteabdeckung nicht übernommen |
 | Linear-Release-Sync produktiv | Linear Releases plan-gated, kein `LINEAR_ACCESS_KEY` |
 | Öffentliche Bestätigung der Linear-/Notion-Seiten | ohne Login nur App-Shell, Inhalt nicht öffentlich lesbar |
 

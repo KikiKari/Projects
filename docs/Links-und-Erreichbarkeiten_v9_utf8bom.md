@@ -26,7 +26,7 @@ Die Umsetzung umfasst `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`
 | Branch | Adresse | Branchspitze | Status |
 |---|---|---|---|
 | `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | Implementierung `3476d17` | ✅ Push und Vercel Production bestätigt |
-| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | Funktion `b27f39f`, Release-Promotion `8d61701` | ✅ Push, APK und Prerelease bestätigt; OPE-94 separat offen |
+| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | OPE-94 `8cd5c3d` | ✅ Push, 31/31 Tests, APK, Prerelease und Taildrop bestätigt |
 | `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `f812d1c` | ✅ Push und Actions bestätigt |
 
 Das Repository `KikiKari/Projects` ist laut GitHub-API `private=False`, `visibility=public`. Alle drei Branches sind öffentlich sichtbar.
@@ -102,7 +102,7 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 | Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 | iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 
-OCI-Digests: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:89d812d6197d9832b104210ac41f292c6c493c55e567dcd9a8b3fd321a6c370b`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
+OCI-Digests: Browser `sha256:9cff8e9f38d55dfd2d840d7ba180f20427377a078bc2b39d4044451399dc259f`, Android `sha256:1a34ab9849769aa8c3bc86a29197ab5a3aa0bffeb39b58635303393c50981df1`, iOS `sha256:87c11c5221247d60e36b0e30e9cd2479a99c20bbbe9031734af7c50400955ab6`.
 
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 
@@ -433,8 +433,8 @@ Basis: `.publish-repo/`
 | `tiktok-live-companion-plugin-0.7.1.zip` | `6f8b0334240d1e3c0b9ff2ba012d87c63102b54c5b2e4dc992294cbffa3f9894` |
 | `tiktok-live-companion-service-0.7.1.zip` | `53370c64966ba6f323f276e5b9c305968533e0cc513c11b8e78b4dbbe6947ce2` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `8aecd3fb450f9e0c00d67fe10dd9de41bae82a099d689709627012204a79c1cf` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `d3fcc9f063aecf29f722435ac9247eb497fdf73cd54580a6537b29176deddfb6` |
-| `tiktok-live-companion-android-0.7.1.apk` | `30ed3b3b367f1af643246bc84fb3f848ab4fa928aadd45786591bab93c4e3af0` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `b9547af7c086f72f76999a4ddcb34f04f50dedc24113d3a9892218102ec52583` |
+| `tiktok-live-companion-android-0.7.1.apk` | `dcbda38884534a899cc71c0a5fdfbba302153f3b478065cbbc75f6f3d275c65d` |
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
@@ -640,7 +640,7 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | 4 | Mobile Textentfernungen unter Player und Mehr (0PE-78, 0PE-79) | Entwicklung | ✅ Android `80d3cb1` gepusht; iOS-Abwesenheit in `2323a6f` und Actions bestätigt |
 | 5 | 0PE-41 und 0PE-43 umsetzen | Entwicklung | ⚠️ `Backlog` |
 | 6 | Formales Security-Seal für 0.7.1 | Security | ✅ abgeschlossen; 0 Critical, 0 High, 0 Medium, 2 Low/P3, beide behoben |
-| 7 | Android-Gesamtsuite normalisieren | Entwicklung | ⚠️ OPE-Tests und APK grün; ein bestehender fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren |
+| 7 | Android-Gesamtsuite normalisieren | Entwicklung | ✅ OPE-94: Run `30752210199`, 31/31 Tests und APK erfolgreich; Commit `8cd5c3d` |
 | 8 | iOS-Build und XCTest lokal auf macOS mit Xcode | Nutzer | ⚠️ Plattform fehlt, CI deckt Simulator ab |
 | 9 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen | Nutzer | ⚠️ offen |
 | 10 | Shazam-Produktvariante bauen statt Mock-APK | Entwicklung | ⚠️ hängt an Punkt 9 |
