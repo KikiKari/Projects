@@ -2,6 +2,7 @@ package app.tiktoklivecompanion
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -90,7 +92,11 @@ class MainActivity : ComponentActivity() {
     Scaffold(topBar = { if (!state.videoExpanded) TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.GraphicEq, null, tint = Color.White, modifier = Modifier.background(Accent, RoundedCornerShape(8.dp)).padding(7.dp)); Spacer(Modifier.width(10.dp)); Text("TikTok LIVE Companion", fontWeight = FontWeight.Bold) } }, actions = { Icon(Icons.Default.Circle, null, tint = Accent, modifier = Modifier.size(9.dp)); Text(" LIVE", fontSize = 12.sp); Spacer(Modifier.width(14.dp)) }) }) { insets ->
         Column(Modifier.padding(insets).fillMaxSize().then(if (compactLandscape && !state.videoExpanded) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
             if (!state.videoExpanded) StreamNameField(state, model)
-            CompanionWebView(model, if (state.videoExpanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(videoHeight), onTap = model::expandVideo)
+            val playerModifier = if (state.videoExpanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(videoHeight)
+            Box(playerModifier) {
+                CompanionWebView(model, Modifier.fillMaxSize().alpha(if (state.vlcReplacementUrl == null) 1f else 0f), onTap = model::expandVideo)
+                state.vlcReplacementUrl?.let { VlcVideoSurface(it, Modifier.fillMaxSize()) }
+            }
             if (!state.videoExpanded) {
                 PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { CompanionTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { model.selectTab(tab) }, text = { Text(tab.label) }) } }
                 val tabModifier = if (compactLandscape) Modifier.fillMaxWidth().heightIn(min = 96.dp).padding(16.dp) else Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)
@@ -179,6 +185,18 @@ class MainActivity : ComponentActivity() {
         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         clipboard.setPrimaryClip(android.content.ClipData.newPlainText(label, value))
     }
+    fun openExternalVlc() {
+        val url = model.bestVlcMediaUrl() ?: return model.reportError("Keine Media-URL verfügbar")
+        val vlcIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage("org.videolan.vlc")
+        if (vlcIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(vlcIntent)
+        } else {
+            val store = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=org.videolan.vlc"))
+            runCatching { context.startActivity(store) }.getOrElse {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=org.videolan.vlc")))
+            }
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         listOf("play" to "Play", "pause" to "Pause", "mute" to "Stumm").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f)) { Text(label) } } } }
@@ -188,6 +206,8 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { Text("Vollbild") }
             OutlinedButton(onClick = { model.sendCommand?.invoke("reload-player", emptyMap()) }, modifier = Modifier.weight(1f)) { Text("Neu laden") }
         }
+        OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Ersatz") }
+        OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Digitalen Pegelschutz aktivieren", Modifier.weight(1f)); Switch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled) }
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Grenzwert"); Spacer(Modifier.weight(1f)); Text("${state.limiterThreshold} dBFS", fontWeight = FontWeight.Bold) }

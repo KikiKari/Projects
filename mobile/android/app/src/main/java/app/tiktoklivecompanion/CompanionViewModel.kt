@@ -43,6 +43,7 @@ data class CompanionUiState(
     val playerMuted: Boolean? = null,
     val audibleStartBlocked: Boolean = false,
     val mediaUrls: List<StreamMediaUrl> = emptyList(),
+    val vlcReplacementUrl: String? = null,
     val debugEnabled: Boolean = false,
     val debugEvents: List<String> = emptyList(),
     val streamName: String = "",
@@ -107,6 +108,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         mutable.update { it.copy(videoExpanded = expanded) }
         sendCommand?.invoke("set-player-expanded", mapOf("expanded" to expanded))
     }
+    fun toggleVlcReplacement() {
+        val next = if (mutable.value.vlcReplacementUrl != null) null else bestMediaUrl(mutable.value.mediaUrls)?.url
+        if (next == null && mutable.value.vlcReplacementUrl == null) { reportError("Keine Media-URL verfügbar"); return }
+        mutable.update { it.copy(vlcReplacementUrl = next, videoExpanded = false) }
+    }
+    fun bestVlcMediaUrl(): String? = bestMediaUrl(mutable.value.mediaUrls)?.url
     fun expandVideo() {
         if (mutable.value.videoExpanded) return
         mutable.update { it.copy(videoExpanded = true) }
@@ -137,7 +144,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun openStream() {
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
-        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList()) }
+        mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList(), vlcReplacementUrl = null) }
         backgroundPlaybackChanged?.invoke(true)
         currentWebUrl = url
         loadUrl?.invoke(url)
@@ -309,7 +316,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val kind = (envelope.payload["kind"] as? String)?.take(24) ?: "media"
                 mutable.update { current ->
                     val next = (current.mediaUrls.filterNot { it.url == safe } + StreamMediaUrl(safe, kind)).takeLast(12)
-                    current.copy(mediaUrls = next)
+                    current.copy(mediaUrls = next, vlcReplacementUrl = if (current.vlcReplacementUrl != null) bestMediaUrl(next)?.url else null)
                 }
             }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
@@ -326,6 +333,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val media = "${uri.path.orEmpty()}?${uri.query.orEmpty()}".lowercase()
         uri.scheme == "https" && allowed && (media.contains(".flv") || media.contains(".m3u8") || media.contains("only_audio=1"))
     } catch (_: Exception) { false }
+
+    private fun bestMediaUrl(items: List<StreamMediaUrl>): StreamMediaUrl? =
+        items.firstOrNull { it.url.contains(".m3u8", ignoreCase = true) }
+            ?: items.firstOrNull { !it.url.contains("only_audio=1", ignoreCase = true) }
 
     private fun strengthToThreshold(strength: Int): Int = (-4 - (strength.coerceIn(0, 100) * 26 / 100)).coerceIn(-30, -1)
     private fun thresholdToStrength(threshold: Int): Int = (((-threshold.coerceIn(-30, -1) - 4) * 100) / 26).coerceIn(0, 100)

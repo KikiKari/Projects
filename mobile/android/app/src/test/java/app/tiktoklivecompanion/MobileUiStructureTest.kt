@@ -41,4 +41,17 @@ class MobileUiStructureTest {
         assertTrue(source.contains("optionale cookies ablehnen"))
         assertTrue(source.contains("node.shadowRoot"))
     }
+
+    @Test fun mobileVlcButtonsAreStackedAndUseOfficialIntegrations() {
+        val sourceRoot = listOf(File("src/main/java/app/tiktoklivecompanion"), File("app/src/main/java/app/tiktoklivecompanion")).first { it.isDirectory }
+        val main = File(sourceRoot, "MainActivity.kt").readText()
+        val vlc = File(sourceRoot, "VlcVideoSurface.kt").readText()
+        val replacement = main.indexOf("Text(\"VLC Ersatz\")")
+        val external = main.indexOf("Text(\"VLC Player\")")
+        assertTrue(replacement >= 0 && external > replacement)
+        assertTrue(main.contains("setPackage(\"org.videolan.vlc\")"))
+        assertTrue(main.contains("market://details?id=org.videolan.vlc"))
+        assertTrue(vlc.contains("org.videolan.libvlc.LibVLC"))
+        assertTrue(vlc.contains("mediaPlayer.attachViews"))
+    }
 }
