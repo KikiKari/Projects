@@ -66,6 +66,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 input[type="url"], input[type="password"], select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .top-chatters { display: grid; gap: 6px; margin-top: 8px; }
 .top-chatters.empty { color: var(--muted); font-size: 12px; }
+.top-chatters-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 7px; }
+.top-chatters-actions[hidden] { display: none; }
+.top-chatter-link { padding: 0; color: var(--accent); background: transparent; border: 0; border-radius: 0; font-weight: 700; }
+.top-chatter-link:hover { text-decoration: underline; }
 .chatter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 7px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; background: Canvas; }
 .chatter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 800; }
 .chatter-metrics { color: var(--muted); font-size: 10px; white-space: nowrap; }
