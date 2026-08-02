@@ -235,6 +235,9 @@ Fachliche Präzisierung:
 |---|---|---|---|
 | [0PE-91](https://linear.app/0penclaw/issue/0PE-91) | `Done` | Vercel: iOS-Deployment bleibt im Dashboard auf „Building" | Deployments `dpl_U4Fjgw5cZAzumhZy6HgrkGznsY5M` und `dpl_82hQgMVHTa45fS68Qb2VxHQNkMAR` beide `READY`; serverseitig war kein Build mehr aktiv |
 | [0PE-92](https://linear.app/0penclaw/issue/0PE-92) | `Done` | Browser: Sprachdienst-Start wirft `textContent`-Fehler | Ursache `service-setup-command` fehlte in der zentralen DOM-Elementzuordnung; Fix-Commit `29f1d8a`, Regressionstest ergänzt |
+| [0PE-94](https://linear.app/0penclaw/issue/0PE-94) | `Todo` | Android: bekannter Strukturtestfehler der Android-Suite | 30 Tests, ein Fehler in `MobileUiStructureTest.mobilePlayerFocusUsesCenterFrameThenLiveOverviewAndPureFullscreen`; OPE-65/OPE-67 sind als fachlicher Bezug verknüpft |
+| [0PE-95](https://linear.app/0penclaw/issue/0PE-95) | `Todo` | iOS: `workflow:iOS` mit 16 Workflow-Läufen prüfen und korrigieren | Vollständiger zweiter Screenshot angehängt; aktuelle grüne Läufe und historische Fehlversuche werden getrennt ausgewiesen |
+| [0PE-96](https://linear.app/0penclaw/issue/0PE-96) | `Todo` | 0.8.0 Release-Gate: Browser, Android und iOS vollständig konsolidieren | Zieltermin 08.08.2026; vollständiger nativer iOS-Actions-Lauf ist verbindlicher Bestandteil |
 
 ### 7.2 Abgeschlossen ✅### 7.2 Abgeschlossen ✅
 
@@ -540,7 +543,7 @@ Lokale Windows-CLIs: `gh 2.76.2`, `vercel 58.3.0`. `gh` wurde ohne `winget` übe
 
 | Workflow | Branch | Status |
 |---|---|---|
-| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ Run `30717416888`, Commit `2323a6f`, `success`; native iOS-Quellen in `0a4fc63` unverändert |
+| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ OPE-83: vollständiger nativer Simulator-Build und Tests, Run `30717416888`, Commit `2323a6f`, `success`; die Liste mit 16 Läufen wird getrennt in OPE-95 nachgearbeitet |
 | `.github/workflows/linear-release-sync.yml` | Browser `f44f946` | ✅ Run `30742243393`, `success` |
 | `.github/workflows/linear-release-sync.yml` | Android `b3d1770`, iOS `0a4fc63` | ⚠️ Runs `30742462119` / `30742461997` planbedingt ohne `LINEAR_ACCESS_KEY` fehlgeschlagen; kein Produktcode-Fehler |
 
@@ -569,8 +572,10 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | Produktionsbranch | `TikTok-Live-Companion` |
 | Root Directory | `site` |
 | Production | ✅ `Ready` |
-| Release-Deployment | ✅ `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386`, Commit `f44f946`, Ziel `production`, `READY` |
-| Mobile-Previews | ✅ `dpl_AChdsSWNWbXhSk6kw6A1ZMKDBBZh` (`b3d1770`) und `dpl_BqpvsJ3K4gXHKhWvHyeZCdxDQ2JR` (`0a4fc63`), beide `READY` |
+| Produkt-Deployment | ✅ `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386`, Commit `f44f946`, Ziel `production`, `READY` |
+| Dokumentations-Deployment | ✅ `dpl_76mjqgPmG6DF6NSADmvKqURfFyNN`, Commit `8039ae4`, Ziel `production`, `READY` |
+| Mobile-Dokumentationspreviews | ✅ Android `dpl_D4UXqfTUxozxy9gN4amD9dEaGUoz` (`03a0488`) und iOS `dpl_BR5STRXgE5gtqsTDbM6vt7a98JvD` (`80957a4`), beide `READY` |
+| Native iOS-Abnahme | ✅ Nicht Vercel: OPE-83 / GitHub Actions Run `30717416888`, Commit `2323a6f`, vollständiger Simulator-Build und Tests `success` |
 | Dashboard-Issue | [0PE-91](https://linear.app/0penclaw/issue/0PE-91/071-vercel-ios-deployment-bleibt-im-dashboard-auf-building) — Serverstatus und Logs waren bereits erfolgreich; veraltete „Building“-Anzeige dokumentiert |
 | Inspector | https://vercel.com/openclaw-vercel-project/tiktok-live-companion |
 | Funktionen | `/api/shazam-token` |
@@ -665,8 +670,8 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | 4 | 0PE-41 und 0PE-43 umsetzen | Entwicklung | ⚠️ `Todo` |
 | 5 | Mobile Backlog-Issues 0PE-58, 0PE-70 und 0PE-80 bearbeiten | Entwicklung | ⚠️ `Backlog` |
 | 6 | Zweiter formaler Security-Scan (0PE-42) | Security | ⚠️ `Canceled` auf Nutzeranweisung; das Seal für 0.7.1 mit 0 Critical, 0 High, 0 Medium und 2 behobenen Low/P3 bleibt gültig |
-| 7 | Android-Gesamtsuite normalisieren | Entwicklung | ⚠️ gezielte Tests und APK grün; ein bestehender fachfremder Strukturtest erwartet alte Player-Fokus-Selektoren |
-| 8 | iOS-Build und XCTest lokal auf macOS mit Xcode | Nutzer | ⚠️ Plattform fehlt, CI deckt den Simulator ab |
+| 7 | [0PE-94](https://linear.app/0penclaw/issue/0PE-94): Android-Gesamtsuite normalisieren | Entwicklung | ⚠️ 30 Tests, ein bekannter Strukturtestfehler; OPE-65/OPE-67 verknüpft |
+| 8 | [0PE-95](https://linear.app/0penclaw/issue/0PE-95): 16 iOS-Workflow-Läufe prüfen und aktuellen nativen Lauf wiederholen | Entwicklung | ⚠️ OPE-83 belegt den bisherigen vollständigen erfolgreichen Lauf; neuer 0.8.0-Lauf steht aus |
 | 9 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen | Nutzer | ⚠️ offen |
 | 10 | Shazam-Produktvariante bauen statt Mock-APK | Entwicklung | ⚠️ hängt an Punkt 9 |
 | 11 | Echter AudD-Aufruf am realen LIVE-Stream | Nutzer | ⚠️ kein Token im Prüflauf |
@@ -675,6 +680,7 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | 14 | Mobile-Entwurfsbild auf 0.8.0 fortschreiben | Design | ⚠️ Datei trägt weiterhin `0.7.0` |
 | 15 | Meilenstein-Prozentwerte neu erheben | Projekt | ⚠️ Stand 18.07.2026 |
 | 16 | GitHub-CLI-Token erneuern | Nutzer | ⚠️ `gh auth status` meldet einen ungültigen gespeicherten Token; Git-Zugang und GitHub-App funktionieren |
+| 17 | [0PE-96](https://linear.app/0penclaw/issue/0PE-96): Browser, Android und iOS für 0.8.0 vollständig konsolidieren | Entwicklung | ⚠️ `Todo`, Zieltermin 08.08.2026 |
 
 ### Mit 0.7.1 erledigte Punkte der vorherigen v8-Fassung ✅
 
@@ -685,7 +691,7 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | Sidepanel-Reihenfolge | 0PE-88 `Done` am 02.08.2026 |
 | Mobile Textentfernungen unter Player und Mehr | 0PE-78 und 0PE-79 `Done`; Android `b3d1770`, iOS-Abwesenheit in `0a4fc63` bestätigt |
 | Formales Security-Seal für 0.7.1 | abgeschlossen: 0 Critical, 0 High, 0 Medium, 2 Low/P3, beide vor Veröffentlichung behoben |
-| Vercel-Deployment des iOS-Branches | 0PE-91 `Done`; Dashboardstatus war veraltet, serverseitig `READY` |
+| Vercel-Deployment des iOS-Branches | 0PE-91 `Done`; der Vercel-Dokumentationspreview ist `READY`. Der davon getrennte native iOS-Nachweis stammt aus OPE-83 / Actions Run `30717416888` und ist ebenfalls erfolgreich |
 | Sidepanel-Fehler `Cannot set properties of undefined` | 0PE-92 `Done`; Fix-Commit `29f1d8a` |
 | Taildrop der aktuellen APK auf das Android-Gerät | ausgeführt an `Redmi Note 11S` (`100.94.134.39`), Exit-Code `0` |
 
