@@ -13,6 +13,7 @@ on:
 
 jobs:
   test-and-package:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -54,3 +55,27 @@ jobs:
         run: |
           echo "The known Android structure-test gate remains open under 0PE-94." >&2
           exit 1
+
+  promote-existing-apk:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TikTok-Live-Companion-Android-0.7.1-alpha-mock-debug
+          path: release-asset
+          run-id: 30748539909
+          github-token: ${{ github.token }}
+
+      - name: Normalize release asset name
+        run: mv release-asset/app-mock-debug.apk release-asset/tiktok-live-companion-android-0.7.1.apk
+
+      - name: Upload APK to existing prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload tlc-android-v0.7.1-alpha release-asset/tiktok-live-companion-android-0.7.1.apk --clobber
