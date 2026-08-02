@@ -18,7 +18,9 @@ async function fixture(options = {}) {
     catalog: catalogProvider,
     recognize: async (audio, type, token) => { calls.push(["recognize", audio.length, type, token]); return { match: true, title: "Test", artist: "Artist" }; },
     validateAuddToken: options.validateAuddToken || (async () => ({ valid: true })),
-    sherpaInstaller: async (voiceId) => { calls.push(["sherpa-install", voiceId || ""]); }
+    sherpaInstaller: async (voiceId) => { calls.push(["sherpa-install", voiceId || ""]); },
+    vlcStatus: options.vlcStatus || (async () => ({ available: true, canInstall: false, platform: "win32" })),
+    vlcInstaller: options.vlcInstaller || (async () => { calls.push(["vlc-install"]); })
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -79,6 +81,36 @@ test("starts Sherpa installation through paired local endpoint", async (t) => {
   assert.deepEqual(await response.json(), { ok: true, running: true, configured: false, voiceCount: 0 });
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.deepEqual(calls[0], ["sherpa-install", ""]);
+});
+
+test("reports VLC status and starts only one paired installation", async (t) => {
+  const { server, base, calls } = await fixture({
+    vlcStatus: async () => ({ available: false, canInstall: true, platform: "win32" }),
+    vlcInstaller: async () => { calls.push(["vlc-install"]); await new Promise((resolve) => setTimeout(resolve, 20)); }
+  });
+  t.after(() => server.close());
+  assert.equal((await fetch(`${base}/v1/vlc/status`)).status, 401);
+  const status = await fetch(`${base}/v1/vlc/status`, { headers });
+  assert.equal(status.status, 200);
+  assert.equal((await status.json()).available, false);
+  const [first, second] = await Promise.all([
+    fetch(`${base}/v1/vlc/install`, { method: "POST", headers }),
+    fetch(`${base}/v1/vlc/install`, { method: "POST", headers })
+  ]);
+  assert.equal(first.status, 202);
+  assert.equal(second.status, 202);
+  await new Promise((resolve) => setTimeout(resolve, 35));
+  assert.equal(calls.filter(([name]) => name === "vlc-install").length, 1);
+});
+
+test("VLC installer pins official stable downloads, SHA-256 and VideoLAN signature", async () => {
+  const installer = await fs.readFile(new URL("../install-vlc.ps1", import.meta.url), "utf8");
+  assert.match(installer, /https:\/\/get\.videolan\.org\/vlc\/last\/win64\//);
+  assert.match(installer, /Get-FileHash[^\r\n]+SHA256/);
+  assert.match(installer, /Get-AuthenticodeSignature/);
+  assert.match(installer, /VideoLAN/);
+  assert.match(installer, /Start-Process[^\r\n]+-Verb RunAs/);
+  assert.doesNotMatch(installer, /beta|nightly|unstable/i);
 });
 
 test("installs only a verified catalog voice", async (t) => {

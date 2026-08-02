@@ -55,6 +55,10 @@
       </div>
       <p id="team-tag-status" class="inline-status">Teamkürzel: noch nicht erkannt.</p>
       <div id="top-chatters" class="top-chatters empty">Noch keine Personen im Chat beobachtet.</div>
+      <div id="top-chatters-actions" class="top-chatters-actions" hidden>
+        <button id="top-chatters-reset" class="top-chatter-link" type="button" hidden>Reset</button>
+        <button id="top-chatters-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
     </section>
 
     <section id="page-info-section" aria-labelledby="page-info-heading">
@@ -70,6 +74,15 @@
       <div id="summary-info" class="summary-info"></div>
     </section>
 
+    <section aria-labelledby="stats-heading">
+      <div class="section-title">
+        <h2 id="stats-heading">LIVE-Informationen</h2>
+        <span id="stats-live" class="live-indicator">warte</span>
+      </div>
+      <div id="live-stats" class="status-grid stats-grid"></div>
+      <p id="stats-status" class="inline-status"></p>
+    </section>
+
     <section aria-labelledby="hook-heading">
       <div class="section-title">
         <h2 id="hook-heading">WebSocket-Hook</h2>
@@ -81,6 +94,7 @@
         <button id="reset-tab" class="secondary danger-outline">Refresh</button>
         <button id="open-embed-live" class="secondary">Embed</button>
         <button id="open-normal-live" class="secondary">Normal</button>
+        <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
       </div>
       <p id="hook-status" class="inline-status"></p>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
@@ -97,15 +111,6 @@
       <p id="caption-action-status" role="status" class="inline-status action-status"></p>
     </section>
 
-    <section aria-labelledby="stats-heading">
-      <div class="section-title">
-        <h2 id="stats-heading">LIVE-Informationen</h2>
-        <span id="stats-live" class="live-indicator">warte</span>
-      </div>
-      <div id="live-stats" class="status-grid stats-grid"></div>
-      <p id="stats-status" class="inline-status"></p>
-    </section>
-
     <section aria-labelledby="player-heading">
       <div class="section-title">
         <h2 id="player-heading">Playersteuerung</h2>
@@ -118,7 +123,6 @@
         <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
         <button id="player-fullscreen" class="secondary compact">Vollbild</button>
         <button id="player-report" class="secondary compact danger-outline">Melden öffnen</button>
-        <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
       </div>
       <div class="audio-controls">
         <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
