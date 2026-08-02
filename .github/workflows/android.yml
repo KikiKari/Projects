@@ -32,9 +32,15 @@ jobs:
       - name: Validate shared mobile contracts
         run: python plugin-source/scripts/test_mobile_projects.py
 
-      - name: Build and test mock debug APK
+      - name: Run mock debug unit tests
+        id: unit_tests
+        continue-on-error: true
         working-directory: mobile/android
-        run: ./gradlew --no-daemon testMockDebugUnitTest assembleMockDebug
+        run: ./gradlew --no-daemon testMockDebugUnitTest
+
+      - name: Build mock debug APK
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleMockDebug
 
       - name: Upload mock debug APK
         uses: actions/upload-artifact@v4
@@ -42,3 +48,9 @@ jobs:
           name: TikTok-Live-Companion-Android-0.7.1-alpha-mock-debug
           path: mobile/android/app/build/outputs/apk/mock/debug/*.apk
           if-no-files-found: error
+
+      - name: Preserve Android structure-test gate
+        if: steps.unit_tests.outcome != 'success'
+        run: |
+          echo "The known Android structure-test gate remains open under 0PE-94." >&2
+          exit 1
