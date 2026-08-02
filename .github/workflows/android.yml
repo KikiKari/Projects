@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/android.yml"
       - "mobile/android/**"
-      - "mobile-shared/**"
+      - "plugin-source/mobile-shared/**"
       - "plugin-source/scripts/test_mobile_projects.py"
   workflow_dispatch:
 
