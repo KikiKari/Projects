@@ -3,15 +3,17 @@ importScripts("content-core.js");
 const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
+const SERVICE_INSTALL_KEY = "tlc-service-install";
 const PROFILE_PREFIX = "tlc-profile-";
 const STREAM_CACHE_PREFIX = "tlc-stream-";
 const MAX_MEDIA = 60;
 const MAX_CAPTIONS = 2000;
-const MAX_CHAT = 50;
+const MAX_CHAT = 500;
 const MAX_EVENT_IDS = 500;
 const MAX_DEBUG = 500;
 const MAX_PARTICIPANTS = 5000;
 const core = globalThis.TLC_CONTENT_CORE;
+let offscreenCreation = null;
 
 function stateKey(tabId) {
   return `${STATE_PREFIX}${tabId}`;
@@ -63,6 +65,8 @@ function emptyState() {
     participantsTruncated: false,
     streamMutes: [],
     recentGiftIds: [],
+    quickRecoverEnabled: false,
+    speech: { enabled: false, status: "Vorlesen ist ausgeschaltet.", lastSpokenKey: "", lastSpokenAtUtc: null, queueDepth: 0 },
     recovery: { lastQuickRecoverAtUtc: null, lastReason: "" },
     debug: { enabled: false, entries: [] }
   };
@@ -87,6 +91,8 @@ async function getState(tabId) {
     participantsTruncated: Boolean(state.participantsTruncated),
     streamMutes: state.streamMutes || [],
     recentGiftIds: state.recentGiftIds || [],
+    quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+    speech: { ...defaults.speech, ...(state.speech || {}) },
     recovery: { ...defaults.recovery, ...(state.recovery || {}) },
     captions: state.captions || [],
     media: state.media || [],
@@ -194,6 +200,8 @@ async function getSettings() {
     gameModeEnabled: false,
     speakNames: true,
     shortenNames: false,
+    autoChatRefreshEnabled: false,
+    autoChatRefreshMinutes: 5,
     serviceUrl: "http://127.0.0.1:43117",
     pairingCode: "",
     auddApiToken: "",
@@ -430,6 +438,81 @@ function participantMuted(state, settings, key) {
   return (state.streamMutes || []).includes(key) || (settings.permanentMutes || []).includes(key);
 }
 
+function cleanSpeechPayload(value) {
+  return String(value || "")
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
+    .replace(/[\ufe00-\ufe0f\u200d]/g, "")
+    .replace(/[\u{1f000}-\u{1faff}\u{2600}-\u{27bf}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function speechLanguage(settings, item, text) {
+  if (settings.speechLanguage === "auto" && /[äöüÄÖÜß]/.test(text)) return "de-DE";
+  return core.resolveSpeechLanguage(settings.speechLanguage, item.contentLanguage);
+}
+
+async function ensureOffscreenDocument() {
+  if (!chrome.offscreen?.createDocument) throw new Error("Offscreen-Sprachausgabe wird von diesem Browser nicht unterstützt.");
+  if (chrome.runtime.getContexts) {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+      documentUrls: [chrome.runtime.getURL("offscreen.html")]
+    });
+    if (contexts.length) return;
+  }
+  if (!offscreenCreation) {
+    offscreenCreation = chrome.offscreen.createDocument({
+      url: "offscreen.html",
+      reasons: ["AUDIO_PLAYBACK"],
+      justification: "Tab-lokales Vorlesen muss beim Vollbild und beim Neuaufbau des Sidepanels weiterlaufen."
+    }).catch((error) => {
+      if (!/single offscreen|already exists/i.test(String(error?.message || error))) throw error;
+    }).finally(() => { offscreenCreation = null; });
+  }
+  await offscreenCreation;
+}
+
+async function sendOffscreen(message) {
+  await ensureOffscreenDocument();
+  return chrome.runtime.sendMessage({ target: "offscreen", ...message });
+}
+
+async function queueSpeechForTab(tabId, state, item) {
+  if (!state.speech?.enabled || item.muted) return;
+  const settings = await getSettings();
+  if (settings.gameModeEnabled && core.shouldFilterGameModeSpeech(item, state.participants || {}, state.chatMessages || [])) return;
+  const text = cleanSpeechPayload(core.composeSpeechText(item, {
+    teamTag: state.stream?.teamTag || "",
+    speakNames: settings.speakNames !== false,
+    shortenNames: Boolean(settings.shortenNames)
+  }));
+  if (!text) return;
+  const key = `${core.spokenNickname(item.author || "")}|${text}`.toLocaleLowerCase("de-DE").replace(/\s+/g, " ").trim();
+  const lastAt = Date.parse(state.speech.lastSpokenAtUtc || "") || 0;
+  if (key && state.speech.lastSpokenKey === key && Date.now() - lastAt <= 20000) return;
+  state.speech = {
+    ...state.speech,
+    status: "Vorlesen aktiv · Zeile vorgemerkt.",
+    lastSpokenKey: key,
+    lastSpokenAtUtc: new Date().toISOString(),
+    queueDepth: Math.min(5, Number(state.speech.queueDepth || 0) + 1)
+  };
+  await setState(tabId, state);
+  await sendOffscreen({
+    type: "TLC_OFFSCREEN_SPEAK",
+    tabId,
+    text,
+    language: speechLanguage(settings, item, text),
+    voiceName: settings.speechVoiceName || "",
+    volume: Math.max(0, Math.min(1, Number(settings.speechVolume ?? 0.5))),
+    serviceUrl: loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117",
+    pairingCode: settings.pairingCode || ""
+  });
+}
+
 function participantAliases(participant, fallbackKey = "") {
   return [...new Set([
     fallbackKey,
@@ -556,7 +639,7 @@ async function addChatMessage(tabId, rawMessage) {
     return;
   }
   const settings = await getSettings();
-  state.chatMessages = [...(state.chatMessages || []), {
+  const chatMessage = {
     messageId: rawMessage.messageId || null,
     author: author || "Chat",
     content,
@@ -568,8 +651,10 @@ async function addChatMessage(tabId, rawMessage) {
     source: rawMessage.source || "unbekannt",
     receivedAtUtc,
     dedupeKey
-  }].slice(-MAX_CHAT);
+  };
+  state.chatMessages = [...(state.chatMessages || []), chatMessage].slice(-MAX_CHAT);
   await setState(tabId, state);
+  await queueSpeechForTab(tabId, state, chatMessage).catch((error) => addDebug(tabId, "speech-queue-error", { error: String(error?.message || error).slice(0, 300) }));
   await relayToEmbedTab(tabId, state, "chat", rawMessage);
 }
 
@@ -667,11 +752,10 @@ async function removeLegacyGlobalHook() {
 }
 
 async function setHookFlag(tabId, enabled) {
-  const settings = await setSettings({ hookEnabled: Boolean(enabled), autoHook: Boolean(enabled), waitingForTikTok: Boolean(enabled) });
   let tab = null;
   if (Number.isInteger(tabId) && tabId >= 0) tab = await chrome.tabs.get(tabId).catch(() => null);
   if (!tab?.url?.startsWith("https://www.tiktok.com/")) {
-    return { armed: Boolean(enabled), waitingForTikTok: settings.waitingForTikTok, reloading: false };
+    return { armed: Boolean(enabled), waitingForTikTok: Boolean(enabled), reloading: false };
   }
   const state = await getState(tab.id);
   state.enabled = true;
@@ -680,13 +764,12 @@ async function setHookFlag(tabId, enabled) {
   if (enabled) state.liveStats = emptyState().liveStats;
   await setState(tab.id, state);
   await chrome.tabs.reload(tab.id);
-  return { armed: Boolean(enabled), waitingForTikTok: settings.waitingForTikTok, reloading: true, tabId: tab.id };
+  return { armed: Boolean(enabled), waitingForTikTok: Boolean(enabled), reloading: true, tabId: tab.id };
 }
 
 async function resetTabWithHook(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der aktive Tab ist kein TikTok-Tab.");
-  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   const state = emptyState();
   state.enabled = true;
   state.browserSessionId = newBrowserSessionId();
@@ -721,7 +804,6 @@ async function forceProfileRefresh(tabId) {
   const targetHandle = normalizeHandle(match[1]);
   const profileUrl = `https://www.tiktok.com/@${targetHandle}`;
   let profileResult = null;
-  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   try {
     const profileLoaded = waitForTabComplete(tabId, profileUrl);
     await chrome.tabs.update(tabId, { url: profileUrl });
@@ -739,13 +821,11 @@ async function forceProfileRefresh(tabId) {
     return { activated: true, profileInfo: profileResult.profileInfo };
   } finally {
     await chrome.tabs.update(tabId, { url: liveUrl }).catch(() => {});
-    const settings = await getSettings();
     const state = await getState(tabId);
     state.enabled = true;
     if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
     applyStreamIdentity(state, { handle: targetHandle });
     state.hook = { ...state.hook, armed: true, lastError: null };
-    state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
     await setState(tabId, state);
     await injectTabRuntime(tabId).catch(() => {});
   }
@@ -760,13 +840,11 @@ function normalLiveUrl(handle) {
 }
 
 async function armLiveTab(tabId, handle, patch = {}) {
-  const settings = await getSettings();
   const state = await getState(tabId);
   state.enabled = true;
   if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
   state.hook = { ...state.hook, armed: true, lastError: null };
   state.stream = { ...state.stream, handle: String(handle || state.stream?.handle || "").toLocaleLowerCase() };
-  state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
   Object.assign(state, patch);
   await setState(tabId, state);
   return state;
@@ -807,7 +885,6 @@ async function openEmbedLive(tabId) {
   const urlHandle = pageHandle({ url: tab.url });
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
-  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   await ensureEmbedChatSource(tabId, handle);
   await chrome.tabs.update(tabId, { url: embedLiveUrl(handle) });
   return { activated: true, tabId, handle };
@@ -820,7 +897,6 @@ async function openNormalLive(tabId) {
   const urlHandle = pageHandle({ url: tab.url });
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle || state.profileInfo?.uniqueId;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
-  await setSettings({ hookEnabled: true, autoHook: true, waitingForTikTok: true });
   await closeEmbedChatSource(tabId, state);
   await armLiveTab(tabId, handle, { chatSourceTabId: null, chatTargetTabId: null, chatSourceOnly: false });
   await chrome.tabs.update(tabId, { url: normalLiveUrl(handle) });
@@ -847,13 +923,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     enabled: true
   }).catch(() => {});
   if (changeInfo.status === "loading" && isTikTok) {
-    Promise.all([getState(tabId), getSettings()]).then(async ([state, settings]) => {
-      const shouldArm = Boolean(state.hook.armed || settings.autoHook || settings.hookEnabled);
+    getState(tabId).then(async (state) => {
+      const shouldArm = Boolean(state.hook.armed);
       if (!shouldArm) return;
       state.enabled = true;
       if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
       state.hook = { ...state.hook, armed: true, lastError: null };
-      state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
       await setState(tabId, state);
       await injectTabRuntime(tabId);
       const refreshedState = await getState(tabId);
@@ -867,18 +942,19 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && isTikTok) {
     getState(tabId).then((state) => {
       if (!state.enabled) return;
-      return getSettings().then((settings) => chrome.tabs.sendMessage(tabId, {
+      return chrome.tabs.sendMessage(tabId, {
         type: "TLC_SET_TAB_ACTIVE",
         enabled: true,
         debugEnabled: Boolean(state.debug?.enabled),
-        quickRecoverEnabled: Boolean(settings.quickRecoverEnabled),
+        quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
         chatSourceOnly: Boolean(state.chatSourceOnly)
-      }));
+      });
     }).catch(() => {});
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  sendOffscreen({ type: "TLC_OFFSCREEN_CANCEL", tabId }).catch(() => {});
   getState(tabId).then((state) => {
     const sourceTabId = Number(state.chatSourceTabId);
     if (Number.isInteger(sourceTabId) && sourceTabId >= 0) chrome.tabs.remove(sourceTabId).catch(() => {});
@@ -923,17 +999,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       case "TLC_ACTIVATE_TAB": {
         const state = await getState(tabId);
-        const settings = await getSettings();
         state.enabled = true;
         if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
-        state.hook = { ...state.hook, armed: Boolean(state.hook?.armed || settings.hookEnabled || settings.autoHook) };
-        state.debug = { enabled: Boolean(settings.debugEnabled || state.debug?.enabled), entries: state.debug?.entries || [] };
         await setState(tabId, state);
         await chrome.tabs.sendMessage(tabId, {
           type: "TLC_SET_TAB_ACTIVE",
           enabled: true,
           debugEnabled: Boolean(state.debug?.enabled),
-          quickRecoverEnabled: Boolean(settings.quickRecoverEnabled),
+          quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
           chatSourceOnly: Boolean(state.chatSourceOnly)
         }).catch(() => {});
         sendResponse({ ok: true, state });
@@ -944,15 +1017,87 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, enabled: Boolean(state.enabled) });
         break;
       }
-      case "TLC_GET_SETTINGS":
-        sendResponse({ ok: true, settings: await getSettings() });
+      case "TLC_GET_SETTINGS": {
+        const settings = await getSettings();
+        const state = Number.isInteger(tabId) && tabId >= 0 ? await getState(tabId) : emptyState();
+        sendResponse({ ok: true, settings: {
+          ...settings,
+          hookEnabled: Boolean(state.hook?.armed),
+          autoHook: Boolean(state.hook?.armed),
+          quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+          speechEnabled: Boolean(state.speech?.enabled),
+          debugEnabled: Boolean(state.debug?.enabled)
+        } });
         break;
+      }
+      case "TLC_INSTALL_LOCAL_SERVICE": {
+        const nonce = String(message.nonce || "");
+        if (!/^[A-Za-z0-9_-]{32,128}$/.test(nonce)) throw new Error("Der Installations-Nonce ist ungültig.");
+        await chrome.storage.session.set({
+          [SERVICE_INSTALL_KEY]: { nonce, startedAt: Date.now() }
+        });
+        sendResponse({ ok: true, installationStarted: true });
+        break;
+      }
+      case "TLC_POLL_LOCAL_SERVICE_INSTALL": {
+        const stored = await chrome.storage.session.get(SERVICE_INSTALL_KEY);
+        const pending = stored[SERVICE_INSTALL_KEY];
+        const nonce = String(pending?.nonce || "");
+        const settings = await getSettings();
+        const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
+        const knownPairingCode = String(settings.pairingCode || "");
+        if (knownPairingCode) {
+          const healthResponse = await fetch(`${serviceUrl}/v1/health`, {
+            headers: { Authorization: `Bearer ${knownPairingCode}` }
+          }).catch(() => null);
+          if (healthResponse?.ok) {
+            await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+            sendResponse({ ok: true, pending: false, pairingCode: knownPairingCode });
+            break;
+          }
+        }
+        if (!nonce || Date.now() - Number(pending?.startedAt || 0) > 120000) {
+          await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+          sendResponse({ ok: true, pending: false, pairingCode: "" });
+          break;
+        }
+        const response = await fetch(`${serviceUrl}/v1/pair?nonce=${encodeURIComponent(nonce)}`).catch(() => null);
+        if (!response?.ok) {
+          sendResponse({ ok: true, pending: true, pairingCode: "" });
+          break;
+        }
+        const payload = await response.json().catch(() => ({}));
+        const pairingCode = String(payload.pairingCode || "");
+        if (!pairingCode) {
+          sendResponse({ ok: true, pending: true, pairingCode: "" });
+          break;
+        }
+        await setSettings({ pairingCode });
+        await chrome.storage.session.remove(SERVICE_INSTALL_KEY);
+        sendResponse({ ok: true, pending: false, pairingCode });
+        break;
+      }
       case "TLC_START_LOCAL_SERVICE": {
-        const serviceTab = await chrome.tabs.create({ url: "tiktok-live-companion://start", active: false });
-        setTimeout(() => {
-          if (serviceTab?.id) chrome.tabs.remove(serviceTab.id).catch(() => {});
-        }, 1500);
-        sendResponse({ ok: true });
+        const settings = await getSettings();
+        const nonce = String(message.nonce || "");
+        if (!/^[A-Za-z0-9_-]{32,128}$/.test(nonce)) throw new Error("Der Start-Nonce ist ungültig.");
+        const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
+        let pairingCode = "";
+        const attempts = 10;
+        for (let attempt = 0; attempt < attempts && !pairingCode; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          const response = await fetch(`${serviceUrl}/v1/pair?nonce=${encodeURIComponent(nonce)}`).catch(() => null);
+          if (!response?.ok) continue;
+          const payload = await response.json().catch(() => ({}));
+          pairingCode = String(payload.pairingCode || "");
+        }
+        if (pairingCode) await setSettings({ pairingCode });
+        sendResponse({
+          ok: true,
+          pairingCode,
+          setupRequired: !pairingCode,
+          installationStarted: false
+        });
         break;
       }
       case "TLC_SET_AUTOSTART": {
@@ -961,28 +1106,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_SET_QUICK_RECOVER": {
-        const settings = await setSettings({ quickRecoverEnabled: Boolean(message.enabled) });
+        const state = await getState(tabId);
+        state.quickRecoverEnabled = Boolean(message.enabled);
+        await setState(tabId, state);
         if (Number.isInteger(tabId) && tabId >= 0) {
-          await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: settings.quickRecoverEnabled }).catch(() => {});
+          await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: state.quickRecoverEnabled }).catch(() => {});
         }
-        sendResponse({ ok: true, settings });
+        sendResponse({ ok: true, state });
         break;
       }
       case "TLC_SET_SPEECH_PREFERENCE": {
         const settings = await setSettings({
           ...(message.enabled == null ? {} : { keepSpeechActive: Boolean(message.enabled) }),
           ...(message.volume == null ? {} : { speechVolume: Math.max(0, Math.min(1, Number(message.volume))) }),
-          ...(message.language == null ? {} : { speechLanguage: ["auto", "de-DE", "en-US"].includes(message.language) ? message.language : "auto" }),
+          ...(message.language == null ? {} : { speechLanguage: message.language === "auto" || /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(String(message.language)) ? String(message.language) : "auto" }),
           ...(message.voiceName == null ? {} : { speechVoiceName: String(message.voiceName).slice(0, 160) }),
           ...(message.auddApiToken == null ? {} : { auddApiToken: String(message.auddApiToken).trim().slice(0, 512) }),
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
-          ...(message.speechEnabled == null ? {} : { speechEnabled: Boolean(message.speechEnabled) }),
+          ...(message.autoChatRefreshEnabled == null ? {} : { autoChatRefreshEnabled: Boolean(message.autoChatRefreshEnabled) }),
+          ...(message.autoChatRefreshMinutes == null ? {} : { autoChatRefreshMinutes: Math.max(1, Math.min(60, Math.round(Number(message.autoChatRefreshMinutes) || 5))) }),
           ...(message.pairingCode == null ? {} : { pairingCode: String(message.pairingCode) }),
           ...(message.songRecognitionEnabled == null ? {} : { songRecognitionEnabled: Boolean(message.songRecognitionEnabled) })
         });
         sendResponse({ ok: true, settings });
+        break;
+      }
+      case "TLC_SET_TAB_SPEECH": {
+        const state = await getState(tabId);
+        state.speech = {
+          ...state.speech,
+          enabled: Boolean(message.enabled),
+          status: message.enabled ? "Vorlesen ist aktiv; warte auf neue Chatzeilen." : "Vorlesen ist ausgeschaltet.",
+          queueDepth: message.enabled ? Number(state.speech?.queueDepth || 0) : 0
+        };
+        await setState(tabId, state);
+        if (!message.enabled) await sendOffscreen({ type: "TLC_OFFSCREEN_CANCEL", tabId }).catch(() => {});
+        sendResponse({ ok: true, state });
+        break;
+      }
+      case "TLC_OFFSCREEN_STATUS": {
+        if (sender.url !== chrome.runtime.getURL("offscreen.html")) throw new Error("Ungültiger Absender für Offscreen-Status.");
+        const speechTabId = Number(message.tabId);
+        if (Number.isInteger(speechTabId) && speechTabId >= 0) {
+          const state = await getState(speechTabId);
+          state.speech = {
+            ...state.speech,
+            status: String(message.status || state.speech?.status || "").slice(0, 300),
+            queueDepth: Math.max(0, Math.min(5, Number(message.queueDepth || 0)))
+          };
+          await setState(speechTabId, state);
+        }
+        sendResponse({ ok: true });
         break;
       }
       case "TLC_PAGE_STATE": {
@@ -1138,12 +1314,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_QUICK_RECOVER": {
-        const settings = await getSettings();
-        if (!settings.quickRecoverEnabled) {
+        const state = await getState(tabId);
+        if (!state.quickRecoverEnabled) {
           sendResponse({ ok: true, skipped: true, reason: "disabled" });
           break;
         }
-        const state = await getState(tabId);
         const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
         if (Date.now() - lastAt < 400) {
           sendResponse({ ok: true, skipped: true, reason: "throttled" });
@@ -1212,7 +1387,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_SET_DEBUG": {
-        const settings = await setSettings({ debugEnabled: Boolean(message.enabled) });
         let state = null;
         if (Number.isInteger(tabId) && tabId >= 0) {
           const tab = await chrome.tabs.get(tabId).catch(() => null);
@@ -1223,7 +1397,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             await chrome.tabs.sendMessage(tabId, { type: "TLC_DEBUG_CONFIG", enabled: state.debug.enabled }).catch(() => {});
           }
         }
-        sendResponse({ ok: true, state, settings });
+        sendResponse({ ok: true, state });
         break;
       }
       case "TLC_DEBUG_EVENT":
@@ -1239,6 +1413,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_GET_DEBUG_REPORT": {
         const state = await getState(tabId);
+        const settings = await getSettings();
+        const pairingCode = String(settings.pairingCode || "");
+        const serviceUrl = loopbackServiceUrl(settings.serviceUrl) || "http://127.0.0.1:43117";
+        const storedInstall = await chrome.storage.session.get(SERVICE_INSTALL_KEY);
+        const pendingInstall = storedInstall[SERVICE_INSTALL_KEY];
+        const localService = {
+          serviceUrl,
+          pairingConfigured: Boolean(pairingCode),
+          auddTokenConfigured: Boolean(settings.auddApiToken),
+          expectedProtocolHandler: "cmd-primary-powershell-fallback",
+          installationPending: Boolean(pendingInstall?.startedAt),
+          installationAgeMs: pendingInstall?.startedAt ? Math.max(0, Date.now() - Number(pendingInstall.startedAt)) : null,
+          reachable: false,
+          healthStatus: null
+        };
+        if (pairingCode) {
+          const healthResponse = await fetch(`${serviceUrl}/v1/health`, {
+            headers: { Authorization: `Bearer ${pairingCode}` }
+          }).catch(() => null);
+          localService.reachable = Boolean(healthResponse?.ok);
+          localService.healthStatus = healthResponse?.status || null;
+          if (healthResponse?.ok) {
+            const health = await healthResponse.json().catch(() => ({}));
+            localService.runtime = {
+              version: health.version || null,
+              tts: health.tts || null,
+              ttsAvailable: Boolean(health.ttsAvailable),
+              sherpaConfigured: Boolean(health.sherpaConfigured),
+              sherpaInstalling: Boolean(health.sherpaInstalling),
+              auddConfigured: Boolean(health.auddConfigured),
+              songProvider: health.songProvider || null,
+              bootstrapPending: Boolean(health.bootstrapPending),
+              extensionConfigured: Boolean(health.extensionConfigured)
+            };
+          }
+        }
         sendResponse({ ok: true, report: {
           generatedAtUtc: new Date().toISOString(), version: chrome.runtime.getManifest().version,
           browserSessionId: state.browserSessionId,
@@ -1247,6 +1457,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           playerState: state.playerState, selectedQuality: state.selectedQuality,
           media: state.media.map((item) => ({ ...item, url: redactUrl(item.url) })),
           counts: { chat: state.chatMessages.length, captions: state.captions.length },
+          localService,
           debug: state.debug
         } });
         break;
