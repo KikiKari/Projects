@@ -15,6 +15,14 @@ export const VERSION = "0.7.1";
 export { defaultConfigPath };
 
 let sherpaInstallPromise = null;
+let vlcInstallPromise = null;
+let vlcInstallStatus = {
+  running: false,
+  startedAtUtc: null,
+  finishedAtUtc: null,
+  ok: false,
+  error: ""
+};
 let sherpaInstallStatus = {
   running: false,
   startedAtUtc: null,
@@ -77,6 +85,44 @@ function runPowerShell(script, args, input) {
     child.on("close", (code) => code === 0 ? resolve(outputText) : reject(new Error(errorText.trim() || `PowerShell endete mit ${code}`)));
     child.stdin.end(input || "", "utf8");
   });
+}
+
+export async function detectVlcStatus() {
+  const candidates = process.platform === "win32" ? [
+    path.join(process.env.ProgramFiles || "C:\\Program Files", "VideoLAN", "VLC", "vlc.exe"),
+    path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "VideoLAN", "VLC", "vlc.exe")
+  ] : [];
+  for (const executable of candidates) {
+    if (await fs.access(executable).then(() => true).catch(() => false)) {
+      return { available: true, canInstall: false, platform: process.platform };
+    }
+  }
+  return { available: false, canInstall: process.platform === "win32", platform: process.platform };
+}
+
+async function runVlcInstaller() {
+  if (process.platform !== "win32") throw Object.assign(new Error("Die automatische VLC-Installation ist in diesem Dienst nur unter Windows verfügbar."), { statusCode: 501 });
+  const script = path.join(root, "install-vlc.ps1");
+  await fs.access(script).catch(() => { throw Object.assign(new Error("install-vlc.ps1 fehlt."), { statusCode: 501 }); });
+  vlcInstallStatus = { running: true, startedAtUtc: new Date().toISOString(), finishedAtUtc: null, ok: false, error: "" };
+  try {
+    await runPowerShell(script, [], "");
+    vlcInstallStatus = { ...vlcInstallStatus, running: false, finishedAtUtc: new Date().toISOString(), ok: true, error: "" };
+  } catch (error) {
+    vlcInstallStatus = { ...vlcInstallStatus, running: false, finishedAtUtc: new Date().toISOString(), ok: false, error: String(error?.message || error).slice(0, 500) };
+    throw error;
+  }
+}
+
+async function ensureVlcInstallStarted(statusProvider = detectVlcStatus, installer = runVlcInstaller) {
+  if ((await statusProvider()).available) return false;
+  if (!vlcInstallPromise) {
+    vlcInstallPromise = Promise.resolve()
+      .then(installer)
+      .catch((error) => console.error(`VLC-Installation fehlgeschlagen: ${String(error?.message || error)}`))
+      .finally(() => { vlcInstallPromise = null; });
+  }
+  return true;
 }
 
 async function runSherpaInstaller(voiceId = "") {
@@ -337,7 +383,7 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, validateAuddToken = auddValidateToken, sherpaInstaller = runSherpaInstaller } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, validateAuddToken = auddValidateToken, sherpaInstaller = runSherpaInstaller, vlcStatus = detectVlcStatus, vlcInstaller = runVlcInstaller } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   const catalogProvider = catalog || (() => listVoiceCatalog(voiceCatalogPath, voices));
   return http.createServer(async (request, response) => {
@@ -410,6 +456,28 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
           finishedAtUtc: sherpaInstallStatus.finishedAtUtc,
           error: sherpaInstallStatus.error,
           voiceId: sherpaInstallStatus.voiceId
+        }, allowedOrigin);
+      }
+      if (request.method === "GET" && request.url === "/v1/vlc/status") {
+        const status = await vlcStatus();
+        return sendJson(response, 200, {
+          ok: true,
+          ...status,
+          running: vlcInstallStatus.running,
+          startedAtUtc: vlcInstallStatus.startedAtUtc,
+          finishedAtUtc: vlcInstallStatus.finishedAtUtc,
+          error: vlcInstallStatus.error
+        }, allowedOrigin);
+      }
+      if (request.method === "POST" && request.url === "/v1/vlc/install") {
+        const status = await vlcStatus();
+        if (!status.available && !status.canInstall) throw Object.assign(new Error("VLC kann auf diesem System nicht automatisch installiert werden."), { statusCode: 501 });
+        const started = await ensureVlcInstallStarted(vlcStatus, vlcInstaller);
+        return sendJson(response, started ? 202 : 200, {
+          ok: true,
+          available: status.available,
+          running: started || vlcInstallStatus.running,
+          platform: status.platform
         }, allowedOrigin);
       }
       if (request.method === "POST" && request.url === "/v1/sherpa/install") {

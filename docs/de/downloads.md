@@ -14,4 +14,6 @@
 
 Die Browser-Erweiterung 0.7.1 startet den bereits eingerichteten Sprachdienst über den lokalen Starter erneut im Hintergrund, zeigt Sherpa nach erfolgreicher Einrichtung als aktiv, filtert exakt wiederholte technische TTS-Dubletten und dämpft den Pegelschutz bei hoher Schutzstärke früher und stärker. Die bestehende Browser-VLC-Link-Liste bleibt unverändert.
 
-Die Mobile-Quellarchive 0.7.1 gleichen Chat/Game-Mode, TTS-Dedupe, Pegelschutz, Auto-Reconnect mit 400-ms-Mindestabstand, Refresh mit App-/WebView-Cache-Leerung ohne Cookie-Löschung und VLC-kompatiblere HLS-/FLV-/MP4-Kandidaten an den Browserstand an.
+Der Alpha-Stand vom 02.08.2026 platziert **VLC Ersatz** unter **WebSocket-Hook**, **LIVE-Informationen** direkt unter **Seiteninformationen** und erweitert **Top-Chatter** schrittweise bis 50 mit **Reset** und bestehender Stummschaltung. Der lokale Dienst kann nach Nutzeraktion ausschließlich die stabile Windows-Version von VideoLAN installieren.
+
+Die Mobile-Quellarchive 0.7.1 gleichen Chat/Game-Mode, TTS-Dedupe, Pegelschutz, Auto-Reconnect mit 400-ms-Mindestabstand, Refresh mit App-/WebView-Cache-Leerung ohne Cookie-Löschung und VLC-kompatiblere HLS-/FLV-/MP4-Kandidaten an den Browserstand an. **VLC Ersatz** verwendet eingebettetes LibVLC/MobileVLCKit; **VLC Player** übergibt dieselbe Media-URL an die externe VLC-App oder deren offiziellen Store-Eintrag.

@@ -1,12 +1,20 @@
 ﻿# TikTok LIVE Companion – Dokumentation v0.7.1
 
-**Version:** 0.7.1 · **Dokumentrevision:** v9 · **Status:** in Bearbeitung · **Stand:** 1. August 2026
+**Version:** 0.7.1 · **Dokumentrevision:** v9 · **Status:** in Bearbeitung · **Stand:** 2. August 2026
 **Projektwurzel:** `C:\Users\silve\Documents\Codex\TikTok-Live-Companion`
 **Veröffentlichter Checkout:** `.publish-repo/` · **Mobile-Worktrees:** `android-implementation/`, `ios-implementation/`
 **Kanonische Quelle:** GitHub · `KikiKari/Projects`
 **Dokumentationssite:** https://tiktok-live-companion.vercel.app/de
 
 > Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
+
+### Fortschreibung 02.08.2026 · OPE-97, OPE-98 und OPE-102
+
+Der Browserstand `3476d17c099227f94459d4ace67b5fa338a8e98d` platziert **VLC Ersatz** unter **WebSocket-Hook** rechts neben **Normal**, ordnet **LIVE-Informationen** direkt unter **Seiteninformationen** an und erweitert **Top-Chatter** tab- und streambezogen von fünf auf 15, 25, 35, 45 und höchstens 50 Einträge. Ab 15 Einträgen steht **Reset** links von **mehr…**; die vorhandene Stummschaltung und das bestehende Zuschauer\*innen-Limit bleiben erhalten.
+
+Der gepaarte lokale Dienst ergänzt authentifizierte, idempotente VLC-Status- und Installationsoperationen. Unter Windows wird ausschließlich der aktuelle stabile VideoLAN-x64-Installer von `get.videolan.org` verwendet; SHA-256 und VideoLAN-Authenticode-Signatur werden vor der normalen Windows-Systembestätigung geprüft. Der Installationspfad folgt den offiziellen PowerShell-7.6- und PSScriptAnalyzer-Referenzen.
+
+Android verwendet `org.videolan.android:libvlc-all:3.7.5`, iOS `MobileVLCKit 3.7.3`. Im mobilen Player-Tab stehen ohne zusätzliche Beschreibung **VLC Ersatz** und darunter **VLC Player**. Der erste Button schaltet zwischen WebView und eingebettetem VLC um; der zweite übergibt die beste erkannte Media-URL an die externe VLC-App und öffnet bei fehlender App ausschließlich den offiziellen Store-Eintrag. Der Zustand wird beim Streamwechsel zurückgesetzt. iOS ist durch den vollständigen Actions-Lauf `30748478805` bestätigt. Android-Lauf `30748539909` erzeugte die APK; der abschließende Fehler ist ausschließlich das getrennt geführte OPE-94-Strukturgate. Lauf `30749884929` übernahm genau dieses APK-Artefakt ohne Neubau in das bestehende Prerelease.
 
 ### Fortschreibung 01.08.2026 · in Bearbeitung
 
@@ -186,7 +194,7 @@ In der Abnahme wurde die Wirkung mit `OfflineAudioContext` gegen synthetische Si
 
 ### 3.4 Top-Chatter und beobachtete Personen
 
-Pro Stream werden Nachrichten, Wörter und Geschenkereignisse für bis zu 5.000 im Chat sichtbare Personen gezählt. Die Top-Chatter-Box zeigt die fünf führenden Personen mit Nachrichten- und Wortzahl sowie einer Stream-Mute-Checkbox, sortiert nach Nachrichtenzahl, dann Wortzahl, dann Name. Darüber steht das erkannte Teamkürzel.
+Pro Stream werden Nachrichten, Wörter und Geschenkereignisse für bis zu 5.000 im Chat sichtbare Personen gezählt. Die Top-Chatter-Box zeigt zunächst die fünf führenden Personen mit Nachrichten- und Wortzahl sowie einer Stream-Mute-Checkbox, sortiert nach Nachrichtenzahl, dann Wortzahl, dann Name. **mehr…** erweitert tab- und streambezogen auf 15, 25, 35, 45 und höchstens 50 Einträge; **Reset** stellt sofort fünf Einträge wieder her. Darüber steht das erkannte Teamkürzel.
 
 Der Button **Zuschauer\*innen** öffnet das Modal „Im Chat beobachtete Personen": Name, Nachrichten, Wörter, Geschenkereignisse, summierte `gesendet`-Anzahl, zuletzt gesehen und Mute-Modus je Person.
 
@@ -233,7 +241,7 @@ Volle Funktionsparität wird über **native Entsprechungen** erreicht, nicht üb
 | Vollbild | Player-Vollbild mit offenem Rückkehrfehler | nativer Vollbildmodus, zweites Antippen schließt ihn wieder (0PE-70 behoben) |
 | Bild-in-Bild | vorhanden | Nicht-Ziel, entfernt |
 
-Mit 0.7.1 sind auf Mobilgeräten zusätzlich vorhanden: Top-Chatter mit 5.000er-Limit, vollständige LIVE- und Seiteninformationen, Chat-Bridge mit 50er-Grenze und Fünfer-Queue, persistente TTS-Kernoptionen, Pegelschutz-Einstellungen, Querformat mit 96-dp/pt-Inhaltsreserve und Scroll-Unterstützung sowie kopierbare Media-/VLC-URLs. Die Capability-Statusanzeige erscheint ausschließlich im LIVE-Tab und nicht mehr doppelt im Song-Tab.
+Mit 0.7.1 sind auf Mobilgeräten zusätzlich vorhanden: Top-Chatter mit 5.000er-Limit, vollständige LIVE- und Seiteninformationen, Chat-Bridge mit 50er-Grenze und Fünfer-Queue, persistente TTS-Kernoptionen, Pegelschutz-Einstellungen, Querformat mit 96-dp/pt-Inhaltsreserve und Scroll-Unterstützung sowie kopierbare Media-/VLC-URLs. Im Player-Tab schaltet **VLC Ersatz** auf den eingebetteten LibVLC-/MobileVLCKit-Player; **VLC Player** übergibt dieselbe ausgewählte URL an die externe VLC-App oder deren offiziellen Store-Eintrag. Die Capability-Statusanzeige erscheint ausschließlich im LIVE-Tab und nicht mehr doppelt im Song-Tab.
 
 **Ehrlichkeitsregel:** Funktionen, die eine Plattform oder die TikTok-WebView technisch ablehnt, bleiben sichtbar und zeigen einen eindeutigen Verfügbarkeits- oder Fehlerstatus. Es werden keine scheinbar funktionierenden Attrappen ausgeliefert.
 
@@ -604,14 +612,14 @@ Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-compani
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26` |
-| `tiktok-live-companion-service-0.7.1.zip` | `a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a` |
-| `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
-| `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `67e61580df9309844901b6c73bd1e63aad5dc08df2dd698d4de8fdf856936725` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `6f8b0334240d1e3c0b9ff2ba012d87c63102b54c5b2e4dc992294cbffa3f9894` |
+| `tiktok-live-companion-service-0.7.1.zip` | `53370c64966ba6f323f276e5b9c305968533e0cc513c11b8e78b4dbbe6947ce2` |
+| `tiktok-live-companion-ios-0.7.1-source.zip` | `8aecd3fb450f9e0c00d67fe10dd9de41bae82a099d689709627012204a79c1cf` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `d3fcc9f063aecf29f722435ac9247eb497fdf73cd54580a6537b29176deddfb6` |
+| `tiktok-live-companion-android-0.7.1.apk` | `30ed3b3b367f1af643246bc84fb3f848ab4fa928aadd45786591bab93c4e3af0` |
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete sowie die Prüfsummendatei wurden anschließend über `tiktok-live-companion.vercel.app` bytegleich bestätigt.
+Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen die Dateien unter `release/0.7.1/` sowie `site/public/downloads/` geprüft. Das Extension-ZIP enthält den Companion-Service mit. Browser-Produktionsdeployment `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK` für Commit `3476d17` ist `READY`; die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` und `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind ebenfalls `READY`.
 
 **Sidepanel-Hotfix:** Der im ausgelieferten Panel sichtbare Fehler `Cannot set properties of undefined (setting 'textContent')` beim Startversuch des Sprachdienstes wurde auf den fehlenden DOM-Bezug `service-setup-command` zurückgeführt und behoben. Ein Regressionstest prüft jetzt HTML-ID und zentrale Elementzuordnung. Extension- und Plugin-ZIP wurden danach zweimal bytegleich reproduziert; die obigen SHA-256-Werte ersetzen ihre vorherigen Stände.
 
@@ -641,20 +649,20 @@ Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegle
 |---|---|
 | Syntaxprüfung `node --check` für `content.js`, `sidepanel.js`, `background.js`, `server.mjs` | bestanden |
 | Extension-Struktur und Decoder (`test_extension.cjs`) | bestanden |
-| Companion-Service (`npm test`) | 15/15 bestanden, auch fremde Extension-ID und Archivfreigaben |
+| Companion-Service (`npm test`) | 20/20 bestanden, einschließlich VLC-Status, Authentifizierung und idempotenter Installation |
 | Mobile-Bridge (`test_mobile_bridge.cjs`) | bestanden |
 | Native Projektprüfung (`test_mobile_projects.py`) | bestanden |
 | Token-Dienst (`shazam-token.test.mjs`) | bestanden |
 | Website-Tests und Produktionsbuild | bestanden |
-| iOS-Workflow auf GitHub Actions | Run `30717416888`, Commit `2323a6f`, Simulator-Build und Tests `success` |
-| Android Mock-Build (`assembleMockDebug`) im Container | APK erzeugt, 19.673.934 Bytes, SHA-256 `ebda082a…`, Package-ID `app.tiktoklivecompanion.android` |
+| iOS-Workflow auf GitHub Actions | Run `30748478805`, Commit `f812d1c`, vollständiger Simulator-Build und Tests `success` |
+| Android Mock-Build (`assembleMockDebug`) | Run `30748539909`, APK erzeugt, 119.644.545 Bytes, SHA-256 `30ed3b3b…`; separates OPE-94-Strukturgate bleibt offen |
 | Pegelschutz mit `OfflineAudioContext` | Dauerpegel unverändert, Spitze `1,0` → `0,17188` |
 | Entfernte Qualitätsbox und sechs Texte | vollständig entfernt, keine leeren Container |
 | Persistente 0–100-Regler | bestätigt |
-| Release-Prüfsummen | 6/6 lokal reproduzierbar; GitHub-Release-Digests und 7/7 öffentliche Vercel-Dateien bytegleich bestätigt |
+| Release-Prüfsummen | 6/6 in zwei Paketläufen bytegleich; GitHub-Prerelease-Digests bestätigt |
 | Archiv-Ausschlüsse (AAR, `.p8`, Build-Caches) | bestätigt |
 | Vercel Production | `Ready`, `https://tiktok-live-companion.vercel.app/de` öffentlich erreichbar |
-| Vercel Release-Deployment | `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY`; OPE-91 dokumentiert den zuvor veralteten Dashboardstatus |
+| Vercel Release-Deployments | Browser Production `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK`, Android Preview `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G`, iOS Preview `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
 | GitHub-Repository | `private=False`, `visibility=public`; alle drei Branches öffentlich sichtbar |
 | Taildrop-Übertragung der APK | Exit-Code `0` |
 | Physischer Test auf Xiaomi-Gerät mit HyperOS | durchgeführt |

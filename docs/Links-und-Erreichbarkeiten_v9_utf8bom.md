@@ -25,9 +25,9 @@ Die Umsetzung umfasst `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`
 
 | Branch | Adresse | Branchspitze | Status |
 |---|---|---|---|
-| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | Implementierung `35a0651`, Doku `ad1fef6` | ✅ Push und Remote bestätigt |
-| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `80d3cb1` | ✅ Push und Remote bestätigt |
-| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `2323a6f` | ✅ Push und Actions bestätigt |
+| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | Implementierung `3476d17` | ✅ Push und Vercel Production bestätigt |
+| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | Funktion `b27f39f`, Release-Promotion `8d61701` | ✅ Push, APK und Prerelease bestätigt; OPE-94 separat offen |
+| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `f812d1c` | ✅ Push und Actions bestätigt |
 
 Das Repository `KikiKari/Projects` ist laut GitHub-API `private=False`, `visibility=public`. Alle drei Branches sind öffentlich sichtbar.
 
@@ -193,6 +193,9 @@ Grundlage dieses Abschnitts ist der CSV-Export des Linear-Projekts vom 30.07.202
 | [0PE-88](https://linear.app/0penclaw/issue/0PE-88) | `In Progress` | Medium | Sidepanel-Elemente in die vorgegebene Reihenfolge bringen |
 | [0PE-89](https://linear.app/0penclaw/issue/0PE-89) | `In Progress` | High | Vollbild darf Sidepanel-Zustand und Vorlesen nicht deaktivieren |
 | [0PE-90](https://linear.app/0penclaw/issue/0PE-90) | `In Progress` | High | Tabs vollständig getrennt betreiben; Embed-Verknüpfung bleibt explizit |
+| [0PE-97](https://linear.app/0penclaw/issue/0PE-97) | `In Progress` | Low | VLC-Ersatz umplatzieren und stabile VLC-Installation bei Bedarf anbieten |
+| [0PE-98](https://linear.app/0penclaw/issue/0PE-98) | `In Progress` | Low | LIVE-Informationen direkt unter Seiteninformationen platzieren |
+| [0PE-102](https://linear.app/0penclaw/issue/0PE-102) | `In Progress` | Medium | Top-Chatter um mehr…, Reset und Stummschaltung bis höchstens 50 erweitern |
 
 Fachliche Präzisierung aus den Issue-Beschreibungen:
 
@@ -426,16 +429,16 @@ Basis: `.publish-repo/`
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26` |
-| `tiktok-live-companion-service-0.7.1.zip` | `a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a` |
-| `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
-| `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `67e61580df9309844901b6c73bd1e63aad5dc08df2dd698d4de8fdf856936725` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `6f8b0334240d1e3c0b9ff2ba012d87c63102b54c5b2e4dc992294cbffa3f9894` |
+| `tiktok-live-companion-service-0.7.1.zip` | `53370c64966ba6f323f276e5b9c305968533e0cc513c11b8e78b4dbbe6947ce2` |
+| `tiktok-live-companion-ios-0.7.1-source.zip` | `8aecd3fb450f9e0c00d67fe10dd9de41bae82a099d689709627012204a79c1cf` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `d3fcc9f063aecf29f722435ac9247eb497fdf73cd54580a6537b29176deddfb6` |
+| `tiktok-live-companion-android-0.7.1.apk` | `30ed3b3b367f1af643246bc84fb3f848ab4fa928aadd45786591bab93c4e3af0` |
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel und unter `site/public/downloads/`.
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
+Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` sowie `site/public/downloads/` geprüft. Die drei bestehenden GitHub-Prereleases wurden mit den neuen Assets aktualisiert. Browser-Produktionsdeployment `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK` und die Mobile-Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` sowie `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB` sind `READY`.
 
 Der Sidepanel-Hotfix für den fehlenden `service-setup-command`-DOM-Bezug wurde anschließend erneut reproduzierbar paketiert. Für Extension und Plugin gelten deshalb die aktualisierten SHA-256-Werte in der Tabelle; Mobile-, Dienst- und APK-Bytes bleiben unverändert.
 
@@ -497,7 +500,7 @@ Lokale Windows-CLIs: `gh 2.76.2`, `vercel 58.3.0`. `gh` wurde ohne `winget` übe
 
 | Workflow | Branch | Status |
 |---|---|---|
-| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ Run `30717416888`, Commit `2323a6f`, `success` |
+| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ Run `30748478805`, Commit `f812d1c`, vollständiger Build und Tests `success` |
 | `.github/workflows/linear-release-sync.yml` | alle drei Branches | ⚠️ hinterlegt, inaktiv |
 
 Direktlinks:
@@ -525,7 +528,7 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | Produktionsbranch | `TikTok-Live-Companion` |
 | Root Directory | `site` |
 | Production | ✅ `Ready` |
-| Release-Deployment | ✅ `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY` |
+| Release-Deployments | ✅ Browser Production `dpl_BHLa1tsF9THR2Lsf38QFksLCsmhK`; Android/iOS Previews `dpl_Ayf3VgZBqNWuc7x2GyLonLHDyd7G` / `dpl_C3h1xqMMcDaLrGhLwsSmdNQEqHPB`; alle `READY` |
 | Dashboard-Issue | [0PE-91](https://linear.app/0penclaw/issue/0PE-91/071-vercel-ios-deployment-bleibt-im-dashboard-auf-building) — Serverstatus und Logs waren bereits erfolgreich; veraltete „Building“-Anzeige dokumentiert |
 | Inspector | https://vercel.com/openclaw-vercel-project/tiktok-live-companion |
 | Funktionen | `/api/shazam-token` |
@@ -561,6 +564,25 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | VLC | https://github.com/videolan/vlc | Wiedergabe extrahierter Stream-Links |
 | VLC 3.0 | https://github.com/videolan/vlc-3.0 | Kompatibilitätsreferenz |
 | VLC Entwicklerseite | https://images.videolan.org/developers/vlc.html | Wiedergabeparameter |
+| VLC stabile Windows-Version | https://get.videolan.org/vlc/last/win64/ | verifizierter x64-Installer ohne Beta-Version |
+| VLC Android | https://github.com/videolan/vlc-android | Android-LibVLC und externe VLC-App |
+| VLCKit | https://github.com/videolan/vlckit | MobileVLCKit für iOS |
+| PowerShell | https://github.com/PowerShell/PowerShell | Windows-Installationslaufzeit |
+| PowerShell 7.6 `about_pwsh` | https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_pwsh?view=powershell-7.6 | Aufruf- und Argumentreferenz |
+| PSScriptAnalyzer | https://github.com/PowerShell/PSScriptAnalyzer | statische PowerShell-Prüfreferenz |
+| Xcode | https://developer.apple.com/xcode/ | nativer iOS-Build und Simulator-Test |
+| Swift | https://www.swift.org/ | iOS-Quellsprache und Toolchain |
+| TestFlight | https://developer.apple.com/testflight/ | späterer iOS-Beta-Verteilungsweg, kein Ersatz für `xcodebuild` |
+| Safari Developer Tools | https://developer.apple.com/safari/tools/ | WebKit- und WebView-Diagnose |
+| Safari Web Inspector | https://support.apple.com/de-de/guide/safari/sfri20948/mac | lokale Webinhalte untersuchen |
+| Swift Playgrounds | https://www.apple.com/de/swift/playgrounds/ | ergänzende Swift-Lern- und Prototyping-Umgebung |
+| DevTools Extension | https://apps.apple.com/de/app/devtools-extension/id1611993508 | ergänzende App-Store-Diagnosehilfe |
+| Android App Bundle | https://developer.android.com/guide/app-bundle | spätere Store-Paketierung |
+| Android Code/Resource Shrinking | https://developer.android.com/studio/build/shrink-code | R8- und Größenoptimierungsreferenz, nicht Teil dieses Alpha-Laufs |
+| Android APK Analyzer | https://developer.android.com/studio/build/apk-analyzer | Größen- und Inhaltsanalyse |
+| Android WebP-Konvertierung | https://developer.android.com/studio/write/convert-webp | optionale Bildoptimierung |
+| Lightning CSS | https://lightningcss.dev/ | CSS-Build- und Optimierungsreferenz |
+| Google Guava | https://github.com/google/guava | Java-/Android-Bibliotheksreferenz |
 | GitHub Actions | https://docs.github.com/de/actions | CI-Grundlage |
 | GitHub REST Repos | https://docs.github.com/rest/repos | Branch- und Sichtbarkeitsprüfung |
 | GitHub REST Codespaces | https://docs.github.com/en/rest/codespaces | Umgebungsverwaltung |

@@ -6,7 +6,7 @@ Public chat messages are sanitized and rendered as accessible text. Emoji sequen
 
 ## Top chatters and observed people
 
-Per stream, the extension counts messages, words, and gift events for up to 5,000 people observed in chat. Stream mutes reset with the stream; permanent mutes remain local. This is not a complete TikTok viewer list.
+Per stream, the extension counts messages, words, and gift events for up to 5,000 people observed in chat. The box starts with five entries; **mehr…** expands it to 15, 25, 35, 45, and at most 50, while **Reset** immediately restores five. Stream mutes reset with the stream; permanent mutes remain local. This is not a complete TikTok viewer list.
 
 ## Song recognition
 
@@ -27,6 +27,8 @@ Play/pause, reload, volume, mute, picture-in-picture, and fullscreen operate Tik
 ## Quality and VLC
 
 Quality variants come from TikTok stream metadata. **Automatic** is a player mode and has no VLC link. Signed FLV/HLS links can expire and remain sensitive until then.
+
+**VLC Ersatz** is placed below **WebSocket-Hook**, directly to the right of **Normal**, and targets the largest visible central player area. On Windows, the paired local service may install only the current stable VideoLAN build after SHA-256 and Authenticode verification and normal system confirmation. Mobile **VLC Ersatz** uses pinned LibVLC/MobileVLCKit; **VLC Player** passes the same selected URL to the external VLC app or its official store listing.
 
 ## Diagnostics
 
