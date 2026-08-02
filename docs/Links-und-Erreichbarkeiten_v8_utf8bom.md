@@ -21,17 +21,17 @@ Linear-Status: live aus Linear am 02.08.2026 abgeglichen. GHCR-Sichtbarkeit: Pac
 
 Diese Revision v8 ist die **abgeschlossene, übergabefähige Linkliste** zum 0.7.1-Stand. Sie ersetzt die zuvor als „veröffentlicht" markierte v8-Fassung vom 30.07.2026 vollständig und führt den weiteren Arbeitsverlauf der Codex-Sitzung `019fbedc-9c0a-79c2-810f-8a32946de772` nach. Die Zwischenrevision v9 im veröffentlichten Checkout bleibt als Arbeitsspur bestehen.
 
-Umgesetzt wurden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89`, `0PE-90` sowie die neu erfassten `0PE-91` und `0PE-92`. Lokale Änderungen, Commits, Pushes, CI, Pakete, Registry und Deployment sind getrennt ausgewiesen. Der veröffentlichte Browser-Stand ist `039ec54`; der lokale Folgestand vom 02.08.2026 ist gebaut und geprüft, aber ausdrücklich **nicht committet und nicht veröffentlicht**.
+Umgesetzt wurden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0PE-88`, `0PE-89`, `0PE-90` sowie die neu erfassten `0PE-91`, `0PE-92` und `0PE-93`. Lokale Änderungen, Commits, Pushes, CI, Pakete, Registry und Deployment sind getrennt ausgewiesen. Der veröffentlichte Browser-Stand ist `f44f946`; Android steht auf `b3d1770`, iOS auf `0a4fc63`.
 
 ---
 
 ## 1. Veröffentlichte Branches
 
-| Branch | Adresse | Branchspitze | Status |
+| Branch | Adresse | Produkt- und Artefakt-Commit | Status |
 |---|---|---|---|
-| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `039ec54` | ✅ Push und Remote bestätigt |
-| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `80d3cb1` | ✅ Push und Remote bestätigt |
-| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `2323a6f` | ✅ Push und Actions bestätigt |
+| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `f44f946` | ✅ Push und Remote bestätigt |
+| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `b3d1770` | ✅ Push und Remote bestätigt |
+| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `0a4fc63` | ✅ Push bestätigt; native Quellen unverändert zum erfolgreichen Actions-Lauf |
 
 Das Repository `KikiKari/Projects` ist laut GitHub-API `private=False`, `visibility=public`. Alle drei Branches sind öffentlich sichtbar.
 
@@ -48,9 +48,10 @@ Der Android-Wert wurde mit `git fetch --all` und `git ls-remote --heads origin` 
 | `40c74de` | Release-Veröffentlichung der verifizierten Artefakte und des Security-Seals (`0PE-84`, `0PE-91`) |
 | `29f1d8a` | Sidepanel-Hotfix `service-setup-command` (`0PE-92`) |
 | `faabada` | Remote- und Dokumentationsstand nach dem Hotfix |
-| `039ec54` | `docs: record service install release evidence` — **aktueller veröffentlichter Stand** |
+| `039ec54` | `docs: record service install release evidence` — veröffentlichter Vorgänger |
+| `f44f946` | `fix(browser): finalize 0.7.1 service and chat controls` — **aktueller veröffentlichter Stand** |
 
-Der lokale Arbeitsbaum in `.publish-repo/` enthält darüber hinaus **183 uncommittete Pfade** aus dem Folgestand vom 02.08.2026. ⚠️
+Der lokale Arbeitsbaum in `.publish-repo/` enthält nur noch unversionierte reproduzierbare Bauausgaben unter `.artifacts/`; der Quell- und Dokumentationsstand ist veröffentlicht.
 
 ### Lokale Arbeitskopien
 
@@ -119,7 +120,7 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 | Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 | iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
 
-OCI-Index-Digests: Browser nach dem Installations-Hotfix `sha256:6b33a791e8de9bbdc3bfa4ca838cc5a04aaa82f0a6a07225a92e40f337cac58f`, Android `sha256:59ed92b8102904d0ba517bb1b35cfd66ab243168d7738565cc8540807577ba52`, iOS `sha256:6b5dde969391ce7593d88d7e4b8859cf62e5e5e853b9697f56af8985c6f09dba`.
+OCI-Index-Digests: Browser `sha256:3822dc57c1b850149b6825c5892476c6383ae05cbe116fc16f071509a0865752`, Android `sha256:6cbb85768154f7d5ac5faffcf5cb72c1ca8233cfa41b444ffda9000324c443a2`, iOS `sha256:eb1d69ebff7c4bb20737cc5159bafedbe756c10ea39d8734b676f3cc9921b1ad`.
 
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 
@@ -310,7 +311,9 @@ Der Befund ist das Browser-Gegenstück zum mobilen `0PE-70` und wird unter `0PE-
 
 | Befund | Quelle | Status |
 |---|---|---|
-| [0PE-93](https://linear.app/0penclaw/issue/0PE-93) Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar statt ausgeblendet | Nutzeranforderung und Screenshot vom 02.08.2026 | 🔄 `In Progress`; CSS-Ursache lokal behoben, Veröffentlichung noch offen |
+| [0PE-93](https://linear.app/0penclaw/issue/0PE-93) Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar statt ausgeblendet | Nutzeranforderung und Screenshot vom 02.08.2026 | ✅ CSS-Ursache mit Browser-Commit `f44f946` veröffentlicht |
+
+Der nachgereichte Export `tiktok-live-companion-debug-2026-08-02T07-08-45-137Z.json` ist ausschließlich ein Funktionsnachweis. Seine Unterbrechungen durch Tab-/Streamwechsel und erneutes Aktivieren des Debugmodus werden nicht als Fehler oder Dauerlauf gewertet.
 
 ### 7.5 Nicht weiterverfolgt
 
@@ -460,33 +463,22 @@ Basis: `.publish-repo/`
 
 ### 0.7.1 ✅ · `release/0.7.1/`
 
-**Veröffentlichter Stand · Commit `039ec54`**
+**Veröffentlichter Stand · Commit `f44f946`**
 
 | Artefakt | SHA-256 |
 |---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `ed68e29296b61e220c84c98cd102c501dc71942f70b1b6279bef0e6c5cfbd275` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `48470f1c653ab1d5fb15970d8d49540b1362d7c48b5ee4d953dfae7fe096ce26` |
-| `tiktok-live-companion-service-0.7.1.zip` | `a9eb8a4f547aa8c5088f8909f7a7cdb9229044a671611210e890875b80e48b8a` |
+| `tiktok-live-companion-extension-0.7.1.zip` | `7ef3070c93be727a7669512a655a27858e5745646ebeecdd8d1a32e675f2efa4` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `77a29bbda6b131f5646ebcded88bff1af62d7b5f2a55fb4243fc7c251841a477` |
+| `tiktok-live-companion-service-0.7.1.zip` | `c48af6d574ecd7169bb0312093fa2cef53cda6ac8306c7ec3c2c01fe6a2d0ed5` |
 | `tiktok-live-companion-ios-0.7.1-source.zip` | `ef70b876ba02a13b00f91a426ffb1eb91e3da0643311e9119afb31ba7ba7d302` |
 | `tiktok-live-companion-android-0.7.1-source.zip` | `98910a52f101b98be2a8c43d972fc656c0a7ada1ce4bcf06ae169386ceddec2f` |
 | `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
 
-**Lokaler Folgestand vom 02.08.2026 · gebaut und geprüft, nicht veröffentlicht ⚠️**
-
-| Artefakt | SHA-256 |
-|---|---|
-| `tiktok-live-companion-extension-0.7.1.zip` | `b8f814a660408aefb74696983e9948e04928527aeae685e0f08fd0231fb92bdb` |
-| `tiktok-live-companion-plugin-0.7.1.zip` | `ebc11e946cc2df8974dbf2b84dc91a2df7a935ee3f1aa92186b1ac1a8731b0b4` |
-| `tiktok-live-companion-service-0.7.1.zip` | `c48af6d574ecd7169bb0312093fa2cef53cda6ac8306c7ec3c2c01fe6a2d0ed5` |
-| `tiktok-live-companion-ios-0.7.1-source.zip` | `9d0e69699128ab941cd244ecc79173af61af53d2316d4342d9e95e7fd72b628b` |
-| `tiktok-live-companion-android-0.7.1-source.zip` | `907637ff20eff5b803c75ad083dfe65f1f86bd042e90ed6ae634b4188d9e8fc7` |
-| `tiktok-live-companion-android-0.7.1.apk` | `ebda082ac39b441483ec9472e130bf104ef743335864a14bc42378f8196d734d` |
-
-Der Folgestand liegt in `release/0.7.1/` und in der Projektwurzel, wurde zweimal bytegleich reproduziert und in die Testinstallation `C:\Users\silve\Documents\TikTok-Live-Companion` übernommen. Die APK ist gegenüber dem veröffentlichten Stand unverändert. Diese Werte sind **nicht** Gegenstand eines GitHub Release und **nicht** über die Website beziehbar.
+Der Stand liegt in `release/0.7.1/`, den Website-Downloads und in der Projektwurzel. Zwei unabhängige Paketläufe waren bytegleich. Die Browser-Assets wurden im bestehenden Alpha-Release ersetzt; Android- und iOS-Artefakte blieben bytegleich.
 
 Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`, identisch als `tiktok-live-companion-0.7.1-SHA256.txt` in der Projektwurzel; die Kopie unter `site/public/downloads/` führt weiterhin den veröffentlichten Stand.
 
-Alle sechs Werte wurden am 01.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert. Produktionsdeployment `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i` für Commit `6983cc4` ist `READY`; alle sechs Archive beziehungsweise Pakete und die Prüfsummendatei wurden anschließend öffentlich bytegleich bestätigt. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
+Alle sechs Werte wurden am 02.08.2026 in zwei unabhängigen Paketläufen bytegleich reproduziert und gegen `release/0.7.1/` geprüft. GitHub Releases und GHCR sind aktualisiert. Produktionsdeployment `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386` für Commit `f44f946` ist `READY`. Die Archive wurden automatisiert darauf geprüft, dass sie weder ShazamKit-AAR noch `.p8`-Schlüssel noch Build-Caches enthalten.
 
 Der Sidepanel-Hotfix für den fehlenden `service-setup-command`-DOM-Bezug wurde anschließend erneut reproduzierbar paketiert. Für Extension und Plugin gelten deshalb die aktualisierten SHA-256-Werte in der Tabelle; Mobile-, Dienst- und APK-Bytes bleiben unverändert.
 
@@ -548,8 +540,9 @@ Lokale Windows-CLIs: `gh 2.76.2`, `vercel 58.3.0`. `gh` wurde ohne `winget` übe
 
 | Workflow | Branch | Status |
 |---|---|---|
-| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ Run `30717416888`, Commit `2323a6f`, `success` |
-| `.github/workflows/linear-release-sync.yml` | alle drei Branches | ⚠️ hinterlegt, inaktiv |
+| `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | ✅ Run `30717416888`, Commit `2323a6f`, `success`; native iOS-Quellen in `0a4fc63` unverändert |
+| `.github/workflows/linear-release-sync.yml` | Browser `f44f946` | ✅ Run `30742243393`, `success` |
+| `.github/workflows/linear-release-sync.yml` | Android `b3d1770`, iOS `0a4fc63` | ⚠️ Runs `30742462119` / `30742461997` planbedingt ohne `LINEAR_ACCESS_KEY` fehlgeschlagen; kein Produktcode-Fehler |
 
 Direktlinks:
 - https://github.com/KikiKari/Projects/blob/TikTok-Live-Companion-iOS/.github/workflows/ios.yml
@@ -576,7 +569,8 @@ Der iOS-Workflow läuft auf `macos-15`, Timeout 30 Minuten, ohne Secrets und mit
 | Produktionsbranch | `TikTok-Live-Companion` |
 | Root Directory | `site` |
 | Production | ✅ `Ready` |
-| Release-Deployment | ✅ `dpl_3XehaCxCXeDqV8LfFbT5j9ALw48i`, Commit `6983cc4`, `READY` |
+| Release-Deployment | ✅ `dpl_DX2zq2nHYu5VPSbs6FUkqq9sx386`, Commit `f44f946`, Ziel `production`, `READY` |
+| Mobile-Previews | ✅ `dpl_AChdsSWNWbXhSk6kw6A1ZMKDBBZh` (`b3d1770`) und `dpl_BqpvsJ3K4gXHKhWvHyeZCdxDQ2JR` (`0a4fc63`), beide `READY` |
 | Dashboard-Issue | [0PE-91](https://linear.app/0penclaw/issue/0PE-91/071-vercel-ios-deployment-bleibt-im-dashboard-auf-building) — Serverstatus und Logs waren bereits erfolgreich; veraltete „Building“-Anzeige dokumentiert |
 | Inspector | https://vercel.com/openclaw-vercel-project/tiktok-live-companion |
 | Funktionen | `/api/shazam-token` |
@@ -645,7 +639,7 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | `Add iOS Cl simulator workflow.md` | 0PE-83, iOS-Workflow und geteiltes Scheme |
 | `Automatisiere Linear Releases in Cl.md` | 0PE-84, Linear-Release-Sync und Plan-Blocker |
 | `Browserplugin-Start und Hook repari.md` | Startbutton und Hook-Reparatur |
-| `Codex Session Log_Prüfe Version 0.7.1 und Branches.md` | Sitzung `019fbedc-…`: Bestandsaufnahme aller Branches, Umsetzung der neun aktiven 0.7.1-Issues, Release nach `039ec54`, Sidepanel- und Installations-Hotfixes, Stimmen-Gruppierung, 500 Chatzeilen, AudD-Beschriftungen, CMD-Installation |
+| `Codex Session Log_Prüfe Version 0.7.1 und Branches.md` | Sitzung `019fbedc-…`: Bestandsaufnahme aller Branches, Umsetzung der aktiven 0.7.1-Issues, Release bis `f44f946`, Sidepanel- und Installations-Hotfixes, Stimmen-Gruppierung, 500 Chatzeilen, AudD-Beschriftungen, CMD-Installation |
 
 ### Referenzbilder
 
@@ -666,8 +660,8 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | # | Punkt | Verantwortung | Status |
 |---|---|---|---|
 | 1 | **Reale Browserabnahme** für Zwei-Tab, Embed und Vollbild mit laufender TTS (0PE-85, 0PE-89, 0PE-90) | Entwicklung / Nutzer | ⚠️ implementiert; Abnahme offen. Die lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet, eine Umgehung wurde nicht vorgenommen |
-| 2 | **Lokalen Folgestand vom 02.08.2026 committen, pushen und veröffentlichen** — 500 Chatzeilen, Chat-Popup, Auto-Chat Refresh, Checkbox-Anordnung, Stimmen-Gruppierung, AudD-Beschriftungen, Feld-Ausblendung, Validierung, CMD-Installation, `localService`-Debugfelder | Entwicklung | ⚠️ 183 uncommittete Pfade in `.publish-repo/` |
-| 3 | [0PE-93](https://linear.app/0penclaw/issue/0PE-93): Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar | Entwicklung | 🔄 angelegt; CSS-Fix lokal, Veröffentlichung noch offen |
+| 2 | **Veröffentlichter Folgestand vom 02.08.2026** — 500 Chatzeilen, Chat-Popup, Auto-Chat Refresh, Checkbox-Anordnung, Stimmen-Gruppierung, AudD-Beschriftungen, Feld-Ausblendung, Validierung, CMD-Installation, `localService`-Debugfelder | Entwicklung | ✅ Browser `f44f946`, Android `b3d1770`, iOS `0a4fc63`; Releases, GHCR und Vercel aktualisiert |
+| 3 | [0PE-93](https://linear.app/0penclaw/issue/0PE-93): Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar | Entwicklung | ✅ CSS-Fix mit `f44f946` veröffentlicht |
 | 4 | 0PE-41 und 0PE-43 umsetzen | Entwicklung | ⚠️ `Todo` |
 | 5 | Mobile Backlog-Issues 0PE-58, 0PE-70 und 0PE-80 bearbeiten | Entwicklung | ⚠️ `Backlog` |
 | 6 | Zweiter formaler Security-Scan (0PE-42) | Security | ⚠️ `Canceled` auf Nutzeranweisung; das Seal für 0.7.1 mit 0 Critical, 0 High, 0 Medium und 2 behobenen Low/P3 bleibt gültig |
@@ -689,7 +683,7 @@ Visualisierungen: `~/.codex/visualizations/<Jahr>/<Monat>/<Tag>/<Sitzungs-ID>/`
 | Sprachdienst-Start über Setup-Bindung, Protokollstarter und Health-Check | 0PE-73 und 0PE-87 `Done` am 01.08.2026 |
 | Zusätzliche bestätigte Sherpa-Schriftsysteme | 0PE-86 `Done` am 02.08.2026; 26 Stimmen in fester Gruppierung |
 | Sidepanel-Reihenfolge | 0PE-88 `Done` am 02.08.2026 |
-| Mobile Textentfernungen unter Player und Mehr | 0PE-78 und 0PE-79 `Done`; Android `80d3cb1`, iOS-Abwesenheit in `2323a6f` bestätigt |
+| Mobile Textentfernungen unter Player und Mehr | 0PE-78 und 0PE-79 `Done`; Android `b3d1770`, iOS-Abwesenheit in `0a4fc63` bestätigt |
 | Formales Security-Seal für 0.7.1 | abgeschlossen: 0 Critical, 0 High, 0 Medium, 2 Low/P3, beide vor Veröffentlichung behoben |
 | Vercel-Deployment des iOS-Branches | 0PE-91 `Done`; Dashboardstatus war veraltet, serverseitig `READY` |
 | Sidepanel-Fehler `Cannot set properties of undefined` | 0PE-92 `Done`; Fix-Commit `29f1d8a` |
