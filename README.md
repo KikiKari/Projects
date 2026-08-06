@@ -32,6 +32,118 @@ Jeder Befehl kennt `--json` für maschinenlesbare Ausgabe.
 
 ---
 
+---
+
+## Architektur
+
+<div align="center">
+
+![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
+
+**[▶ Interaktive 3D-Ansicht öffnen](https://mcp-server-monitor.vercel.app/3d.html)** — ziehen zum Drehen,
+Rad zum Zoomen, Umschalter zwischen isometrisch und perspektivisch.
+
+</div>
+
+### Isometrische Ansicht
+
+![Isometrische Schichtansicht](docs/assets/architektur-iso.png)
+
+Vier Schichten, streng getrennt, jede für sich prüfbar:
+
+| Schicht | Modul | Verantwortung | Kennt nicht |
+|---|---|---|---|
+| **Quellen** | Netz, Dateisystem | die Wirklichkeit, die befragt wird | — |
+| **Sonde** | `discovery.py`, `config.py` | Rohbefunde erheben | Zustände, Formatierung |
+| **Klassifikation** | `state.py` | Signale → einer von fünf Zuständen | Netz, Dateisystem, Terminal |
+| **Ausgabe** | `report.py`, `server.py`, `public/` | Text bzw. HTML | Netz |
+
+`state.py` importiert **nur** `dataclasses`. Das ist Absicht: Die Klassifikationsregeln
+sind der Kern und müssen ohne Netz, ohne Dateien und ohne Terminal testbar bleiben.
+
+Beide Bilder werden aus derselben Schichtbeschreibung erzeugt wie die 3D-Seite:
+
+```bash
+python tools/render_3d.py mcp-server-monitor docs/assets
+```
+
+---
+
+## Abläufe
+
+### Discovery — was beim Prüfen einer Domain passiert
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant C as cli.py
+    participant D as discovery.py
+    participant E as mcp.DOMAIN
+    participant W as /.well-known
+    participant R as report.py
+
+    N->>C: python cli.py probe linear.app
+    C->>D: pruefe("linear.app")
+    D->>E: GET https://mcp.linear.app/
+    E-->>D: 200
+    D->>E: GET https://mcp.linear.app/mcp
+    E-->>D: 401 (regulaere Ablehnung, kein Fehler)
+    D->>W: GET /.well-known/oauth-protected-resource
+    W-->>D: 200 + Metadaten
+    D-->>C: urteil = "oauth-faehiger-server" + Begruendung
+    C->>R: discovery(befund)
+    R-->>N: Tabelle je Pfad + Deutung im Klartext
+```
+
+Der entscheidende Punkt steht in Schritt 5: **400/401/405 sind reguläre Ablehnungen,
+keine Negativbefunde.** Ein Streamable-HTTP-Endpunkt lehnt ein nacktes GET erwartungsgemäß
+ab. Wer das als „nicht vorhanden" liest, sucht danach an der falschen Stelle.
+
+### Zustandsbestimmung — warum die Tools fehlen
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant C as cli.py
+    participant S as state.py
+    participant R as report.py
+
+    N->>C: doctor --tools nein --haekchen --plugin
+    C->>S: bestimme(hat_tools=false, hat_haekchen=true, auch_als_plugin=true)
+    Note over S: Tools zuerst pruefen —<br/>Tool-Listen sind scope-gefiltert
+    S->>S: keine Tools + Haekchen → Zustand 3
+    S->>S: plugin-Name gesehen → Warnung anhaengen
+    S-->>C: Befund(zustand=3, schritt, warnungen[2])
+    C->>R: befund(...)
+    R-->>N: "Verbunden, ohne Tools" + genau ein naechster Schritt
+```
+
+### Lokaler Companion — warum die öffentliche Seite nicht probt
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant V as Vercel (statisch)
+    participant L as server.py auf 127.0.0.1
+    participant D as discovery.py
+    participant Z as mcp.DOMAIN
+
+    B->>V: GET /
+    V-->>B: index.html (Wizard, Tabellen, kein Pruef-Knopf)
+    Note over B,Z: Ein fetch von vercel.app auf mcp.DOMAIN<br/>scheitert an CORS — deshalb gar nicht erst anbieten
+    B->>L: GET http://127.0.0.1:8787/
+    L-->>B: dieselbe index.html — Knopf erscheint von selbst
+    B->>L: GET /api/probe?domain=notion.com
+    L->>D: pruefe("notion.com")
+    D->>Z: sechs Pfade, serverseitig, kein CORS
+    Z-->>D: Status je Pfad
+    D-->>L: Befund
+    L-->>B: JSON → Tabelle in der Seite
+```
+
 ## Die fünf Zustände
 
 | Zustand | Woran erkennbar | Nächster Schritt |
@@ -140,6 +252,9 @@ beim Start — nach dem Ändern vollständig beenden und neu öffnen.
 cli.py              Kommandozeile — states, errors, probe, config, doctor, serve
 server.py           lokaler Server auf 127.0.0.1, liefert public/index.html + /api/*
 public/index.html   die statische Seite (auch das Vercel-Deployment)
+public/3d.html      interaktive three.js-Ansicht der Architektur
+tools/render_3d.py  erzeugt Standbild und rotierendes GIF aus derselben Beschreibung
+docs/assets/        gerenderte Architekturbilder
 mcpmon/discovery.py Netz-Proben und ihre Deutung
 mcpmon/state.py     die fünf Zustände, Klassifikation, Fehlerbilder
 mcpmon/config.py    claude_desktop_config.json finden, MSIX-Falle benennen
