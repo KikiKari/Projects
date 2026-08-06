@@ -5,7 +5,7 @@
 **Branch-basiertes Mono-Repository — jeder Branch ist ein eigenständiges Projekt einer KI-Plattform.**
 Der Default-Branch `main` enthält ausschließlich diesen Index.
 
-[![Projekte](https://img.shields.io/badge/Projekte-10-1f6feb)](https://github.com/KikiKari/Projects/branches)
+[![Projekte](https://img.shields.io/badge/Projekte-11-1f6feb)](https://github.com/KikiKari/Projects/branches)
 [![Plattformen](https://img.shields.io/badge/Plattformen-Claude_%2C_Codex_%26_Perplexity-8957e5)](#-übersicht)
 [![Branch-Modell](https://img.shields.io/badge/Modell-1_Projekt_%3D_1_Branch-2ea043)](#-übersicht)
 [![main](https://img.shields.io/badge/main-nur_Index-8b949e)](https://github.com/KikiKari/Projects/tree/main)
@@ -38,6 +38,7 @@ flowchart TD
     CL --> D["secret-vault-public"]
     CL --> E["tagesstatus-live-public"]
     CL --> F["tiktok-monitor"]
+    CL --> K["MCP-Server-Monitor"]
 
     CX --> J["TikTok-Live-Companion"]
 
@@ -56,6 +57,7 @@ Skills, Agents und Browser-Artefakte rund um die OpenClaw-/Claude-Code-Umgebung.
 | --- | --- | --- |
 | **abstractions** | Automatisierter Multi-Node Abstraction Manager, der OpenClaw-Scripts per Cron in 10 Zielsprachen portiert und dazu Status-Report sowie Dokumentations-Datenbanken pflegt. | [`abstractions`](https://github.com/KikiKari/Projects/tree/abstractions) |
 | **clawhub** | Bidirektionaler Sync- und Publish-Agent, der OpenClaw-Skills zwischen ClawHub und Git abgleicht und Commits, Versionierung sowie Veröffentlichung automatisiert. | [`clawhub`](https://github.com/KikiKari/Projects/tree/clawhub) |
+| **MCP-Server-Monitor** | Diagnose- und Einrichtungswerkzeug für fremde MCP-Server: bestimmt anhand von fünf Zuständen, warum Tools fehlen, prüft per Discovery (`mcp.DOMAIN`, `docs.DOMAIN/mcp`, OAuth-`well-known`), ob ein Anbieter überhaupt einen Server betreibt, und benennt die MSIX-Pfadfalle der Konfigurationsdatei. | [`MCP-Server-Monitor`](https://github.com/KikiKari/Projects/tree/MCP-Server-Monitor) |
 | **python-hardener** | Skill samt Eval-Suite, der bestehende Python-Scripts automatisch absichert (Shell-Injection, Logging, atomare Writes, Docstrings) und die Änderungen als Markdown dokumentiert. | [`python-hardener`](https://github.com/KikiKari/Projects/tree/python-hardener) |
 | **secret-vault-public** | Vollständig client-seitiges Browser-Artefakt für einen verschlüsselten Secret-Container (WebCrypto, AES-256-GCM + PBKDF2) zum Anlegen, Rotieren und Exportieren von Secrets — ohne eingebettete Schlüssel. | [`secret-vault-public`](https://github.com/KikiKari/Projects/tree/secret-vault-public) |
 | **tagesstatus-live-public** | Umgebungs-unabhängige Status-Seite, die Live-Daten mehrerer Dienste (GitHub, OpenRouter, OpenAI, Anthropic, Tailscale, ClawHub) per direktem Browser-Abruf anzeigt; Tokens liegen nur im localStorage. | [`tagesstatus-live-public`](https://github.com/KikiKari/Projects/tree/tagesstatus-live-public) |
