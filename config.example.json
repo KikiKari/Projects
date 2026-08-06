@@ -1,0 +1,25 @@
+{
+  "telegram": {
+    "bot_token": "",
+    "api_id": "",
+    "api_hash": "",
+    "session": "tgmon"
+  },
+  "discord": {
+    "bot_token": "",
+    "client_id": ""
+  },
+  "tiktok": {
+    "accounts": [
+      "creator"
+    ]
+  },
+  "notify": {
+    "webhook_url": "",
+    "command": "powershell -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Windows.Forms; $n=New-Object System.Windows.Forms.NotifyIcon; $n.Icon=[System.Drawing.SystemIcons]::Information; $n.Visible=$true; $n.ShowBalloonTip(10000,'{title}','{text}','Info'); Start-Sleep -s 11; $n.Dispose()\""
+  },
+  "search": {
+    "use_web_discovery": true,
+    "limit": 20
+  }
+}

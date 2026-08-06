@@ -1,0 +1,56 @@
+# Dauerbetrieb auf dem eigenen Rechner.
+#
+#   docker compose up -d --build     starten (und nach Aenderungen neu bauen)
+#   docker compose logs -f           zusehen
+#   docker compose down              anhalten
+#
+# Danach laeuft der Monitor unter http://127.0.0.1:8765 — unabhaengig davon,
+# ob ein Fenster offen ist. Damit er auch den Neustart ueberlebt, muss in
+# Docker Desktop unter Settings > General die Option
+# "Start Docker Desktop when you sign in to your computer" aktiv sein.
+
+services:
+  monitor:
+    build: .
+    image: telegram-monitor:local
+    container_name: telegram-monitor
+
+    # WICHTIG: die Bindung an 127.0.0.1 gehoert auf die linke Seite.
+    # Ohne sie ("8765:8765") oeffnet Docker den Port auf allen Schnittstellen
+    # und umgeht dabei die Windows-Firewall — der Monitor waere dann im
+    # ganzen Netz erreichbar, inklusive Tailnet.
+    ports:
+      - "127.0.0.1:8765:8765"
+
+    # Der Verlauf liegt im benannten Volume und ueberlebt jedes Neubauen.
+    volumes:
+      - monitor-data:/app/data
+      # Eigene Einstellungen, falls vorhanden. Nur lesend eingehaengt.
+      - ./config.json:/app/config.json:ro
+
+    environment:
+      TZ: Europe/Berlin
+
+    # Startet nach Neustart und nach Absturz wieder — aber nicht, wenn du
+    # ihn selbst angehalten hast. Genau das will man hier.
+    restart: unless-stopped
+
+    # Bordmittel statt curl: das Abbild ist schlank, curl ist nicht drin.
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/status', timeout=5).status==200 else 1)"]
+      interval: 60s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+    # Ein Beobachter braucht keine erweiterten Rechte.
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  monitor-data:

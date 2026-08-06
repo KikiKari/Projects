@@ -1,0 +1,3 @@
+# Kernfunktionen laufen OHNE jede Installation (nur Standardbibliothek).
+# Nur fuer Methode 3 (MTProto / echte Telegram-Kanalsuche):
+telethon>=1.36

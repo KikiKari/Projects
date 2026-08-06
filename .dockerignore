@@ -1,0 +1,15 @@
+data/
+__pycache__/
+**/__pycache__/
+*.pyc
+.git/
+.venv/
+venv/
+plugin/
+*.zip
+*.skill
+*.cmd
+*.ps1
+*.sh
+TikTok-*.html
+telegram-monitor-uebersicht.html
