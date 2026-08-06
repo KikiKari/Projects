@@ -22,6 +22,143 @@ Windows: `run.cmd` doppelklicken. macOS/Linux: `./run.sh`.
 
 ---
 
+---
+
+## Architektur
+
+<div align="center">
+
+![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
+
+**[▶ Interaktive 3D-Ansicht öffnen](https://telegram-monitor-five.vercel.app/3d.html)** — ziehen zum Drehen,
+Rad zum Zoomen, Umschalter zwischen isometrisch und perspektivisch.
+
+</div>
+
+### Isometrische Ansicht
+
+![Isometrische Schichtansicht](docs/assets/architektur-iso.png)
+
+| Schicht | Wo im Code | Verantwortung | Zugangsdaten |
+|---|---|---|---|
+| **Plattformen** | — | t.me, Bot-API, MTProto, Discord, TikTok | je Weg verschieden |
+| **Adapter** | `tgmon/adapters/` | eine Quelle befragen, Ergebnis vereinheitlichen | web: keine · bot: Token · mtproto: api_id/hash |
+| **Kern** | `tgmon/registry.py`, `store.py`, `live.py`, `models.py` | Adapter zusammenführen, Zustand halten, Änderungen erkennen | keine |
+| **Ausgabe** | `tgmon/notify.py`, `cli.py`, `server.py`, `web/` | melden, anzeigen, bedienbar machen | keine |
+
+Der Kern kennt keine Plattform. Er sieht nur, was ein Adapter liefert — deshalb
+lässt sich eine Quelle hinzufügen, ohne den Rest anzufassen, und deshalb laufen
+alle drei Telegram-Wege gleichzeitig, ohne sich zu kennen.
+
+Beide Bilder werden aus derselben Schichtbeschreibung erzeugt wie die 3D-Seite:
+
+```bash
+python tools/render_3d.py telegram-monitor docs/assets
+```
+
+---
+
+## Abläufe
+
+### Livegang erkennen und melden
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Poller (alle 120 s)
+    participant A as adapters/tiktok_live
+    participant Q as oeffentliche Quellen
+    participant S as store.py
+    participant N as notify.py
+    participant B as Browser / PWA
+
+    P->>A: Status je Ziel abfragen
+    A->>Q: oeffentliche Endpunkte, keine Zugangsdaten
+    Q-->>A: live? Titel? m3u8?
+    A-->>P: Zustand + Beitraege
+    P->>S: mit letztem bekannten Zustand vergleichen
+    alt Zustand hat gewechselt
+        S-->>P: Wechsel offline → live
+        P->>N: live_start(name, titel)
+        N-->>B: Meldung + Eintrag im Verlauf
+        Note over S: [live_start] Uelmen ist live — Gammeln
+    else unveraendert
+        S-->>P: nichts zu tun
+    end
+    B->>S: GET /api/events?limit=30
+    S-->>B: Verlauf aus dem Volume monitor-data
+```
+
+Nur der **Wechsel** löst eine Meldung aus, nicht jeder Abruf. Der zuletzt bekannte
+Zustand liegt im benannten Volume `monitor-data` und überlebt jedes Neubauen des
+Abbilds — sonst würde nach jedem `docker compose up --build` alles noch einmal
+gemeldet.
+
+### Die drei Telegram-Wege laufen parallel
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant C as cli.py
+    participant R as registry.py
+    participant W as telegram_web
+    participant B as telegram_bot
+    participant M as telegram_mtproto
+
+    N->>C: python cli.py search creator
+    C->>R: suche("creator")
+    par immer aktiv
+        R->>W: Kandidaten raten + t.me pruefen, Websuche site:t.me
+        W-->>R: Treffer (ohne Zugangsdaten)
+    and nur mit Bot-Token
+        R->>B: getChat je Kandidat
+        B-->>R: verlaessliche Metadaten oder "kein Token"
+    and nur mit api_id/api_hash
+        R->>M: echte globale Suche
+        M-->>R: auch nicht erratbare Kanaele oder "fehlt"
+    end
+    R->>R: zusammenfuehren, Duplikate entfernen
+    R-->>C: eine Trefferliste
+    C-->>N: Ergebnis + welcher Weg aktiv war
+```
+
+Was gerade aktiv ist, sagt `python cli.py status` — und beim Start meldet es der
+Server selbst:
+
+```
+[x] telegram-web: Immer verfuegbar - benoetigt keinerlei Zugangsdaten.
+[ ] telegram-bot: Kein Bot-Token. Setze TELEGRAM_BOT_TOKEN oder telegram.bot_token in config.json.
+[ ] telegram-mtproto: api_id/api_hash fehlen - von https://my.telegram.org holen.
+[ ] discord-bot: Kein Bot-Token - Invite-Lookup funktioniert trotzdem.
+[x] tiktok-live: Oeffentliche Quellen, keine Zugangsdaten noetig.
+```
+
+Ein fehlender Weg ist kein Fehler, sondern eine Fähigkeit weniger.
+
+### Dauerbetrieb im Container
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant D as docker compose
+    participant K as Container telegram-monitor
+    participant V as Volume monitor-data
+    participant H as Healthcheck
+
+    N->>D: docker compose up -d --build
+    D->>K: Start, Port 127.0.0.1:8765 gebunden
+    Note over D,K: Die Bindung an 127.0.0.1 gehoert nach links —<br/>sonst umgeht Docker die Firewall und oeffnet den Port im ganzen Netz
+    K->>V: Verlauf laden
+    V-->>K: letzter bekannter Zustand
+    loop alle 60 s
+        H->>K: GET /api/status
+        K-->>H: 200
+    end
+    Note over K: restart: unless-stopped —<br/>faehrt nach Neustart und Absturz wieder hoch,<br/>aber nicht, wenn du ihn selbst angehalten hast
+```
+
 ## Die drei Telegram-Zugangswege
 
 | Methode | Datei | Zugangsdaten | Kann |
@@ -256,6 +393,14 @@ Neue Plattform ergaenzen = ein Adapter mit `status()`, `resolve()`, `posts()`,
 `search()`, der `Channel`/`Post` zurueckgibt, plus ein Eintrag in `registry.py`.
 
 ---
+
+### Zusaetzlich fuer die Doku
+
+```
+public/3d.html      interaktive three.js-Ansicht der Architektur
+tools/render_3d.py  erzeugt Standbild und rotierendes GIF aus derselben Beschreibung
+docs/assets/        gerenderte Architekturbilder
+```
 
 ## Grenzen (ehrlich)
 
