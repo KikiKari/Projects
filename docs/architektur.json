@@ -1,0 +1,11 @@
+{
+  "titel": "Secret-Vault Public — Schichten",
+  "akzent": "#5b5bd6",
+  "schichten": [
+    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["Passphrase", "Vault-Datei", "neue Felder"]},
+    {"name": "Schluesselableitung", "farbe": "#2481cc", "blocks": ["PBKDF2 210k", "Salt 16 B", "SHA-256"]},
+    {"name": "Verschluesselung", "farbe": "#5b5bd6", "blocks": ["AES-256-GCM", "IV 12 B", "crypto.subtle"]},
+    {"name": "Verwaltung", "farbe": "#b45309", "blocks": ["Anbieter", "Felder", "Rotation"]},
+    {"name": "Ausgabe", "farbe": "#22a06b", "blocks": ["Download", "Export", "Zwischenablage"]}
+  ]
+}
