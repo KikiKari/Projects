@@ -30,10 +30,6 @@ on:
         description: "Nach dem Push auf einen Tailnet-Node ausrollen"
         type: boolean
         default: false
-      ziel:
-        description: "Zielhost im Tailnet"
-        type: string
-        default: "openclaw-node3"
 
 concurrency:
   group: docker-abstractions-manager-${{ github.ref }}
@@ -96,23 +92,27 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   ausrollen:
-    name: Auf einen Tailnet-Node ausrollen
+    name: Auf lenovo-node7 starten
     needs: bauen
     if: github.event_name == 'workflow_dispatch' && inputs.verteilen
-    runs-on: ubuntu-latest
+    # Der Runner laeuft auf lenovo-node7 und bedient die dortige
+    # Docker-Desktop-Installation direkt. Er steht bereits im Tailnet —
+    # deshalb braucht es hier weder tailscale/github-action noch OAuth-Secrets.
+    runs-on: [self-hosted, lenovo-node7]
     steps:
-      - name: Ins Tailnet verbinden
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+      - name: Quellstand holen
+        uses: actions/checkout@v4
 
-      - name: Abbild auf dem Zielhost ziehen und starten
+      - name: An ghcr.io anmelden
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Abbild ziehen und dauerhaft starten
         run: |
-          set -euo pipefail
-          ZIEL="${{ inputs.ziel }}"
-          echo "Ziel: $ZIEL"
-          ssh -o StrictHostKeyChecking=accept-new "$ZIEL" \
-            "docker pull ghcr.io/${{ github.repository_owner }}/abstractions-manager:alpha \
-             && docker compose -p abstractions-manager up -d --pull always"
+          docker compose pull
+          docker compose up -d --remove-orphans
+          docker compose ps
+
+      - name: Zustand festhalten
+        run: |
+          echo "### abstractions-manager auf lenovo-node7" >> "$GITHUB_STEP_SUMMARY"
+          docker compose ps >> "$GITHUB_STEP_SUMMARY"
