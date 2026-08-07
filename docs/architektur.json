@@ -1,0 +1,11 @@
+{
+  "titel": "Vision-Check — Schichten",
+  "akzent": "#0f766e",
+  "schichten": [
+    {"name": "Erfassung", "farbe": "#5f6773", "blocks": ["getUserMedia", "4K-Auswahl", "Geraete-Dropdown"]},
+    {"name": "On-Device-KI", "farbe": "#2481cc", "blocks": ["TensorFlow.js", "COCO-SSD v2", "WebGL"]},
+    {"name": "Bildverbesserung", "farbe": "#6d5bd0", "blocks": ["CLAHE 4x", "Unsharp-Mask", "Helligkeit/Saettigung"]},
+    {"name": "Cloud Vision", "farbe": "#b45309", "blocks": ["GPT-4o", "Gemini 2.5", "Claude", "Worker-Proxy"]},
+    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Pixel-Inspektor", "Overlay", "PWA"]}
+  ]
+}
