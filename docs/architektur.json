@@ -1,0 +1,10 @@
+{
+  "titel": "Weather-Check — Schichten",
+  "akzent": "#2481cc",
+  "schichten": [
+    {"name": "Quellen", "farbe": "#5f6773", "blocks": ["DWD-Radar", "Messstationen", "Open-Meteo", "Satellit", "Webcams", "Handyfoto"]},
+    {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": ["Zugbahn", "Gewichtung", "Widerspruchspruefung"]},
+    {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": ["30 min", "60 min", "120 min"]},
+    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["PWA", "Computer-Prompt", "Handlungssatz"]}
+  ]
+}
