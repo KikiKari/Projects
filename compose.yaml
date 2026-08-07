@@ -1,0 +1,39 @@
+# Verschluesselter Secret-Container
+#
+#   docker compose up -d --build     starten (und nach Aenderungen neu bauen)
+#   docker compose logs -f           zusehen
+#   docker compose down              anhalten
+#
+# Eigener Projektname, eigener Container, eigenes Abbild, eigenes Volume:
+# nichts davon beruehrt bestehende Umgebungen wie tlc, telegram-monitor
+# oder onboardingandprojectpages.
+
+name: secret-vault-public
+
+services:
+  app:
+    build: .
+    image: ghcr.io/kikikari/secret-vault-public:local
+    container_name: secret-vault-public
+
+    # WICHTIG: die Bindung an 127.0.0.1 gehoert auf die linke Seite.
+    # Ohne sie ("8804:80") oeffnet Docker den Port auf allen Schnittstellen
+    # und umgeht dabei die Firewall — der Dienst waere im ganzen Netz
+    # erreichbar, inklusive Tailnet.
+    ports:
+      - "127.0.0.1:8804:80"
+
+    environment:
+      TZ: Europe/Berlin
+
+    # Startet nach Neustart und nach Absturz wieder — aber nicht, wenn du
+    # ihn selbst angehalten hast.
+    restart: unless-stopped
+
+    # Ein Beobachter braucht keine erweiterten Rechte.
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
