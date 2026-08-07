@@ -1,0 +1,10 @@
+{
+  "titel": "Tagesstatus Live Public — Schichten",
+  "akzent": "#0f766e",
+  "schichten": [
+    {"name": "Tokens", "farbe": "#5f6773", "blocks": ["Abfrage beim Oeffnen", "localStorage", "keine Vorbelegung"]},
+    {"name": "Quellen", "farbe": "#2481cc", "blocks": ["GitHub", "Vercel", "Docker Hub", "OpenRouter", "OpenAI", "Anthropic", "Tailscale", "ClawHub"]},
+    {"name": "Abruf", "farbe": "#6d5bd0", "blocks": ["fetch je Quelle", "CORS-Pruefung", "Fehler isolieren"]},
+    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Kacheln", "Verbrauch", "keine Daten = Hinweis"]}
+  ]
+}
