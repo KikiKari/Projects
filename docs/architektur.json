@@ -1,0 +1,11 @@
+{
+  "titel": "TikTok LIVE Companion — Schichten",
+  "akzent": "#fe2c55",
+  "schichten": [
+    {"name": "Quelle", "farbe": "#5f6773", "blocks": ["TikTok-LIVE-Tab", "oeffentliche DOM-Daten", "eingebettete Metadaten"]},
+    {"name": "Beobachtung", "farbe": "#2481cc", "blocks": ["content.js", "WebSocket-Hook"]},
+    {"name": "Zustand", "farbe": "#6d5bd0", "blocks": ["background.js", "storage.session"]},
+    {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": ["Seitenpanel", "Vorlesen", "Playersteuerung"]},
+    {"name": "Doku", "farbe": "#0f766e", "blocks": ["docs/de", "docs/en", "Vercel-Site"]}
+  ]
+}

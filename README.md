@@ -58,6 +58,103 @@ flowchart LR
 
 Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
 
+### Schichtansicht in 3D
+
+<div align="center">
+
+![Rotierende 3D-Ansicht der Schichten](docs/assets/architektur-rotation.gif)
+
+**[▶ Begehbare Schichtansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+Umschalter zwischen isometrisch und perspektivisch. Ergänzt die
+[interaktive Datenfluss-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
+um die Schichtsicht.
+
+</div>
+
+![Isometrische Schichtansicht](docs/assets/architektur-iso.png)
+
+| Schicht | Wo | Verantwortung | Sendet |
+|---|---|---|---|
+| **Quelle** | TikTok-Tab | öffentliche DOM- und Metadaten | — |
+| **Beobachtung** | `content.js`, WebSocket-Hook | isolierte Prüfung, passives Mitlesen | nein |
+| **Zustand** | `background.js`, `storage.session` | Filterung, Tab-Zustand, flüchtige Ablage | nein |
+| **Ausgabe** | Seitenpanel | `textContent`, Vorlesen, Playersteuerung | nein |
+| **Doku** | `docs/de`, `docs/en` | zweisprachige statische Site | — |
+
+Der WebSocket-Hook liest, er sendet nie. `storage.session` ist bewusst flüchtig: Nach dem
+Schließen des Tabs bleibt nichts zurück, was jemand später auslesen könnte.
+
+Standbild und GIF entstehen aus `docs/architektur.json`:
+
+```bash
+python tools/render_3d.py docs/architektur.json docs/assets
+```
+
+---
+
+## Abläufe
+
+### Eine Chatzeile bis ins Seitenpanel
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as TikTok-LIVE-Tab
+    participant H as WebSocket-Hook
+    participant C as content.js
+    participant B as background.js
+    participant S as storage.session
+    participant P as Seitenpanel
+
+    T-->>H: Chat-Ereignis (passiv mitgelesen)
+    H->>C: Rohereignis
+    C->>C: bereinigen, Typ pruefen, Groesse begrenzen
+    Note over C: Isolierte Welt: das Seitenskript<br/>der Seite kommt hier nicht heran
+    C->>B: bereinigtes Ergebnis
+    B->>B: filtern, Tab-Zustand fortschreiben
+    B->>S: flüchtig ablegen
+    S-->>P: Zeile als textContent
+    P-->>P: optional lokal vorlesen
+    Note over H,P: An keiner Stelle geht etwas hinaus.<br/>Gelesen, niemals gesendet.
+```
+
+### Songerkennung — nur nach Klick
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant P as Seitenpanel
+    participant A as AudD
+
+    Note over P: Ohne Klick passiert nichts.<br/>Keine Dauererkennung, kein Mitschnitt.
+    N->>P: "Song erkennen"
+    P->>P: kurzen Ausschnitt aufnehmen
+    P->>A: Ausschnitt senden
+    A-->>P: Titel, Interpret oder "nichts erkannt"
+    P-->>N: Ergebnis im Panel
+```
+
+### Untertitel prüfen
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as content.js
+    participant T as TikTok-Player
+    participant P as Seitenpanel
+
+    C->>T: vorhandene Untertitelspuren pruefen
+    alt native Untertitel vorhanden
+        T-->>C: Spur + Sprache
+        C->>P: anzeigen, Zustand "vorhanden"
+    else keine Spur
+        T-->>C: nichts
+        C->>P: Zustand "keine Untertitel"
+        Note over P: Der Companion erzeugt keine<br/>Untertitel. Er sagt, ob es welche gibt.
+    end
+```
+
 ## Dokumentation
 
 - [Vollständige Dokumentation V7](docs/TikTok-Live-Companion_v7_utf8bom.md)
