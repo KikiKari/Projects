@@ -16,4 +16,13 @@ USER lauf
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TZ=Europe/Berlin
 
-CMD ["sh", "-c", "python clawhub/Skills/sync_agent.py"]
+# sync_agent.py importiert das Modul sync_clawhub_git, das in diesem Branch
+# nicht liegt — der Lauf bricht sofort mit ModuleNotFoundError ab, und mit
+# restart: unless-stopped wird daraus eine Neustartschleife. Solange das
+# Modul fehlt, bleibt der Container bereit statt zu kreisen:
+#
+#   docker exec clawhub-sync python clawhub/Skills/sync_agent.py --dry-run
+#
+# Sobald sync_clawhub_git.py neben sync_agent.py liegt, kann hier wieder
+# der direkte Aufruf stehen.
+CMD ["sleep", "infinity"]
