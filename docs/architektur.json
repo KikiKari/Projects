@@ -2,10 +2,173 @@
   "titel": "tt-live — Schichten",
   "akzent": "#fe2c55",
   "schichten": [
-    {"name": "Quellen", "farbe": "#5f6773", "blocks": ["tiktok.com/@user", "room_id", "m3u8"]},
-    {"name": "Werkzeuge", "farbe": "#2481cc", "blocks": ["get_room_id.py", "check_alive.py", "tt_live.py"]},
-    {"name": "Einstieg", "farbe": "#6d5bd0", "blocks": ["tt-live.sh", "tt-live.json"]},
-    {"name": "Daemon", "farbe": "#b45309", "blocks": ["Zeitfenster", "Zustandsspeicher", "Abstand"]},
-    {"name": "Ereignisse", "farbe": "#fe2c55", "blocks": ["go_live", "go_offline", "rename_detected"]}
-  ]
+    {
+      "name": "Quellen",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "tiktok-com-user",
+          "name": "tiktok.com/@user",
+          "untertitel": "oeffentlich"
+        },
+        {
+          "id": "room-id",
+          "name": "room_id",
+          "untertitel": "aufgeloest"
+        },
+        {
+          "id": "m3u8",
+          "name": "m3u8",
+          "untertitel": "Stream-URL"
+        }
+      ]
+    },
+    {
+      "name": "Werkzeuge",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "get-room-id-py",
+          "name": "get_room_id.py",
+          "untertitel": "handle -> id"
+        },
+        {
+          "id": "check-alive-py",
+          "name": "check_alive.py",
+          "untertitel": "live ja/nein"
+        },
+        {
+          "id": "tt-live-py",
+          "name": "tt_live.py",
+          "untertitel": "alles plus Daemon"
+        }
+      ]
+    },
+    {
+      "name": "Einstieg",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "tt-live-sh",
+          "name": "tt-live.sh",
+          "untertitel": "Einstieg"
+        },
+        {
+          "id": "tt-live-json",
+          "name": "tt-live.json",
+          "untertitel": "Aufrufe"
+        }
+      ]
+    },
+    {
+      "name": "Daemon",
+      "farbe": "#b45309",
+      "blocks": [
+        {
+          "id": "zeitfenster",
+          "name": "Zeitfenster",
+          "untertitel": "Dauer + Abstand"
+        },
+        {
+          "id": "zustandsspeicher",
+          "name": "Zustandsspeicher",
+          "untertitel": "letzter Stand"
+        },
+        {
+          "id": "abstand",
+          "name": "Abstand",
+          "untertitel": "Takt"
+        }
+      ]
+    },
+    {
+      "name": "Ereignisse",
+      "farbe": "#fe2c55",
+      "blocks": [
+        {
+          "id": "go-live",
+          "name": "go_live",
+          "untertitel": "Wechsel"
+        },
+        {
+          "id": "go-offline",
+          "name": "go_offline",
+          "untertitel": "Wechsel"
+        },
+        {
+          "id": "rename-detected",
+          "name": "rename_detected",
+          "untertitel": "Namenswechsel"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "tiktok-com-user",
+      "nach": "get-room-id-py",
+      "art": "fluss"
+    },
+    {
+      "von": "room-id",
+      "nach": "check-alive-py",
+      "art": "fluss"
+    },
+    {
+      "von": "m3u8",
+      "nach": "tt-live-py",
+      "art": "fluss"
+    },
+    {
+      "von": "get-room-id-py",
+      "nach": "tt-live-sh",
+      "art": "fluss"
+    },
+    {
+      "von": "check-alive-py",
+      "nach": "tt-live-json",
+      "art": "fluss"
+    },
+    {
+      "von": "tt-live-py",
+      "nach": "tt-live-sh",
+      "art": "fluss"
+    },
+    {
+      "von": "tt-live-sh",
+      "nach": "zeitfenster",
+      "art": "fluss"
+    },
+    {
+      "von": "tt-live-json",
+      "nach": "zustandsspeicher",
+      "art": "fluss"
+    },
+    {
+      "von": "zeitfenster",
+      "nach": "go-live",
+      "art": "fluss"
+    },
+    {
+      "von": "zustandsspeicher",
+      "nach": "go-offline",
+      "art": "fluss"
+    },
+    {
+      "von": "abstand",
+      "nach": "rename-detected",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#fe2c55",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Vom @handle zum Ereignis: Auflösung, Prüfung, Daemon — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }
