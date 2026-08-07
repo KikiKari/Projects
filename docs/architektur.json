@@ -1,0 +1,10 @@
+{
+  "titel": "Python Hardener — Eval-Suite",
+  "akzent": "#b45309",
+  "schichten": [
+    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["job_runner.py", "report_db.py"]},
+    {"name": "Laeufe", "farbe": "#2481cc", "blocks": ["with_skill", "without_skill"]},
+    {"name": "Pruefung", "farbe": "#6d5bd0", "blocks": ["AST-Assertions", "not_contains", "Grading"]},
+    {"name": "Ergebnis", "farbe": "#b45309", "blocks": ["benchmark.json", "timing.json", "eval-review.html"]}
+  ]
+}

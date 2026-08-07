@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python Hardener — 3D-Architektur</title>
+<meta name="description" content="Architektur als begehbare Schichtansicht">
+<meta name="theme-color" content="#b45309">
+<style>
+  :root{ --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#f2f4f8;
+         --muted:#9aa3b2; --ac:#b45309; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+  #buehne{position:fixed;inset:0}
+  canvas{display:block}
+  .kopf{position:fixed;top:0;left:0;right:0;padding:18px 22px;pointer-events:none;
+        background:linear-gradient(180deg,rgba(15,17,21,.92),rgba(15,17,21,0))}
+  .kopf h1{margin:0 0 3px;font-size:20px;letter-spacing:-.01em}
+  .kopf p{margin:0;color:var(--muted);font-size:13.5px}
+  .steuerung{position:fixed;left:18px;bottom:18px;background:rgba(23,26,33,.93);
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:212px}
+  .steuerung h2{margin:0 0 9px;font-size:11px;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--muted);font-weight:650}
+  .reihe{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:13.5px}
+  .punkt{width:12px;height:12px;border-radius:3px;flex:none}
+  button{font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;
+    border:1px solid var(--line);background:#1e222b;color:var(--text);cursor:pointer}
+  button:hover{border-color:var(--ac)}
+  button[aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:#fff}
+  .knoepfe{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+  .hinweis{position:fixed;right:18px;bottom:18px;color:var(--muted);font-size:12.5px;
+    background:rgba(23,26,33,.93);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  a{color:var(--ac)}
+  .fehler{position:fixed;inset:0;display:grid;place-items:center;padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<div id="buehne"></div>
+<div class="kopf">
+  <h1>Python Hardener</h1>
+  <p>Architektur als begehbare Schichtansicht — ziehen zum Drehen, Rad zum Zoomen.</p>
+</div>
+<div class="steuerung">
+  <h2>Schichten, von unten nach oben</h2>
+  <div id="legende"></div>
+  <div class="knoepfe">
+    <button id="btn-iso" aria-pressed="true">Isometrisch</button>
+    <button id="btn-persp" aria-pressed="false">Perspektivisch</button>
+    <button id="btn-rot" aria-pressed="true">Rotation</button>
+  </div>
+</div>
+<div class="hinweis">Ohne Netz keine 3D-Ansicht — three.js kommt vom CDN.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var SCHICHTEN = [{"name": "Eingaben", "farbe": "#5f6773", "blocks": ["job_runner.py", "report_db.py"]}, {"name": "Laeufe", "farbe": "#2481cc", "blocks": ["with_skill", "without_skill"]}, {"name": "Pruefung", "farbe": "#6d5bd0", "blocks": ["AST-Assertions", "not_contains", "Grading"]}, {"name": "Ergebnis", "farbe": "#b45309", "blocks": ["benchmark.json", "timing.json", "eval-review.html"]}];
+
+  if (typeof THREE === "undefined"){
+    document.body.insertAdjacentHTML("beforeend",
+      '<div class="fehler"><p>three.js konnte nicht geladen werden. ' +
+      'Die Seite braucht einmalig Netzzugang zum CDN.</p></div>');
+    return;
+  }
+
+  var buehne = document.getElementById("buehne");
+  var szene = new THREE.Scene();
+  szene.background = new THREE.Color(0x0f1115);
+  szene.fog = new THREE.Fog(0x0f1115, 60, 200);
+
+  var breite = window.innerWidth, hoehe = window.innerHeight;
+  var aspekt = breite / hoehe, D = 26;
+  var kameraIso = new THREE.OrthographicCamera(-D*aspekt, D*aspekt, D, -D, 0.1, 500);
+  var kameraPersp = new THREE.PerspectiveCamera(42, aspekt, 0.1, 500);
+  var kamera = kameraIso;
+
+  var renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(breite, hoehe);
+  buehne.appendChild(renderer.domElement);
+
+  szene.add(new THREE.AmbientLight(0xffffff, 0.62));
+  var licht = new THREE.DirectionalLight(0xffffff, 0.85);
+  licht.position.set(28, 44, 24);
+  szene.add(licht);
+  var gegenlicht = new THREE.DirectionalLight(0x8ea2ff, 0.28);
+  gegenlicht.position.set(-30, 14, -26);
+  szene.add(gegenlicht);
+
+  var raster = new THREE.GridHelper(90, 30, 0x2a3040, 0x1c2029);
+  raster.position.y = -22;
+  szene.add(raster);
+
+  // --- Beschriftung: Text auf eine Textur, dann als Billboard vor den Block.
+  function schild(text){
+    var lw = document.createElement("canvas"), ctx = lw.getContext("2d");
+    var f = "600 40px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = f;
+    var w = Math.ceil(ctx.measureText(text).width) + 34;
+    lw.width = w; lw.height = 62;
+    ctx = lw.getContext("2d"); ctx.font = f;
+    ctx.fillStyle = "rgba(255,255,255,.94)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(0, 0, w, 62, 12); else ctx.rect(0, 0, w, 62);
+    ctx.fill();
+    ctx.fillStyle = "#16191d"; ctx.textBaseline = "middle";
+    ctx.fillText(text, 17, 33);
+    var tex = new THREE.CanvasTexture(lw);
+    tex.minFilter = THREE.LinearFilter;
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    sp.scale.set(w/62*2.6, 2.6, 1);
+    sp.renderOrder = 999;
+    return sp;
+  }
+
+  var gruppe = new THREE.Group();
+  var BW = 7.4, BD = 4.2, BH = 1.7, LUFT = 1.3, ABSTAND = 9.0;
+  var legende = document.getElementById("legende");
+
+  SCHICHTEN.forEach(function(schicht, si){
+    var y = -13.5 + si * ABSTAND;
+    var spalten = Math.max(1, Math.ceil(schicht.blocks.length / 2));
+    var reihen = schicht.blocks.length <= 1 ? 1 : 2;
+    var gx = spalten * BW + (spalten - 1) * LUFT;
+    var gz = reihen * BD + (reihen - 1) * LUFT;
+
+    var platte = new THREE.Mesh(
+      new THREE.BoxGeometry(gx + 3, 0.6, gz + 3),
+      new THREE.MeshLambertMaterial({color: new THREE.Color(schicht.farbe).multiplyScalar(0.45)}));
+    platte.position.set(0, y - 1.7, 0);
+    gruppe.add(platte);
+
+    schicht.blocks.forEach(function(name, i){
+      var sp = i % spalten, re = Math.floor(i / spalten);
+      var x = -gx/2 + BW/2 + sp * (BW + LUFT);
+      var z = -gz/2 + BD/2 + re * (BD + LUFT);
+      var block = new THREE.Mesh(
+        new THREE.BoxGeometry(BW, BH, BD),
+        new THREE.MeshLambertMaterial({color: schicht.farbe}));
+      block.position.set(x, y, z);
+      gruppe.add(block);
+      var kante = new THREE.LineSegments(
+        new THREE.EdgesGeometry(block.geometry),
+        new THREE.LineBasicMaterial({color: 0x0f1115, transparent:true, opacity:.5}));
+      kante.position.copy(block.position);
+      gruppe.add(kante);
+      var s = schild(name);
+      s.position.set(x, y + BH/2 + 1.6, z);
+      gruppe.add(s);
+    });
+
+    var punkt = document.createElement("div");
+    punkt.className = "reihe";
+    punkt.innerHTML = '<span class="punkt" style="background:' + schicht.farbe + '"></span>' +
+                      schicht.name;
+    legende.insertBefore(punkt, legende.firstChild);
+  });
+  szene.add(gruppe);
+
+  // --- Kamera: Kugelkoordinaten, per Maus/Finger steuerbar.
+  var azimut = Math.PI/4, elevation = 0.62, radius = 78, rotiert = true;
+  function setzeKamera(){
+    var x = radius * Math.cos(elevation) * Math.sin(azimut);
+    var y = radius * Math.sin(elevation);
+    var z = radius * Math.cos(elevation) * Math.cos(azimut);
+    kamera.position.set(x, y, z);
+    kamera.lookAt(0, 0, 0);
+  }
+
+  var zieht = false, lx = 0, ly = 0;
+  function start(e){ zieht = true; lx = e.clientX; ly = e.clientY; rotiert = false;
+                     document.getElementById("btn-rot").setAttribute("aria-pressed","false"); }
+  function zug(e){
+    if (!zieht) return;
+    azimut -= (e.clientX - lx) * 0.006;
+    elevation = Math.max(0.08, Math.min(1.45, elevation + (e.clientY - ly) * 0.005));
+    lx = e.clientX; ly = e.clientY;
+  }
+  function ende(){ zieht = false; }
+  renderer.domElement.addEventListener("pointerdown", start);
+  window.addEventListener("pointermove", zug);
+  window.addEventListener("pointerup", ende);
+  renderer.domElement.addEventListener("wheel", function(e){
+    e.preventDefault();
+    if (kamera === kameraIso){
+      D = Math.max(12, Math.min(52, D + e.deltaY * 0.03));
+      groesse();
+    } else {
+      radius = Math.max(34, Math.min(150, radius + e.deltaY * 0.09));
+    }
+  }, {passive:false});
+
+  function groesse(){
+    breite = window.innerWidth; hoehe = window.innerHeight; aspekt = breite / hoehe;
+    kameraIso.left = -D*aspekt; kameraIso.right = D*aspekt;
+    kameraIso.top = D; kameraIso.bottom = -D; kameraIso.updateProjectionMatrix();
+    kameraPersp.aspect = aspekt; kameraPersp.updateProjectionMatrix();
+    renderer.setSize(breite, hoehe);
+  }
+  window.addEventListener("resize", groesse);
+
+  function modus(iso){
+    kamera = iso ? kameraIso : kameraPersp;
+    document.getElementById("btn-iso").setAttribute("aria-pressed", String(iso));
+    document.getElementById("btn-persp").setAttribute("aria-pressed", String(!iso));
+    groesse();
+  }
+  document.getElementById("btn-iso").addEventListener("click", function(){ modus(true); });
+  document.getElementById("btn-persp").addEventListener("click", function(){ modus(false); });
+  document.getElementById("btn-rot").addEventListener("click", function(){
+    rotiert = !rotiert;
+    this.setAttribute("aria-pressed", String(rotiert));
+  });
+
+  (function schleife(){
+    requestAnimationFrame(schleife);
+    if (rotiert) azimut += 0.0032;
+    setzeKamera();
+    renderer.render(szene, kamera);
+  })();
+})();
+</script>
+</body>
+</html>
