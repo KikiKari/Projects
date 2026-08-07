@@ -1,0 +1,51 @@
+{
+  "titel": "TikTok LIVE Companion Android — Schichten",
+  "akzent": "#fe2c55",
+  "schichten": [
+    {
+      "name": "Quelle",
+      "farbe": "#5f6773",
+      "blocks": [
+        "TikTok-WebView",
+        "www.tiktok.com",
+        "Hauptframe"
+      ]
+    },
+    {
+      "name": "Bruecke",
+      "farbe": "#2481cc",
+      "blocks": [
+        "Mobile Bridge v1",
+        "Origin-Pruefung",
+        "Typ + Groesse"
+      ]
+    },
+    {
+      "name": "App",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        "Kotlin",
+        "Jetpack Compose",
+        "AndroidX WebKit"
+      ]
+    },
+    {
+      "name": "Audio",
+      "farbe": "#b45309",
+      "blocks": [
+        "ShazamKit",
+        "Mikrofon",
+        "WebView-PCM (exp.)"
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#fe2c55",
+      "blocks": [
+        "fluechtiger Streamzustand",
+        "Panel",
+        "APK"
+      ]
+    }
+  ]
+}

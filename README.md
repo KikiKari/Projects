@@ -62,6 +62,110 @@ flowchart LR
 
 Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
 
+### Schichtansicht in 3D
+
+<div align="center">
+
+![Rotierende 3D-Ansicht der Schichten](docs/assets/architektur-rotation.gif)
+
+**[▶ Begehbare Schichtansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+Umschalter zwischen isometrisch und perspektivisch. Ergänzt die
+[interaktive Datenfluss-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
+um die Schichtsicht dieses Plattformbranches.
+
+</div>
+
+![Isometrische Schichtansicht](docs/assets/architektur-iso.png)
+
+| Schicht | Wo | Verantwortung | Sendet |
+|---|---|---|---|
+| **Quelle** | Android-WebView | `www.tiktok.com` im Hauptframe | — |
+| **Brücke** | Mobile Bridge v1 | Origin-, Typ- und Größenprüfung | nein |
+| **App** | Kotlin, Jetpack Compose, AndroidX WebKit | Oberfläche, Zustand, Steuerung | nein |
+| **Audio** | ShazamKit | nur nach Nutzeraktion | ja, auf Klick |
+| **Ausgabe** | Panel, APK | flüchtiger Streamzustand | nein |
+
+**Die Brücke ist die Sicherheitsgrenze.** Alles, was aus dem WebView kommt, wird auf Herkunft,
+Typ und Größe geprüft, bevor die App es überhaupt ansieht. Ohne diese Prüfung wäre jede
+Änderung an der TikTok-Seite ein Einfallstor in die native App.
+
+Standbild und GIF entstehen aus `docs/architektur.json`:
+
+```bash
+python tools/render_3d.py docs/architektur.json docs/assets
+```
+
+---
+
+## Abläufe
+
+### Ein Ereignis vom WebView in die App
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant W as Android-WebView
+    participant B as Mobile Bridge v1
+    participant A as Android-App
+    participant P as Panel
+
+    W-->>B: DOM- oder WebSocket-Ereignis
+    B->>B: Origin pruefen
+    alt Origin ist www.tiktok.com
+        B->>B: Typ pruefen, Groesse begrenzen
+        B->>A: validierter Ereignisumschlag
+        A->>A: fluechtigen Streamzustand fortschreiben
+        A-->>P: Anzeige
+    else fremde Origin oder unerwarteter Typ
+        B--xA: verworfen, nichts erreicht die App
+        Note over B: Fail closed. Im Zweifel nichts<br/>durchlassen — nicht "vermutlich ok".
+    end
+```
+
+### Songerkennung mit ShazamKit
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant A as Android-App
+    participant M as Mikrofon
+    participant S as ShazamKit
+    participant T as Token-Endpunkt (Vercel)
+
+    Note over A: Ohne Nutzeraktion passiert nichts.<br/>Kein Dauerlauschen, kein Mitschnitt.
+    N->>A: "Song erkennen"
+    A->>T: kurzlebiges ES256-Token anfordern
+    T-->>A: Token, gueltig fuer wenige Minuten
+    A->>M: kurzen Ausschnitt aufnehmen
+    M-->>A: PCM
+    A->>S: Ausschnitt + Token
+    S-->>A: Titel, Interpret oder "nichts erkannt"
+    A-->>N: Ergebnis im Panel
+    Note over T: Das Token ist kurzlebig und wird<br/>serverseitig ausgestellt — der Schluessel<br/>selbst liegt nie in der App.
+```
+
+### Der experimentelle Audioweg
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant W as Android-WebView
+    participant A as Android-App
+    participant S as ShazamKit
+
+    alt Weg 1 — Mikrofon (stabil)
+        A->>A: Systemmikrofon aufnehmen
+        A->>S: PCM
+        S-->>A: Treffer
+    else Weg 2 — WebView-PCM (experimentell)
+        W-->>A: Audio aus dem WebView abgreifen
+        Note over W,A: Umgeht Umgebungsgeraeusche,<br/>haengt aber an WebView-Interna —<br/>deshalb ausdruecklich experimentell.
+        A->>S: PCM
+        S-->>A: Treffer oder Fehlschlag
+    end
+```
+
 ## Dokumentation
 
 - [Vollständige Dokumentation V7](docs/TikTok-Live-Companion_v7_utf8bom.md)
