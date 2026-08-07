@@ -13,8 +13,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# Import sync functions
-sys.path.append('/home/openclaw/.openclaw/workspace/scripts')
+# Die Hilfsfunktionen liegen jetzt neben dieser Datei. Vorher wurde sie ueber
+# sys.path aus /home/openclaw/.openclaw/workspace/scripts geladen — ein Pfad,
+# den es ausserhalb des Gateway-Knotens nicht gibt.
 from sync_clawhub_git import sync_to_git, sync_to_clawhub, log, validate_skill, get_file_hash
 
 CLAWHUB_DIR = Path("/home/openclaw/.openclaw/workspace/skills")
