@@ -23,4 +23,13 @@ USER lauf
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TZ=Europe/Berlin
 
-CMD ["sh", "-c", "python abstractions/ABSTRACTIONS_MANAGER.py"]
+# Der Manager ist ein Stapellauf, kein Dienst: er arbeitet seine Prioritaeten
+# ab, meldet "Abgeschlossen" und beendet sich. Mit restart: unless-stopped
+# wird daraus eine Neustartschleife mit wachsender Wartezeit. Der Container
+# bleibt deshalb bereit; der Lauf wird angestossen, wenn er gebraucht wird:
+#
+#   docker exec abstractions-manager python abstractions/ABSTRACTIONS_MANAGER.py
+#
+# Fuer einen regelmaessigen Lauf eignet sich die Aufgabenplanung von Windows
+# oder ein Zeitplan-Dienst, der genau diesen Befehl aufruft.
+CMD ["sleep", "infinity"]
