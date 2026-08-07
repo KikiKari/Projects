@@ -1,0 +1,11 @@
+{
+  "titel": "ClawHub-Git-Sync — Schichten",
+  "akzent": "#f5654a",
+  "schichten": [
+    {"name": "Seiten", "farbe": "#5f6773", "blocks": ["workspace/skills", "workspace/git/skills"]},
+    {"name": "Vergleich", "farbe": "#2481cc", "blocks": ["Zeitstempel", "Hash", "Konfliktfall"]},
+    {"name": "Absicherung", "farbe": "#6d5bd0", "blocks": ["Backup", "Dry-Run", "Freigabe"]},
+    {"name": "Uebertragung", "farbe": "#b45309", "blocks": ["sync_agent.py", "git commit", "clawhub publish"]},
+    {"name": "Takt", "farbe": "#f5654a", "blocks": ["Cron alle 12 h", "Gateway-Skripte"]}
+  ]
+}
