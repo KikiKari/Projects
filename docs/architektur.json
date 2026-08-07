@@ -1,0 +1,128 @@
+{
+  "titel": "MCP-Server-Monitor — Schichten",
+  "akzent": "#6d5bd0",
+  "schichten": [
+    {
+      "name": "Quellen",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "mcp-domain",
+          "name": "mcp.DOMAIN",
+          "untertitel": "Streamable HTTP"
+        },
+        {
+          "id": "docs-mcp",
+          "name": "docs/mcp",
+          "untertitel": "Anbieterdoku"
+        },
+        {
+          "id": "well-known",
+          "name": ".well-known",
+          "untertitel": "OAuth-Metadaten"
+        },
+        {
+          "id": "config-json",
+          "name": "config.json",
+          "untertitel": "claude_desktop_config"
+        }
+      ]
+    },
+    {
+      "name": "Sonde",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "discovery-py",
+          "name": "discovery.py",
+          "untertitel": "sechs Pfade"
+        },
+        {
+          "id": "config-py",
+          "name": "config.py",
+          "untertitel": "MSIX-Falle"
+        }
+      ]
+    },
+    {
+      "name": "Klassifikation",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "state-py",
+          "name": "state.py",
+          "untertitel": "fuenf Zustaende"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#15803d",
+      "blocks": [
+        {
+          "id": "report-py",
+          "name": "report.py",
+          "untertitel": "Textausgabe"
+        },
+        {
+          "id": "server-py",
+          "name": "server.py",
+          "untertitel": "127.0.0.1"
+        },
+        {
+          "id": "index-html",
+          "name": "index.html",
+          "untertitel": "statische Seite"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "mcp-domain",
+      "nach": "discovery-py",
+      "art": "fluss"
+    },
+    {
+      "von": "docs-mcp",
+      "nach": "config-py",
+      "art": "fluss"
+    },
+    {
+      "von": "well-known",
+      "nach": "discovery-py",
+      "art": "fluss"
+    },
+    {
+      "von": "config-json",
+      "nach": "config-py",
+      "art": "fluss"
+    },
+    {
+      "von": "discovery-py",
+      "nach": "state-py",
+      "art": "fluss"
+    },
+    {
+      "von": "config-py",
+      "nach": "state-py",
+      "art": "fluss"
+    },
+    {
+      "von": "state-py",
+      "nach": "report-py",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#6d5bd0",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
+}

@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """Rendert die Architektur eines Projekts als isometrische 3D-Ansicht.
 
-Erzeugt zwei Dateien:
+Liest die Schichtbeschreibung aus einer JSON-Datei (Vorgabe
+``docs/architektur.json``) und erzeugt daraus zwei Dateien:
+
   * ein rotierendes animiertes GIF (Kamera faehrt einmal um die Szene)
   * ein PNG-Standbild in klassischer isometrischer Stellung
+
+Dieselbe JSON-Datei speist auch ``public/3d.html``. Eine Beschreibung, drei
+Darstellungen — damit Standbild, GIF und begehbare Ansicht nicht auseinanderlaufen.
 
 Reine Orthogonalprojektion mit Maler-Algorithmus — kein Renderer, keine GPU,
 nur Pillow und NumPy. Aufruf:
 
-    python tools/render_3d.py <projekt> <ausgabeordner>
+    python tools/render_3d.py [spec.json] [ausgabeordner]
 """
+import json
 import math
 import sys
 from pathlib import Path
@@ -17,8 +23,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-BREITE, HOEHE = 900, 620
-SKALA = 10.5
+BREITE, HOEHE = 1000, 700
+SKALA = 9.6
 ELEVATION = math.radians(30.0)   # klassische Iso-Neigung
 FRAMES = 36
 HELL = (247, 248, 250)
@@ -119,14 +125,8 @@ def zeichne(szene, azimut, titel="", legende=None):
             px, py = float(pts[0][0]), float(pts[0][1])
             beschriftungen.append((px, py, quader.label))
 
-    f = _font(14, fett=True)
-    for px, py, text in beschriftungen:
-        l, t, r, b = zeichner.textbbox((0, 0), text, font=f)
-        w, h = r - l, b - t
-        zeichner.rectangle([px - w / 2 - 6, py - h / 2 - 4,
-                            px + w / 2 + 6, py + h / 2 + 4],
-                           fill=(255, 255, 255, 232), outline=(214, 219, 226))
-        zeichner.text((px - w / 2, py - h / 2 - t), text, font=f, fill=(22, 25, 29))
+    _beschrifte(zeichner, beschriftungen)
+
 
     if titel:
         zeichner.text((28, 22), titel, font=_font(23, fett=True), fill=(22, 25, 29))
@@ -141,7 +141,49 @@ def zeichne(szene, azimut, titel="", legende=None):
     return bild
 
 
-def schicht(y, farbe, blocks, bw=7.0, bd=3.8, hoehe=1.6, luft=1.2):
+def _beschrifte(zeichner, eintraege, schrift=14):
+    """Setzt Beschriftungen kollisionsfrei und zieht eine Fuehrungslinie zum Block.
+
+    Ohne diesen Schritt ueberdecken sich die Schilder benachbarter Bausteine in
+    der Isometrie regelmaessig — zwei Bloecke, die im Raum weit auseinanderliegen,
+    landen projiziert nebeneinander.
+    """
+    f = _font(schrift, fett=True)
+    belegt = []          # bereits gesetzte Rechtecke
+    # von oben nach unten setzen: die oberste Schicht bekommt ihren Wunschplatz
+    for anker_x, anker_y, text in sorted(eintraege, key=lambda e: e[1]):
+        l, t, r, b = zeichner.textbbox((0, 0), text, font=f)
+        w, h = r - l, b - t
+        bx, by = w / 2 + 7, h / 2 + 5
+
+        platz = None
+        # abwechselnd nach oben und unten ausweichen, in kleinen Schritten
+        for schritt in range(0, 26):
+            for richtung in ((-1, 1) if schritt else (0,)):
+                y = anker_y + richtung * schritt * 7
+                kasten = (anker_x - bx, y - by, anker_x + bx, y + by)
+                if all(kasten[2] < o[0] or kasten[0] > o[2] or
+                       kasten[3] < o[1] or kasten[1] > o[3] for o in belegt):
+                    platz = (y, kasten)
+                    break
+            if platz:
+                break
+        if not platz:                       # gibt es praktisch nie
+            platz = (anker_y, (anker_x - bx, anker_y - by, anker_x + bx, anker_y + by))
+        y, kasten = platz
+        belegt.append(kasten)
+
+        if abs(y - anker_y) > 3:            # Fuehrungslinie nur, wenn versetzt
+            zeichner.line([(anker_x, anker_y), (anker_x, y)],
+                          fill=(150, 157, 168), width=1)
+            zeichner.ellipse([anker_x - 2, anker_y - 2, anker_x + 2, anker_y + 2],
+                             fill=(150, 157, 168))
+        zeichner.rectangle(kasten, fill=(255, 255, 255, 236), outline=(206, 212, 221))
+        zeichner.text((anker_x - w / 2, y - h / 2 - t), text, font=f, fill=(22, 25, 29))
+
+
+
+def schicht(y, farbe, blocks, bw=7.4, bd=4.4, hoehe=1.6, luft=2.0):
     """Eine Schicht: Grundplatte, darauf die Bausteine in einem 2-reihigen Raster.
 
     Das Raster statt einer einzelnen Reihe ist kein Schoenheitsgrund: eine lange
@@ -163,53 +205,42 @@ def schicht(y, farbe, blocks, bw=7.0, bd=3.8, hoehe=1.6, luft=1.2):
     return out
 
 
-# ---------------------------------------------------------------- Szenen ----
+# ------------------------------------------------------------------ Spec ----
 
-VIOLETT = (109, 91, 208)
-BLAU = (36, 129, 204)
-GRUEN = (21, 128, 61)
-GRAU = (95, 103, 115)
-ROT = (254, 44, 85)
-ORANGE = (180, 83, 9)
-
-SZENEN = {
-    "mcp-server-monitor": {
-        "titel": "MCP-Server-Monitor — Schichten",
-        "schichten": [
-            (-17.0, GRAU, "Quellen", ["mcp.DOMAIN", "docs/mcp", ".well-known", "config.json"]),
-            (-5.6, BLAU, "Sonde", ["discovery.py", "config.py"]),
-            (5.6, VIOLETT, "Klassifikation", ["state.py"]),
-            (17.0, GRUEN, "Ausgabe", ["report.py", "server.py", "index.html"]),
-        ],
-    },
-    "telegram-monitor": {
-        "titel": "Telegram Monitor — Schichten",
-        "schichten": [
-            (-17.0, GRAU, "Plattformen", ["t.me", "Bot-API", "MTProto", "Discord", "TikTok"]),
-            (-5.6, BLAU, "Adapter", ["telegram_web", "telegram_bot", "mtproto", "tiktok_live"]),
-            (5.6, VIOLETT, "Kern", ["registry", "store", "live", "models"]),
-            (17.0, ROT, "Ausgabe", ["notify", "cli.py", "server.py", "web/ PWA"]),
-        ],
-    },
-}
+ABSTAND = 12.6   # senkrechter Abstand der Schichten
+START_Y = -17.0  # Hoehe der untersten Schicht
 
 
-def baue(name):
-    spec = SZENEN[name]
+def _hex(wert):
+    """#rrggbb -> (r, g, b). Die Spec nutzt Hex, damit sie auch das HTML speisen kann."""
+    if not isinstance(wert, str):
+        return tuple(wert)
+    h = wert.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def lade(pfad):
+    """Liest die Schichtbeschreibung: titel, schichten[{name, farbe, blocks}]."""
+    spec = json.loads(Path(pfad).read_text(encoding="utf-8"))
     szene, legende = [], []
-    for y, farbe, schichtname, blocks in spec["schichten"]:
-        szene += schicht(y, farbe, blocks)
-        legende.append((schichtname, farbe))
+    for i, s in enumerate(spec["schichten"]):
+        farbe = _hex(s["farbe"])
+        # Bloecke duerfen Text oder Objekt sein — die interaktive Ansicht braucht
+        # mehr Angaben als das Standbild, beide lesen dieselbe Datei.
+        namen = [b if isinstance(b, str) else b["name"] for b in s["blocks"]]
+        szene += schicht(START_Y + i * ABSTAND, farbe, namen)
+        legende.append((s["name"], farbe))
     return szene, spec["titel"], list(reversed(legende))
 
 
 def main():
-    if len(sys.argv) < 3:
-        print(__doc__)
+    spec = Path(sys.argv[1] if len(sys.argv) > 1 else "docs/architektur.json")
+    ziel = Path(sys.argv[2] if len(sys.argv) > 2 else "docs/assets")
+    if not spec.exists():
+        print("Spec nicht gefunden:", spec)
         return 1
-    name, ziel = sys.argv[1], Path(sys.argv[2])
     ziel.mkdir(parents=True, exist_ok=True)
-    szene, titel, legende = baue(name)
+    szene, titel, legende = lade(spec)
 
     standbild = zeichne(szene, math.radians(45.0), titel, legende)
     standbild.save(ziel / "architektur-iso.png", optimize=True)
