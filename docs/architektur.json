@@ -2,9 +2,197 @@
   "titel": "Tagesstatus Live Public — Schichten",
   "akzent": "#0f766e",
   "schichten": [
-    {"name": "Tokens", "farbe": "#5f6773", "blocks": ["Abfrage beim Oeffnen", "localStorage", "keine Vorbelegung"]},
-    {"name": "Quellen", "farbe": "#2481cc", "blocks": ["GitHub", "Vercel", "Docker Hub", "OpenRouter", "OpenAI", "Anthropic", "Tailscale", "ClawHub"]},
-    {"name": "Abruf", "farbe": "#6d5bd0", "blocks": ["fetch je Quelle", "CORS-Pruefung", "Fehler isolieren"]},
-    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Kacheln", "Verbrauch", "keine Daten = Hinweis"]}
-  ]
+    {
+      "name": "Tokens",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "abfrage-beim-oeffnen",
+          "name": "Abfrage beim Oeffnen",
+          "untertitel": "kein Vorbelegen"
+        },
+        {
+          "id": "localstorage",
+          "name": "localStorage",
+          "untertitel": "nur lokal"
+        },
+        {
+          "id": "keine-vorbelegung",
+          "name": "keine Vorbelegung",
+          "untertitel": "leer geliefert"
+        }
+      ]
+    },
+    {
+      "name": "Quellen",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "github",
+          "name": "GitHub",
+          "untertitel": "Repos, Kontingent"
+        },
+        {
+          "id": "vercel",
+          "name": "Vercel",
+          "untertitel": "Deployments"
+        },
+        {
+          "id": "docker-hub",
+          "name": "Docker Hub",
+          "untertitel": "Abbilder"
+        },
+        {
+          "id": "openrouter",
+          "name": "OpenRouter",
+          "untertitel": "Guthaben"
+        },
+        {
+          "id": "openai",
+          "name": "OpenAI",
+          "untertitel": "Admin-Key"
+        },
+        {
+          "id": "anthropic",
+          "name": "Anthropic",
+          "untertitel": "Admin-Key"
+        },
+        {
+          "id": "tailscale",
+          "name": "Tailscale",
+          "untertitel": "Geraete"
+        },
+        {
+          "id": "clawhub",
+          "name": "ClawHub",
+          "untertitel": "Skills"
+        }
+      ]
+    },
+    {
+      "name": "Abruf",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "fetch-je-quelle",
+          "name": "fetch je Quelle",
+          "untertitel": "direkt"
+        },
+        {
+          "id": "cors-pruefung",
+          "name": "CORS-Pruefung",
+          "untertitel": "entscheidet"
+        },
+        {
+          "id": "fehler-isolieren",
+          "name": "Fehler isolieren",
+          "untertitel": "je Kachel"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#0f766e",
+      "blocks": [
+        {
+          "id": "kacheln",
+          "name": "Kacheln",
+          "untertitel": "ein Blick"
+        },
+        {
+          "id": "verbrauch",
+          "name": "Verbrauch",
+          "untertitel": "Zahlen"
+        },
+        {
+          "id": "keine-daten-hinweis",
+          "name": "keine Daten = Hinweis",
+          "untertitel": "mit Grund"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "abfrage-beim-oeffnen",
+      "nach": "github",
+      "art": "fluss"
+    },
+    {
+      "von": "localstorage",
+      "nach": "vercel",
+      "art": "fluss"
+    },
+    {
+      "von": "keine-vorbelegung",
+      "nach": "docker-hub",
+      "art": "fluss"
+    },
+    {
+      "von": "github",
+      "nach": "fetch-je-quelle",
+      "art": "fluss"
+    },
+    {
+      "von": "vercel",
+      "nach": "cors-pruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "docker-hub",
+      "nach": "fehler-isolieren",
+      "art": "fluss"
+    },
+    {
+      "von": "openrouter",
+      "nach": "fetch-je-quelle",
+      "art": "fluss"
+    },
+    {
+      "von": "openai",
+      "nach": "cors-pruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "anthropic",
+      "nach": "fehler-isolieren",
+      "art": "fluss"
+    },
+    {
+      "von": "tailscale",
+      "nach": "fetch-je-quelle",
+      "art": "fluss"
+    },
+    {
+      "von": "clawhub",
+      "nach": "cors-pruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "fetch-je-quelle",
+      "nach": "kacheln",
+      "art": "fluss"
+    },
+    {
+      "von": "cors-pruefung",
+      "nach": "verbrauch",
+      "art": "fluss"
+    },
+    {
+      "von": "fehler-isolieren",
+      "nach": "keine-daten-hinweis",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#0f766e",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }
