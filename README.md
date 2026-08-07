@@ -39,7 +39,7 @@ Umgebung: `abstractions/.env.example` als Vorlage kopieren. Erstinstallation:
 
 ![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
 
-**[▶ Interaktive 3D-Ansicht öffnen](https://abstractions.vercel.app/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+**[▶ Interaktive 3D-Ansicht öffnen](https://abstractions-two.vercel.app/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
 Umschalter zwischen isometrisch und perspektivisch.
 
 </div>
