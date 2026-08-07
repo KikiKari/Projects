@@ -1,0 +1,193 @@
+{
+  "titel": "Telegram Monitor — Schichten",
+  "akzent": "#2481cc",
+  "schichten": [
+    {
+      "name": "Plattformen",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "t-me",
+          "name": "t.me",
+          "untertitel": "ohne Zugangsdaten"
+        },
+        {
+          "id": "bot-api",
+          "name": "Bot-API",
+          "untertitel": "Bot-Token"
+        },
+        {
+          "id": "mtproto",
+          "name": "MTProto",
+          "untertitel": "api_id + hash"
+        },
+        {
+          "id": "discord",
+          "name": "Discord",
+          "untertitel": "Invite-Lookup"
+        },
+        {
+          "id": "tiktok",
+          "name": "TikTok",
+          "untertitel": "oeffentliche Quellen"
+        }
+      ]
+    },
+    {
+      "name": "Adapter",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "telegram-web",
+          "name": "telegram_web",
+          "untertitel": "immer aktiv"
+        },
+        {
+          "id": "telegram-bot",
+          "name": "telegram_bot",
+          "untertitel": "Metadaten"
+        },
+        {
+          "id": "mtproto",
+          "name": "mtproto",
+          "untertitel": "globale Suche"
+        },
+        {
+          "id": "tiktok-live",
+          "name": "tiktok_live",
+          "untertitel": "Livegang"
+        }
+      ]
+    },
+    {
+      "name": "Kern",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "registry",
+          "name": "registry",
+          "untertitel": "zusammenfuehren"
+        },
+        {
+          "id": "store",
+          "name": "store",
+          "untertitel": "Zustand halten"
+        },
+        {
+          "id": "live",
+          "name": "live",
+          "untertitel": "Wechsel erkennen"
+        },
+        {
+          "id": "models",
+          "name": "models",
+          "untertitel": "Datenformen"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#fe2c55",
+      "blocks": [
+        {
+          "id": "notify",
+          "name": "notify",
+          "untertitel": "melden"
+        },
+        {
+          "id": "cli-py",
+          "name": "cli.py",
+          "untertitel": "Kommandozeile"
+        },
+        {
+          "id": "server-py",
+          "name": "server.py",
+          "untertitel": "127.0.0.1"
+        },
+        {
+          "id": "web-pwa",
+          "name": "web/ PWA",
+          "untertitel": "installierbar"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "t-me",
+      "nach": "telegram-web",
+      "art": "fluss"
+    },
+    {
+      "von": "bot-api",
+      "nach": "telegram-bot",
+      "art": "fluss"
+    },
+    {
+      "von": "mtproto",
+      "nach": "mtproto",
+      "art": "fluss"
+    },
+    {
+      "von": "discord",
+      "nach": "tiktok-live",
+      "art": "fluss"
+    },
+    {
+      "von": "tiktok",
+      "nach": "telegram-web",
+      "art": "fluss"
+    },
+    {
+      "von": "telegram-web",
+      "nach": "registry",
+      "art": "fluss"
+    },
+    {
+      "von": "telegram-bot",
+      "nach": "store",
+      "art": "fluss"
+    },
+    {
+      "von": "mtproto",
+      "nach": "live",
+      "art": "fluss"
+    },
+    {
+      "von": "tiktok-live",
+      "nach": "models",
+      "art": "fluss"
+    },
+    {
+      "von": "registry",
+      "nach": "notify",
+      "art": "fluss"
+    },
+    {
+      "von": "store",
+      "nach": "cli-py",
+      "art": "fluss"
+    },
+    {
+      "von": "live",
+      "nach": "server-py",
+      "art": "fluss"
+    },
+    {
+      "von": "models",
+      "nach": "web-pwa",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#2481cc",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Vom öffentlichen Kanal bis zur Meldung: Plattformen, Adapter, Kern, Ausgabe — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
+}
