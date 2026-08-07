@@ -2,10 +2,183 @@
   "titel": "Secret-Vault Public — Schichten",
   "akzent": "#5b5bd6",
   "schichten": [
-    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["Passphrase", "Vault-Datei", "neue Felder"]},
-    {"name": "Schluesselableitung", "farbe": "#2481cc", "blocks": ["PBKDF2 210k", "Salt 16 B", "SHA-256"]},
-    {"name": "Verschluesselung", "farbe": "#5b5bd6", "blocks": ["AES-256-GCM", "IV 12 B", "crypto.subtle"]},
-    {"name": "Verwaltung", "farbe": "#b45309", "blocks": ["Anbieter", "Felder", "Rotation"]},
-    {"name": "Ausgabe", "farbe": "#22a06b", "blocks": ["Download", "Export", "Zwischenablage"]}
-  ]
+    {
+      "name": "Eingaben",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "passphrase",
+          "name": "Passphrase",
+          "untertitel": "nie gespeichert"
+        },
+        {
+          "id": "vault-datei",
+          "name": "Vault-Datei",
+          "untertitel": "Ciphertext"
+        },
+        {
+          "id": "neue-felder",
+          "name": "neue Felder",
+          "untertitel": "Formular"
+        }
+      ]
+    },
+    {
+      "name": "Schluesselableitung",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "pbkdf2-210k",
+          "name": "PBKDF2 210k",
+          "untertitel": "Iterationen"
+        },
+        {
+          "id": "salt-16-b",
+          "name": "Salt 16 B",
+          "untertitel": "zufaellig"
+        },
+        {
+          "id": "sha-256",
+          "name": "SHA-256",
+          "untertitel": "HMAC"
+        }
+      ]
+    },
+    {
+      "name": "Verschluesselung",
+      "farbe": "#5b5bd6",
+      "blocks": [
+        {
+          "id": "aes-256-gcm",
+          "name": "AES-256-GCM",
+          "untertitel": "authentisiert"
+        },
+        {
+          "id": "iv-12-b",
+          "name": "IV 12 B",
+          "untertitel": "nie doppelt"
+        },
+        {
+          "id": "crypto-subtle",
+          "name": "crypto.subtle",
+          "untertitel": "WebCrypto"
+        }
+      ]
+    },
+    {
+      "name": "Verwaltung",
+      "farbe": "#b45309",
+      "blocks": [
+        {
+          "id": "anbieter",
+          "name": "Anbieter",
+          "untertitel": "Gruppen"
+        },
+        {
+          "id": "felder",
+          "name": "Felder",
+          "untertitel": "Schluessel/Wert"
+        },
+        {
+          "id": "rotation",
+          "name": "Rotation",
+          "untertitel": "neuer Wert"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#22a06b",
+      "blocks": [
+        {
+          "id": "download",
+          "name": "Download",
+          "untertitel": "Blob-URL"
+        },
+        {
+          "id": "export",
+          "name": "Export",
+          "untertitel": "JSON"
+        },
+        {
+          "id": "zwischenablage",
+          "name": "Zwischenablage",
+          "untertitel": "nur auf Klick"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "passphrase",
+      "nach": "pbkdf2-210k",
+      "art": "fluss"
+    },
+    {
+      "von": "vault-datei",
+      "nach": "salt-16-b",
+      "art": "fluss"
+    },
+    {
+      "von": "neue-felder",
+      "nach": "sha-256",
+      "art": "fluss"
+    },
+    {
+      "von": "pbkdf2-210k",
+      "nach": "aes-256-gcm",
+      "art": "fluss"
+    },
+    {
+      "von": "salt-16-b",
+      "nach": "iv-12-b",
+      "art": "fluss"
+    },
+    {
+      "von": "sha-256",
+      "nach": "crypto-subtle",
+      "art": "fluss"
+    },
+    {
+      "von": "aes-256-gcm",
+      "nach": "anbieter",
+      "art": "fluss"
+    },
+    {
+      "von": "iv-12-b",
+      "nach": "felder",
+      "art": "fluss"
+    },
+    {
+      "von": "crypto-subtle",
+      "nach": "rotation",
+      "art": "fluss"
+    },
+    {
+      "von": "anbieter",
+      "nach": "download",
+      "art": "fluss"
+    },
+    {
+      "von": "felder",
+      "nach": "export",
+      "art": "fluss"
+    },
+    {
+      "von": "rotation",
+      "nach": "zwischenablage",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#5b5bd6",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Vom Passwort zur verschlüsselten Datei — jede Schicht bleibt im Browser. Drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }

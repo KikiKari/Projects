@@ -27,7 +27,7 @@ keine Installation, kein Konto. Sie funktioniert auch ohne Netz.
 
 ![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
 
-**[▶ Interaktive 3D-Ansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+**[▶ Interaktive 3D-Ansicht öffnen](https://secret-vault-public.vercel.app/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
 Umschalter zwischen isometrisch und perspektivisch.
 
 </div>
