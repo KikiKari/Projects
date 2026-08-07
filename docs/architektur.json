@@ -6,46 +6,179 @@
       "name": "Quelle",
       "farbe": "#5f6773",
       "blocks": [
-        "TikTok-WebView",
-        "www.tiktok.com",
-        "Hauptframe"
+        {
+          "id": "tiktok-webview",
+          "name": "TikTok-WebView",
+          "untertitel": "Hauptframe"
+        },
+        {
+          "id": "www-tiktok-com",
+          "name": "www.tiktok.com",
+          "untertitel": "nur diese Origin"
+        },
+        {
+          "id": "hauptframe",
+          "name": "Hauptframe",
+          "untertitel": "kein iframe"
+        }
       ]
     },
     {
       "name": "Bruecke",
       "farbe": "#2481cc",
       "blocks": [
-        "Mobile Bridge v1",
-        "Origin-Pruefung",
-        "Typ + Groesse"
+        {
+          "id": "mobile-bridge-v1",
+          "name": "Mobile Bridge v1",
+          "untertitel": "Origin + Typ"
+        },
+        {
+          "id": "origin-pruefung",
+          "name": "Origin-Pruefung",
+          "untertitel": "fail closed"
+        },
+        {
+          "id": "typ-groesse",
+          "name": "Typ + Groesse",
+          "untertitel": "begrenzt"
+        }
       ]
     },
     {
       "name": "App",
       "farbe": "#6d5bd0",
       "blocks": [
-        "Kotlin",
-        "Jetpack Compose",
-        "AndroidX WebKit"
+        {
+          "id": "kotlin",
+          "name": "Kotlin",
+          "untertitel": "Sprache"
+        },
+        {
+          "id": "jetpack-compose",
+          "name": "Jetpack Compose",
+          "untertitel": "Oberflaeche"
+        },
+        {
+          "id": "androidx-webkit",
+          "name": "AndroidX WebKit",
+          "untertitel": "WebView"
+        }
       ]
     },
     {
       "name": "Audio",
       "farbe": "#b45309",
       "blocks": [
-        "ShazamKit",
-        "Mikrofon",
-        "WebView-PCM (exp.)"
+        {
+          "id": "shazamkit",
+          "name": "ShazamKit",
+          "untertitel": "nur nach Klick"
+        },
+        {
+          "id": "mikrofon",
+          "name": "Mikrofon",
+          "untertitel": "stabil"
+        },
+        {
+          "id": "webview-pcm-exp",
+          "name": "WebView-PCM (exp.)",
+          "untertitel": "experimentell"
+        }
       ]
     },
     {
       "name": "Ausgabe",
       "farbe": "#fe2c55",
       "blocks": [
-        "fluechtiger Streamzustand",
-        "Panel",
-        "APK"
+        {
+          "id": "fluechtiger-streamzustand",
+          "name": "fluechtiger Streamzustand",
+          "untertitel": "nicht persistiert"
+        },
+        {
+          "id": "panel",
+          "name": "Panel",
+          "untertitel": "Anzeige"
+        },
+        {
+          "id": "apk",
+          "name": "APK",
+          "untertitel": "Android-Artefakt"
+        }
       ]
     }
-  ]
+  ],
+  "kanten": [
+    {
+      "von": "tiktok-webview",
+      "nach": "mobile-bridge-v1",
+      "art": "fluss"
+    },
+    {
+      "von": "www-tiktok-com",
+      "nach": "origin-pruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "hauptframe",
+      "nach": "typ-groesse",
+      "art": "fluss"
+    },
+    {
+      "von": "mobile-bridge-v1",
+      "nach": "kotlin",
+      "art": "fluss"
+    },
+    {
+      "von": "origin-pruefung",
+      "nach": "jetpack-compose",
+      "art": "fluss"
+    },
+    {
+      "von": "typ-groesse",
+      "nach": "androidx-webkit",
+      "art": "fluss"
+    },
+    {
+      "von": "kotlin",
+      "nach": "shazamkit",
+      "art": "fluss"
+    },
+    {
+      "von": "jetpack-compose",
+      "nach": "mikrofon",
+      "art": "fluss"
+    },
+    {
+      "von": "androidx-webkit",
+      "nach": "webview-pcm-exp",
+      "art": "fluss"
+    },
+    {
+      "von": "shazamkit",
+      "nach": "fluechtiger-streamzustand",
+      "art": "fluss"
+    },
+    {
+      "von": "mikrofon",
+      "nach": "panel",
+      "art": "fluss"
+    },
+    {
+      "von": "webview-pcm-exp",
+      "nach": "apk",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#fe2c55",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Die Schichtsicht der Android-App: WebView, Brücke, Compose, ShazamKit.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }
