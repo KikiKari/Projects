@@ -63,6 +63,25 @@ jobs:
           git config user.name  "KikiKari"
           git config user.email "272986081+KikiKari@users.noreply.github.com"
 
+      - name: Schluessel pruefen
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          # Nur die Laenge wird gemeldet, nie der Wert. Ein leerer oder nur aus
+          # Leerraum bestehender Schluessel soll hier auffallen und nicht erst
+          # nach dreissig vergeblichen Modellaufrufen.
+          roh=${#OPENROUTER_API_KEY}
+          sauber=$(printf '%s' "$OPENROUTER_API_KEY" | tr -d '[:space:]')
+          echo "Secret vorhanden: $roh Zeichen, davon $(printf '%s' "$sauber" | wc -c) ohne Leerraum"
+          if [ -z "$sauber" ]; then
+            echo "::error::OPENROUTER_API_KEY ist leer. Secret unter Settings → Secrets and variables → Actions neu setzen."
+            exit 1
+          fi
+          case "$sauber" in
+            sk-or-*) echo "Praefix sieht richtig aus." ;;
+            *) echo "::error::OPENROUTER_API_KEY beginnt nicht mit sk-or-." ; exit 1 ;;
+          esac
+
       - name: Uebersetzen
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

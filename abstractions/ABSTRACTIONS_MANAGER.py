@@ -766,10 +766,22 @@ def main() -> int:
 
     logger.info("Abstractions Manager gestartet — Arbeitsverzeichnis %s", WORKSPACE)
 
-    schluessel = os.environ.get("OPENROUTER_API_KEY", "")
-    if not schluessel and not argumente.probelauf:
-        logger.error("OPENROUTER_API_KEY fehlt — ohne Schluessel keine Uebersetzung")
-        return 2
+    # Umschliessende Leerzeichen und Zeilenumbrueche entfernen: ein Schluessel,
+    # der beim Einfuegen ein Leerzeichen mitbekommen hat, ist zwar nicht leer,
+    # ergibt aber einen leeren Bearer — OpenRouter antwortet dann mit
+    # "Missing Authentication header" statt mit "User not found".
+    schluessel = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not argumente.probelauf:
+        if not schluessel:
+            logger.error("OPENROUTER_API_KEY ist leer oder besteht nur aus Leerraum "
+                         "— ohne Schluessel keine Uebersetzung")
+            return 2
+        if not schluessel.startswith("sk-or-"):
+            logger.error("OPENROUTER_API_KEY sieht nicht nach einem OpenRouter-Schluessel "
+                         "aus (%d Zeichen, beginnt mit %r) — erwartet wird sk-or-...",
+                         len(schluessel), schluessel[:6])
+            return 2
+        logger.info("Schluessel erkannt: %d Zeichen", len(schluessel))
 
     zustand = zustand_laden()
     baeume = quellen_holen()
