@@ -6,46 +6,179 @@
       "name": "Quelle",
       "farbe": "#5f6773",
       "blocks": [
-        "WKWebView",
-        "www.tiktok.com",
-        "Hauptframe"
+        {
+          "id": "wkwebview",
+          "name": "WKWebView",
+          "untertitel": "Hauptframe"
+        },
+        {
+          "id": "www-tiktok-com",
+          "name": "www.tiktok.com",
+          "untertitel": "nur diese Origin"
+        },
+        {
+          "id": "hauptframe",
+          "name": "Hauptframe",
+          "untertitel": "kein iframe"
+        }
       ]
     },
     {
       "name": "Bruecke",
       "farbe": "#2481cc",
       "blocks": [
-        "Mobile Bridge v1",
-        "Origin-Pruefung",
-        "Typ + Groesse"
+        {
+          "id": "mobile-bridge-v1",
+          "name": "Mobile Bridge v1",
+          "untertitel": "Origin + Typ"
+        },
+        {
+          "id": "origin-pruefung",
+          "name": "Origin-Pruefung",
+          "untertitel": "fail closed"
+        },
+        {
+          "id": "typ-groesse",
+          "name": "Typ + Groesse",
+          "untertitel": "begrenzt"
+        }
       ]
     },
     {
       "name": "App",
       "farbe": "#6d5bd0",
       "blocks": [
-        "Swift",
-        "SwiftUI",
-        "WebKit"
+        {
+          "id": "swift",
+          "name": "Swift",
+          "untertitel": "Sprache"
+        },
+        {
+          "id": "swiftui",
+          "name": "SwiftUI",
+          "untertitel": "Oberflaeche"
+        },
+        {
+          "id": "webkit",
+          "name": "WebKit",
+          "untertitel": "WebView"
+        }
       ]
     },
     {
       "name": "Audio",
       "farbe": "#b45309",
       "blocks": [
-        "ShazamKit",
-        "Mikrofon",
-        "WebView-PCM (exp.)"
+        {
+          "id": "shazamkit",
+          "name": "ShazamKit",
+          "untertitel": "nur nach Klick"
+        },
+        {
+          "id": "mikrofon",
+          "name": "Mikrofon",
+          "untertitel": "stabil"
+        },
+        {
+          "id": "webview-pcm-exp",
+          "name": "WebView-PCM (exp.)",
+          "untertitel": "experimentell"
+        }
       ]
     },
     {
       "name": "Ausgabe",
       "farbe": "#fe2c55",
       "blocks": [
-        "fluechtiger Streamzustand",
-        "Panel",
-        "IPA"
+        {
+          "id": "fluechtiger-streamzustand",
+          "name": "fluechtiger Streamzustand",
+          "untertitel": "nicht persistiert"
+        },
+        {
+          "id": "panel",
+          "name": "Panel",
+          "untertitel": "Anzeige"
+        },
+        {
+          "id": "ipa",
+          "name": "IPA",
+          "untertitel": "iOS-Artefakt"
+        }
       ]
     }
-  ]
+  ],
+  "kanten": [
+    {
+      "von": "wkwebview",
+      "nach": "mobile-bridge-v1",
+      "art": "fluss"
+    },
+    {
+      "von": "www-tiktok-com",
+      "nach": "origin-pruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "hauptframe",
+      "nach": "typ-groesse",
+      "art": "fluss"
+    },
+    {
+      "von": "mobile-bridge-v1",
+      "nach": "swift",
+      "art": "fluss"
+    },
+    {
+      "von": "origin-pruefung",
+      "nach": "swiftui",
+      "art": "fluss"
+    },
+    {
+      "von": "typ-groesse",
+      "nach": "webkit",
+      "art": "fluss"
+    },
+    {
+      "von": "swift",
+      "nach": "shazamkit",
+      "art": "fluss"
+    },
+    {
+      "von": "swiftui",
+      "nach": "mikrofon",
+      "art": "fluss"
+    },
+    {
+      "von": "webkit",
+      "nach": "webview-pcm-exp",
+      "art": "fluss"
+    },
+    {
+      "von": "shazamkit",
+      "nach": "fluechtiger-streamzustand",
+      "art": "fluss"
+    },
+    {
+      "von": "mikrofon",
+      "nach": "panel",
+      "art": "fluss"
+    },
+    {
+      "von": "webview-pcm-exp",
+      "nach": "ipa",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#fe2c55",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Die Schichtsicht der iOS-App: WKWebView, Brücke, SwiftUI, ShazamKit.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }

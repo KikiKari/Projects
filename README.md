@@ -68,7 +68,7 @@ Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
 
 ![Rotierende 3D-Ansicht der Schichten](docs/assets/architektur-rotation.gif)
 
-**[▶ Begehbare Schichtansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+**[▶ Begehbare Schichtansicht öffnen](https://tiktok-live-companion.vercel.app/de/architecture-3d)** — ziehen zum Drehen, Rad zum Zoomen,
 Umschalter zwischen isometrisch und perspektivisch. Ergänzt die
 [interaktive Datenfluss-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 um die Schichtsicht dieses Plattformbranches.
