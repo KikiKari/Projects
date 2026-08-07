@@ -1,0 +1,11 @@
+{
+  "titel": "tt-live — Schichten",
+  "akzent": "#fe2c55",
+  "schichten": [
+    {"name": "Quellen", "farbe": "#5f6773", "blocks": ["tiktok.com/@user", "room_id", "m3u8"]},
+    {"name": "Werkzeuge", "farbe": "#2481cc", "blocks": ["get_room_id.py", "check_alive.py", "tt_live.py"]},
+    {"name": "Einstieg", "farbe": "#6d5bd0", "blocks": ["tt-live.sh", "tt-live.json"]},
+    {"name": "Daemon", "farbe": "#b45309", "blocks": ["Zeitfenster", "Zustandsspeicher", "Abstand"]},
+    {"name": "Ereignisse", "farbe": "#fe2c55", "blocks": ["go_live", "go_offline", "rename_detected"]}
+  ]
+}
