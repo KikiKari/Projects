@@ -23,8 +23,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-BREITE, HOEHE = 900, 620
-SKALA = 10.5
+BREITE, HOEHE = 1000, 700
+SKALA = 9.6
 ELEVATION = math.radians(30.0)   # klassische Iso-Neigung
 FRAMES = 36
 HELL = (247, 248, 250)
@@ -125,14 +125,8 @@ def zeichne(szene, azimut, titel="", legende=None):
             px, py = float(pts[0][0]), float(pts[0][1])
             beschriftungen.append((px, py, quader.label))
 
-    f = _font(14, fett=True)
-    for px, py, text in beschriftungen:
-        l, t, r, b = zeichner.textbbox((0, 0), text, font=f)
-        w, h = r - l, b - t
-        zeichner.rectangle([px - w / 2 - 6, py - h / 2 - 4,
-                            px + w / 2 + 6, py + h / 2 + 4],
-                           fill=(255, 255, 255, 232), outline=(214, 219, 226))
-        zeichner.text((px - w / 2, py - h / 2 - t), text, font=f, fill=(22, 25, 29))
+    _beschrifte(zeichner, beschriftungen)
+
 
     if titel:
         zeichner.text((28, 22), titel, font=_font(23, fett=True), fill=(22, 25, 29))
@@ -147,7 +141,49 @@ def zeichne(szene, azimut, titel="", legende=None):
     return bild
 
 
-def schicht(y, farbe, blocks, bw=7.0, bd=3.8, hoehe=1.6, luft=1.2):
+def _beschrifte(zeichner, eintraege, schrift=14):
+    """Setzt Beschriftungen kollisionsfrei und zieht eine Fuehrungslinie zum Block.
+
+    Ohne diesen Schritt ueberdecken sich die Schilder benachbarter Bausteine in
+    der Isometrie regelmaessig — zwei Bloecke, die im Raum weit auseinanderliegen,
+    landen projiziert nebeneinander.
+    """
+    f = _font(schrift, fett=True)
+    belegt = []          # bereits gesetzte Rechtecke
+    # von oben nach unten setzen: die oberste Schicht bekommt ihren Wunschplatz
+    for anker_x, anker_y, text in sorted(eintraege, key=lambda e: e[1]):
+        l, t, r, b = zeichner.textbbox((0, 0), text, font=f)
+        w, h = r - l, b - t
+        bx, by = w / 2 + 7, h / 2 + 5
+
+        platz = None
+        # abwechselnd nach oben und unten ausweichen, in kleinen Schritten
+        for schritt in range(0, 26):
+            for richtung in ((-1, 1) if schritt else (0,)):
+                y = anker_y + richtung * schritt * 7
+                kasten = (anker_x - bx, y - by, anker_x + bx, y + by)
+                if all(kasten[2] < o[0] or kasten[0] > o[2] or
+                       kasten[3] < o[1] or kasten[1] > o[3] for o in belegt):
+                    platz = (y, kasten)
+                    break
+            if platz:
+                break
+        if not platz:                       # gibt es praktisch nie
+            platz = (anker_y, (anker_x - bx, anker_y - by, anker_x + bx, anker_y + by))
+        y, kasten = platz
+        belegt.append(kasten)
+
+        if abs(y - anker_y) > 3:            # Fuehrungslinie nur, wenn versetzt
+            zeichner.line([(anker_x, anker_y), (anker_x, y)],
+                          fill=(150, 157, 168), width=1)
+            zeichner.ellipse([anker_x - 2, anker_y - 2, anker_x + 2, anker_y + 2],
+                             fill=(150, 157, 168))
+        zeichner.rectangle(kasten, fill=(255, 255, 255, 236), outline=(206, 212, 221))
+        zeichner.text((anker_x - w / 2, y - h / 2 - t), text, font=f, fill=(22, 25, 29))
+
+
+
+def schicht(y, farbe, blocks, bw=7.4, bd=4.4, hoehe=1.6, luft=2.0):
     """Eine Schicht: Grundplatte, darauf die Bausteine in einem 2-reihigen Raster.
 
     Das Raster statt einer einzelnen Reihe ist kein Schoenheitsgrund: eine lange
@@ -171,7 +207,7 @@ def schicht(y, farbe, blocks, bw=7.0, bd=3.8, hoehe=1.6, luft=1.2):
 
 # ------------------------------------------------------------------ Spec ----
 
-ABSTAND = 11.4   # senkrechter Abstand der Schichten
+ABSTAND = 12.6   # senkrechter Abstand der Schichten
 START_Y = -17.0  # Hoehe der untersten Schicht
 
 
@@ -189,7 +225,10 @@ def lade(pfad):
     szene, legende = [], []
     for i, s in enumerate(spec["schichten"]):
         farbe = _hex(s["farbe"])
-        szene += schicht(START_Y + i * ABSTAND, farbe, s["blocks"])
+        # Bloecke duerfen Text oder Objekt sein — die interaktive Ansicht braucht
+        # mehr Angaben als das Standbild, beide lesen dieselbe Datei.
+        namen = [b if isinstance(b, str) else b["name"] for b in s["blocks"]]
+        szene += schicht(START_Y + i * ABSTAND, farbe, namen)
         legende.append((s["name"], farbe))
     return szene, spec["titel"], list(reversed(legende))
 
