@@ -2,10 +2,203 @@
   "titel": "Program-Derivation — Schichten",
   "akzent": "#6d5bd0",
   "schichten": [
-    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["Quellcode", "Anforderungen", "Randbedingungen"]},
-    {"name": "Ermittlung", "farbe": "#2481cc", "blocks": ["Abstraktionsschichten", "Interfaces", "Entkopplungspunkte"]},
-    {"name": "Messung", "farbe": "#6d5bd0", "blocks": ["CC", "LCOM", "Kopplung", "Kohaesion", "Vendor Lock-in"]},
-    {"name": "Ableitung", "farbe": "#b45309", "blocks": ["6-stufige Roadmap", "Refactoring-Katalog", "Checklisten"]},
-    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Bericht de/en", "Interface-Vorlagen", "Playbook"]}
-  ]
+    {
+      "name": "Eingaben",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "quellcode",
+          "name": "Quellcode",
+          "untertitel": "Betrachtungsgegenstand"
+        },
+        {
+          "id": "anforderungen",
+          "name": "Anforderungen",
+          "untertitel": "Soll"
+        },
+        {
+          "id": "randbedingungen",
+          "name": "Randbedingungen",
+          "untertitel": "Grenzen"
+        }
+      ]
+    },
+    {
+      "name": "Ermittlung",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "abstraktionsschichten",
+          "name": "Abstraktionsschichten",
+          "untertitel": "benennen"
+        },
+        {
+          "id": "interfaces",
+          "name": "Interfaces",
+          "untertitel": "Schnitte"
+        },
+        {
+          "id": "entkopplungspunkte",
+          "name": "Entkopplungspunkte",
+          "untertitel": "wo trennen"
+        }
+      ]
+    },
+    {
+      "name": "Messung",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "cc",
+          "name": "CC",
+          "untertitel": "zyklomatisch"
+        },
+        {
+          "id": "lcom",
+          "name": "LCOM",
+          "untertitel": "Kohaesionsmangel"
+        },
+        {
+          "id": "kopplung",
+          "name": "Kopplung",
+          "untertitel": "zwischen Modulen"
+        },
+        {
+          "id": "kohaesion",
+          "name": "Kohaesion",
+          "untertitel": "innerhalb"
+        },
+        {
+          "id": "vendor-lock-in",
+          "name": "Vendor Lock-in",
+          "untertitel": "Abhaengigkeit"
+        }
+      ]
+    },
+    {
+      "name": "Ableitung",
+      "farbe": "#b45309",
+      "blocks": [
+        {
+          "id": "6-stufige-roadmap",
+          "name": "6-stufige Roadmap",
+          "untertitel": "Schritt fuer Schritt"
+        },
+        {
+          "id": "refactoring-katalog",
+          "name": "Refactoring-Katalog",
+          "untertitel": "Massnahmen"
+        },
+        {
+          "id": "checklisten",
+          "name": "Checklisten",
+          "untertitel": "Grenzen pruefen"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#0f766e",
+      "blocks": [
+        {
+          "id": "bericht-de-en",
+          "name": "Bericht de/en",
+          "untertitel": "zweisprachig"
+        },
+        {
+          "id": "interface-vorlagen",
+          "name": "Interface-Vorlagen",
+          "untertitel": "Templates"
+        },
+        {
+          "id": "playbook",
+          "name": "Playbook",
+          "untertitel": "Modernisierung"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "quellcode",
+      "nach": "abstraktionsschichten",
+      "art": "fluss"
+    },
+    {
+      "von": "anforderungen",
+      "nach": "interfaces",
+      "art": "fluss"
+    },
+    {
+      "von": "randbedingungen",
+      "nach": "entkopplungspunkte",
+      "art": "fluss"
+    },
+    {
+      "von": "abstraktionsschichten",
+      "nach": "cc",
+      "art": "fluss"
+    },
+    {
+      "von": "interfaces",
+      "nach": "lcom",
+      "art": "fluss"
+    },
+    {
+      "von": "entkopplungspunkte",
+      "nach": "kopplung",
+      "art": "fluss"
+    },
+    {
+      "von": "cc",
+      "nach": "6-stufige-roadmap",
+      "art": "fluss"
+    },
+    {
+      "von": "lcom",
+      "nach": "refactoring-katalog",
+      "art": "fluss"
+    },
+    {
+      "von": "kopplung",
+      "nach": "checklisten",
+      "art": "fluss"
+    },
+    {
+      "von": "kohaesion",
+      "nach": "6-stufige-roadmap",
+      "art": "fluss"
+    },
+    {
+      "von": "vendor-lock-in",
+      "nach": "refactoring-katalog",
+      "art": "fluss"
+    },
+    {
+      "von": "6-stufige-roadmap",
+      "nach": "bericht-de-en",
+      "art": "fluss"
+    },
+    {
+      "von": "refactoring-katalog",
+      "nach": "interface-vorlagen",
+      "art": "fluss"
+    },
+    {
+      "von": "checklisten",
+      "nach": "playbook",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#6d5bd0",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Erst ermitteln, dann messen, dann ableiten — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }
