@@ -49,6 +49,108 @@ Jede Stufe ist ein **Gate**: Sie wird erst empfohlen, wenn die Eingangskriterien
 
 ---
 
+---
+
+## Architektur des Skills / Skill Architecture
+
+<div align="center">
+
+![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
+
+**[▶ Interaktive 3D-Ansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+Umschalter zwischen isometrisch und perspektivisch.
+
+</div>
+
+### Isometrische Ansicht
+
+![Isometrische Schichtansicht](docs/assets/architektur-iso.png)
+
+| Schicht | Was hineingeht | Was herauskommt |
+|---|---|---|
+| **Eingaben** | Quellcode, Anforderungen, Randbedingungen | ein umrissener Betrachtungsgegenstand |
+| **Ermittlung** | dieser Gegenstand | Abstraktionsschichten, Interfaces, Entkopplungspunkte |
+| **Messung** | die ermittelte Struktur | CC, LCOM, Kopplung, Kohäsion, Vendor Lock-in, SoC |
+| **Ableitung** | Struktur + Zahlen | die 6-stufige Roadmap, konkrete Refactorings |
+| **Ausgabe** | alles zusammen | Bericht, Interface-Vorlagen, Checklisten — zweisprachig |
+
+Die Reihenfolge ist der Kern: **erst ermitteln, dann messen, dann ableiten.** Wer mit
+Metriken anfängt, misst eine Struktur, die er noch gar nicht benannt hat — und bekommt Zahlen
+ohne Bedeutung. Ein LCOM-Wert sagt nichts, solange nicht feststeht, welche Klasse welche
+Schicht bedienen soll.
+
+Beide Bilder entstehen aus `docs/architektur.json`:
+
+```bash
+python tools/render_3d.py docs/architektur.json docs/assets
+```
+
+---
+
+## Abläufe / Flows
+
+### Eine Analyse von der Anfrage bis zum Bericht
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant S as Skill
+    participant R as references/
+    participant B as Bericht
+
+    N->>S: "Analysiere die Architektur von X"
+    S->>S: Betrachtungsgegenstand umreissen
+    S->>S: Abstraktionsschichten ermitteln
+    Note over S: Erst benennen, was eine Schicht ist —<br/>sonst misst man eine Struktur, die man<br/>noch nicht kennt.
+    S->>R: interface-templates.md
+    R-->>S: Vorlagen fuer die Schnittstellen
+    S->>S: Metriken erheben: CC, LCOM, Kopplung, Kohaesion
+    S->>R: metrics-examples.md
+    R-->>S: Vergleichswerte zur Einordnung
+    S->>S: Entkopplungspunkte und Lock-in benennen
+    S->>R: refactoring-catalog.md, boundary-checklist.md
+    R-->>S: konkrete Massnahmen
+    S->>B: 6-stufige Roadmap
+    B-->>N: Bericht, zweisprachig
+```
+
+### Die sechs Stufen der Roadmap
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Ist-Zustand
+    participant R as Roadmap
+
+    A->>R: 1 — Grenzen ziehen (was gehoert wozu)
+    R->>R: 2 — Interfaces definieren, noch ohne Umbau
+    R->>R: 3 — Adapter einziehen, Altcode bleibt
+    R->>R: 4 — Aufrufer umstellen, schrittweise
+    R->>R: 5 — Altcode entfernen
+    R->>R: 6 — Metriken erneut erheben
+    R-->>A: gemessene Verbesserung statt Behauptung
+    Note over R: Schritt 6 ist nicht Zierde. Ohne erneute<br/>Messung bleibt jede Umbau-Behauptung<br/>eine Meinung.
+```
+
+### Wann der Skill *nicht* greift
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor N as Nutzer
+    participant S as Skill
+
+    N->>S: "Schreib mir eine Funktion, die X tut"
+    S-->>N: kein Fall fuer Programmableitung
+    Note over S: Der Skill leitet Struktur ab.<br/>Eine einzelne Funktion hat keine.
+    N->>S: "Warum ist dieser Code langsam?"
+    S-->>N: performance-checklist.md — aber Profiling zuerst
+    Note over S: Struktur und Laufzeit sind zwei Fragen.<br/>Wer sie vermischt, optimiert an der<br/>falschen Stelle.
+    N->>S: "Wie loesen wir uns von Anbieter Y?"
+    S-->>N: genau der Fall — Lock-in-Analyse + Entkopplungspunkte
+```
+
 ## Verwendung / Usage
 
 ### Als Agent Skill in Perplexity

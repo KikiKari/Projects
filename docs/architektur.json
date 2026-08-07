@@ -1,0 +1,11 @@
+{
+  "titel": "Program-Derivation — Schichten",
+  "akzent": "#6d5bd0",
+  "schichten": [
+    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["Quellcode", "Anforderungen", "Randbedingungen"]},
+    {"name": "Ermittlung", "farbe": "#2481cc", "blocks": ["Abstraktionsschichten", "Interfaces", "Entkopplungspunkte"]},
+    {"name": "Messung", "farbe": "#6d5bd0", "blocks": ["CC", "LCOM", "Kopplung", "Kohaesion", "Vendor Lock-in"]},
+    {"name": "Ableitung", "farbe": "#b45309", "blocks": ["6-stufige Roadmap", "Refactoring-Katalog", "Checklisten"]},
+    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Bericht de/en", "Interface-Vorlagen", "Playbook"]}
+  ]
+}
