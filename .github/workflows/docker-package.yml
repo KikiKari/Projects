@@ -1,0 +1,118 @@
+# Baut das Container-Abbild und veroeffentlicht es als Package auf ghcr.io.
+#
+# Runner: standardmaessig ein GitHub-Runner. Ueber "Run workflow" laesst sich
+# stattdessen der eigene Rechner waehlen (self-hosted, Label lenovo-node7) —
+# dann bleiben Build und Cache im Tailnet.
+#
+# Die Verteilung auf einen Tailnet-Node ist ausdruecklich abzuschalten und
+# laeuft nur, wenn sie beim manuellen Start angefordert wird.
+
+name: Docker Package
+
+on:
+  push:
+    branches: ["Weather-Check"]
+    paths:
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".github/workflows/docker-package.yml"
+      - "Weather-Check/**"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Wo bauen"
+        type: choice
+        default: "ubuntu-latest"
+        options: ["ubuntu-latest", "self-hosted"]
+      verteilen:
+        description: "Nach dem Push auf einen Tailnet-Node ausrollen"
+        type: boolean
+        default: false
+      ziel:
+        description: "Zielhost im Tailnet"
+        type: string
+        default: "openclaw-node3"
+
+concurrency:
+  group: docker-weather-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  bauen:
+    name: Abbild bauen und veroeffentlichen
+    runs-on: ${{ github.event.inputs.runner || 'ubuntu-latest' }}
+    outputs:
+      abbild: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Quellstand holen
+        uses: actions/checkout@v4
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      - name: An ghcr.io anmelden
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Marken und Beschriftungen ableiten
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/weather-check
+          tags: |
+            type=raw,value=alpha,enable=${{ github.event_name != 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=ref,event=tag
+            type=sha,format=short
+          labels: |
+            org.opencontainers.image.title=weather-check
+            org.opencontainers.image.description=Lokaler Regen-Check, PWA
+
+      - name: Bauen und schieben
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Zusammenfassung
+        run: |
+          echo "### weather-check" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  ausrollen:
+    name: Auf einen Tailnet-Node ausrollen
+    needs: bauen
+    if: github.event_name == 'workflow_dispatch' && inputs.verteilen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ins Tailnet verbinden
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Abbild auf dem Zielhost ziehen und starten
+        run: |
+          set -euo pipefail
+          ZIEL="${{ inputs.ziel }}"
+          echo "Ziel: $ZIEL"
+          ssh -o StrictHostKeyChecking=accept-new "$ZIEL" \
+            "docker pull ghcr.io/${{ github.repository_owner }}/weather-check:alpha \
+             && docker compose -p weather-check up -d --pull always"
