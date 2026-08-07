@@ -2,9 +2,177 @@
   "titel": "Weather-Check — Schichten",
   "akzent": "#2481cc",
   "schichten": [
-    {"name": "Quellen", "farbe": "#5f6773", "blocks": ["DWD-Radar", "Messstationen", "Open-Meteo", "Satellit", "Webcams", "Handyfoto"]},
-    {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": ["Zugbahn", "Gewichtung", "Widerspruchspruefung"]},
-    {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": ["30 min", "60 min", "120 min"]},
-    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["PWA", "Computer-Prompt", "Handlungssatz"]}
-  ]
+    {
+      "name": "Quellen",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "dwd-radar",
+          "name": "DWD-Radar",
+          "untertitel": "Zugbahn"
+        },
+        {
+          "id": "messstationen",
+          "name": "Messstationen",
+          "untertitel": "Ist-Wert"
+        },
+        {
+          "id": "open-meteo",
+          "name": "Open-Meteo",
+          "untertitel": "Minutenwerte"
+        },
+        {
+          "id": "satellit",
+          "name": "Satellit",
+          "untertitel": "Bewoelkung"
+        },
+        {
+          "id": "webcams",
+          "name": "Webcams",
+          "untertitel": "Sichtpruefung"
+        },
+        {
+          "id": "handyfoto",
+          "name": "Handyfoto",
+          "untertitel": "Wolkenbasis"
+        }
+      ]
+    },
+    {
+      "name": "Zusammenfuehrung",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "zugbahn",
+          "name": "Zugbahn",
+          "untertitel": "extrapoliert"
+        },
+        {
+          "id": "gewichtung",
+          "name": "Gewichtung",
+          "untertitel": "je Quelle"
+        },
+        {
+          "id": "widerspruchspruefung",
+          "name": "Widerspruchspruefung",
+          "untertitel": "benennen statt mitteln"
+        }
+      ]
+    },
+    {
+      "name": "Einschaetzung",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "30-min",
+          "name": "30 min",
+          "untertitel": "hohe Sicherheit"
+        },
+        {
+          "id": "60-min",
+          "name": "60 min",
+          "untertitel": "mittel"
+        },
+        {
+          "id": "120-min",
+          "name": "120 min",
+          "untertitel": "grob"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#0f766e",
+      "blocks": [
+        {
+          "id": "pwa",
+          "name": "PWA",
+          "untertitel": "Service Worker"
+        },
+        {
+          "id": "computer-prompt",
+          "name": "Computer-Prompt",
+          "untertitel": "Perplexity"
+        },
+        {
+          "id": "handlungssatz",
+          "name": "Handlungssatz",
+          "untertitel": "eine Entscheidung"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "dwd-radar",
+      "nach": "zugbahn",
+      "art": "fluss"
+    },
+    {
+      "von": "messstationen",
+      "nach": "gewichtung",
+      "art": "fluss"
+    },
+    {
+      "von": "open-meteo",
+      "nach": "widerspruchspruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "satellit",
+      "nach": "zugbahn",
+      "art": "fluss"
+    },
+    {
+      "von": "webcams",
+      "nach": "gewichtung",
+      "art": "fluss"
+    },
+    {
+      "von": "handyfoto",
+      "nach": "widerspruchspruefung",
+      "art": "fluss"
+    },
+    {
+      "von": "zugbahn",
+      "nach": "30-min",
+      "art": "fluss"
+    },
+    {
+      "von": "gewichtung",
+      "nach": "60-min",
+      "art": "fluss"
+    },
+    {
+      "von": "widerspruchspruefung",
+      "nach": "120-min",
+      "art": "fluss"
+    },
+    {
+      "von": "30-min",
+      "nach": "pwa",
+      "art": "fluss"
+    },
+    {
+      "von": "60-min",
+      "nach": "computer-prompt",
+      "art": "fluss"
+    },
+    {
+      "von": "120-min",
+      "nach": "handlungssatz",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#2481cc",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }

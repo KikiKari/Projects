@@ -34,7 +34,7 @@ Dieselbe Datei gibt es als `.docx` und `.pdf` zum Weiterreichen.
 
 ![Rotierende 3D-Ansicht der Architektur](docs/assets/architektur-rotation.gif)
 
-**[▶ Interaktive 3D-Ansicht öffnen](public/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
+**[▶ Interaktive 3D-Ansicht öffnen](https://weather-check.vercel.app/3d.html)** — ziehen zum Drehen, Rad zum Zoomen,
 Umschalter zwischen isometrisch und perspektivisch.
 
 </div>
