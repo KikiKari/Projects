@@ -16,4 +16,10 @@ USER lauf
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TZ=Europe/Berlin
 
-CMD ["sh", "-c", "python tiktok-monitor/tt_live.py --help"]
+# tt-live ist ein Kommandozeilen-Werkzeug, kein Dienst. Ein CMD, das sich
+# sofort beendet, laeuft mit restart: unless-stopped in eine Endlosschleife.
+# Der Container bleibt deshalb bereit und wird per docker exec benutzt:
+#
+#   docker exec tt-live python tiktok-monitor/tt_live.py check @name
+#   docker exec tt-live python tiktok-monitor/tt_live.py daemon @name --dauer 3h
+CMD ["sleep", "infinity"]
