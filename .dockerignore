@@ -1,0 +1,8 @@
+.git
+.github
+docs/assets
+**/__pycache__
+*.pyc
+.venv
+node_modules
+*.tar.gz
