@@ -2,10 +2,183 @@
   "titel": "Abstractions Manager — Schichten",
   "akzent": "#0f766e",
   "schichten": [
-    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["OpenClaw-Scripts", ".env", "Repo-Init"]},
-    {"name": "Portierung", "farbe": "#2481cc", "blocks": ["create_abstraction.py", "10 Zielsprachen", "json_processor.js"]},
-    {"name": "Verwaltung", "farbe": "#6d5bd0", "blocks": ["db_manager.py", "logger.py", "exceptions.py"]},
-    {"name": "Pruefung", "farbe": "#b45309", "blocks": ["check-live.js", "CODE_REVIEW_FULL", "python-hardener"]},
-    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Status-Report", "Doku-DB", "Cron alle 6 h"]}
-  ]
+    {
+      "name": "Eingaben",
+      "farbe": "#5f6773",
+      "blocks": [
+        {
+          "id": "openclaw-scripts",
+          "name": "OpenClaw-Scripts",
+          "untertitel": "Quellen"
+        },
+        {
+          "id": "env",
+          "name": ".env",
+          "untertitel": "Umgebung"
+        },
+        {
+          "id": "repo-init",
+          "name": "Repo-Init",
+          "untertitel": "Erstinstallation"
+        }
+      ]
+    },
+    {
+      "name": "Portierung",
+      "farbe": "#2481cc",
+      "blocks": [
+        {
+          "id": "create-abstraction-py",
+          "name": "create_abstraction.py",
+          "untertitel": "Portierung"
+        },
+        {
+          "id": "10-zielsprachen",
+          "name": "10 Zielsprachen",
+          "untertitel": "je Lauf"
+        },
+        {
+          "id": "json-processor-js",
+          "name": "json_processor.js",
+          "untertitel": "Node-Teil"
+        }
+      ]
+    },
+    {
+      "name": "Verwaltung",
+      "farbe": "#6d5bd0",
+      "blocks": [
+        {
+          "id": "db-manager-py",
+          "name": "db_manager.py",
+          "untertitel": "Zustand"
+        },
+        {
+          "id": "logger-py",
+          "name": "logger.py",
+          "untertitel": "Protokoll"
+        },
+        {
+          "id": "exceptions-py",
+          "name": "exceptions.py",
+          "untertitel": "Fehlerklassen"
+        }
+      ]
+    },
+    {
+      "name": "Pruefung",
+      "farbe": "#b45309",
+      "blocks": [
+        {
+          "id": "check-live-js",
+          "name": "check-live.js",
+          "untertitel": "Live-Pruefung"
+        },
+        {
+          "id": "code-review-full",
+          "name": "CODE_REVIEW_FULL",
+          "untertitel": "Durchsicht"
+        },
+        {
+          "id": "python-hardener",
+          "name": "python-hardener",
+          "untertitel": "Haertung"
+        }
+      ]
+    },
+    {
+      "name": "Ausgabe",
+      "farbe": "#0f766e",
+      "blocks": [
+        {
+          "id": "status-report",
+          "name": "Status-Report",
+          "untertitel": "was ist wo"
+        },
+        {
+          "id": "doku-db",
+          "name": "Doku-DB",
+          "untertitel": "Datenbanken"
+        },
+        {
+          "id": "cron-alle-6-h",
+          "name": "Cron alle 6 h",
+          "untertitel": "Takt"
+        }
+      ]
+    }
+  ],
+  "kanten": [
+    {
+      "von": "openclaw-scripts",
+      "nach": "create-abstraction-py",
+      "art": "fluss"
+    },
+    {
+      "von": "env",
+      "nach": "10-zielsprachen",
+      "art": "fluss"
+    },
+    {
+      "von": "repo-init",
+      "nach": "json-processor-js",
+      "art": "fluss"
+    },
+    {
+      "von": "create-abstraction-py",
+      "nach": "db-manager-py",
+      "art": "fluss"
+    },
+    {
+      "von": "10-zielsprachen",
+      "nach": "logger-py",
+      "art": "fluss"
+    },
+    {
+      "von": "json-processor-js",
+      "nach": "exceptions-py",
+      "art": "fluss"
+    },
+    {
+      "von": "db-manager-py",
+      "nach": "check-live-js",
+      "art": "fluss"
+    },
+    {
+      "von": "logger-py",
+      "nach": "code-review-full",
+      "art": "fluss"
+    },
+    {
+      "von": "exceptions-py",
+      "nach": "python-hardener",
+      "art": "fluss"
+    },
+    {
+      "von": "check-live-js",
+      "nach": "status-report",
+      "art": "fluss"
+    },
+    {
+      "von": "code-review-full",
+      "nach": "doku-db",
+      "art": "fluss"
+    },
+    {
+      "von": "python-hardener",
+      "nach": "cron-alle-6-h",
+      "art": "fluss"
+    }
+  ],
+  "kantenarten": [
+    {
+      "art": "fluss",
+      "farbe": "#0f766e",
+      "stil": "voll",
+      "text": "Fluss von unten nach oben"
+    }
+  ],
+  "untertitel": "Von OpenClaw-Scripts in zehn Zielsprachen — drehen, zoomen, Knoten auswählen.",
+  "technik": "three.js · r128",
+  "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }
