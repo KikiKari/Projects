@@ -1,4 +1,4 @@
-# Portiert OpenClaw-Scripts in zehn Zielsprachen
+# Portiert den Quellcode aller drei Repositories in sechs Zielsprachen
 #
 #   docker compose up -d --build     starten (und nach Aenderungen neu bauen)
 #   docker compose logs -f           zusehen
@@ -21,6 +21,11 @@ services:
 
     environment:
       TZ: Europe/Berlin
+      # Takt des Abgleichs mit Projects@abstractions, in Sekunden.
+      ABGLEICH_TAKT: "43200"
+      # Nur noetig, wenn im Container von Hand portiert werden soll. Der
+      # planmaessige Lauf findet in GitHub Actions statt.
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
 
     # Startet nach Neustart und nach Absturz wieder — aber nicht, wenn du
     # ihn selbst angehalten hast.

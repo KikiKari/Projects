@@ -1,0 +1,90 @@
+name: Abstraktionen
+
+# Alle sechs Stunden wird eine Prioritaetsstufe abgearbeitet und das Ergebnis
+# in diesen Branch geschrieben. Der Zustand liegt im Cache, damit ein Lauf
+# dort weitermacht, wo der vorige aufgehoert hat.
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      prioritaet:
+        description: "Zu bearbeitende Stufe"
+        type: choice
+        options: [reihum, high, medium, low, alle]
+        default: reihum
+      anzahl:
+        description: "Hoechstzahl Quelldateien in diesem Lauf"
+        default: "40"
+
+concurrency:
+  group: abstraktionen
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  uebersetzen:
+    name: Quellcode portieren
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Branch auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: abstractions
+          fetch-depth: 0
+
+      - name: Python bereitstellen
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pruefwerkzeuge bereitstellen
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tcl perl >/dev/null
+          node --version && perl --version | head -2 && tclsh <<< 'puts [info patchlevel]'
+
+      - name: Zustand aus dem Cache holen
+        uses: actions/cache@v4
+        with:
+          path: |
+            arbeit/db
+            arbeit/git/quellen
+          key: abstraktionen-${{ github.run_id }}
+          restore-keys: abstraktionen-
+
+      - name: Arbeitsbaum vorbereiten
+        run: |
+          mkdir -p arbeit/git
+          ln -sfn "$GITHUB_WORKSPACE" arbeit/git/Abstraktionen
+          git config user.name  "KikiKari"
+          git config user.email "272986081+KikiKari@users.noreply.github.com"
+
+      - name: Uebersetzen
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ABSTRACTIONS_WORKSPACE: ${{ github.workspace }}/arbeit
+        run: |
+          STUFE="${{ inputs.prioritaet }}"
+          ANZAHL="${{ inputs.anzahl }}"
+          python3 abstractions/ABSTRACTIONS_MANAGER.py \
+            ${STUFE:+$( [ "$STUFE" != "reihum" ] && echo --prioritaet "$STUFE" )} \
+            --anzahl "${ANZAHL:-40}"
+
+      - name: Bestand melden
+        if: always()
+        run: |
+          {
+            echo "## Bestand nach dem Lauf"
+            echo
+            echo "| Zielsprache | Dateien |"
+            echo "|---|---:|"
+            for s in javascript perl5 powershell python shell tcl; do
+              n=$( [ -d "$s" ] && find "$s" -type f | wc -l || echo 0 )
+              echo "| $s | $n |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
