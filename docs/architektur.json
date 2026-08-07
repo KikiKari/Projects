@@ -1,0 +1,11 @@
+{
+  "titel": "Abstractions Manager — Schichten",
+  "akzent": "#0f766e",
+  "schichten": [
+    {"name": "Eingaben", "farbe": "#5f6773", "blocks": ["OpenClaw-Scripts", ".env", "Repo-Init"]},
+    {"name": "Portierung", "farbe": "#2481cc", "blocks": ["create_abstraction.py", "10 Zielsprachen", "json_processor.js"]},
+    {"name": "Verwaltung", "farbe": "#6d5bd0", "blocks": ["db_manager.py", "logger.py", "exceptions.py"]},
+    {"name": "Pruefung", "farbe": "#b45309", "blocks": ["check-live.js", "CODE_REVIEW_FULL", "python-hardener"]},
+    {"name": "Ausgabe", "farbe": "#0f766e", "blocks": ["Status-Report", "Doku-DB", "Cron alle 6 h"]}
+  ]
+}
