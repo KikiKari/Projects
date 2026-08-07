@@ -1,0 +1,38 @@
+# Portiert OpenClaw-Scripts in zehn Zielsprachen
+#
+#   docker compose up -d --build     starten (und nach Aenderungen neu bauen)
+#   docker compose logs -f           zusehen
+#   docker compose down              anhalten
+#
+# Eigener Projektname, eigener Container, eigenes Abbild, eigenes Volume:
+# nichts davon beruehrt bestehende Umgebungen wie tlc, telegram-monitor
+# oder onboardingandprojectpages.
+
+name: abstractions-manager
+
+services:
+  app:
+    build: .
+    image: ghcr.io/kikikari/abstractions-manager:local
+    container_name: abstractions-manager
+
+    volumes:
+      - abstractions-state:/app/data
+
+    environment:
+      TZ: Europe/Berlin
+
+    # Startet nach Neustart und nach Absturz wieder — aber nicht, wenn du
+    # ihn selbst angehalten hast.
+    restart: unless-stopped
+
+    # Ein Beobachter braucht keine erweiterten Rechte.
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  abstractions-state:
