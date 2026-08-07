@@ -1,4 +1,4 @@
-#!/usr/bin/env tclsh8.6
+#!/usr/bin/env tclsh
 # abstractions-publish-gateway.sh — portiert nach tcl
 # Quelle: shell, OpenClaw@gateway2:scripts/abstractions-publish-gateway.sh
 # Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
