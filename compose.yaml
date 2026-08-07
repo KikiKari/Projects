@@ -1,0 +1,38 @@
+# TikTok-LIVE-Monitor als Datenprovider
+#
+#   docker compose up -d --build     starten (und nach Aenderungen neu bauen)
+#   docker compose logs -f           zusehen
+#   docker compose down              anhalten
+#
+# Eigener Projektname, eigener Container, eigenes Abbild, eigenes Volume:
+# nichts davon beruehrt bestehende Umgebungen wie tlc, telegram-monitor
+# oder onboardingandprojectpages.
+
+name: tt-live
+
+services:
+  app:
+    build: .
+    image: ghcr.io/kikikari/tt-live:local
+    container_name: tt-live
+
+    volumes:
+      - tt-live-state:/app/data
+
+    environment:
+      TZ: Europe/Berlin
+
+    # Startet nach Neustart und nach Absturz wieder — aber nicht, wenn du
+    # ihn selbst angehalten hast.
+    restart: unless-stopped
+
+    # Ein Beobachter braucht keine erweiterten Rechte.
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  tt-live-state:
