@@ -11,7 +11,14 @@ WORKDIR /app
 COPY . /app
 
 # Ein Beobachter braucht keine Root-Rechte.
-RUN adduser -D -H -u 10001 lauf && chown -R lauf:lauf /app
+# Der Manager schreibt sein Protokoll nach
+# /home/openclaw/.openclaw/workspace/logs. Dieser Pfad stammt aus der
+# OpenClaw-Umgebung und existiert im Abbild nicht — ohne ihn scheitert
+# schon der Logger-Aufbau, und mit restart: unless-stopped laeuft der
+# Container in eine Neustartschleife. Also anlegen und uebereignen.
+RUN adduser -D -H -u 10001 lauf \
+ && mkdir -p /home/openclaw/.openclaw/workspace/logs \
+ && chown -R lauf:lauf /app /home/openclaw
 USER lauf
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TZ=Europe/Berlin

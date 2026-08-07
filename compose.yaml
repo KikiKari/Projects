@@ -17,7 +17,7 @@ services:
     container_name: abstractions-manager
 
     volumes:
-      - abstractions-state:/app/data
+      - abstractions-state:/home/openclaw/.openclaw/workspace
 
     environment:
       TZ: Europe/Berlin
