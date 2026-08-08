@@ -1,16 +1,22 @@
 #!/usr/bin/perl
-# channel_status.py — portiert nach perl5
+# channel_status.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/channel_status.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+use strict;
+use warnings;
+use utf8;
+use File::Path qw(make_path);
+use File::Basename;
+use JSON;
+use POSIX qw(strftime);
+
+# channel_status.py — portiert nach javascript
 # Quelle: python, OpenClaw@gateway1:skills/channel-status-agent/scripts/channel_status.py
 # auch in: OpenClaw@gateway2:skills/channel-status-agent/scripts/channel_status.py
 # Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
 
-use strict;
-use warnings;
-use JSON;
-use File::Path qw(make_path);
-use File::Basename;
-use POSIX qw(strftime);
-use IPC::Run3;
+# Channel Status Agent - Automatische Status-Updates
 
 # Konfiguration
 my $WORKSPACE = "/home/openclaw/.openclaw/workspace";
@@ -21,189 +27,208 @@ my $LOG_FILE = "$WORKSPACE/logs/channel-status.log";
 sub log_message {
     my ($message, $level) = @_;
     $level //= "INFO";
-    my $timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime);
+    # Logging
+    my $timestamp = strftime "%Y-%m-%d %H:%M:%S", localtime;
     my $entry = "[$timestamp] [$level] $message\n";
     print $entry;
-    open(my $fh, '>>', $LOG_FILE) or die "Could not open log file: $!";
+    open(my $fh, '>>', $LOG_FILE) or die "Could not open file '$LOG_FILE' $!";
     print $fh $entry;
     close $fh;
 }
 
 sub get_system_status {
-    my $status = {
-        timestamp => strftime('%Y-%m-%dT%H:%M:%S', localtime),
+    # Sammelt System-Status
+    my %status = (
+        timestamp => strftime("%Y-%m-%dT%H:%M:%SZ", gmtime),
         nodes => {},
         agents => {},
         system => {}
-    };
+    );
     
     # Node-Status (vereinfacht)
     my %nodes = (
-        node1 => {name => "Gateway", status => "online"},
-        node2 => {name => "Worker", status => "online"},
-        node3 => {name => "Relay", status => "offline", reason => "disk full"},
-        node5 => {name => "Redmi", status => "intermittent"},
-        node7 => {name => "Docker", status => "planned"}
+        "node1" => {"name" => "Gateway", "status" => "online"},
+        "node2" => {"name" => "Worker", "status" => "online"},
+        "node3" => {"name" => "Relay", "status" => "offline", "reason" => "disk full"},
+        "node5" => {"name" => "Redmi", "status" => "intermittent"},
+        "node7" => {"name" => "Docker", "status" => "planned"}
     );
-    $status->{nodes} = \%nodes;
+    $status{nodes} = \%nodes;
     
     # Agent-Status aus Cron
-    my ($stdout, $stderr);
-    eval {
-        run3(['crontab', '-l'], \$stdout, \$stderr);
-        my @lines = split(/\n/, $stdout);
-        my $cron_lines = grep { !/^\s*#/ && /\S/ } @lines;
-        $status->{agents}->{active_crons} = $cron_lines;
-    };
-    if ($@) {
-        $status->{agents}->{active_crons} = "unknown";
+    my $cron_result = `crontab -l 2>/dev/null`;
+    if ($? == 0) {
+        my @lines = grep { $_ && !/^\s*#/ } split /\n/, $cron_result;
+        $status{agents}{active_crons} = scalar @lines;
+    } else {
+        $status{agents}{active_crons} = "unknown";
     }
     
     # System-Metriken
     eval {
         # Disk usage
-        run3(['df', '-h', '/'], \$stdout, \$stderr);
-        for my $line (split(/\n/, $stdout)) {
-            if ($line =~ m|/| && $line =~ /%/) {
-                my @parts = split(/\s+/, $line);
-                $status->{system}->{disk_used} = $parts[4];
+        my $df = `df -h / 2>/dev/null`;
+        for my $line (split /\n/, $df) {
+            if ($line =~ m|/$| && $line =~ /%/) {
+                my @parts = split /\s+/, $line;
+                $status{system}{disk_used} = $parts[4];
                 last;
             }
         }
         
         # RAM usage
-        run3(['free', '-h'], \$stdout, \$stderr);
-        for my $line (split(/\n/, $stdout)) {
-            if ($line =~ /Mem:/) {
-                my @parts = split(/\s+/, $line);
-                $status->{system}->{ram_total} = $parts[1];
-                $status->{system}->{ram_used} = $parts[2];
+        my $free = `free -h 2>/dev/null`;
+        for my $line (split /\n/, $free) {
+            if ($line =~ /^Mem:/) {
+                my @parts = split /\s+/, $line;
+                $status{system}{ram_total} = $parts[1];
+                $status{system}{ram_used} = $parts[2];
                 last;
             }
         }
     };
     
-    return $status;
+    return \%status;
 }
 
 sub format_daily_status {
     my ($status) = @_;
+    # Formatiert täglichen Status
     my $nodes = $status->{nodes};
-    my $online = 0;
+    my $online_count = 0;
     for my $node (values %$nodes) {
-        $online++ if $node->{status} eq "online";
+        if ($node->{status} eq "online") {
+            $online_count++;
+        }
     }
     
-    my $message = "📊 **Täglicher Status-Report**\n";
-    $message .= "🗓️ " . strftime('%Y-%m-%d %H:%M', localtime) . "\n\n";
-    $message .= "**🖥️ Nodes ($online/5 online):**\n";
+    my $timestamp = strftime "%d.%m.%Y %H:%M", localtime;
+    
+    my $message = "📊 **Täglicher Status-Report**
+🗓️ $timestamp
+
+**🖥️ Nodes ($online_count/5 online):**
+";
     
     for my $node_id (sort keys %$nodes) {
         my $info = $nodes->{$node_id};
         my $emoji = $info->{status} eq "online" ? "🟢" : 
                    ($info->{status} eq "offline" ? "🔴" : "🟡");
         $message .= "$emoji $info->{name}: $info->{status}";
-        if (exists $info->{reason}) {
+        if ($info->{reason}) {
             $message .= " ($info->{reason})";
         }
         $message .= "\n";
     }
     
     $message .= "\n**🤖 Agents:**\n";
-    $message .= "Aktive Cron-Jobs: $status->{agents}->{active_crons}\n";
+    $message .= "Aktive Cron-Jobs: $status->{agents}{active_crons}\n";
     
-    if (exists $status->{system}->{disk_used}) {
+    if ($status->{system}{disk_used}) {
         $message .= "\n**💾 System:**\n";
-        $message .= "Disk: $status->{system}->{disk_used} belegt\n";
-        $message .= "RAM: $status->{system}->{ram_used} / $status->{system}->{ram_total}\n";
+        $message .= "Disk: $status->{system}{disk_used} belegt\n";
+        $message .= "RAM: $status->{system}{ram_used} / $status->{system}{ram_total}\n";
     }
     
     return $message;
 }
 
 sub format_weekly_status {
-    my ($status) = @_;
-    my $message = "📈 **Wöchentlicher Report**\n";
-    $message .= "📅 Woche " . strftime('%V', localtime) . " - " . strftime('%Y', localtime) . "\n\n";
-    $message .= "**Zusammenfassung:**\n";
-    $message .= "- 5 aktive Sub-Agents\n";
-    $message .= "- 11 Skills synchronisiert\n";
-    $message .= "- 3 neue Features implementiert\n\n";
-    $message .= "**Top-Ereignisse:**\n";
-    $message .= "1. ClawHub-Git Sync implementiert ✅\n";
-    $message .= "2. Node 3 Disk voll (95%) ⚠️\n";
-    $message .= "3. Channel-Status-Agent aktiviert 🆕\n\n";
-    $message .= "**Geplante Wartungen:**\n";
-    $message .= "- Node 3: Disk-Cleanup erforderlich\n";
-    $message .= "- Node 7: Docker-Setup ausstehend\n";
-    return $message;
+    # Formatiert wöchentlichen Status
+    my $now = time;
+    my $year = (localtime)[5] + 1900;
+    my $jan1 = timelocal(0, 0, 0, 1, 0, $year - 1900);
+    my $days = int(($now - $jan1) / (24 * 60 * 60));
+    my $week_number = int(($days + (localtime($jan1))[6] + 1) / 7) + 1;
+    $week_number = sprintf "%02d", $week_number;
+    
+    return "📈 **Wöchentlicher Report**
+📅 Woche $week_number - $year
+
+**Zusammenfassung:**
+- 5 aktive Sub-Agents
+- 11 Skills synchronisiert
+- 3 neue Features implementiert
+
+**Top-Ereignisse:**
+1. ClawHub-Git Sync implementiert ✅
+2. Node 3 Disk voll (95%) ⚠️
+3. Channel-Status-Agent aktiviert 🆕
+
+**Geplante Wartungen:**
+- Node 3: Disk-Cleanup erforderlich
+- Node 7: Docker-Setup ausstehend
+";
 }
 
 sub send_to_channel {
     my ($message, $channel_type, $channel_id) = @_;
     $channel_type //= "telegram";
     $channel_id //= "-1002381931352";
-    
+    # Sendet Nachricht an Channel
+    my $cmd;
     if ($channel_type eq "telegram") {
         # Nutze OpenClaw message tool
-        my @cmd = ("openclaw", "message", "send", "--target", $channel_id, "--message", $message);
-        my ($stdout, $stderr);
-        eval {
-            run3(\@cmd, \$stdout, \$stderr);
-        };
-        if ($@ || $? != 0) {
-            log_message("Failed to send: $stderr", "ERROR");
-            return 0;
-        } else {
-            log_message("Message sent to $channel_type $channel_id");
-            return 1;
-        }
+        $message =~ s/"/\\"/g;
+        $cmd = "openclaw message send --target $channel_id --message \"$message\"";
     } else {
         log_message("Channel type $channel_type not implemented", "WARN");
+        return 0;
+    }
+    
+    my $result = system($cmd);
+    if ($result == 0) {
+        log_message("Message sent to $channel_type $channel_id");
+        return 1;
+    } else {
+        log_message("Failed to send: $!", "ERROR");
         return 0;
     }
 }
 
 sub main {
+    # Hauptfunktion
     use Getopt::Long;
+    my %args;
+    GetOptions(\%args,
+        "type=s",
+        "message=s",
+        "channel=s",
+        "dry-run"
+    ) or die "Error in command line arguments\n";
     
-    my $type;
-    my $message;
-    my $channel = "-1002381931352";
-    my $dry_run = 0;
+    if (!$args{type} || ($args{type} ne "daily" && $args{type} ne "weekly" && $args{type} ne "alert")) {
+        die "Usage: $0 --type [daily|weekly|alert] [options]
+Options:
+  --type TYPE       Type of status update (daily|weekly|alert)
+  --message MSG     Alert message
+  --channel ID      Channel ID (default: -1002381931352)
+  --dry-run         Show message without sending
+";
+    }
     
-    GetOptions(
-        "type=s" => \$type,
-        "message=s" => \$message,
-        "channel=s" => \$channel,
-        "dry-run" => \$dry_run
-    ) or die "Invalid options\n";
-    
-    die "Type is required\n" unless $type;
-    die "Invalid type: $type\n" unless $type =~ /^(daily|weekly|alert)$/;
-    
-    log_message("Starting $type status update");
+    log_message("Starting $args{type} status update");
     
     # Status sammeln
     my $status = get_system_status();
     
     # Message formatieren
-    my $formatted_message;
-    if ($type eq 'daily') {
-        $formatted_message = format_daily_status($status);
-    } elsif ($type eq 'weekly') {
-        $formatted_message = format_weekly_status($status);
-    } elsif ($type eq 'alert') {
-        $formatted_message = "🚨 **ALERT**\n" . ($message || 'Manual alert');
+    my $message;
+    if ($args{type} eq 'daily') {
+        $message = format_daily_status($status);
+    } elsif ($args{type} eq 'weekly') {
+        $message = format_weekly_status();
+    } elsif ($args{type} eq 'alert') {
+        $message = "🚨 **ALERT**\n" . ($args{message} || 'Manual alert');
     }
     
     # Senden oder Dry-Run
-    if ($dry_run) {
+    if ($args{'dry-run'}) {
         print "\n--- DRY RUN ---\n";
-        print $formatted_message;
+        print $message;
         print "\n--- END ---\n";
     } else {
-        send_to_channel($formatted_message, "telegram", $channel);
+        send_to_channel($message, "telegram", $args{channel} // "-1002381931352");
     }
     
     log_message("Status update completed");
@@ -211,6 +236,8 @@ sub main {
 
 # Ensure log directory exists
 my $log_dir = dirname($LOG_FILE);
-make_path($log_dir) unless -d $log_dir;
+unless (-d $log_dir) {
+    make_path($log_dir) or die "Failed to create directory $log_dir: $!";
+}
 
 main();

@@ -1,35 +1,33 @@
 #!/usr/bin/env node
-// channel_status.py — portiert nach javascript
-// Quelle: python, OpenClaw@gateway1:skills/channel-status-agent/scripts/channel_status.py
-// auch in: OpenClaw@gateway2:skills/channel-status-agent/scripts/channel_status.py
+// channel_status.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/channel_status.pl
+// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+// channel_status.js — portiert nach JavaScript für Node 20
+// Quelle: perl5, channel_status.pl
 // Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
 
-/**
- * Channel Status Agent - Automatische Status-Updates
- */
-
 const fs = require('fs');
-const { execSync } = require('child_process');
 const path = require('path');
+const { execSync } = require('child_process');
+const { Command } = require('commander');
 
 // Konfiguration
-const WORKSPACE = path.join('/home/openclaw/.openclaw/workspace');
-const LOGS_DB = path.join(WORKSPACE, 'db/logs.db');
-const CONFIG_FILE = path.join(WORKSPACE, 'config/channel-status.json');
-const LOG_FILE = path.join(WORKSPACE, 'logs/channel-status.log');
+const WORKSPACE = "/home/openclaw/.openclaw/workspace";
+const LOGS_DB = `${WORKSPACE}/db/logs.db`;
+const CONFIG_FILE = `${WORKSPACE}/config/channel-status.json`;
+const LOG_FILE = `${WORKSPACE}/logs/channel-status.log`;
 
-function log(message, level = "INFO") {
-    /** Logging */
+function logMessage(message, level = "INFO") {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const entry = `[${timestamp}] [${level}] ${message}`;
-    console.log(entry);
-    fs.appendFileSync(LOG_FILE, entry + '\n');
+    const entry = `[${timestamp}] [${level}] ${message}\n`;
+    process.stdout.write(entry);
+    fs.appendFileSync(LOG_FILE, entry);
 }
 
 function getSystemStatus() {
-    /** Sammelt System-Status */
     const status = {
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
         nodes: {},
         agents: {},
         system: {}
@@ -37,18 +35,19 @@ function getSystemStatus() {
     
     // Node-Status (vereinfacht)
     const nodes = {
-        "node1": {"name": "Gateway", "status": "online"},
-        "node2": {"name": "Worker", "status": "online"},
-        "node3": {"name": "Relay", "status": "offline", "reason": "disk full"},
-        "node5": {"name": "Redmi", "status": "intermittent"},
-        "node7": {"name": "Docker", "status": "planned"}
+        node1: {name: "Gateway", status: "online"},
+        node2: {name: "Worker", status: "online"},
+        node3: {name: "Relay", status: "offline", reason: "disk full"},
+        node5: {name: "Redmi", status: "intermittent"},
+        node7: {name: "Docker", status: "planned"}
     };
     status.nodes = nodes;
     
     // Agent-Status aus Cron
     try {
-        const result = execSync('crontab -l', { encoding: 'utf8' });
-        const cronLines = result.split('\n').filter(line => line && !line.startsWith('#')).length;
+        const stdout = execSync('crontab -l', { encoding: 'utf8' });
+        const lines = stdout.split('\n');
+        const cronLines = lines.filter(line => !/^\s*#/.test(line) && /\S/.test(line)).length;
         status.agents.active_crons = cronLines;
     } catch (error) {
         status.agents.active_crons = "unknown";
@@ -57,53 +56,51 @@ function getSystemStatus() {
     // System-Metriken
     try {
         // Disk usage
-        const df = execSync('df -h /', { encoding: 'utf8' });
-        const dfLines = df.split('\n');
+        const dfOutput = execSync('df -h /', { encoding: 'utf8' });
+        const dfLines = dfOutput.split('\n');
         for (const line of dfLines) {
             if (line.includes('/') && line.includes('%')) {
-                const parts = line.trim().split(/\s+/);
+                const parts = line.split(/\s+/);
                 status.system.disk_used = parts[4];
                 break;
             }
         }
         
         // RAM usage
-        const free = execSync('free -h', { encoding: 'utf8' });
-        const freeLines = free.split('\n');
+        const freeOutput = execSync('free -h', { encoding: 'utf8' });
+        const freeLines = freeOutput.split('\n');
         for (const line of freeLines) {
             if (line.includes('Mem:')) {
-                const parts = line.trim().split(/\s+/);
+                const parts = line.split(/\s+/);
                 status.system.ram_total = parts[1];
                 status.system.ram_used = parts[2];
                 break;
             }
         }
     } catch (error) {
-        // Ignore errors
+        // Fehler werden ignoriert, status.system bleibt leer
     }
     
     return status;
 }
 
 function formatDailyStatus(status) {
-    /** Formatiert täglichen Status */
     const nodes = status.nodes;
-    const online = Object.values(nodes).filter(n => n.status === "online").length;
+    let online = 0;
+    for (const nodeId in nodes) {
+        if (nodes[nodeId].status === "online") {
+            online++;
+        }
+    }
     
-    let message = `📊 **Täglicher Status-Report**
-🗓️ ${new Date().toLocaleString('de-DE', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).replace(',', '')}
-
-**🖥️ Nodes (${online}/5 online):**
-`;
+    let message = "📊 **Täglicher Status-Report**\n";
+    message += "🗓️ " + new Date().toISOString().replace('T', ' ').substring(0, 16) + "\n\n";
+    message += `**🖥️ Nodes (${online}/5 online):**\n`;
     
-    for (const [nodeId, info] of Object.entries(nodes)) {
-        const emoji = info.status === "online" ? "🟢" : info.status === "offline" ? "🔴" : "🟡";
+    for (const nodeId of Object.keys(nodes).sort()) {
+        const info = nodes[nodeId];
+        const emoji = info.status === "online" ? "🟢" : 
+                      (info.status === "offline" ? "🔴" : "🟡");
         message += `${emoji} ${info.name}: ${info.status}`;
         if (info.reason) {
             message += ` (${info.reason})`;
@@ -111,11 +108,11 @@ function formatDailyStatus(status) {
         message += "\n";
     }
     
-    message += `\n**🤖 Agents:**\n`;
+    message += "\n**🤖 Agents:**\n";
     message += `Aktive Cron-Jobs: ${status.agents.active_crons}\n`;
     
     if (status.system.disk_used) {
-        message += `\n**💾 System:**\n`;
+        message += "\n**💾 System:**\n";
         message += `Disk: ${status.system.disk_used} belegt\n`;
         message += `RAM: ${status.system.ram_used} / ${status.system.ram_total}\n`;
     }
@@ -124,99 +121,89 @@ function formatDailyStatus(status) {
 }
 
 function formatWeeklyStatus(status) {
-    /** Formatiert wöchentlichen Status */
     const now = new Date();
     const weekNumber = Math.ceil((((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + now.getDay() + 1) / 7);
-    
-    return `📈 **Wöchentlicher Report**
-📅 Woche ${weekNumber.toString().padStart(2, '0')} - ${now.getFullYear()}
-
-**Zusammenfassung:**
-- 5 aktive Sub-Agents
-- 11 Skills synchronisiert
-- 3 neue Features implementiert
-
-**Top-Ereignisse:**
-1. ClawHub-Git Sync implementiert ✅
-2. Node 3 Disk voll (95%) ⚠️
-3. Channel-Status-Agent aktiviert 🆕
-
-**Geplante Wartungen:**
-- Node 3: Disk-Cleanup erforderlich
-- Node 7: Docker-Setup ausstehend
-`;
+    let message = "📈 **Wöchentlicher Report**\n";
+    message += `📅 Woche ${weekNumber} - ${now.getFullYear()}\n\n`;
+    message += "**Zusammenfassung:**\n";
+    message += "- 5 aktive Sub-Agents\n";
+    message += "- 11 Skills synchronisiert\n";
+    message += "- 3 neue Features implementiert\n\n";
+    message += "**Top-Ereignisse:**\n";
+    message += "1. ClawHub-Git Sync implementiert ✅\n";
+    message += "2. Node 3 Disk voll (95%) ⚠️\n";
+    message += "3. Channel-Status-Agent aktiviert 🆕\n\n";
+    message += "**Geplante Wartungen:**\n";
+    message += "- Node 3: Disk-Cleanup erforderlich\n";
+    message += "- Node 7: Docker-Setup ausstehend\n";
+    return message;
 }
 
 function sendToChannel(message, channelType = "telegram", channelId = "-1002381931352") {
-    /** Sendet Nachricht an Channel */
-    let cmd;
     if (channelType === "telegram") {
         // Nutze OpenClaw message tool
-        cmd = `openclaw message send --target ${channelId} --message "${message.replace(/"/g, '\\"')}"`;
+        const cmd = `openclaw message send --target ${channelId} --message "${message.replace(/"/g, '\\"')}"`;
+        try {
+            execSync(cmd, { stdio: 'pipe' });
+            logMessage(`Message sent to ${channelType} ${channelId}`);
+            return true;
+        } catch (error) {
+            logMessage(`Failed to send: ${error.message}`, "ERROR");
+            return false;
+        }
     } else {
-        log(`Channel type ${channelType} not implemented`, "WARN");
-        return false;
-    }
-    
-    try {
-        execSync(cmd, { encoding: 'utf8' });
-        log(`Message sent to ${channelType} ${channelId}`);
-        return true;
-    } catch (error) {
-        log(`Failed to send: ${error.message}`, "ERROR");
+        logMessage(`Channel type ${channelType} not implemented`, "WARN");
         return false;
     }
 }
 
 function main() {
-    /** Hauptfunktion */
-    const args = require('yargs')
-        .usage('Usage: $0 --type [daily|weekly|alert] [options]')
-        .option('type', {
-            describe: 'Type of status update',
-            choices: ['daily', 'weekly', 'alert'],
-            demandOption: true
-        })
-        .option('message', {
-            describe: 'Alert message',
-            type: 'string'
-        })
-        .option('channel', {
-            describe: 'Channel ID',
-            default: '-1002381931352'
-        })
-        .option('dry-run', {
-            describe: 'Show message without sending',
-            type: 'boolean'
-        })
-        .help()
-        .argv;
+    const program = new Command();
     
-    log(`Starting ${args.type} status update`);
+    program
+        .option('--type <type>', 'Type of status update (daily|weekly|alert)')
+        .option('--message <message>', 'Message content for alert type')
+        .option('--channel <channel>', 'Channel ID', '-1002381931352')
+        .option('--dry-run', 'Dry run mode')
+        .parse();
+    
+    const options = program.opts();
+    
+    if (!options.type) {
+        console.error("Type is required\n");
+        process.exit(1);
+    }
+    
+    if (!['daily', 'weekly', 'alert'].includes(options.type)) {
+        console.error(`Invalid type: ${options.type}\n`);
+        process.exit(1);
+    }
+    
+    logMessage(`Starting ${options.type} status update`);
     
     // Status sammeln
     const status = getSystemStatus();
     
     // Message formatieren
-    let message;
-    if (args.type === 'daily') {
-        message = formatDailyStatus(status);
-    } else if (args.type === 'weekly') {
-        message = formatWeeklyStatus(status);
-    } else if (args.type === 'alert') {
-        message = `🚨 **ALERT**\n${args.message || 'Manual alert'}`;
+    let formattedMessage;
+    if (options.type === 'daily') {
+        formattedMessage = formatDailyStatus(status);
+    } else if (options.type === 'weekly') {
+        formattedMessage = formatWeeklyStatus(status);
+    } else if (options.type === 'alert') {
+        formattedMessage = "🚨 **ALERT**\n" + (options.message || 'Manual alert');
     }
     
     // Senden oder Dry-Run
-    if (args.dryRun) {
-        console.log("\n--- DRY RUN ---");
-        console.log(message);
-        console.log("--- END ---");
+    if (options.dryRun) {
+        process.stdout.write("\n--- DRY RUN ---\n");
+        process.stdout.write(formattedMessage);
+        process.stdout.write("\n--- END ---\n");
     } else {
-        sendToChannel(message, "telegram", args.channel);
+        sendToChannel(formattedMessage, "telegram", options.channel);
     }
     
-    log("Status update completed");
+    logMessage("Status update completed");
 }
 
 // Ensure log directory exists

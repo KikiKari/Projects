@@ -1,4 +1,8 @@
 #!/usr/bin/env tclsh
+# abstractions_manager.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/abstractions_manager.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
 # abstractions_manager.py — portiert nach tcl
 # Quelle: python, OpenClaw@gateway1:skills/script-abstractions-manager/scripts/abstractions_manager.py
 # Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
@@ -7,10 +11,9 @@
 
 package require Tcl 8.6
 package require json
-package require fileutil
 
 # Konfiguration
-set WORKSPACE "/home/openclaw/.openclaw/workspace"
+set WORKSPACE [file join "/home/openclaw/.openclaw/workspace"]
 set ABSTRACTIONS_REPO [file join $WORKSPACE "git" "Abstraktionen"]
 set LOG_DIR [file join $WORKSPACE "logs" "abstractions-manager"]
 set STATE_FILE [file join $WORKSPACE "db" "abstractions_state.json"]
@@ -20,18 +23,18 @@ array set NODES {
     node1 {always_available true capacity medium priority 2}
     node2 {always_available true capacity medium priority 3}
     node3 {always_available false capacity medium priority 4}
-    node5 {always_available false capacity low priority 5 device "Redmi Note 11S" condition mobile_internet}
+    node5 {always_available false capacity low priority 5 device "Redmi Note 11S" condition "mobile_internet"}
     node7 {always_available true capacity high priority 1}
 }
 
-set AVAILABLE_MODELS {
-    "openrouter/moonshotai/kimi-k2.5"
-    "openrouter/openai/gpt-4o"
-    "openrouter/anthropic/claude-3-5-sonnet-20241022"
-    "openrouter/google/gemini-2.0-flash-001"
-    "openrouter/nvidia/llama-3.3-nemotron-super-49b-v1"
-    "openrouter/qwen/qwen-2.5-coder-32b-instruct"
-}
+set AVAILABLE_MODELS [list \
+    "openrouter/moonshotai/kimi-k2.5" \
+    "openrouter/openai/gpt-4o" \
+    "openrouter/anthropic/claude-3-5-sonnet-20241022" \
+    "openrouter/google/gemini-2.0-flash-001" \
+    "openrouter/nvidia/llama-3.3-nemotron-super-49b-v1" \
+    "openrouter/qwen/qwen-2.5-coder-32b-instruct" \
+]
 
 array set TARGET_LANGUAGES {
     perl5 {ext .pl shebang "#!/usr/bin/env perl" header "use strict;\nuse warnings;\n"}
@@ -50,46 +53,46 @@ proc log {message {level "INFO"}} {
     global LOG_DIR
     file mkdir $LOG_DIR
     set timestamp [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
-    set line "\[[clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]\] \[$level\] $message"
+    set line "\[$timestamp\] \[$level\] $message"
     puts $line
-    set log_file [file join $LOG_DIR "[clock format [clock seconds] -format "%Y-%m-%d"].log"]
-    set f [open $log_file a]
-    puts $f $line
-    close $f
+    set logFile [file join $LOG_DIR [clock format [clock seconds] -format "%Y-%m-%d"]].log
+    set fh [open $logFile a]
+    puts $fh $line
+    close $fh
 }
 
-proc get_node_by_priority {{job_weight "medium"}} {
+proc getNodeByPriority {{jobWeight "medium"}} {
+    # Wählt Node basierend auf Job-Gewicht und Priorität
     global NODES
     
     # Prioritäts-Matrix
-    if {$job_weight eq "heavy"} {
+    if {$jobWeight eq "heavy"} {
         # Schwere Jobs → Node 7 (Docker mit vielen Ressourcen)
-        set preferred_order [list "node7" "node2" "node1"]
-    } elseif {$job_weight eq "medium"} {
+        set preferredOrder [list "node7" "node2" "node1"]
+    } elseif {$jobWeight eq "medium"} {
         # Mittlere Jobs → Stable Nodes
-        set preferred_order [list "node2" "node1" "node7"]
+        set preferredOrder [list "node2" "node1" "node7"]
     } else {
-        # light
-        # Leichte Jobs → Mobile/verfügbare Nodes
-        set preferred_order [list "node5" "node1" "node2"]
+        # light - Leichte Jobs → Mobile/verfügbare Nodes
+        set preferredOrder [list "node5" "node1" "node2"]
     }
     
     # Prüfe Verfügbarkeit
-    foreach node_id $preferred_order {
-        if {![info exists NODES($node_id)]} {
+    foreach nodeId $preferredOrder {
+        if {![info exists NODES($nodeId)]} {
             continue
         }
         
-        array set node $NODES($node_id)
+        array set node $NODES($nodeId)
         
         # Skip nicht immer verfügbare Nodes wenn nicht explizit requested
-        if {![info exists node(always_available)] || ($node(always_available) eq "false" && $job_weight ne "light")} {
+        if {!$node(always_available) && $jobWeight ne "light"} {
             continue
         }
         
         # Prüfe ob Node online
-        if {[check_node_status $node_id]} {
-            return $node_id
+        if {[checkNodeStatus $nodeId]} {
+            return $nodeId
         }
     }
     
@@ -97,29 +100,29 @@ proc get_node_by_priority {{job_weight "medium"}} {
     return "node1"
 }
 
-proc check_node_status {node_id} {
-    global NODES
-    if {[catch {exec openclaw nodes status $node_id} result]} {
+proc checkNodeStatus {nodeId} {
+    # Prüft ob ein Node erreichbar ist
+    if {[catch {exec openclaw nodes status $nodeId} result]} {
         # Bei Timeout/Error: Prüfe letzten bekannten Status
-        if {[info exists NODES($node_id)]} {
-            array set node $NODES($node_id)
-            if {[info exists node(always_available)]} {
-                return $node(always_available)
-            }
+        global NODES
+        if {[info exists NODES($nodeId)]} {
+            array set node $NODES($nodeId)
+            return $node(always_available)
         }
         return false
     } else {
-        return [expr {[string match "*online*" [string tolower $result]] || [string match "*active*" [string tolower $result]]}]
+        return [expr {[string match "*online*" $result] || [string match "*active*" $result]}]
     }
 }
 
-proc get_job_weight {script_size target_langs_count} {
-    set total_work [expr {$script_size * $target_langs_count}]
+proc getJobWeight {scriptSize targetLangsCount} {
+    # Bewertet Job-Gewicht basierend auf Script-Größe und Anzahl Zielsprachen
+    set totalWork [expr {$scriptSize * $targetLangsCount}]
     
-    if {$total_work > 50000} {
+    if {$totalWork > 50000} {
         # Große Scripts, viele Sprachen
         return "heavy"
-    } elseif {$total_work > 10000} {
+    } elseif {$totalWork > 10000} {
         # Mittlere Last
         return "medium"
     } else {
@@ -127,51 +130,52 @@ proc get_job_weight {script_size target_langs_count} {
     }
 }
 
-proc load_state {} {
+proc loadState {} {
     global STATE_FILE
     if {[file exists $STATE_FILE]} {
-        if {[catch {set f [open $STATE_FILE r]}]} {
+        if {[catch {set fh [open $STATE_FILE r]}]} {
             # ignore error
         } else {
-            set content [read $f]
-            close $f
-            if {[catch {set state [::json::json2dict $content]}]} {
+            set content [read $fh]
+            close $fh
+            if {[catch {::json::json2dict $content} state]} {
                 # ignore error
             } else {
                 return $state
             }
         }
     }
-    
-    return [dict create processed [dict create] queue [list] current_priority "high" stats [dict create total_scripts 0 abstractions_created 0]]
+    return [dict create processed {} queue {} current_priority "high" stats [dict create total_scripts 0 abstractions_created 0]]
 }
 
-proc save_state {state} {
+proc saveState {state} {
     global STATE_FILE
     file mkdir [file dirname $STATE_FILE]
-    set f [open $STATE_FILE w]
-    puts $f [::json::dict2json $state]
-    close $f
+    set fh [open $STATE_FILE w]
+    puts $fh [::json::dict2json $state]
+    close $fh
 }
 
-proc find_scripts_in_dir {directory {exclude_patterns ""}} {
-    if {$exclude_patterns eq ""} {
-        set exclude_patterns [list "node_modules" ".git" "__pycache__" "dist" "build"]
+proc findScriptsInDir {directory {excludePatterns ""}} {
+    if {$excludePatterns eq ""} {
+        set excludePatterns [list "node_modules" ".git" "__pycache__" "dist" "build"]
     }
-    
-    set scripts [list]
+    set scripts {}
     if {[file exists $directory]} {
-        foreach ext [list "*.py" "*.js" "*.sh" "*.pl" "*.rb"] {
-            foreach script [glob -nocomplain -dir $directory -types f $ext] {
+        set files [getAllFiles $directory]
+        set extensions [list ".py" ".js" ".sh" ".pl" ".rb"]
+        foreach file $files {
+            set ext [file extension $file]
+            if {[lsearch -exact $extensions $ext] != -1} {
                 set exclude false
-                foreach pattern $exclude_patterns {
-                    if {[string match "*$pattern*" $script]} {
+                foreach pattern $excludePatterns {
+                    if {[string match "*$pattern*" $file]} {
                         set exclude true
                         break
                     }
                 }
                 if {!$exclude} {
-                    lappend scripts $script
+                    lappend scripts $file
                 }
             }
         }
@@ -179,79 +183,87 @@ proc find_scripts_in_dir {directory {exclude_patterns ""}} {
     return $scripts
 }
 
-proc create_abstraction {script_path target_lang} {
+proc getAllFiles {dirPath {arrayOfFiles {}}} {
+    set files [glob -nocomplain -directory $dirPath *]
+    foreach file $files {
+        if {[file isdirectory $file]} {
+            set arrayOfFiles [getAllFiles $file $arrayOfFiles]
+        } else {
+            lappend arrayOfFiles $file
+        }
+    }
+    return $arrayOfFiles
+}
+
+proc createAbstraction {scriptPath targetLang} {
     global ABSTRACTIONS_REPO TARGET_LANGUAGES
-    
-    if {[catch {set f [open $script_path r]}]} {
+    if {[catch {set originalContent [read [set fh [open $scriptPath r]]]}]} {
+        log "Failed: $scriptPath - Could not read file" "ERROR"
         return false
     }
-    set original_content [read $f]
-    close $f
+    close $fh
     
-    set ext [string range [file extension $script_path] 1 end]
-    array set source_lang_map {py Python js JavaScript sh Shell pl Perl rb Ruby}
-    if {[info exists source_lang_map($ext)]} {
-        set source_lang $source_lang_map($ext)
+    set ext [string range [file extension $scriptPath] 1 end]
+    array set sourceLangMap {py Python js JavaScript sh Shell pl Perl rb Ruby}
+    if {[info exists sourceLangMap($ext)]} {
+        set sourceLang $sourceLangMap($ext)
     } else {
-        set source_lang $ext
+        set sourceLang $ext
     }
     
-    set target_dir [file join $ABSTRACTIONS_REPO $target_lang]
-    file mkdir $target_dir
+    set targetDir [file join $ABSTRACTIONS_REPO $targetLang]
+    file mkdir $targetDir
     
-    set target_file [file join $target_dir "[file rootname [file tail $script_path]]$TARGET_LANGUAGES($target_lang,ext)"]
+    set targetFile [file join $targetDir [file rootname [file tail $scriptPath]][dict get $TARGET_LANGUAGES $targetLang ext]]
     
-    if {[file exists $target_file]} {
+    if {[file exists $targetFile]} {
         return false
     }
     
-    set lines [split $original_content "\n"]
-    set lines [lrange $lines 0 14]
-    set header_lines ""
-    foreach line $lines {
-        append header_lines "# $line\n"
+    set template [dict get $TARGET_LANGUAGES $targetLang]
+    set lines [split [string range $originalContent 0 1000] "\n"]
+    if {[llength $lines] > 15} {
+        set lines [lrange $lines 0 14]
     }
     
-    set content "$TARGET_LANGUAGES($target_lang,shebang)\n# [file rootname [file tail $script_path]] - [string totitle $target_lang] Version\n# Portiert von $source_lang\n# Original: $script_path\n# Erstellt: [clock format [clock seconds] -format "%Y-%m-%d"]\n#\n"
-    
-    if {[info exists TARGET_LANGUAGES($target_lang,header)] && $TARGET_LANGUAGES($target_lang,header) ne ""} {
-        append content "# $TARGET_LANGUAGES($target_lang,header)\n"
+    set content "[dict get $template shebang]\n# [file rootname [file tail $scriptPath]] - [string totitle $targetLang] Version\n# Portiert von $sourceLang\n# Original: $scriptPath\n# Erstellt: [clock format [clock seconds] -format "%Y-%m-%d"]\n#\n"
+    if {[dict get $template header] ne ""} {
+        append content "[dict get $template header]\n\n"
     }
+    append content "# Original-Code-Referenz:\n# "
+    append content [join [lmap line $lines {return "# $line"}] "\n# "]
+    append content "\n\nproc main {} {\n    # TODO: Implementiere $sourceLang Funktionalität in [string totitle $targetLang]\n    puts \"Hello World\"\n}\n\nif {\[info script\] eq \$::argv0} {\n    main\n}\n"
     
-    append content "\n# Original-Code-Referenz:\n# $header_lines\nproc main {} {\n    # TODO: Implementiere $source_lang Funktionalität in [string totitle $target_lang]\n    return\n}\n\nif {\"\[info script\]\" eq \"\[file normalize \$argv0\]\"} {\n    main\n}\n"
-    
-    if {[catch {set f [open $target_file w]}]} {
-        return false
-    }
-    puts $f $content
-    close $f
-    
-    log "Created: $target_file"
+    set fh [open $targetFile w]
+    puts -nonewline $fh $content
+    close $fh
+    log "Created: $targetFile"
     return true
 }
 
-proc process_on_node {node_id scripts target_langs} {
+proc processOnNode {nodeId scripts targetLangs} {
+    # Verarbeitet Scripts auf definiertem Node
     set created 0
     
-    if {$node_id eq "node1"} {
+    if {$nodeId eq "node1"} {
         # Lokale Verarbeitung
         foreach script $scripts {
-            foreach lang $target_langs {
-                if {[create_abstraction $script $lang]} {
+            foreach lang $targetLangs {
+                if {[createAbstraction $script $lang]} {
                     incr created
                 }
             }
         }
     } else {
         # Remote-Verarbeitung
-        log "Dispatching [llength $scripts] jobs to $node_id"
+        log "Dispatching [llength $scripts] jobs to $nodeId"
         # TODO: Implementiere Remote-Dispatch wenn Node-Infrastruktur bereit
         # Für jetzt: Lokale Verarbeitung mit Node-Logging
         foreach script $scripts {
-            foreach lang $target_langs {
-                if {[create_abstraction $script $lang]} {
+            foreach lang $targetLangs {
+                if {[createAbstraction $script $lang]} {
                     incr created
-                    log "Processed on $node_id: [file tail $script] -> $lang"
+                    log "Processed on $nodeId: [file tail $script] -> $lang"
                 }
             }
         }
@@ -260,7 +272,7 @@ proc process_on_node {node_id scripts target_langs} {
     return $created
 }
 
-proc process_priority_high {} {
+proc processPriorityHigh {} {
     global WORKSPACE
     set created 0
     set targets [list \
@@ -272,24 +284,25 @@ proc process_priority_high {} {
     ]
     
     foreach target $targets {
-        lassign $target skill_name scripts_dir
-        set scripts [find_scripts_in_dir $scripts_dir [list "node_modules" ".git" "test" "tests"]]
-        log "$skill_name: [llength $scripts] scripts found"
+        lassign $target skillName scriptsDir
+        set scripts [findScriptsInDir $scriptsDir [list "node_modules" ".git" "test" "tests"]]
+        log "$skillName: [llength $scripts] scripts found"
         
         set count 0
-        foreach script $scripts {
-            if {$count >= 10} break
-            if {![file exists $script]} continue
-            
-            set script_size [file size $script]
-            set target_langs [list "perl5" "javascript" "python" "shell" "tcl"]
-            set job_weight [get_job_weight $script_size [llength $target_langs]]
+        foreach script [lrange $scripts 0 9] {
+            if {[file exists $script]} {
+                set scriptSize [file size $script]
+            } else {
+                set scriptSize 0
+            }
+            set targetLangs [list "perl5" "javascript" "python" "shell" "tcl"]
+            set jobWeight [getJobWeight $scriptSize [llength $targetLangs]]
             
             # Wähle Node basierend auf Job-Gewicht
-            set selected_node [get_node_by_priority $job_weight]
-            log "Processing [file tail $script] ($job_weight) on $selected_node"
+            set selectedNode [getNodeByPriority $jobWeight]
+            log "Processing [file tail $script] ($jobWeight) on $selectedNode"
             
-            incr created [process_on_node $selected_node [list $script] $target_langs]
+            incr created [processOnNode $selectedNode [list $script] $targetLangs]
             incr count
         }
     }
@@ -297,7 +310,7 @@ proc process_priority_high {} {
     return $created
 }
 
-proc process_priority_medium {} {
+proc processPriorityMedium {} {
     global WORKSPACE
     set created 0
     set targets [list \
@@ -307,29 +320,24 @@ proc process_priority_medium {} {
     ]
     
     foreach target $targets {
-        lassign $target dir_name scripts_dir
-        set scripts [find_scripts_in_dir $scripts_dir [list "node_modules" ".git"]]
+        lassign $target dirName scriptsDir
+        set scripts [findScriptsInDir $scriptsDir [list "node_modules" ".git"]]
         
         set count 0
-        foreach script $scripts {
-            if {$count >= 10} break
-            if {![file exists $script]} continue
-            
-            set script_size [file size $script]
-            set target_langs [list "perl5" "javascript" "powershell" "python"]
-            set job_weight [get_job_weight $script_size [llength $target_langs]]
+        foreach script [lrange $scripts 0 9] {
+            if {[file exists $script]} {
+                set scriptSize [file size $script]
+            } else {
+                set scriptSize 0
+            }
+            set targetLangs [list "perl5" "javascript" "powershell" "python"]
+            set jobWeight [getJobWeight $scriptSize [llength $targetLangs]]
             
             # Mittlere Priority → eher leichtere Jobs
-            set selected_priority "medium"
-            if {$job_weight eq "heavy"} {
-                set selected_priority "medium"
-            } else {
-                set selected_priority $job_weight
-            }
-            set selected_node [get_node_by_priority $selected_priority]
-            log "Processing [file tail $script] ($job_weight) on $selected_node"
+            set selectedNode [getNodeByPriority [expr {$jobWeight eq "heavy" ? "medium" : $jobWeight}]]
+            log "Processing [file tail $script] ($jobWeight) on $selectedNode"
             
-            incr created [process_on_node $selected_node [list $script] $target_langs]
+            incr created [processOnNode $selectedNode [list $script] $targetLangs]
             incr count
         }
     }
@@ -337,134 +345,124 @@ proc process_priority_medium {} {
     return $created
 }
 
-proc git_commit {message} {
+proc gitCommit {message} {
     global ABSTRACTIONS_REPO
-    if {[catch {
-        cd $ABSTRACTIONS_REPO
-        exec git add .
-        exec git commit -m $message
-        log "Git commit: $message"
-    }]} {
+    if {[catch {cd $ABSTRACTIONS_REPO}]} {
+        return
+    }
+    if {[catch {exec git add .}]} {
         # ignore error
     }
+    if {[catch {exec git commit -m $message}]} {
+        # ignore error
+    }
+    log "Git commit: $message"
 }
 
-proc create_status_report {state} {
+proc createStatusReport {state} {
     global ABSTRACTIONS_REPO TARGET_LANGUAGES AVAILABLE_MODELS NODES
-    set report_file [file join $ABSTRACTIONS_REPO "STATUS.md"]
-    set lang_counts [dict create]
-    
+    set reportFile [file join $ABSTRACTIONS_REPO "STATUS.md"]
+    array set langCounts {}
     if {[file exists $ABSTRACTIONS_REPO]} {
-        foreach lang_dir [glob -nocomplain -dir $ABSTRACTIONS_REPO -types d *] {
-            set lang_name [file tail $lang_dir]
-            if {[info exists TARGET_LANGUAGES($lang_name)]} {
+        foreach lang [glob -nocomplain -directory $ABSTRACTIONS_REPO *] {
+            set lang [file tail $lang]
+            set langDir [file join $ABSTRACTIONS_REPO $lang]
+            if {[file isdirectory $langDir] && [info exists TARGET_LANGUAGES($lang)]} {
+                set files [glob -nocomplain -directory $langDir *]
                 set count 0
-                foreach f [glob -nocomplain -dir $lang_dir -types f *] {
-                    incr count
+                foreach f $files {
+                    if {[file isfile $f]} {
+                        incr count
+                    }
                 }
-                dict set lang_counts $lang_name $count
+                set langCounts($lang) $count
             }
         }
     }
     
-    set f [open $report_file w]
-    puts $f "# Script Abstractions - Status Report\n"
-    puts $f "**Letzte Aktualisierung:** [clock format [clock seconds] -format "%Y-%m-%d %H:%M"]\n"
-    puts $f "- Aktuelle Priorität: [dict get $state current_priority]\n"
-    puts $f "- Verarbeitete Scripts: [llength [dict get $state processed]]\n"
-    puts $f "- Abstraktionen gesamt: [dict get $state stats abstractions_created]\n"
-    puts $f "## Abstraktionen pro Sprache\n"
+    set content "# Script Abstractions - Status Report\n\n"
+    append content "**Letzte Aktualisierung:** [clock format [clock seconds] -format "%Y-%m-%d %H:%M"]\n\n"
+    append content "- Aktuelle Priorität: [dict get $state current_priority]\n"
+    append content "- Verarbeitete Scripts: [llength [dict get $state processed]]\n"
+    append content "- Abstraktionen gesamt: [dict get $state stats abstractions_created]\n\n"
     
-    foreach lang [lsort [dict keys $lang_counts]] {
-        set count [dict get $lang_counts $lang]
-        puts $f "- $lang: $count"
+    append content "## Abstraktionen pro Sprache\n\n"
+    foreach lang [lsort [array names langCounts]] {
+        set count $langCounts($lang)
+        append content "- $lang: $count\n"
     }
     
-    puts $f "\n## Verfügbare Modelle\n"
-    set count 0
-    foreach model $AVAILABLE_MODELS {
-        if {$count < 3} {
-            puts $f "- `$model`"
-        }
-        incr count
+    append content "\n## Verfügbare Modelle\n\n"
+    foreach model [lrange $AVAILABLE_MODELS 0 2] {
+        append content "- `$model`\n"
     }
-    if {[llength $AVAILABLE_MODELS] > 3} {
-        puts $f "- ... und [expr {[llength $AVAILABLE_MODELS] - 3}] weitere"
-    }
+    append content "- ... und [expr {[llength $AVAILABLE_MODELS] - 3}] weitere\n"
     
-    puts $f "\n## Multi-Node Support\n"
-    puts $f "| Node | Verfügbarkeit | Kapazität | Priorität | Gerät |"
-    puts $f "|------|---------------|-----------|-----------|-------|"
-    
-    # Sort nodes by priority
-    set sorted_nodes [lsort -integer -index 1 [dict for {node_id config} [array get NODES] {
-        list [dict get $config priority] $node_id
-    }]]
-    
-    foreach item $sorted_nodes {
-        set node_id [lindex $item 1]
-        if {[info exists NODES($node_id)]} {
-            array set config $NODES($node_id)
-            set avail "✅ Immer"
-            if {![info exists config(always_available)] || $config(always_available) eq "false"} {
-                set avail "📱 Bedingt"
-            }
-            set device "Server"
-            if {[info exists config(device)]} {
-                set device $config(device)
-            }
-            puts $f "| $node_id | $avail | $config(capacity) | $config(priority) | $device |"
-        }
+    append content "\n## Multi-Node Support\n\n"
+    append content "| Node | Verfügbarkeit | Kapazität | Priorität | Gerät |\n"
+    append content "|------|---------------|-----------|-----------|-------|\n"
+    foreach nodeId [lsort [array names NODES]] {
+        array set config $NODES($nodeId)
+        set avail [expr {$config(always_available) ? "✅ Immer" : "📱 Bedingt"}]
+        set device [expr {[info exists config(device)] ? $config(device) : "Server"}]
+        append content "| $nodeId | $avail | $config(capacity) | $config(priority) | $device |\n"
     }
     
-    puts $f "\n### Job-Verteilung\n"
-    puts $f "- **Heavy Jobs** (>50KB × Sprachen) → Node 7 (Docker, hohe Ressourcen)"
-    puts $f "- **Medium Jobs** → Node 2 (Stable), Node 1 (Primary)"
-    puts $f "- **Light Jobs** → Node 5 (Redmi Note 11S, wenn verfügbar)"
-    close $f
+    append content "\n### Job-Verteilung\n\n"
+    append content "- **Heavy Jobs** (>50KB × Sprachen) → Node 7 (Docker, hohe Ressourcen)\n"
+    append content "- **Medium Jobs** → Node 2 (Stable), Node 1 (Primary)\n"
+    append content "- **Light Jobs** → Node 5 (Redmi Note 11S, wenn verfügbar)\n"
+    
+    set fh [open $reportFile w]
+    puts -nonewline $fh $content
+    close $fh
 }
 
 proc main {} {
     log "Script Abstractions Manager (Multi-Node) gestartet"
     
-    set state [load_state]
+    set state [loadState]
     log "State loaded: [llength [dict get $state processed]] processed"
     
-    set current_priority [dict get $state current_priority]
+    set currentPriority [expr {[dict exists $state current_priority] ? [dict get $state current_priority] : "high"}]
     set created 0
     
-    if {$current_priority eq "high"} {
+    if {$currentPriority eq "high"} {
         log "Processing HIGH priority: Top 5 Skills"
-        set created [process_priority_high]
+        set created [processPriorityHigh]
         if {$created > 0} {
-            git_commit "High priority: $created abstractions"
+            gitCommit "High priority: $created abstractions"
         }
         dict set state current_priority "medium"
-    } elseif {$current_priority eq "medium"} {
+    } elseif {$currentPriority eq "medium"} {
         log "Processing MEDIUM priority: Workspace Scripts"
-        set created [process_priority_medium]
+        set created [processPriorityMedium]
         if {$created > 0} {
-            git_commit "Medium priority: $created abstractions"
+            gitCommit "Medium priority: $created abstractions"
         }
         dict set state current_priority "high"
     }
     
-    dict set state stats last_run [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%S"]
-    
-    # Count abstractions
-    set total_count 0
-    foreach lang [array names TARGET_LANGUAGES] {
-        set lang_dir [file join $ABSTRACTIONS_REPO $lang]
-        if {[file exists $lang_dir]} {
-            foreach f [glob -nocomplain -dir $lang_dir -types f *] {
-                incr total_count
+    dict set state stats last_run [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%SZ"]
+    dict set state stats abstractions_created 0
+    if {[file exists $ABSTRACTIONS_REPO]} {
+        foreach lang [array names TARGET_LANGUAGES] {
+            set langDir [file join $ABSTRACTIONS_REPO $lang]
+            if {[file exists $langDir] && [file isdirectory $langDir]} {
+                set files [glob -nocomplain -directory $langDir *]
+                set count 0
+                foreach f $files {
+                    if {[file isfile $f]} {
+                        incr count
+                    }
+                }
+                dict incr state stats abstractions_created $count
             }
         }
     }
-    dict set state stats abstractions_created $total_count
     
-    save_state $state
-    create_status_report $state
+    saveState $state
+    createStatusReport $state
     
     log "Abgeschlossen. $created neue Abstraktionen erstellt."
 }

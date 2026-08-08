@@ -1,128 +1,132 @@
 #!/usr/bin/env pwsh
-# channel_status.py — portiert nach powershell
-# Quelle: python, OpenClaw@gateway1:skills/channel-status-agent/scripts/channel_status.py
-# auch in: OpenClaw@gateway2:skills/channel-status-agent/scripts/channel_status.py
-# Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
+# channel_status.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/channel_status.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 <#
+.SYNOPSIS
 Channel Status Agent - Automatische Status-Updates
 #>
 
 # Konfiguration
-$WORKSPACE = [System.IO.Path]::Combine($env:HOME, ".openclaw", "workspace")
-$LOGS_DB = [System.IO.Path]::Combine($WORKSPACE, "db", "logs.db")
-$CONFIG_FILE = [System.IO.Path]::Combine($WORKSPACE, "config", "channel-status.json")
-$LOG_FILE = [System.IO.Path]::Combine($WORKSPACE, "logs", "channel-status.log")
+$WORKSPACE = Join-Path $env:HOME ".openclaw/workspace"
+$LOGS_DB = Join-Path $WORKSPACE "db/logs.db"
+$CONFIG_FILE = Join-Path $WORKSPACE "config/channel-status.json"
+$LOG_FILE = Join-Path $WORKSPACE "logs/channel-status.log"
 
 function Write-Log {
     param(
-        [string]$message,
-        [string]$level = "INFO"
+        [string]$Message,
+        [string]$Level = "INFO"
     )
-    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $entry = "[$timestamp] [$level] $message"
+    <# Logging #>
+    $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    $entry = "[$timestamp] [$Level] $Message"
     Write-Output $entry
     Add-Content -Path $LOG_FILE -Value $entry
 }
 
 function Get-SystemStatus {
+    <# Sammelt System-Status #>
     $status = @{
-        timestamp = (Get-Date).ToString("o")
+        timestamp = (Get-Date).ToUniversalTime().ToString("o")
         nodes = @{}
         agents = @{}
         system = @{}
     }
-
+    
     # Node-Status (vereinfacht)
     $nodes = @{
-        node1 = @{name = "Gateway"; status = "online"}
-        node2 = @{name = "Worker"; status = "online"}
-        node3 = @{name = "Relay"; status = "offline"; reason = "disk full"}
-        node5 = @{name = "Redmi"; status = "intermittent"}
-        node7 = @{name = "Docker"; status = "planned"}
+        "node1" = @{name = "Gateway"; status = "online"}
+        "node2" = @{name = "Worker"; status = "online"}
+        "node3" = @{name = "Relay"; status = "offline"; reason = "disk full"}
+        "node5" = @{name = "Redmi"; status = "intermittent"}
+        "node7" = @{name = "Docker"; status = "planned"}
     }
     $status.nodes = $nodes
-
+    
     # Agent-Status aus Cron
     try {
-        $cronResult = crontab -l 2>$null
-        $cronLines = ($cronResult | Where-Object { $_ -notmatch "^#" } | Measure-Object).Count
+        $cronLines = (crontab -l | Where-Object { $_ -and -not $_.StartsWith("#") }).Count
         $status.agents.active_crons = $cronLines
-    }
-    catch {
+    } catch {
         $status.agents.active_crons = "unknown"
     }
-
+    
     # System-Metriken
     try {
         # Disk usage
-        $dfOutput = df -h /
-        foreach ($line in $dfOutput) {
+        $df = df -h /
+        foreach ($line in $df) {
             if ($line -match "/" -and $line -match "%") {
-                $parts = -split $line
+                $parts = $line -split '\s+'
                 $status.system.disk_used = $parts[4]
                 break
             }
         }
-
+        
         # RAM usage
-        $freeOutput = free -h
-        foreach ($line in $freeOutput) {
+        $free = free -h
+        foreach ($line in $free) {
             if ($line -match "Mem:") {
-                $parts = -split $line
+                $parts = $line -split '\s+'
                 $status.system.ram_total = $parts[1]
                 $status.system.ram_used = $parts[2]
                 break
             }
         }
+    } catch {
+        # Ignore errors
     }
-    catch {
-        # Ignoriere Fehler
-    }
-
+    
     return $status
 }
 
 function Format-DailyStatus {
-    param($status)
-    $nodes = $status.nodes
-    $online = ($nodes.Values | Where-Object { $_.status -eq "online" } | Measure-Object).Count
-
+    param([hashtable]$Status)
+    <# Formatiert täglichen Status #>
+    $nodes = $Status.nodes
+    $online = ($nodes.Values | Where-Object { $_.status -eq "online" }).Count
+    
+    $timestamp = (Get-Date).ToString("dd.MM.yyyy HH:mm")
+    
     $message = "📊 **Täglicher Status-Report**
-🗓️ $((Get-Date).ToString('yyyy-MM-dd HH:mm'))
+🗓️ $timestamp
 
 **🖥️ Nodes ($online/5 online):**
 "
-
-    foreach ($node in $nodes.GetEnumerator()) {
-        $emoji = switch ($node.Value.status) {
-            "online" { "🟢" }
-            "offline" { "🔴" }
-            default { "🟡" }
-        }
-        $message += "$emoji $($node.Value.name): $($node.Value.status)"
-        if ($node.Value.ContainsKey("reason")) {
-            $message += " ($($node.Value.reason))"
+    
+    foreach ($nodeId in $nodes.Keys) {
+        $info = $nodes[$nodeId]
+        $emoji = if ($info.status -eq "online") { "🟢" } elseif ($info.status -eq "offline") { "🔴" } else { "🟡" }
+        $message += "$emoji $($info.name): $($info.status)"
+        if ($info.reason) {
+            $message += " ($($info.reason))"
         }
         $message += "`n"
     }
-
+    
     $message += "`n**🤖 Agents:**`n"
-    $message += "Aktive Cron-Jobs: $($status.agents.active_crons)`n"
-
-    if ($status.system.ContainsKey("disk_used")) {
+    $message += "Aktive Cron-Jobs: $($Status.agents.active_crons)`n"
+    
+    if ($Status.system.disk_used) {
         $message += "`n**💾 System:**`n"
-        $message += "Disk: $($status.system.disk_used) belegt`n"
-        $message += "RAM: $($status.system.ram_used) / $($status.system.ram_total)`n"
+        $message += "Disk: $($Status.system.disk_used) belegt`n"
+        $message += "RAM: $($Status.system.ram_used) / $($Status.system.ram_total)`n"
     }
-
+    
     return $message
 }
 
 function Format-WeeklyStatus {
-    param($status)
-    $message = "📈 **Wöchentlicher Report**
-📅 Woche $((Get-Date).ToString('yyyy-\KW')) - $((Get-Date).Year)
+    param([hashtable]$Status)
+    <# Formatiert wöchentlichen Status #>
+    $now = Get-Date
+    $dayOfYear = (Get-Date -Month 1 -Day 1 -Year $now.Year) 
+    $weekNumber = [Math]::Ceiling((($now - $dayOfYear).Days + $now.DayOfWeek.value__ + 1) / 7)
+    
+    return "📈 **Wöchentlicher Report**
+📅 Woche $($weekNumber.ToString('00')) - $($now.Year)
 
 **Zusammenfassung:**
 - 5 aktive Sub-Agents
@@ -138,101 +142,135 @@ function Format-WeeklyStatus {
 - Node 3: Disk-Cleanup erforderlich
 - Node 7: Docker-Setup ausstehend
 "
-    return $message
 }
 
 function Send-ToChannel {
     param(
-        [string]$message,
-        [string]$channelType = "telegram",
-        [string]$channelId = "-1002381931352"
+        [string]$Message,
+        [string]$ChannelType = "telegram",
+        [string]$ChannelId = "-1002381931352"
     )
-
-    if ($channelType -eq "telegram") {
-        $cmd = @("openclaw", "message", "send", "--target", $channelId, "--message", $message)
-    }
-    else {
-        Write-Log "Channel type $channelType not implemented" "WARN"
+    <# Sendet Nachricht an Channel #>
+    if ($ChannelType -eq "telegram") {
+        # Nutze OpenClaw message tool
+        $cmd = "openclaw message send --target $ChannelId --message `"$($Message.Replace('"', '\"'))`""
+    } else {
+        Write-Log "Channel type $ChannelType not implemented" "WARN"
         return $false
     }
-
+    
     try {
-        $result = & $cmd[0] $cmd[1..($cmd.Length-1)] 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log "Message sent to $channelType $channelId"
-            return $true
-        }
-        else {
-            Write-Log "Failed to send: $result" "ERROR"
-            return $false
-        }
-    }
-    catch {
-        Write-Log "Send error: $_" "ERROR"
+        Invoke-Expression $cmd | Out-Null
+        Write-Log "Message sent to $ChannelType $ChannelId"
+        return $true
+    } catch {
+        Write-Log "Failed to send: $($_.Exception.Message)" "ERROR"
         return $false
     }
+}
+
+function Show-Usage {
+    Write-Output "Usage: channel_status.ps1 --type [daily|weekly|alert] [options]"
+    Write-Output ""
+    Write-Output "Options:"
+    Write-Output "  --type        Type of status update (daily, weekly, alert)"
+    Write-Output "  --message     Alert message"
+    Write-Output "  --channel     Channel ID (default: -1002381931352)"
+    Write-Output "  --dry-run     Show message without sending"
+    Write-Output "  --help        Show this help"
 }
 
 function Main {
-    param(
-        [Parameter(Mandatory=$true)][ValidateSet("daily", "weekly", "alert")][string]$Type,
-        [string]$Message,
-        [string]$Channel = "-1002381931352",
-        [switch]$DryRun
-    )
-
-    Write-Log "Starting $Type status update"
-
+    <# Hauptfunktion #>
+    $type = $null
+    $message = $null
+    $channel = "-1002381931352"
+    $dryRun = $false
+    
+    # Parameter parsen
+    $i = 0
+    while ($i -lt $args.Count) {
+        $arg = $args[$i]
+        switch ($arg) {
+            "--type" {
+                $i++
+                if ($i -lt $args.Count) {
+                    $type = $args[$i]
+                }
+            }
+            "--message" {
+                $i++
+                if ($i -lt $args.Count) {
+                    $message = $args[$i]
+                }
+            }
+            "--channel" {
+                $i++
+                if ($i -lt $args.Count) {
+                    $channel = $args[$i]
+                }
+            }
+            "--dry-run" {
+                $dryRun = $true
+            }
+            "--help" {
+                Show-Usage
+                return
+            }
+            default {
+                if (-not $type) {
+                    $type = $arg
+                }
+            }
+        }
+        $i++
+    }
+    
+    if (-not $type) {
+        Write-Error "Missing required --type parameter"
+        Show-Usage
+        return
+    }
+    
+    Write-Log "Starting $type status update"
+    
     # Status sammeln
     $status = Get-SystemStatus
-
+    
     # Message formatieren
-    switch ($Type) {
-        "daily" { $message = Format-DailyStatus $status }
-        "weekly" { $message = Format-WeeklyStatus $status }
-        "alert" { $message = "🚨 **ALERT**`n$(if ($Message) { $Message } else { 'Manual alert' })" }
+    switch ($type) {
+        "daily" {
+            $messageContent = Format-DailyStatus $status
+        }
+        "weekly" {
+            $messageContent = Format-WeeklyStatus $status
+        }
+        "alert" {
+            $alertText = if ($message) { $message } else { "Manual alert" }
+            $messageContent = "🚨 **ALERT**`n$alertText"
+        }
+        default {
+            Write-Error "Invalid type: $type"
+            return
+        }
     }
-
+    
     # Senden oder Dry-Run
-    if ($DryRun) {
+    if ($dryRun) {
         Write-Output "`n--- DRY RUN ---"
-        Write-Output $message
+        Write-Output $messageContent
         Write-Output "--- END ---"
+    } else {
+        Send-ToChannel $messageContent "telegram" $channel | Out-Null
     }
-    else {
-        Send-ToChannel $message -channelId $Channel | Out-Null
-    }
-
+    
     Write-Log "Status update completed"
 }
 
-# Hauptprogramm
-$ErrorActionPreference = "Stop"
-
-# Erstelle Log-Verzeichnis falls nicht vorhanden
-$logfileDir = Split-Path $LOG_FILE -Parent
-if (!(Test-Path $logfileDir)) {
-    New-Item -ItemType Directory -Path $logfileDir | Out-Null
+# Ensure log directory exists
+$logDir = Split-Path $LOG_FILE -Parent
+if (-not (Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
 
-# Parameter parsen
-$paramType = $null
-$paramMessage = $null
-$paramChannel = "-1002381931352"
-$dryRun = $false
-
-for ($i = 0; $i -lt $args.Count; $i++) {
-    switch ($args[$i]) {
-        "--type" { $paramType = $args[++$i] }
-        "--message" { $paramMessage = $args[++$i] }
-        "--channel" { $paramChannel = $args[++$i] }
-        "--dry-run" { $dryRun = $true }
-    }
-}
-
-if (!$paramType) {
-    Write-Error "Parameter --type ist erforderlich"
-    exit 1
-}
-
-Main -Type $paramType -Message $paramMessage -Channel $paramChannel -DryRun:$dryRun
+Main @args

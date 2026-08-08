@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# channel_status.py — portiert nach shell
-# Quelle: python, OpenClaw@gateway1:skills/channel-status-agent/scripts/channel_status.py
-# auch in: OpenClaw@gateway2:skills/channel-status-agent/scripts/channel_status.py
-# Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
+# channel_status.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/channel_status.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Channel Status Agent - Automatische Status-Updates
+# channel_status.sh — portiert nach bash
+# Quelle: javascript, channel_status.js
+# Erzeugt: 2026-08-07 durch ABSTRACTIONS_MANAGER.py
 
 # Konfiguration
 readonly WORKSPACE="/home/openclaw/.openclaw/workspace"
@@ -14,21 +15,19 @@ readonly LOGS_DB="${WORKSPACE}/db/logs.db"
 readonly CONFIG_FILE="${WORKSPACE}/config/channel-status.json"
 readonly LOG_FILE="${WORKSPACE}/logs/channel-status.log"
 
-# Logging
+# Log-Funktion
 log() {
     local message="$1"
     local level="${2:-INFO}"
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local entry="[${timestamp}] [${level}] ${message}"
-    echo "${entry}"
-    echo "${entry}" >> "${LOG_FILE}"
+    echo "${entry}" | tee -a "${LOG_FILE}"
 }
 
-# Sammelt System-Status
+# System-Status sammeln
 get_system_status() {
-    local status_json
-    status_json="{"
+    local status_json="{"
     status_json+="\"timestamp\":\"$(date -Iseconds)\","
     status_json+="\"nodes\":{"
     status_json+="\"node1\":{\"name\":\"Gateway\",\"status\":\"online\"},"
@@ -37,117 +36,148 @@ get_system_status() {
     status_json+="\"node5\":{\"name\":\"Redmi\",\"status\":\"intermittent\"},"
     status_json+="\"node7\":{\"name\":\"Docker\",\"status\":\"planned\"}"
     status_json+="},"
-    status_json+="\"agents\":{},"
-    status_json+="\"system\":{}"
-    status_json+="}"
-    
+    status_json+="\"agents\":{"
+
     # Agent-Status aus Cron
-    local cron_lines
-    cron_lines=$(crontab -l 2>/dev/null | grep -v '^#' | wc -l) || cron_lines="unknown"
-    status_json=$(echo "${status_json}" | jq ".agents.active_crons=\"${cron_lines}\"")
-    
+    if crontab -l >/dev/null 2>&1; then
+        local cron_lines
+        cron_lines=$(crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' | wc -l)
+        status_json+="\"active_crons\":${cron_lines}"
+    else
+        status_json+="\"active_crons\":\"unknown\""
+    fi
+
+    status_json+="},"
+    status_json+="\"system\":{"
+
     # System-Metriken
-    local disk_used
-    disk_used=$(df -h / | awk 'NR==2 {print $5}')
-    status_json=$(echo "${status_json}" | jq ".system.disk_used=\"${disk_used}\"")
-    
-    local ram_info
-    ram_info=$(free -h | awk 'NR==2 {print $2" "$3}')
-    local ram_total ram_used
-    ram_total=$(echo "${ram_info}" | cut -d' ' -f1)
-    ram_used=$(echo "${ram_info}" | cut -d' ' -f2)
-    status_json=$(echo "${status_json}" | jq ".system.ram_total=\"${ram_total}\"" | jq ".system.ram_used=\"${ram_used}\"")
-    
+    local disk_used ram_total ram_used
+    disk_used=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
+    ram_total=$(free -h | awk 'NR==2 {print $2}')
+    ram_used=$(free -h | awk 'NR==2 {print $3}')
+
+    status_json+="\"disk_used\":\"${disk_used}%\","
+    status_json+="\"ram_total\":\"${ram_total}\","
+    status_json+="\"ram_used\":\"${ram_used}\""
+    status_json+="}}"
+
     echo "${status_json}"
 }
 
-# Formatiert täglichen Status
+# Täglichen Status formatieren
 format_daily_status() {
     local status_json="$1"
     local message=""
-    message+=$'📊 **Täglicher Status-Report**\n'
-    message+=$(date '+🗓️ %Y-%m-%d %H:%M')$'\n\n'
     
-    message+=$'**🖥️ Nodes (**'
-    local online_nodes
-    online_nodes=$(echo "${status_json}" | jq -r '.nodes | to_entries[] | select(.value.status == "online")' | wc -l)
-    message+="${online_nodes}/5 online):"$'\n'
+    # Datum formatieren
+    local date_str
+    date_str=$(date '+%d.%m.%Y, %H:%M')
     
-    local nodes
-    nodes=$(echo "${status_json}" | jq -r '.nodes | to_entries[] | "\(.key):\(.value.name):\(.value.status):\(.value.reason // "")"')
-    while IFS=':' read -r node_id name status reason; do
-        local emoji
+    message+="📊 **Täglicher Status-Report**"$'\n'
+    message+="🗓️ ${date_str}"$'\n\n'
+    
+    message+="**🖥️ Nodes ("
+    local online_count=0
+    if echo "${status_json}" | jq -e '.nodes.node1.status == "online"' >/dev/null; then ((online_count++)); fi
+    if echo "${status_json}" | jq -e '.nodes.node2.status == "online"' >/dev/null; then ((online_count++)); fi
+    if echo "${status_json}" | jq -e '.nodes.node3.status == "online"' >/dev/null; then ((online_count++)); fi
+    if echo "${status_json}" | jq -e '.nodes.node5.status == "online"' >/dev/null; then ((online_count++)); fi
+    if echo "${status_json}" | jq -e '.nodes.node7.status == "online"' >/dev/null; then ((online_count++)); fi
+    message+="${online_count}/5 online):**"$'\n'
+    
+    # Nodes auflisten
+    local nodes=("node1" "node2" "node3" "node5" "node7")
+    local node_names=("Gateway" "Worker" "Relay" "Redmi" "Docker")
+    
+    for i in "${!nodes[@]}"; do
+        local node="${nodes[$i]}"
+        local name="${node_names[$i]}"
+        local status
+        status=$(echo "${status_json}" | jq -r ".nodes.${node}.status")
+        local emoji=""
         case "${status}" in
             "online") emoji="🟢" ;;
             "offline") emoji="🔴" ;;
             *) emoji="🟡" ;;
         esac
         message+="${emoji} ${name}: ${status}"
+        local reason
+        reason=$(echo "${status_json}" | jq -r ".nodes.${node}.reason // empty")
         if [[ -n "${reason}" && "${reason}" != "null" ]]; then
             message+=" (${reason})"
         fi
         message+=$'\n'
-    done <<< "${nodes}"
+    done
     
-    message+=$'\n**🤖 Agents:**\n'
+    message+=$'\n'"**🤖 Agents:**"$'\n'
     local active_crons
     active_crons=$(echo "${status_json}" | jq -r '.agents.active_crons')
     message+="Aktive Cron-Jobs: ${active_crons}"$'\n'
     
-    if echo "${status_json}" | jq -e '.system.disk_used' >/dev/null 2>&1; then
-        message+=$'\n**💾 System:**\n'
-        local disk_used ram_used ram_total
-        disk_used=$(echo "${status_json}" | jq -r '.system.disk_used')
+    local disk_used
+    disk_used=$(echo "${status_json}" | jq -r '.system.disk_used')
+    if [[ "${disk_used}" != "null" ]]; then
+        message+=$'\n'"**💾 System:**"$'\n'
+        message+="Disk: ${disk_used} belegt"$'\n'
+        local ram_used ram_total
         ram_used=$(echo "${status_json}" | jq -r '.system.ram_used')
         ram_total=$(echo "${status_json}" | jq -r '.system.ram_total')
-        message+="Disk: ${disk_used} belegt"$'\n'
         message+="RAM: ${ram_used} / ${ram_total}"$'\n'
     fi
     
-    echo -n "${message}"
+    echo "${message}"
 }
 
-# Formatiert wöchentlichen Status
+# Wöchentlichen Status formatieren
 format_weekly_status() {
-    local message=""
-    message+=$'📈 **Wöchentlicher Report**\n'
-    message+=$(date '+📅 Woche %V - %Y')$'\n\n'
+    local now
+    now=$(date)
+    local week_number
+    week_number=$(date +%V)
+    local year
+    year=$(date +%Y)
     
-    message+=$'**Zusammenfassung:**\n'
-    message+=$'- 5 aktive Sub-Agents\n'
-    message+=$'- 11 Skills synchronisiert\n'
-    message+=$'- 3 neue Features implementiert\n\n'
-    
-    message+=$'**Top-Ereignisse:**\n'
-    message+=$'1. ClawHub-Git Sync implementiert ✅\n'
-    message+=$'2. Node 3 Disk voll (95%) ⚠️\n'
-    message+=$'3. Channel-Status-Agent aktiviert 🆕\n\n'
-    
-    message+=$'**Geplante Wartungen:**\n'
-    message+=$'- Node 3: Disk-Cleanup erforderlich\n'
-    message+=$'- Node 7: Docker-Setup ausstehend\n'
-    
-    echo -n "${message}"
+    cat <<EOF
+📈 **Wöchentlicher Report**
+📅 Woche ${week_number} - ${year}
+
+**Zusammenfassung:**
+- 5 aktive Sub-Agents
+- 11 Skills synchronisiert
+- 3 neue Features implementiert
+
+**Top-Ereignisse:**
+1. ClawHub-Git Sync implementiert ✅
+2. Node 3 Disk voll (95%) ⚠️
+3. Channel-Status-Agent aktiviert 🆕
+
+**Geplante Wartungen:**
+- Node 3: Disk-Cleanup erforderlich
+- Node 7: Docker-Setup ausstehend
+EOF
 }
 
-# Sendet Nachricht an Channel
+# Nachricht an Channel senden
 send_to_channel() {
     local message="$1"
     local channel_type="${2:-telegram}"
     local channel_id="${3:--1002381931352}"
     
     if [[ "${channel_type}" == "telegram" ]]; then
-        local cmd=(openclaw message send --target "${channel_id}" --message "${message}")
+        # Nachricht escapen
+        local escaped_message
+        escaped_message=$(printf '%s' "${message}" | sed 's/"/\\"/g')
+        local cmd="openclaw message send --target ${channel_id} --message \"${escaped_message}\""
+        
+        if eval "${cmd}"; then
+            log "Message sent to ${channel_type} ${channel_id}"
+            return 0
+        else
+            log "Failed to send message" "ERROR"
+            return 1
+        fi
     else
         log "Channel type ${channel_type} not implemented" "WARN"
-        return 1
-    fi
-    
-    if "${cmd[@]}"; then
-        log "Message sent to ${channel_type} ${channel_id}"
-        return 0
-    else
-        log "Failed to send message" "ERROR"
         return 1
     fi
 }
@@ -178,39 +208,51 @@ main() {
                 dry_run=true
                 shift
                 ;;
+            -h|--help)
+                echo "Usage: $0 --type [daily|weekly|alert] [options]"
+                echo "Options:"
+                echo "  --type TYPE       Type of status update (daily|weekly|alert)"
+                echo "  --message MSG     Alert message"
+                echo "  --channel ID      Channel ID (default: -1002381931352)"
+                echo "  --dry-run         Show message without sending"
+                return 0
+                ;;
             *)
-                echo "Unbekannte Option: $1" >&2
-                exit 1
+                echo "Unknown option: $1" >&2
+                return 1
                 ;;
         esac
     done
     
     if [[ -z "${type}" ]]; then
-        echo "Fehler: --type ist erforderlich" >&2
-        exit 1
+        echo "Error: --type is required" >&2
+        return 1
     fi
     
     log "Starting ${type} status update"
     
     # Status sammeln
-    local status
-    status=$(get_system_status)
+    local status_json
+    status_json=$(get_system_status)
     
-    # Message formatieren
+    # Nachricht formatieren
     local formatted_message=""
     case "${type}" in
         daily)
-            formatted_message=$(format_daily_status "${status}")
+            formatted_message=$(format_daily_status "${status_json}")
             ;;
         weekly)
             formatted_message=$(format_weekly_status)
             ;;
         alert)
-            formatted_message=$'🚨 **ALERT**\n'"${message:-Manual alert}"
+            if [[ -z "${message}" ]]; then
+                message="Manual alert"
+            fi
+            formatted_message="🚨 **ALERT**"$'\n'"${message}"
             ;;
         *)
-            echo "Unbekannter Typ: ${type}" >&2
-            exit 1
+            echo "Invalid type: ${type}" >&2
+            return 1
             ;;
     esac
     
@@ -228,7 +270,7 @@ main() {
     log "Status update completed"
 }
 
-# Sicherstellen, dass das Log-Verzeichnis existiert
+# Log-Verzeichnis erstellen falls nicht vorhanden
 mkdir -p "$(dirname "${LOG_FILE}")"
 
 # Hauptfunktion aufrufen
