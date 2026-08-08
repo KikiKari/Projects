@@ -1,32 +1,14 @@
 #!/usr/bin/env pwsh
-# 3d.html — portiert nach powershell
+# 3d_166113.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/3d_166113.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach PowerShell 7
 # Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-<#
-.SYNOPSIS
-Generates a 3D architectural visualization of the TikTok LIVE Companion Android app.
-
-.DESCRIPTION
-This PowerShell script generates an HTML file containing a 3D visualization of the TikTok LIVE Companion Android app's architecture using three.js. It creates an interactive 3D model showing the relationships between different components of the app.
-
-.PARAMETER OutputFile
-The path to the output HTML file. If not specified, the output will be written to "3d.html" in the current directory.
-
-.EXAMPLE
-.\3d.ps1 -OutputFile "architecture.html"
-Generates the 3D visualization and saves it to "architecture.html"
-
-.EXAMPLE
-.\3d.ps1
-Generates the 3D visualization and saves it to "3d.html" in the current directory
-#>
-
-param(
-    [string]$OutputFile = "3d.html"
-)
-
-$htmlContent = @"
+function Generate-HTML {
+  return @"
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -349,6 +331,26 @@ $htmlContent = @"
 </body>
 </html>
 "@
+}
 
-$htmlContent | Out-File -FilePath $OutputFile -Encoding UTF8
-Write-Host "3D visualization saved to $OutputFile"
+function Main {
+  $args = $args
+  
+  if ($args.Count -ne 1) {
+    Write-Error "Usage: pwsh 3d.ps1 <output-file>"
+    exit 1
+  }
+  
+  $outputFile = $args[0]
+  
+  try {
+    $htmlContent = Generate-HTML
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+    Write-Host "HTML file generated successfully: $outputFile"
+  } catch {
+    Write-Error "Error generating HTML file: $($_.Exception.Message)"
+    exit 1
+  }
+}
+
+Main @args

@@ -1,23 +1,112 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
+# 3d_111adf.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_111adf.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
 # 3d.html — portiert nach tcl
 # Quelle: html, Projects@Weather-Check:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
-
-# Function to generate the HTML content
-proc generate_html {} {
-    set html {}
+proc createHTMLDocument {} {
+    dict set doc html [dict create tag html attrs [dict create lang de] children {} textContent ""]
+    dict set doc head [dict create tag head attrs {} children {} textContent ""]
+    dict set doc body [dict create tag body attrs {} children {} textContent ""]
     
-    append html {<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Weather-Check — Interaktive Architektur</title>
-<meta name="description" content="Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#2481cc">
-<style>
+    # Füge head und body zum html-Knoten hinzu
+    set htmlNode [dict get $doc html]
+    dict lappend htmlNode children [dict get $doc head]
+    dict lappend htmlNode children [dict get $doc body]
+    dict set doc html $htmlNode
+    
+    return $doc
+}
+
+proc appendChild {docVar parent child} {
+    upvar $docVar doc
+    set parentNode [dict get $doc $parent]
+    if {![dict exists $parentNode children]} {
+        dict set parentNode children {}
+    }
+    dict lappend parentNode children $child
+    dict set doc $parent $parentNode
+}
+
+proc setAttribute {docVar element name value} {
+    upvar $docVar doc
+    set elemNode [dict get $doc $element]
+    if {![dict exists $elemNode attrs]} {
+        dict set elemNode attrs {}
+    }
+    dict set elemNode attrs $name $value
+    dict set doc $element $elemNode
+}
+
+proc insertAdjacentHTML {docVar element position html} {
+    upvar $docVar doc
+    if {$position eq "beforeend"} {
+        set elemNode [dict get $doc $element]
+        if {![dict exists $elemNode children]} {
+            dict set elemNode children {}
+        }
+        dict lappend elemNode children [dict create html $html]
+        dict set doc $element $elemNode
+    }
+}
+
+proc generateHTML {node} {
+    if {[dict exists $node text]} {
+        return [dict get $node text]
+    }
+    
+    if {[dict exists $node html]} {
+        return [dict get $node html]
+    }
+    
+    set tag [dict get $node tag]
+    set attrs ""
+    if {[dict exists $node attrs]} {
+        dict for {key value} [dict get $node attrs] {
+            append attrs " $key=\"$value\""
+        }
+    }
+    
+    if {[dict exists $node children] && [llength [dict get $node children]] > 0} {
+        set childrenHTML ""
+        foreach child [dict get $node children] {
+            append childrenHTML [generateHTML $child]
+        }
+        return "<$tag$attrs>$childrenHTML</$tag>"
+    } else {
+        return "<$tag$attrs></$tag>"
+    }
+}
+
+proc generateFullHTML {doc} {
+    set doctype "<!DOCTYPE html>"
+    set htmlContent [generateHTML [dict get $doc html]]
+    return "$doctype\n$htmlContent"
+}
+
+proc buildDocument {} {
+    set doc [createHTMLDocument]
+    
+    # Build head section
+    set metaCharset [dict create tag meta attrs [dict create charset utf-8] children {} textContent ""]
+    appendChild doc head $metaCharset
+    
+    set metaViewport [dict create tag meta attrs [dict create name viewport content "width=device-width, initial-scale=1"] children {} textContent ""]
+    appendChild doc head $metaViewport
+    
+    set title [dict create tag title attrs {} children {} textContent "Weather-Check — Interaktive Architektur"]
+    appendChild doc head $title
+    
+    set metaDescription [dict create tag meta attrs [dict create name description content "Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen."] children {} textContent ""]
+    appendChild doc head $metaDescription
+    
+    set metaThemeColor [dict create tag meta attrs [dict create name theme-color content "#2481cc"] children {} textContent ""]
+    appendChild doc head $metaThemeColor
+    
+    set style [dict create tag style attrs {} children {} textContent {
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#2481cc; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -62,46 +151,93 @@ proc generate_html {} {
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <p class="technik">three.js · r128</p>
-  <h1>Weather-Check</h1>
-  <p class="lede">Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.</p>
-
-  <div class="raster">
-    <div class="buehne" id="buehne">
-      <div class="knoepfe">
-        <button id="btn-plus" title="Näher">+</button>
-        <button id="btn-minus" title="Weiter weg">−</button>
-        <button id="btn-reset">Zurücksetzen</button>
-        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
-      </div>
-    </div>
-
-    <aside class="karte">
-      <h2>Ausgewählter Knoten</h2>
-      <h3 id="k-name">—</h3>
-      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
-      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
-      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
-      <div class="blaettern">
-        <button id="btn-prev">←<br>Vorheriger</button>
-        <button id="btn-next">Nächster<br>→</button>
-      </div>
-    </aside>
-  </div>
-
-  <div class="legende" id="legende"></div>
-  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function(){
+}]
+    appendChild doc head $style
+    
+    # Build body section
+    set wrap [dict create tag div attrs [dict create class wrap] children {} textContent ""]
+    appendChild doc body $wrap
+    
+    set technik [dict create tag p attrs [dict create class technik] children {} textContent "three.js · r128"]
+    appendChild doc wrap $technik
+    
+    set h1 [dict create tag h1 attrs {} children {} textContent "Weather-Check"]
+    appendChild doc wrap $h1
+    
+    set lede [dict create tag p attrs [dict create class lede] children {} textContent "Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen."]
+    appendChild doc wrap $lede
+    
+    set raster [dict create tag div attrs [dict create class raster] children {} textContent ""]
+    appendChild doc wrap $raster
+    
+    set buehne [dict create tag div attrs [dict create class buehne id buehne] children {} textContent ""]
+    appendChild doc raster $buehne
+    
+    set knoepfe [dict create tag div attrs [dict create class knoepfe] children {} textContent ""]
+    appendChild doc buehne $knoepfe
+    
+    set btnPlus [dict create tag button attrs [dict create id btn-plus title "Näher"] children {} textContent "+"]
+    appendChild doc knoepfe $btnPlus
+    
+    set btnMinus [dict create tag button attrs [dict create id btn-minus title "Weiter weg"] children {} textContent "−"]
+    appendChild doc knoepfe $btnMinus
+    
+    set btnReset [dict create tag button attrs [dict create id btn-reset] children {} textContent "Zurücksetzen"]
+    appendChild doc knoepfe $btnReset
+    
+    set btnIso [dict create tag button attrs [dict create id btn-iso aria-pressed true title "Isometrisch oder perspektivisch"] children {} textContent "Iso"]
+    appendChild doc knoepfe $btnIso
+    
+    set karte [dict create tag aside attrs [dict create class karte] children {} textContent ""]
+    appendChild doc raster $karte
+    
+    set karteH2 [dict create tag h2 attrs {} children {} textContent "Ausgewählter Knoten"]
+    appendChild doc karte $karteH2
+    
+    set kName [dict create tag h3 attrs [dict create id k-name] children {} textContent "—"]
+    appendChild doc karte $kName
+    
+    set kSub [dict create tag p attrs [dict create class sub id k-sub] children {} textContent "Knoten anklicken oder durchblättern"]
+    appendChild doc karte $kSub
+    
+    set feld1 [dict create tag dl attrs [dict create class feld] children {} textContent ""]
+    appendChild doc karte $feld1
+    
+    set feld1Dt [dict create tag dt attrs {} children {} textContent "Schicht"]
+    appendChild doc feld1 $feld1Dt
+    
+    set feld1Dd [dict create tag dd attrs [dict create id k-schicht] children {} textContent "—"]
+    appendChild doc feld1 $feld1Dd
+    
+    set feld2 [dict create tag dl attrs [dict create class feld] children {} textContent ""]
+    appendChild doc karte $feld2
+    
+    set feld2Dt [dict create tag dt attrs {} children {} textContent "ID"]
+    appendChild doc feld2 $feld2Dt
+    
+    set feld2Dd [dict create tag dd attrs [dict create id k-id] children {} textContent "—"]
+    appendChild doc feld2 $feld2Dd
+    
+    set blaettern [dict create tag div attrs [dict create class blaettern] children {} textContent ""]
+    appendChild doc karte $blaettern
+    
+    set btnPrev [dict create tag button attrs [dict create id btn-prev] children {} textContent "←<br>Vorheriger"]
+    appendChild doc blaettern $btnPrev
+    
+    set btnNext [dict create tag button attrs [dict create id btn-next] children {} textContent "Nächster<br>→"]
+    appendChild doc blaettern $btnNext
+    
+    set legende [dict create tag div attrs [dict create class legende id legende] children {} textContent ""]
+    appendChild doc wrap $legende
+    
+    set fuss [dict create tag p attrs [dict create class fuss] children {} textContent "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."]
+    appendChild doc wrap $fuss
+    
+    # Add scripts
+    set script1 [dict create tag script attrs [dict create src https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js] children {} textContent ""]
+    appendChild doc body $script1
+    
+    set script2 [dict create tag script attrs {} children {} textContent {(function(){
   "use strict";
   var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "dwd-radar", "name": "DWD-Radar", "untertitel": "Zugbahn"}, {"id": "messstationen", "name": "Messstationen", "untertitel": "Ist-Wert"}, {"id": "open-meteo", "name": "Open-Meteo", "untertitel": "Minutenwerte"}, {"id": "satellit", "name": "Satellit", "untertitel": "Bewoelkung"}, {"id": "webcams", "name": "Webcams", "untertitel": "Sichtpruefung"}, {"id": "handyfoto", "name": "Handyfoto", "untertitel": "Wolkenbasis"}]}, {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": [{"id": "zugbahn", "name": "Zugbahn", "untertitel": "extrapoliert"}, {"id": "gewichtung", "name": "Gewichtung", "untertitel": "je Quelle"}, {"id": "widerspruchspruefung", "name": "Widerspruchspruefung", "untertitel": "benennen statt mitteln"}]}, {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": [{"id": "30-min", "name": "30 min", "untertitel": "hohe Sicherheit"}, {"id": "60-min", "name": "60 min", "untertitel": "mittel"}, {"id": "120-min", "name": "120 min", "untertitel": "grob"}]}, {"name": "Ausgabe", "farbe": "#0f766e", "blocks": [{"id": "pwa", "name": "PWA", "untertitel": "Service Worker"}, {"id": "computer-prompt", "name": "Computer-Prompt", "untertitel": "Perplexity"}, {"id": "handlungssatz", "name": "Handlungssatz", "untertitel": "eine Entscheidung"}]}], "kanten": [{"von": "dwd-radar", "nach": "zugbahn", "art": "fluss"}, {"von": "messstationen", "nach": "gewichtung", "art": "fluss"}, {"von": "open-meteo", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "satellit", "nach": "zugbahn", "art": "fluss"}, {"von": "webcams", "nach": "gewichtung", "art": "fluss"}, {"von": "handyfoto", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "zugbahn", "nach": "30-min", "art": "fluss"}, {"von": "gewichtung", "nach": "60-min", "art": "fluss"}, {"von": "widerspruchspruefung", "nach": "120-min", "art": "fluss"}, {"von": "30-min", "nach": "pwa", "art": "fluss"}, {"von": "60-min", "nach": "computer-prompt", "art": "fluss"}, {"von": "120-min", "nach": "handlungssatz", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#2481cc", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
@@ -326,43 +462,41 @@ proc generate_html {} {
     stelle();
     renderer.render(szene, kamera);
   })();
-})();
-</script>
-</body>
-</html>
-}
+})();}]
+    appendChild doc body $script2
     
-    return $html
+    return $doc
 }
 
-# Main execution
-if {$argc != 1} {
-    puts stderr "Usage: [info script] <output-file>"
-    exit 1
+proc main {} {
+    set args $::argv
+    
+    if {[llength $args] != 1} {
+        puts stderr "Usage: tclsh script.tcl <output-file>"
+        exit 1
+    }
+    
+    set outputFile [lindex $args 0]
+    set doc [buildDocument]
+    set htmlContent [generateFullHTML $doc]
+    
+    if {[catch {set fh [open $outputFile w]} error]} {
+        puts stderr "Error opening file: $error"
+        exit 1
+    }
+    
+    if {[catch {puts -nonewline $fh $htmlContent} error]} {
+        puts stderr "Error writing to file: $error"
+        close $fh
+        exit 1
+    }
+    
+    if {[catch {close $fh} error]} {
+        puts stderr "Error closing file: $error"
+        exit 1
+    }
+    
+    puts "HTML file generated successfully: $outputFile"
 }
 
-set output_file [lindex $argv 0]
-
-# Generate and write the HTML content
-if {[catch {set html_content [generate_html]} error]} {
-    puts stderr "Error generating HTML: $error"
-    exit 1
-}
-
-if {[catch {set fd [open $output_file w]} error]} {
-    puts stderr "Error opening file '$output_file': $error"
-    exit 1
-}
-
-if {[catch {puts -nonewline $fd $html_content} error]} {
-    puts stderr "Error writing to file '$output_file': $error"
-    close $fd
-    exit 1
-}
-
-if {[catch {close $fd} error]} {
-    puts stderr "Error closing file '$output_file': $error"
-    exit 1
-}
-
-puts "HTML file generated successfully: $output_file"
+main

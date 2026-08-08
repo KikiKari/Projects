@@ -1,19 +1,16 @@
 #!/bin/bash
-# 3d.html — portiert nach shell
-# Quelle: html, Projects@Vision-Check:public/3d.html
+# 3d_44b946.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/3d_44b946.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter: Ausgabedatei
-if [ $# -ne 1 ]; then
-  echo "Aufruf: $0 <ausgabedatei.html>" >&2
-  exit 1
-fi
-ausgabe="$1"
-
-# HTML-Dokument erzeugen
-cat > "$ausgabe" << 'HTML_EOT'
+# Function to generate HTML file
+generateHTML() {
+    local outputPath="${1:-3d.html}"
+    
+    # Write HTML content to file
+    cat > "$outputPath" << 'EOF'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -335,6 +332,16 @@ cat > "$ausgabe" << 'HTML_EOT'
 </script>
 </body>
 </html>
-HTML_EOT
+EOF
 
-echo "HTML-Datei wurde erfolgreich erstellt: $ausgabe" >&2
+    echo "HTML file generated: $outputPath"
+}
+
+# Main execution
+main() {
+    local outputPath="${1:-3d.html}"
+    generateHTML "$outputPath"
+}
+
+# Call main with all arguments
+main "$@"

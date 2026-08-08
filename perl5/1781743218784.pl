@@ -1,16 +1,13 @@
 #!/usr/bin/perl
-# 1781743218784.html — portiert nach perl5
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# 1781743218784.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-# Get output file from command line argument
-my $output_file = $ARGV[0] or die "Usage: $0 <output_file>\n";
-
-# HTML content with embedded JSON and JavaScript
-my $html_content = <<'HTML_END';
+sub generateHTML {
+  my $html = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,9 +215,30 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-# Write HTML content to the specified file
-open my $fh, '>', $output_file or die "Could not open file '$output_file' for writing: $!";
-print $fh $html_content;
-close $fh;
+  return $html;
+}
 
-print "HTML file generated: $output_file\n";
+sub main {
+  my @args = @ARGV;
+  
+  if (@args != 1) {
+    print STDERR "Usage: perl script.pl <output-file>\n";
+    exit 1;
+  }
+  
+  my $outputFile = $args[0];
+  
+  eval {
+    my $htmlContent = generateHTML();
+    open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile' $!";
+    print $fh $htmlContent;
+    close $fh;
+    print "HTML file generated: $outputFile\n";
+  };
+  if ($@) {
+    print STDERR "Error generating HTML file: $@\n";
+    exit 1;
+  }
+}
+
+main();

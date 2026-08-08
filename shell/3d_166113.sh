@@ -1,19 +1,17 @@
 #!/bin/bash
-# 3d.html — portiert nach shell
-# Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
+# 3d_166113.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/3d_166113.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter: Ausgabedatei
-if [[ $# -ne 1 ]]; then
-  echo "Aufruf: $0 <ausgabedatei.html>" >&2
-  exit 1
-fi
-ausgabe="$1"
+# 3d.html — portiert nach Bash
+# Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Erzeuge die HTML-Datei
-cat > "$ausgabe" << 'HTML_HEAD'
+# Funktion zum Generieren des HTML-Inhalts
+generate_html() {
+  cat <<'EOF'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -335,6 +333,30 @@ cat > "$ausgabe" << 'HTML_HEAD'
 </script>
 </body>
 </html>
-HTML_HEAD
+EOF
+}
 
-echo "HTML-Datei wurde erfolgreich erstellt: $ausgabe" >&2
+# Hauptfunktion
+main() {
+  # Prüfen der Anzahl der Argumente
+  if [ $# -ne 1 ]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+  fi
+  
+  local output_file="$1"
+  
+  # HTML-Inhalt generieren und in Datei schreiben
+  generate_html > "$output_file"
+  
+  # Prüfen, ob das Schreiben erfolgreich war
+  if [ $? -eq 0 ]; then
+    echo "HTML file generated successfully: $output_file"
+  else
+    echo "Error generating HTML file" >&2
+    exit 1
+  fi
+}
+
+# Skript ausführen
+main "$@"

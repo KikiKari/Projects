@@ -1,13 +1,16 @@
-#!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
+#!/usr/bin/env tclsh8.6
+# 3d_31a461.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_31a461.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach Tcl 8.6
 # Quelle: html, Projects@TikTok-Live-Companion-iOS:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl/Tk port of the 3D architecture visualization
-# This script generates the HTML file that was originally 3d.html
+package require Tcl 8.6
 
-proc generate_html {filename} {
-    set html {<!DOCTYPE html>
+proc generateHTML {} {
+    return {<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -327,19 +330,18 @@ proc generate_html {filename} {
 })();
 </script>
 </body>
-</html>
+</html>}
 }
 
-    set f [open $filename w]
-    puts -nonewline $f $html
-    close $f
+proc main {} {
+    set outputFile [expr {[llength $::argv] > 0 ? [lindex $::argv 0] : "3d.html"}]
+    set htmlContent [generateHTML]
+    
+    set fh [open $outputFile w]
+    puts -nonewline $fh $htmlContent
+    close $fh
+    
+    puts "HTML file generated: $outputFile"
 }
 
-# Main execution
-if {$argc != 1} {
-    puts stderr "Usage: $argv0 <output-file>"
-    exit 1
-}
-
-set output_file [lindex $argv 0]
-generate_html $output_file
+main

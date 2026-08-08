@@ -1,23 +1,154 @@
 #!/usr/bin/env pwsh
-# 3d.html — portiert nach powershell
-# Quelle: html, Projects@Weather-Check:public/3d.html
+# 3d_111adf.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/3d_111adf.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
+class HTMLNode {
+    [string]$tag
+    [hashtable]$attrs
+    [System.Collections.ArrayList]$children
+    [string]$textContent
+    [string]$text
+    [string]$html
 
-$htmlContent = @"
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Weather-Check — Interaktive Architektur</title>
-<meta name="description" content="Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#2481cc">
-<style>
+    HTMLNode([string]$tag) {
+        $this.tag = $tag
+        $this.attrs = @{}
+        $this.children = [System.Collections.ArrayList]::new()
+        $this.textContent = ""
+    }
+
+    HTMLNode([string]$tag, [hashtable]$attrs) {
+        $this.tag = $tag
+        $this.attrs = $attrs
+        $this.children = [System.Collections.ArrayList]::new()
+        $this.textContent = ""
+    }
+}
+
+function Create-HTMLDocument {
+    $doc = @{
+        html = $null
+        head = $null
+        body = $null
+        createElement = {
+            param([string]$tag)
+            return [HTMLNode]::new($tag)
+        }
+        createTextNode = {
+            param([string]$text)
+            $node = [HTMLNode]::new("")
+            $node.text = $text
+            return $node
+        }
+    }
+
+    $doc.html = & $doc.createElement "html"
+    $doc.html.attrs.lang = "de"
+    
+    $doc.head = & $doc.createElement "head"
+    $doc.body = & $doc.createElement "body"
+    
+    [void]$doc.html.children.Add($doc.head)
+    [void]$doc.html.children.Add($doc.body)
+    
+    return $doc
+}
+
+function Append-Child {
+    param($parent, $child)
+    if ($null -eq $parent.children) {
+        $parent.children = [System.Collections.ArrayList]::new()
+    }
+    [void]$parent.children.Add($child)
+}
+
+function Set-Attribute {
+    param($element, [string]$name, [string]$value)
+    if ($null -eq $element.attrs) {
+        $element.attrs = @{}
+    }
+    $element.attrs[$name] = $value
+}
+
+function Insert-AdjacentHTML {
+    param($element, [string]$position, [string]$html)
+    if ($position -eq "beforeend") {
+        if ($null -eq $element.children) {
+            $element.children = [System.Collections.ArrayList]::new()
+        }
+        $node = [HTMLNode]::new("")
+        $node.html = $html
+        [void]$element.children.Add($node)
+    }
+}
+
+function Generate-HTML {
+    param($node)
+    
+    if ($node.text) {
+        return $node.text
+    }
+    
+    if ($node.html) {
+        return $node.html
+    }
+    
+    $attrs = ""
+    if ($node.attrs) {
+        foreach ($key in $node.attrs.Keys) {
+            $value = $node.attrs[$key]
+            $attrs += " $key=`"$value`""
+        }
+    }
+    
+    if ($node.children -and $node.children.Count -gt 0) {
+        $childrenHTML = ""
+        foreach ($child in $node.children) {
+            $childrenHTML += Generate-HTML $child
+        }
+        return "<$($node.tag)$attrs>$childrenHTML</$($node.tag)>"
+    } else {
+        return "<$($node.tag)$attrs></$($node.tag)>"
+    }
+}
+
+function Generate-FullHTML {
+    param($doc)
+    $doctype = "<!DOCTYPE html>"
+    $htmlContent = Generate-HTML $doc.html
+    return "$doctype`n$htmlContent"
+}
+
+function Build-Document {
+    $doc = Create-HTMLDocument
+    
+    # Build head section
+    $metaCharset = & $doc.createElement "meta"
+    Set-Attribute $metaCharset "charset" "utf-8"
+    Append-Child $doc.head $metaCharset
+    
+    $metaViewport = & $doc.createElement "meta"
+    Set-Attribute $metaViewport "name" "viewport"
+    Set-Attribute $metaViewport "content" "width=device-width, initial-scale=1"
+    Append-Child $doc.head $metaViewport
+    
+    $title = & $doc.createElement "title"
+    $title.textContent = "Weather-Check — Interaktive Architektur"
+    Append-Child $doc.head $title
+    
+    $metaDescription = & $doc.createElement "meta"
+    Set-Attribute $metaDescription "name" "description"
+    Set-Attribute $metaDescription "content" "Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen."
+    Append-Child $doc.head $metaDescription
+    
+    $metaThemeColor = & $doc.createElement "meta"
+    Set-Attribute $metaThemeColor "name" "theme-color"
+    Set-Attribute $metaThemeColor "content" "#2481cc"
+    Append-Child $doc.head $metaThemeColor
+    
+    $style = & $doc.createElement "style"
+    $style.textContent = @"
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#2481cc; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -62,53 +193,148 @@ $htmlContent = @"
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-</style>
-</head>
-<body>
-<div class="wrap">
+"@
+    Append-Child $doc.head $style
+    
+    # Build body section
+    $wrap = & $doc.createElement "div"
+    Set-Attribute $wrap "class" "wrap"
+    Append-Child $doc.body $wrap
+    
+    $technik = & $doc.createElement "p"
+    Set-Attribute $technik "class" "technik"
+    $technik.textContent = "three.js · r128"
+    Append-Child $wrap $technik
+    
+    $h1 = & $doc.createElement "h1"
+    $h1.textContent = "Weather-Check"
+    Append-Child $wrap $h1
+    
+    $lede = & $doc.createElement "p"
+    Set-Attribute $lede "class" "lede"
+    $lede.textContent = "Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen."
+    Append-Child $wrap $lede
+    
+    $raster = & $doc.createElement "div"
+    Set-Attribute $raster "class" "raster"
+    Append-Child $wrap $raster
+    
+    $buehne = & $doc.createElement "div"
+    Set-Attribute $buehne "class" "buehne"
+    Set-Attribute $buehne "id" "buehne"
+    Append-Child $raster $buehne
+    
+    $knoepfe = & $doc.createElement "div"
+    Set-Attribute $knoepfe "class" "knoepfe"
+    Append-Child $buehne $knoepfe
+    
+    $btnPlus = & $doc.createElement "button"
+    Set-Attribute $btnPlus "id" "btn-plus"
+    Set-Attribute $btnPlus "title" "Näher"
+    $btnPlus.textContent = "+"
+    Append-Child $knoepfe $btnPlus
+    
+    $btnMinus = & $doc.createElement "button"
+    Set-Attribute $btnMinus "id" "btn-minus"
+    Set-Attribute $btnMinus "title" "Weiter weg"
+    $btnMinus.textContent = "−"
+    Append-Child $knoepfe $btnMinus
+    
+    $btnReset = & $doc.createElement "button"
+    Set-Attribute $btnReset "id" "btn-reset"
+    $btnReset.textContent = "Zurücksetzen"
+    Append-Child $knoepfe $btnReset
+    
+    $btnIso = & $doc.createElement "button"
+    Set-Attribute $btnIso "id" "btn-iso"
+    Set-Attribute $btnIso "aria-pressed" "true"
+    Set-Attribute $btnIso "title" "Isometrisch oder perspektivisch"
+    $btnIso.textContent = "Iso"
+    Append-Child $knoepfe $btnIso
+    
+    $karte = & $doc.createElement "aside"
+    Set-Attribute $karte "class" "karte"
+    Append-Child $raster $karte
+    
+    $karteH2 = & $doc.createElement "h2"
+    $karteH2.textContent = "Ausgewählter Knoten"
+    Append-Child $karte $karteH2
+    
+    $kName = & $doc.createElement "h3"
+    Set-Attribute $kName "id" "k-name"
+    $kName.textContent = "—"
+    Append-Child $karte $kName
+    
+    $kSub = & $doc.createElement "p"
+    Set-Attribute $kSub "class" "sub"
+    Set-Attribute $kSub "id" "k-sub"
+    $kSub.textContent = "Knoten anklicken oder durchblättern"
+    Append-Child $karte $kSub
+    
+    $feld1 = & $doc.createElement "dl"
+    Set-Attribute $feld1 "class" "feld"
+    Append-Child $karte $feld1
+    
+    $feld1Dt = & $doc.createElement "dt"
+    $feld1Dt.textContent = "Schicht"
+    Append-Child $feld1 $feld1Dt
+    
+    $feld1Dd = & $doc.createElement "dd"
+    Set-Attribute $feld1Dd "id" "k-schicht"
+    $feld1Dd.textContent = "—"
+    Append-Child $feld1 $feld1Dd
+    
+    $feld2 = & $doc.createElement "dl"
+    Set-Attribute $feld2 "class" "feld"
+    Append-Child $karte $feld2
+    
+    $feld2Dt = & $doc.createElement "dt"
+    $feld2Dt.textContent = "ID"
+    Append-Child $feld2 $feld2Dt
+    
+    $feld2Dd = & $doc.createElement "dd"
+    Set-Attribute $feld2Dd "id" "k-id"
+    $feld2Dd.textContent = "—"
+    Append-Child $feld2 $feld2Dd
+    
+    $blaettern = & $doc.createElement "div"
+    Set-Attribute $blaettern "class" "blaettern"
+    Append-Child $karte $blaettern
+    
+    $btnPrev = & $doc.createElement "button"
+    Set-Attribute $btnPrev "id" "btn-prev"
+    $btnPrev.innerHTML = "←<br>Vorheriger"
+    Append-Child $blaettern $btnPrev
+    
+    $btnNext = & $doc.createElement "button"
+    Set-Attribute $btnNext "id" "btn-next"
+    $btnNext.innerHTML = "Nächster<br>→"
+    Append-Child $blaettern $btnNext
+    
+    $legende = & $doc.createElement "div"
+    Set-Attribute $legende "class" "legende"
+    Set-Attribute $legende "id" "legende"
+    Append-Child $wrap $legende
+    
+    $fuss = & $doc.createElement "p"
+    Set-Attribute $fuss "class" "fuss"
+    $fuss.textContent = "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
+    Append-Child $wrap $fuss
+    
+    # Add scripts
+    $script1 = & $doc.createElement "script"
+    Set-Attribute $script1 "src" "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+    Append-Child $doc.body $script1
+    
+    $script2 = & $doc.createElement "script"
+    $script2.textContent = "(function(){
+  `"use strict`";
+  var SPEC = {`"schichten`": [{`"name`": `"Quellen`", `"farbe`": `"#5f6773`", `"blocks`": [{`"id`": `"dwd-radar`", `"name`": `"DWD-Radar`", `"untertitel`": `"Zugbahn`"}, {`"id`": `"messstationen`", `"name`": `"Messstationen`", `"untertitel`": `"Ist-Wert`"}, {`"id`": `"open-meteo`", `"name`": `"Open-Meteo`", `"untertitel`": `"Minutenwerte`"}, {`"id`": `"satellit`", `"name`": `"Satellit`", `"untertitel`": `"Bewoelkung`"}, {`"id`": `"webcams`", `"name`": `"Webcams`", `"untertitel`": `"Sichtpruefung`"}, {`"id`": `"handyfoto`", `"name`": `"Handyfoto`", `"untertitel`": `"Wolkenbasis`"}]}, {`"name`": `"Zusammenfuehrung`", `"farbe`": `"#2481cc`", `"blocks`": [{`"id`": `"zugbahn`", `"name`": `"Zugbahn`", `"untertitel`": `"extrapoliert`"}, {`"id`": `"gewichtung`", `"name`": `"Gewichtung`", `"untertitel`": `"je Quelle`"}, {`"id`": `"widerspruchspruefung`", `"name`": `"Widerspruchspruefung`", `"untertitel`": `"benennen statt mitteln`"}]}, {`"name`": `"Einschaetzung`", `"farbe`": `"#6d5bd0`", `"blocks`": [{`"id`": `"30-min`", `"name`": `"30 min`", `"untertitel`": `"hohe Sicherheit`"}, {`"id`": `"60-min`", `"name`": `"60 min`", `"untertitel`": `"mittel`"}, {`"id`": `"120-min`", `"name`": `"120 min`", `"untertitel`": `"grob`"}]}, {`"name`": `"Ausgabe`", `"farbe`": `"#0f766e`", `"blocks`": [{`"id`": `"pwa`", `"name`": `"PWA`", `"untertitel`": `"Service Worker`"}, {`"id`": `"computer-prompt`", `"name`": `"Computer-Prompt`", `"untertitel`": `"Perplexity`"}, {`"id`": `"handlungssatz`", `"name`": `"Handlungssatz`", `"untertitel`": `"eine Entscheidung`"}]}], `"kanten`": [{`"von`": `"dwd-radar`", `"nach`": `"zugbahn`", `"art`": `"fluss`"}, {`"von`": `"messstationen`", `"nach`": `"gewichtung`", `"art`": `"fluss`"}, {`"von`": `"open-meteo`", `"nach`": `"widerspruchspruefung`", `"art`": `"fluss`"}, {`"von`": `"satellit`", `"nach`": `"zugbahn`", `"art`": `"fluss`"}, {`"von`": `"webcams`", `"nach`": `"gewichtung`", `"art`": `"fluss`"}, {`"von`": `"handyfoto`", `"nach`": `"widerspruchspruefung`", `"art`": `"fluss`"}, {`"von`": `"zugbahn`", `"nach`": `"30-min`", `"art`": `"fluss`"}, {`"von`": `"gewichtung`", `"nach`": `"60-min`", `"art`": `"fluss`"}, {`"von`": `"widerspruchspruefung`", `"nach`": `"120-min`", `"art`": `"fluss`"}, {`"von`": `"30-min`", `"nach`": `"pwa`", `"art`": `"fluss`"}, {`"von`": `"60-min`", `"nach`": `"computer-prompt`", `"art`": `"fluss`"}, {`"von`": `"120-min`", `"nach`": `"handlungssatz`", `"art`": `"fluss`"}], `"kantenarten`": [{`"art`": `"fluss`", `"farbe`": `"#2481cc`", `"stil`": `"voll`", `"text`": `"Fluss von unten nach oben`"}]};
 
-  <p class="technik">three.js · r128</p>
-  <h1>Weather-Check</h1>
-  <p class="lede">Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.</p>
-
-  <div class="raster">
-    <div class="buehne" id="buehne">
-      <div class="knoepfe">
-        <button id="btn-plus" title="Näher">+</button>
-        <button id="btn-minus" title="Weiter weg">−</button>
-        <button id="btn-reset">Zurücksetzen</button>
-        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
-      </div>
-    </div>
-
-    <aside class="karte">
-      <h2>Ausgewählter Knoten</h2>
-      <h3 id="k-name">—</h3>
-      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
-      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
-      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
-      <div class="blaettern">
-        <button id="btn-prev">←<br>Vorheriger</button>
-        <button id="btn-next">Nächster<br>→</button>
-      </div>
-    </aside>
-  </div>
-
-  <div class="legende" id="legende"></div>
-  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function(){
-  "use strict";
-  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "dwd-radar", "name": "DWD-Radar", "untertitel": "Zugbahn"}, {"id": "messstationen", "name": "Messstationen", "untertitel": "Ist-Wert"}, {"id": "open-meteo", "name": "Open-Meteo", "untertitel": "Minutenwerte"}, {"id": "satellit", "name": "Satellit", "untertitel": "Bewoelkung"}, {"id": "webcams", "name": "Webcams", "untertitel": "Sichtpruefung"}, {"id": "handyfoto", "name": "Handyfoto", "untertitel": "Wolkenbasis"}]}, {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": [{"id": "zugbahn", "name": "Zugbahn", "untertitel": "extrapoliert"}, {"id": "gewichtung", "name": "Gewichtung", "untertitel": "je Quelle"}, {"id": "widerspruchspruefung", "name": "Widerspruchspruefung", "untertitel": "benennen statt mitteln"}]}, {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": [{"id": "30-min", "name": "30 min", "untertitel": "hohe Sicherheit"}, {"id": "60-min", "name": "60 min", "untertitel": "mittel"}, {"id": "120-min", "name": "120 min", "untertitel": "grob"}]}, {"name": "Ausgabe", "farbe": "#0f766e", "blocks": [{"id": "pwa", "name": "PWA", "untertitel": "Service Worker"}, {"id": "computer-prompt", "name": "Computer-Prompt", "untertitel": "Perplexity"}, {"id": "handlungssatz", "name": "Handlungssatz", "untertitel": "eine Entscheidung"}]}], "kanten": [{"von": "dwd-radar", "nach": "zugbahn", "art": "fluss"}, {"von": "messstationen", "nach": "gewichtung", "art": "fluss"}, {"von": "open-meteo", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "satellit", "nach": "zugbahn", "art": "fluss"}, {"von": "webcams", "nach": "gewichtung", "art": "fluss"}, {"von": "handyfoto", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "zugbahn", "nach": "30-min", "art": "fluss"}, {"von": "gewichtung", "nach": "60-min", "art": "fluss"}, {"von": "widerspruchspruefung", "nach": "120-min", "art": "fluss"}, {"von": "30-min", "nach": "pwa", "art": "fluss"}, {"von": "60-min", "nach": "computer-prompt", "art": "fluss"}, {"von": "120-min", "nach": "handlungssatz", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#2481cc", "stil": "voll", "text": "Fluss von unten nach oben"}]};
-
-  var buehne = document.getElementById("buehne");
-  if (typeof THREE === "undefined"){
-    buehne.insertAdjacentHTML("beforeend",
-      '<div class="fehler">three.js konnte nicht geladen werden. ' +
+  var buehne = document.getElementById(`"buehne`");
+  if (typeof THREE === `"undefined`"){
+    buehne.insertAdjacentHTML(`"beforeend`",
+      '<div class=`"fehler`">three.js konnte nicht geladen werden. ' +
       'Die Seite braucht einmalig Netzzugang zum CDN.</div>');
     return;
   }
@@ -137,20 +363,20 @@ $htmlContent = @"
   // ------------------------------------------------------------ Schilder ---
   // Text auf eine Textur, dann als Billboard — bleibt bei jeder Drehung lesbar.
   function schild(text, unter){
-    var c = document.createElement("canvas"), x = c.getContext("2d");
-    var f1 = "700 40px -apple-system,Segoe UI,Roboto,sans-serif";
-    var f2 = "500 27px -apple-system,Segoe UI,Roboto,sans-serif";
+    var c = document.createElement(`"canvas`"), x = c.getContext(`"2d`");
+    var f1 = `"700 40px -apple-system,Segoe UI,Roboto,sans-serif`";
+    var f2 = `"500 27px -apple-system,Segoe UI,Roboto,sans-serif`";
     x.font = f1; var w1 = x.measureText(text).width;
     x.font = f2; var w2 = unter ? x.measureText(unter).width : 0;
     var w = Math.ceil(Math.max(w1, w2)) + 40, h = unter ? 96 : 62;
     c.width = w; c.height = h;
-    x = c.getContext("2d");
-    x.fillStyle = "rgba(255,255,255,.95)";
+    x = c.getContext(`"2d`");
+    x.fillStyle = `"rgba(255,255,255,.95)`";
     if (x.roundRect){ x.beginPath(); x.roundRect(0,0,w,h,13); x.fill(); }
     else x.fillRect(0,0,w,h);
-    x.fillStyle = "#16191d"; x.font = f1; x.textBaseline = "middle";
+    x.fillStyle = `"#16191d`"; x.font = f1; x.textBaseline = `"middle`";
     x.fillText(text, 20, unter ? 32 : 31);
-    if (unter){ x.fillStyle = "#5f6773"; x.font = f2; x.fillText(unter, 20, 68); }
+    if (unter){ x.fillStyle = `"#5f6773`"; x.font = f2; x.fillText(unter, 20, 68); }
     var t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter;
     var s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, transparent:true, depthTest:false}));
     s.scale.set(w/62*2.5, h/62*2.5, 1);
@@ -166,7 +392,7 @@ $htmlContent = @"
   SPEC.schichten.forEach(function(sch, si){
     var y = START + si * ABSTAND;
     var bl = sch.blocks.map(function(b){
-      return (typeof b === "string") ? {id:null, name:b, untertitel:""} : b;
+      return (typeof b === `"string`") ? {id:null, name:b, untertitel:`"`"} : b;
     });
     var spalten = Math.max(1, Math.ceil(bl.length / 2));
     var reihen = bl.length <= 1 ? 1 : 2;
@@ -192,8 +418,8 @@ $htmlContent = @"
       s.position.set(x, y + BH/2 + (b.untertitel ? 2.1 : 1.6), z);
       gruppe.add(s);
 
-      var id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
-      var eintrag = {id:id, name:b.name, untertitel:b.untertitel||"", schicht:sch.name,
+      var id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, `"-`").replace(/^-|-$/g, `"`"));
+      var eintrag = {id:id, name:b.name, untertitel:b.untertitel||`"`", schicht:sch.name,
                      mesh:m, mat:mat, farbe:new THREE.Color(sch.farbe), pos:m.position};
       m.userData.index = knoten.length;
       knoten.push(eintrag); nachId[id] = eintrag;
@@ -207,11 +433,11 @@ $htmlContent = @"
   (SPEC.kanten || []).forEach(function(k){
     var a = nachId[k.von], b = nachId[k.nach];
     if (!a || !b) return;
-    var art = STIL[k.art] || {farbe:"#8ea2ff", stil:"voll"};
+    var art = STIL[k.art] || {farbe:`"#8ea2ff`", stil:`"voll`"};
     var g = new THREE.BufferGeometry().setFromPoints([
       a.pos.clone().setY(a.pos.y + 0.9), b.pos.clone().setY(b.pos.y - 0.9)]);
     var linie;
-    if (art.stil === "gestrichelt"){
+    if (art.stil === `"gestrichelt`"){
       linie = new THREE.Line(g, new THREE.LineDashedMaterial(
         {color:art.farbe, dashSize:1.4, gapSize:1.0, transparent:true, opacity:.9}));
       linie.computeLineDistances();
@@ -224,12 +450,12 @@ $htmlContent = @"
 
   szene.add(gruppe);
 
-  var leg = document.getElementById("legende");
+  var leg = document.getElementById(`"legende`");
   (SPEC.kantenarten || []).forEach(function(a){
-    var s = document.createElement("span");
-    s.innerHTML = '<i class="strich" style="border-top-color:' + a.farbe +
-                  ';border-top-style:' + (a.stil === "gestrichelt" ? "dashed" : "solid") +
-                  '"></i>' + a.text;
+    var s = document.createElement(`"span`");
+    s.innerHTML = '<i class=`"strich`" style=`"border-top-color:' + a.farbe +
+                  ';border-top-style:' + (a.stil === `"gestrichelt`" ? `"dashed`" : `"solid`") +
+                  '`"></i>' + a.text;
     leg.appendChild(s);
   });
 
@@ -245,14 +471,14 @@ $htmlContent = @"
     var k = knoten[aktiv];
     k.mat.emissive.setHex(0x333333);
     k.mesh.scale.set(1.1, 1.5, 1.1);
-    document.getElementById("k-name").textContent = k.name;
-    document.getElementById("k-sub").textContent = k.untertitel || "—";
-    document.getElementById("k-schicht").textContent = k.schicht;
-    document.getElementById("k-id").textContent = k.id;
+    document.getElementById(`"k-name`").textContent = k.name;
+    document.getElementById(`"k-sub`").textContent = k.untertitel || `"—`";
+    document.getElementById(`"k-schicht`").textContent = k.schicht;
+    document.getElementById(`"k-id`").textContent = k.id;
   }
 
   var strahl = new THREE.Raycaster(), zeiger = new THREE.Vector2();
-  renderer.domElement.addEventListener("click", function(e){
+  renderer.domElement.addEventListener(`"click`", function(e){
     if (gezogen) return;
     var r = renderer.domElement.getBoundingClientRect();
     zeiger.x = ((e.clientX - r.left) / r.width) * 2 - 1;
@@ -261,8 +487,8 @@ $htmlContent = @"
     var treffer = strahl.intersectObjects(klickbar, false);
     if (treffer.length) waehle(treffer[0].object.userData.index);
   });
-  document.getElementById("btn-prev").addEventListener("click", function(){ waehle(aktiv - 1); });
-  document.getElementById("btn-next").addEventListener("click", function(){ waehle(aktiv + 1); });
+  document.getElementById(`"btn-prev`").addEventListener(`"click`", function(){ waehle(aktiv - 1); });
+  document.getElementById(`"btn-next`").addEventListener(`"click`", function(){ waehle(aktiv + 1); });
 
   // ------------------------------------------------------------- Kamera ----
   var azimut = Math.PI/4, elevation = 0.62, rotiert = true;
@@ -273,38 +499,38 @@ $htmlContent = @"
     kamera.position.set(x, y, z); kamera.lookAt(0, 0, 0);
   }
   var zieht = false, gezogen = false, lx = 0, ly = 0;
-  renderer.domElement.addEventListener("pointerdown", function(e){
+  renderer.domElement.addEventListener(`"pointerdown`", function(e){
     zieht = true; gezogen = false; lx = e.clientX; ly = e.clientY;
   });
-  window.addEventListener("pointermove", function(e){
+  window.addEventListener(`"pointermove`", function(e){
     if (!zieht) return;
     if (Math.abs(e.clientX-lx) + Math.abs(e.clientY-ly) > 3){ gezogen = true; rotiert = false; }
     azimut -= (e.clientX - lx) * 0.006;
     elevation = Math.max(0.08, Math.min(1.45, elevation + (e.clientY - ly) * 0.005));
     lx = e.clientX; ly = e.clientY;
   });
-  window.addEventListener("pointerup", function(){ zieht = false; setTimeout(function(){ gezogen = false; }, 0); });
+  window.addEventListener(`"pointerup`", function(){ zieht = false; setTimeout(function(){ gezogen = false; }, 0); });
 
   function zoom(f){
     if (iso){ D = Math.max(11, Math.min(54, D * f)); groesse(); }
     else { radius = Math.max(32, Math.min(160, radius * f)); }
   }
-  document.getElementById("btn-plus").addEventListener("click", function(){ zoom(0.85); });
-  document.getElementById("btn-minus").addEventListener("click", function(){ zoom(1.18); });
-  renderer.domElement.addEventListener("wheel", function(e){
+  document.getElementById(`"btn-plus`").addEventListener(`"click`", function(){ zoom(0.85); });
+  document.getElementById(`"btn-minus`").addEventListener(`"click`", function(){ zoom(1.18); });
+  renderer.domElement.addEventListener(`"wheel`", function(e){
     e.preventDefault(); zoom(e.deltaY > 0 ? 1.08 : 0.93);
   }, {passive:false});
-  document.getElementById("btn-reset").addEventListener("click", function(){
+  document.getElementById(`"btn-reset`").addEventListener(`"click`", function(){
     azimut = Math.PI/4; elevation = 0.62; D = 26; radius = 82; rotiert = true;
     iso = true; kamera = kameraIso;
-    document.getElementById("btn-iso").setAttribute("aria-pressed", "true");
-    document.getElementById("btn-iso").textContent = "Iso";
+    document.getElementById(`"btn-iso`").setAttribute(`"aria-pressed`", `"true`");
+    document.getElementById(`"btn-iso`").textContent = `"Iso`";
     waehle(0); groesse();
   });
-  document.getElementById("btn-iso").addEventListener("click", function(){
+  document.getElementById(`"btn-iso`").addEventListener(`"click`", function(){
     iso = !iso; kamera = iso ? kameraIso : kameraPersp;
-    this.setAttribute("aria-pressed", String(iso));
-    this.textContent = iso ? "Iso" : "Persp";
+    this.setAttribute(`"aria-pressed`", String(iso));
+    this.textContent = iso ? `"Iso`" : `"Persp`";
     groesse();
   });
 
@@ -316,7 +542,7 @@ $htmlContent = @"
     kameraPersp.aspect = aspekt; kameraPersp.updateProjectionMatrix();
     renderer.setSize(w, h, false);
   }
-  window.addEventListener("resize", groesse);
+  window.addEventListener(`"resize`", groesse);
 
   groesse();
   waehle(0);
@@ -326,11 +552,31 @@ $htmlContent = @"
     stelle();
     renderer.render(szene, kamera);
   })();
-})();
-</script>
-</body>
-</html>
-"@
+})();"
+    Append-Child $doc.body $script2
+    
+    return $doc
+}
 
-$htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8
-Write-Host "HTML file created at: $OutputPath"
+function Main {
+    $args = $args
+    
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        exit 1
+    }
+    
+    $outputFile = $args[0]
+    $doc = Build-Document
+    $htmlContent = Generate-FullHTML $doc
+    
+    try {
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated successfully: $outputFile"
+    } catch {
+        Write-Error "Error writing file: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+Main @args

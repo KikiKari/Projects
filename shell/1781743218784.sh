@@ -1,15 +1,16 @@
-#!/bin/bash
-# 1781743218784.html — portiert nach shell
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+#!/usr/bin/env bash
+# 1781743218784.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Secret-Vault Public HTML Generator
-# Erzeugt die vollständige HTML-Datei mit allen Inhalten
+# 1781743218784.html — portiert nach bash
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-generate_html() {
-    cat << 'EOF'
+generateHTML() {
+  cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,23 +219,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-# Hauptprogramm
 main() {
-    local output_file="${1:-}"
-    
-    if [[ -z "$output_file" ]]; then
-        echo "Verwendung: $0 <ausgabedatei>" >&2
-        exit 1
-    fi
-    
-    generate_html > "$output_file"
-    
-    if [[ -f "$output_file" ]]; then
-        echo "HTML-Datei erfolgreich erstellt: $output_file"
-    else
-        echo "Fehler beim Erstellen der HTML-Datei" >&2
-        exit 1
-    fi
+  local args=("$@")
+  
+  if [[ ${#args[@]} -ne 1 ]]; then
+    echo 'Usage: bash script.sh <output-file>' >&2
+    exit 1
+  fi
+  
+  local outputFile="${args[0]}"
+  
+  # Generate HTML content and write to file
+  generateHTML > "$outputFile"
+  echo "HTML file generated: $outputFile"
 }
 
 main "$@"

@@ -1,23 +1,13 @@
-#!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
-# Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
+#!/usr/bin/env tclsh8.6
+# 3d_166113.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_166113.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Portierung von 3d.html nach Tcl 8.6
-# Erzeugt das HTML-Dokument dynamisch und schreibt es in eine Datei
+package require http
+package require json
 
-proc write_3d_html {filename} {
-    set html [generate_html_content]
-    set fh [open $filename w]
-    puts $fh $html
-    close $fh
-}
-
-proc generate_html_content {} {
-    set content {}
-
-    # HTML-Kopf
-    append content {<!DOCTYPE html>
+proc generateHTML {} {
+    return {<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -111,10 +101,7 @@ proc generate_html_content {} {
 <script>
 (function(){
   "use strict";
-  var SPEC = }
-
-    # JSON-Daten hinzufügen
-    append content {"schichten": [{"name": "Quelle", "farbe": "#5f6773", "blocks": [{"id": "tiktok-webview", "name": "TikTok-WebView", "untertitel": "Hauptframe"}, {"id": "www-tiktok-com", "name": "www.tiktok.com", "untertitel": "nur diese Origin"}, {"id": "hauptframe", "name": "Hauptframe", "untertitel": "kein iframe"}]}, {"name": "Bruecke", "farbe": "#2481cc", "blocks": [{"id": "mobile-bridge-v1", "name": "Mobile Bridge v1", "untertitel": "Origin + Typ"}, {"id": "origin-pruefung", "name": "Origin-Pruefung", "untertitel": "fail closed"}, {"id": "typ-groesse", "name": "Typ + Groesse", "untertitel": "begrenzt"}]}, {"name": "App", "farbe": "#6d5bd0", "blocks": [{"id": "kotlin", "name": "Kotlin", "untertitel": "Sprache"}, {"id": "jetpack-compose", "name": "Jetpack Compose", "untertitel": "Oberflaeche"}, {"id": "androidx-webkit", "name": "AndroidX WebKit", "untertitel": "WebView"}]}, {"name": "Audio", "farbe": "#b45309", "blocks": [{"id": "shazamkit", "name": "ShazamKit", "untertitel": "nur nach Klick"}, {"id": "mikrofon", "name": "Mikrofon", "untertitel": "stabil"}, {"id": "webview-pcm-exp", "name": "WebView-PCM (exp.)", "untertitel": "experimentell"}]}, {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": [{"id": "fluechtiger-streamzustand", "name": "fluechtiger Streamzustand", "untertitel": "nicht persistiert"}, {"id": "panel", "name": "Panel", "untertitel": "Anzeige"}, {"id": "apk", "name": "APK", "untertitel": "Android-Artefakt"}]}], "kanten": [{"von": "tiktok-webview", "nach": "mobile-bridge-v1", "art": "fluss"}, {"von": "www-tiktok-com", "nach": "origin-pruefung", "art": "fluss"}, {"von": "hauptframe", "nach": "typ-groesse", "art": "fluss"}, {"von": "mobile-bridge-v1", "nach": "kotlin", "art": "fluss"}, {"von": "origin-pruefung", "nach": "jetpack-compose", "art": "fluss"}, {"von": "typ-groesse", "nach": "androidx-webkit", "art": "fluss"}, {"von": "kotlin", "nach": "shazamkit", "art": "fluss"}, {"von": "jetpack-compose", "nach": "mikrofon", "art": "fluss"}, {"von": "androidx-webkit", "nach": "webview-pcm-exp", "art": "fluss"}, {"von": "shazamkit", "nach": "fluechtiger-streamzustand", "art": "fluss"}, {"von": "mikrofon", "nach": "panel", "art": "fluss"}, {"von": "webview-pcm-exp", "nach": "apk", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#fe2c55", "stil": "voll", "text": "Fluss von unten nach oben"}]};
+  var SPEC = {"schichten": [{"name": "Quelle", "farbe": "#5f6773", "blocks": [{"id": "tiktok-webview", "name": "TikTok-WebView", "untertitel": "Hauptframe"}, {"id": "www-tiktok-com", "name": "www.tiktok.com", "untertitel": "nur diese Origin"}, {"id": "hauptframe", "name": "Hauptframe", "untertitel": "kein iframe"}]}, {"name": "Bruecke", "farbe": "#2481cc", "blocks": [{"id": "mobile-bridge-v1", "name": "Mobile Bridge v1", "untertitel": "Origin + Typ"}, {"id": "origin-pruefung", "name": "Origin-Pruefung", "untertitel": "fail closed"}, {"id": "typ-groesse", "name": "Typ + Groesse", "untertitel": "begrenzt"}]}, {"name": "App", "farbe": "#6d5bd0", "blocks": [{"id": "kotlin", "name": "Kotlin", "untertitel": "Sprache"}, {"id": "jetpack-compose", "name": "Jetpack Compose", "untertitel": "Oberflaeche"}, {"id": "androidx-webkit", "name": "AndroidX WebKit", "untertitel": "WebView"}]}, {"name": "Audio", "farbe": "#b45309", "blocks": [{"id": "shazamkit", "name": "ShazamKit", "untertitel": "nur nach Klick"}, {"id": "mikrofon", "name": "Mikrofon", "untertitel": "stabil"}, {"id": "webview-pcm-exp", "name": "WebView-PCM (exp.)", "untertitel": "experimentell"}]}, {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": [{"id": "fluechtiger-streamzustand", "name": "fluechtiger Streamzustand", "untertitel": "nicht persistiert"}, {"id": "panel", "name": "Panel", "untertitel": "Anzeige"}, {"id": "apk", "name": "APK", "untertitel": "Android-Artefakt"}]}], "kanten": [{"von": "tiktok-webview", "nach": "mobile-bridge-v1", "art": "fluss"}, {"von": "www-tiktok-com", "nach": "origin-pruefung", "art": "fluss"}, {"von": "hauptframe", "nach": "typ-groesse", "art": "fluss"}, {"von": "mobile-bridge-v1", "nach": "kotlin", "art": "fluss"}, {"von": "origin-pruefung", "nach": "jetpack-compose", "art": "fluss"}, {"von": "typ-groesse", "nach": "androidx-webkit", "art": "fluss"}, {"von": "kotlin", "nach": "shazamkit", "art": "fluss"}, {"von": "jetpack-compose", "nach": "mikrofon", "art": "fluss"}, {"von": "androidx-webkit", "nach": "webview-pcm-exp", "art": "fluss"}, {"von": "shazamkit", "nach": "fluechtiger-streamzustand", "art": "fluss"}, {"von": "mikrofon", "nach": "panel", "art": "fluss"}, {"von": "webview-pcm-exp", "nach": "apk", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#fe2c55", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -341,16 +328,26 @@ proc generate_html_content {} {
 </script>
 </body>
 </html>}
-
-    return $content
 }
 
-# Hauptprogramm
-if {$argc != 1} {
-    puts "Verwendung: $argv0 <ausgabedatei>"
-    exit 1
+proc main {argv} {
+    if {[llength $argv] != 1} {
+        puts stderr "Usage: tclsh 3d.tcl <output-file>"
+        exit 1
+    }
+    
+    set outputFile [lindex $argv 0]
+    
+    if {[catch {
+        set htmlContent [generateHTML]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
+        close $fh
+        puts "HTML file generated successfully: $outputFile"
+    } error]} {
+        puts stderr "Error generating HTML file: $error"
+        exit 1
+    }
 }
 
-set output_file [lindex $argv 0]
-write_3d_html $output_file
-puts "HTML-Datei wurde erfolgreich erstellt: $output_file"
+main $argv

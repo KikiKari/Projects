@@ -1,12 +1,16 @@
 #!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
+# 3d_44b946.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_44b946.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach Tcl
 # Quelle: html, Projects@Vision-Check:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl/Tk port of the 3D Vision-Check HTML application
-# This script generates the HTML file with embedded JavaScript
+# Tcl benötigt keine expliziten Imports wie require('fs') in Node.js
+# File-Operationen sind direkt über Tcl-Befehle verfügbar
 
-proc generateHtml {filename} {
+proc generateHTML {outputPath} {
     set html {<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -329,16 +333,18 @@ proc generateHtml {filename} {
 </body>
 </html>}
 
-    set f [open $filename w]
-    puts $f $html
-    close $f
+    # Schreibe den HTML-String in die Datei
+    set fileId [open $outputPath "w"]
+    puts -nonewline $fileId $html
+    close $fileId
+    
+    puts "HTML file generated: $outputPath"
 }
 
 # Main execution
-if {$argc != 1} {
-    puts "Usage: $argv0 <output-file>"
-    exit 1
+# Prüfe, ob das Skript direkt aufgerufen wird (nicht als Modul geladen)
+if {[info script] eq $argv0} {
+    # Standard-Ausgabedatei, falls kein Argument übergeben wird
+    set outputPath [expr {[llength $argv] > 0 ? [lindex $argv 0] : "3d.html"}]
+    generateHTML $outputPath
 }
-
-set outputFile [lindex $argv 0]
-generateHtml $outputFile

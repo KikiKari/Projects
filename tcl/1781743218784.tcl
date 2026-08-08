@@ -1,24 +1,13 @@
 #!/usr/bin/env tclsh
-# 1781743218784.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# 1781743218784.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: tclsh this_script.tcl output_file.html
+package require Tcl 8.6
 
-if {$argc != 1} {
-    puts "Usage: tclsh [info script] output_file.html"
-    exit 1
-}
-
-set output_file [lindex $argv 0]
-
-set fp [open $output_file w]
-
-# Write DOCTYPE and main script tag
-puts $fp {<!DOCTYPE html>}
-puts $fp {<script type="application/json" id="cowork-artifact-meta">}
-puts $fp {
+proc generateHTML {} {
+    set html {<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
   "schemaVersion": 1,
@@ -26,17 +15,14 @@ puts $fp {
   "mcpTools": [],
   "mcpServerNames": []
 }
-}
-puts $fp {</script>}
-
-# Write HTML start and head section
-puts $fp {<html lang="de">}
-puts $fp {<head>}
-puts $fp {<meta charset="utf-8">}
-puts $fp {<meta name="viewport" content="width=device-width, initial-scale=1">}
-puts $fp {<title>Secret-Vault Public</title>}
-puts $fp {<style>}
-puts $fp {:root{ color-scheme:light; --ink:#1b1c1f; --muted:#6c6e75; --faint:#9a9ca3; --card:#fff; --line:#e9eaee; --accent:#5b5bd6; --accent2:#7c5cff; --ok:#22a06b; --err:#e0533d; --radius:16px; --shadow:0 1px 2px rgba(20,20,40,.04),0 6px 20px rgba(20,20,40,.06);}
+</script>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secret-Vault Public</title>
+<style>
+:root{ color-scheme:light; --ink:#1b1c1f; --muted:#6c6e75; --faint:#9a9ca3; --card:#fff; --line:#e9eaee; --accent:#5b5bd6; --accent2:#7c5cff; --ok:#22a06b; --err:#e0533d; --radius:16px; --shadow:0 1px 2px rgba(20,20,40,.04),0 6px 20px rgba(20,20,40,.06);}
 *{box-sizing:border-box;}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;background:radial-gradient(1100px 560px at 100% -10%,#e8ecff 0%,rgba(232,236,255,0) 55%),linear-gradient(180deg,#eef1f6,#f7f7f8 42%);background-attachment:fixed;}
 .wrap{max-width:820px;margin:0 auto;padding:24px 18px 70px;}
@@ -66,18 +52,13 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 .hide{display:none;}
 .foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:18px;line-height:1.5;}
 a{color:var(--accent);}
-}
-puts $fp {</style>}
-puts $fp {</head>}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
+  <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
 
-# Write body content
-puts $fp {<body>}
-puts $fp {<div class="wrap">}
-puts $fp {  <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>}
-puts $fp {  <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>}
-
-# Card: Open or new
-puts $fp {
   <div class="card">
     <h2 id="h-open">Öffnen oder neu</h2>
     <label class="lab" id="l-pass">Passphrase</label>
@@ -91,10 +72,7 @@ puts $fp {
       <span class="msg" id="openMsg"></span>
     </div>
   </div>
-}
 
-# Card: Editor (hidden by default)
-puts $fp {
   <div class="card hide" id="editor">
     <h2 id="h-edit">Inhalt</h2>
     <div id="provs"></div>
@@ -103,10 +81,7 @@ puts $fp {
       <button class="btn sm" id="addProvBtn">+ Anbieter</button>
     </div>
   </div>
-}
 
-# Card: Save/Export (hidden by default)
-puts $fp {
   <div class="card hide" id="out">
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
@@ -118,15 +93,11 @@ puts $fp {
     <label class="lab" id="l-result">Ergebnis (zum Kopieren/Speichern)</label>
     <textarea id="result" readonly></textarea>
   </div>
-}
 
-# Footer
-puts $fp {  <div class="foot" id="foot"></div>}
-puts $fp {</div>}
+  <div class="foot" id="foot"></div>
+</div>
 
-# JavaScript section
-puts $fp {<script>}
-puts $fp {
+<script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
@@ -205,43 +176,4 @@ function renderEditor(){
     let rows="";
     Object.keys(P[name]).forEach(k=>{ rows+=`<div class="kv"><span class="k">${esc(k)}</span><input data-p="${esc(name)}" data-k="${esc(k)}" value="${esc(P[name][k])}"><button class="btn sm" data-del="${esc(name)}|${esc(k)}">${tr("del")}</button></div>`; });
     d.innerHTML=`<h3>${esc(name)} <button class="btn sm" data-delp="${esc(name)}">${tr("del")}</button></h3>${rows}
-      <div class="row" style="margin-top:6px"><input class="nf" data-np="${esc(name)}" placeholder="${tr("newField")}" style="max-width:180px"><input class="nv" data-np="${esc(name)}" placeholder="${tr("newValue")}" style="max-width:260px"><button class="btn sm" data-addf="${esc(name)}">${tr("addField")}</button></div>`;
-    root.appendChild(d);
-  });
-  root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
-  root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
-  root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
-}
-
-document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
-openBtn.onclick=async()=>{
-  const m=document.getElementById("openMsg"); m.className="msg"; m.textContent="";
-  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
-  if(!blob.value.trim()){ m.className="msg err"; m.textContent=tr("noInput"); return; }
-  try{ VAULT=await decryptB64(blob.value,pass.value); if(!VAULT.providers)VAULT.providers={}; renderEditor(); m.className="msg ok"; m.textContent=tr("opened"); }
-  catch(err){ m.className="msg err"; m.textContent=tr("bad"); }
-};
-newBtn.onclick=()=>{
-  const m=document.getElementById("openMsg");
-  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
-  VAULT={meta:{created:new Date().toISOString().slice(0,10),format:"SVPB1"},providers:{}}; renderEditor();
-  m.className="msg ok"; m.textContent=tr("created");
-};
-addProvBtn.onclick=()=>{ if(!VAULT){ return; } const n=newProv.value.trim(); if(n){ VAULT.providers[n]=VAULT.providers[n]||{}; newProv.value=""; renderEditor(); } };
-encBtn.onclick=async()=>{
-  const m=document.getElementById("saveMsg"); m.className="msg";
-  if(!VAULT){ m.className="msg err"; m.textContent=tr("needOpen"); return; }
-  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
-  result.value=await encryptObj(VAULT,pass.value); m.className="msg ok"; m.textContent=tr("encrypted");
-};
-dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value],{type:"text/plain"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download="vault.svpb"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} };
-expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
-}
-puts $fp {</script>}
-puts $fp {</body>}
-puts $fp {</html>}
-
-close $fp
-
-puts "HTML file generated: $output_file"
+      <div class="row" style="margin-top:6

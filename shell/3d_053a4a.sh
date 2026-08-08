@@ -1,19 +1,16 @@
-#!/bin/bash
-# 3d.html — portiert nach shell
-# Quelle: html, Projects@python-hardener:public/3d.html
+#!/usr/bin/env bash
+# 3d_053a4a.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter: Ausgabedatei
-if [[ $# -ne 1 ]]; then
-  echo "Aufruf: $0 <ausgabedatei.html>" >&2
-  exit 1
-fi
-ausgabedatei="$1"
+# 3d.html — portiert nach bash
+# Quelle: html, Projects@python-hardener:public/3d.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# HTML-Dokument erzeugen
-cat > "$ausgabedatei" << 'HTML_ANFANG'
+generateHTML() {
+  cat <<'HTML_END'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -335,6 +332,19 @@ cat > "$ausgabedatei" << 'HTML_ANFANG'
 </script>
 </body>
 </html>
-HTML_ANFANG
+HTML_END
+}
 
-echo "HTML-Dokument wurde in '$ausgabedatei' gespeichert."
+main() {
+  if [ $# -ne 1 ]; then
+    echo 'Usage: bash 3d.sh <output-file>' >&2
+    exit 1
+  fi
+
+  local outputFile="$1"
+
+  generateHTML > "$outputFile"
+  echo "HTML file generated successfully: $outputFile"
+}
+
+main "$@"

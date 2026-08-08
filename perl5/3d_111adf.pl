@@ -1,25 +1,132 @@
 #!/usr/bin/perl
-# 3d.html — portiert nach perl5
-# Quelle: html, Projects@Weather-Check:public/3d.html
+# 3d_111adf.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/3d_111adf.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use JSON;
 
-# Parameter: Ausgabedatei
-my $ausgabe_datei = $ARGV[0] || die "Verwendung: $0 <ausgabedatei>\n";
+sub create_html_document {
+    my $doc = {
+        html => undef,
+        head => undef,
+        body => undef,
+        createElement => sub {
+            my ($tag) = @_;
+            return { tag => $tag, attrs => {}, children => [], textContent => '' };
+        },
+        createTextNode => sub {
+            my ($text) = @_;
+            return { text => $text };
+        }
+    };
 
-# HTML-Struktur erzeugen
-my $html = <<'HTML_HEAD';
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Weather-Check — Interaktive Architektur</title>
-<meta name="description" content="Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#2481cc">
-<style>
+    $doc->{html} = $doc->{createElement}->('html');
+    $doc->{html}->{attrs}->{lang} = 'de';
+    
+    $doc->{head} = $doc->{createElement}->('head');
+    $doc->{body} = $doc->{createElement}->('body');
+    
+    push @{$doc->{html}->{children}}, $doc->{head};
+    push @{$doc->{html}->{children}}, $doc->{body};
+    
+    return $doc;
+}
+
+sub append_child {
+    my ($parent, $child) = @_;
+    unless (exists $parent->{children}) {
+        $parent->{children} = [];
+    }
+    push @{$parent->{children}}, $child;
+}
+
+sub set_attribute {
+    my ($element, $name, $value) = @_;
+    unless (exists $element->{attrs}) {
+        $element->{attrs} = {};
+    }
+    $element->{attrs}->{$name} = $value;
+}
+
+sub insert_adjacent_html {
+    my ($element, $position, $html) = @_;
+    if ($position eq 'beforeend') {
+        unless (exists $element->{children}) {
+            $element->{children} = [];
+        }
+        push @{$element->{children}}, { html => $html };
+    }
+}
+
+sub generate_html {
+    my ($node) = @_;
+    
+    if (exists $node->{text}) {
+        return $node->{text};
+    }
+    
+    if (exists $node->{html}) {
+        return $node->{html};
+    }
+    
+    my $attrs = '';
+    if (exists $node->{attrs}) {
+        for my $key (keys %{$node->{attrs}}) {
+            my $value = $node->{attrs}->{$key};
+            $attrs .= " $key=\"$value\"";
+        }
+    }
+    
+    if (exists $node->{children} && @{$node->{children}} > 0) {
+        my $children_html = '';
+        for my $child (@{$node->{children}}) {
+            $children_html .= generate_html($child);
+        }
+        return "<$node->{tag}$attrs>$children_html</$node->{tag}>";
+    } else {
+        return "<$node->{tag}$attrs></$node->{tag}>";
+    }
+}
+
+sub generate_full_html {
+    my ($doc) = @_;
+    my $doctype = '<!DOCTYPE html>';
+    my $html_content = generate_html($doc->{html});
+    return "$doctype\n$html_content";
+}
+
+sub build_document {
+    my $doc = create_html_document();
+    
+    # Build head section
+    my $meta_charset = $doc->{createElement}->('meta');
+    set_attribute($meta_charset, 'charset', 'utf-8');
+    append_child($doc->{head}, $meta_charset);
+    
+    my $meta_viewport = $doc->{createElement}->('meta');
+    set_attribute($meta_viewport, 'name', 'viewport');
+    set_attribute($meta_viewport, 'content', 'width=device-width, initial-scale=1');
+    append_child($doc->{head}, $meta_viewport);
+    
+    my $title = $doc->{createElement}->('title');
+    $title->{textContent} = 'Weather-Check — Interaktive Architektur';
+    append_child($doc->{head}, $title);
+    
+    my $meta_description = $doc->{createElement}->('meta');
+    set_attribute($meta_description, 'name', 'description');
+    set_attribute($meta_description, 'content', 'Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.');
+    append_child($doc->{head}, $meta_description);
+    
+    my $meta_theme_color = $doc->{createElement}->('meta');
+    set_attribute($meta_theme_color, 'name', 'theme-color');
+    set_attribute($meta_theme_color, 'content', '#2481cc');
+    append_child($doc->{head}, $meta_theme_color);
+    
+    my $style = $doc->{createElement}->('style');
+    $style->{textContent} = <<'CSS';
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#2481cc; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -64,45 +171,141 @@ my $html = <<'HTML_HEAD';
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <p class="technik">three.js · r128</p>
-  <h1>Weather-Check</h1>
-  <p class="lede">Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.</p>
-
-  <div class="raster">
-    <div class="buehne" id="buehne">
-      <div class="knoepfe">
-        <button id="btn-plus" title="Näher">+</button>
-        <button id="btn-minus" title="Weiter weg">−</button>
-        <button id="btn-reset">Zurücksetzen</button>
-        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
-      </div>
-    </div>
-
-    <aside class="karte">
-      <h2>Ausgewählter Knoten</h2>
-      <h3 id="k-name">—</h3>
-      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
-      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
-      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
-      <div class="blaettern">
-        <button id="btn-prev">←<br>Vorheriger</button>
-        <button id="btn-next">Nächster<br>→</button>
-      </div>
-    </aside>
-  </div>
-
-  <div class="legende" id="legende"></div>
-  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
+CSS
+    append_child($doc->{head}, $style);
+    
+    # Build body section
+    my $wrap = $doc->{createElement}->('div');
+    set_attribute($wrap, 'class', 'wrap');
+    append_child($doc->{body}, $wrap);
+    
+    my $technik = $doc->{createElement}->('p');
+    set_attribute($technik, 'class', 'technik');
+    $technik->{textContent} = 'three.js · r128';
+    append_child($wrap, $technik);
+    
+    my $h1 = $doc->{createElement}->('h1');
+    $h1->{textContent} = 'Weather-Check';
+    append_child($wrap, $h1);
+    
+    my $lede = $doc->{createElement}->('p');
+    set_attribute($lede, 'class', 'lede');
+    $lede->{textContent} = 'Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.';
+    append_child($wrap, $lede);
+    
+    my $raster = $doc->{createElement}->('div');
+    set_attribute($raster, 'class', 'raster');
+    append_child($wrap, $raster);
+    
+    my $buehne = $doc->{createElement}->('div');
+    set_attribute($buehne, 'class', 'buehne');
+    set_attribute($buehne, 'id', 'buehne');
+    append_child($raster, $buehne);
+    
+    my $knoepfe = $doc->{createElement}->('div');
+    set_attribute($knoepfe, 'class', 'knoepfe');
+    append_child($buehne, $knoepfe);
+    
+    my $btn_plus = $doc->{createElement}->('button');
+    set_attribute($btn_plus, 'id', 'btn-plus');
+    set_attribute($btn_plus, 'title', 'Näher');
+    $btn_plus->{textContent} = '+';
+    append_child($knoepfe, $btn_plus);
+    
+    my $btn_minus = $doc->{createElement}->('button');
+    set_attribute($btn_minus, 'id', 'btn-minus');
+    set_attribute($btn_minus, 'title', 'Weiter weg');
+    $btn_minus->{textContent} = '−';
+    append_child($knoepfe, $btn_minus);
+    
+    my $btn_reset = $doc->{createElement}->('button');
+    set_attribute($btn_reset, 'id', 'btn-reset');
+    $btn_reset->{textContent} = 'Zurücksetzen';
+    append_child($knoepfe, $btn_reset);
+    
+    my $btn_iso = $doc->{createElement}->('button');
+    set_attribute($btn_iso, 'id', 'btn-iso');
+    set_attribute($btn_iso, 'aria-pressed', 'true');
+    set_attribute($btn_iso, 'title', 'Isometrisch oder perspektivisch');
+    $btn_iso->{textContent} = 'Iso';
+    append_child($knoepfe, $btn_iso);
+    
+    my $karte = $doc->{createElement}->('aside');
+    set_attribute($karte, 'class', 'karte');
+    append_child($raster, $karte);
+    
+    my $karte_h2 = $doc->{createElement}->('h2');
+    $karte_h2->{textContent} = 'Ausgewählter Knoten';
+    append_child($karte, $karte_h2);
+    
+    my $k_name = $doc->{createElement}->('h3');
+    set_attribute($k_name, 'id', 'k-name');
+    $k_name->{textContent} = '—';
+    append_child($karte, $k_name);
+    
+    my $k_sub = $doc->{createElement}->('p');
+    set_attribute($k_sub, 'class', 'sub');
+    set_attribute($k_sub, 'id', 'k-sub');
+    $k_sub->{textContent} = 'Knoten anklicken oder durchblättern';
+    append_child($karte, $k_sub);
+    
+    my $feld1 = $doc->{createElement}->('dl');
+    set_attribute($feld1, 'class', 'feld');
+    append_child($karte, $feld1);
+    
+    my $feld1_dt = $doc->{createElement}->('dt');
+    $feld1_dt->{textContent} = 'Schicht';
+    append_child($feld1, $feld1_dt);
+    
+    my $feld1_dd = $doc->{createElement}->('dd');
+    set_attribute($feld1_dd, 'id', 'k-schicht');
+    $feld1_dd->{textContent} = '—';
+    append_child($feld1, $feld1_dd);
+    
+    my $feld2 = $doc->{createElement}->('dl');
+    set_attribute($feld2, 'class', 'feld');
+    append_child($karte, $feld2);
+    
+    my $feld2_dt = $doc->{createElement}->('dt');
+    $feld2_dt->{textContent} = 'ID';
+    append_child($feld2, $feld2_dt);
+    
+    my $feld2_dd = $doc->{createElement}->('dd');
+    set_attribute($feld2_dd, 'id', 'k-id');
+    $feld2_dd->{textContent} = '—';
+    append_child($feld2, $feld2_dd);
+    
+    my $blaettern = $doc->{createElement}->('div');
+    set_attribute($blaettern, 'class', 'blaettern');
+    append_child($karte, $blaettern);
+    
+    my $btn_prev = $doc->{createElement}->('button');
+    set_attribute($btn_prev, 'id', 'btn-prev');
+    $btn_prev->{innerHTML} = '←<br>Vorheriger';
+    append_child($blaettern, $btn_prev);
+    
+    my $btn_next = $doc->{createElement}->('button');
+    set_attribute($btn_next, 'id', 'btn-next');
+    $btn_next->{innerHTML} = 'Nächster<br>→';
+    append_child($blaettern, $btn_next);
+    
+    my $legende = $doc->{createElement}->('div');
+    set_attribute($legende, 'class', 'legende');
+    set_attribute($legende, 'id', 'legende');
+    append_child($wrap, $legende);
+    
+    my $fuss = $doc->{createElement}->('p');
+    set_attribute($fuss, 'class', 'fuss');
+    $fuss->{textContent} = 'Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.';
+    append_child($wrap, $fuss);
+    
+    # Add scripts
+    my $script1 = $doc->{createElement}->('script');
+    set_attribute($script1, 'src', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
+    append_child($doc->{body}, $script1);
+    
+    my $script2 = $doc->{createElement}->('script');
+    $script2->{textContent} = <<'JAVASCRIPT';
 (function(){
   "use strict";
   var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "dwd-radar", "name": "DWD-Radar", "untertitel": "Zugbahn"}, {"id": "messstationen", "name": "Messstationen", "untertitel": "Ist-Wert"}, {"id": "open-meteo", "name": "Open-Meteo", "untertitel": "Minutenwerte"}, {"id": "satellit", "name": "Satellit", "untertitel": "Bewoelkung"}, {"id": "webcams", "name": "Webcams", "untertitel": "Sichtpruefung"}, {"id": "handyfoto", "name": "Handyfoto", "untertitel": "Wolkenbasis"}]}, {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": [{"id": "zugbahn", "name": "Zugbahn", "untertitel": "extrapoliert"}, {"id": "gewichtung", "name": "Gewichtung", "untertitel": "je Quelle"}, {"id": "widerspruchspruefung", "name": "Widerspruchspruefung", "untertitel": "benennen statt mitteln"}]}, {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": [{"id": "30-min", "name": "30 min", "untertitel": "hohe Sicherheit"}, {"id": "60-min", "name": "60 min", "untertitel": "mittel"}, {"id": "120-min", "name": "120 min", "untertitel": "grob"}]}, {"name": "Ausgabe", "farbe": "#0f766e", "blocks": [{"id": "pwa", "name": "PWA", "untertitel": "Service Worker"}, {"id": "computer-prompt", "name": "Computer-Prompt", "untertitel": "Perplexity"}, {"id": "handlungssatz", "name": "Handlungssatz", "untertitel": "eine Entscheidung"}]}], "kanten": [{"von": "dwd-radar", "nach": "zugbahn", "art": "fluss"}, {"von": "messstationen", "nach": "gewichtung", "art": "fluss"}, {"von": "open-meteo", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "satellit", "nach": "zugbahn", "art": "fluss"}, {"von": "webcams", "nach": "gewichtung", "art": "fluss"}, {"von": "handyfoto", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "zugbahn", "nach": "30-min", "art": "fluss"}, {"von": "gewichtung", "nach": "60-min", "art": "fluss"}, {"von": "widerspruchspruefung", "nach": "120-min", "art": "fluss"}, {"von": "30-min", "nach": "pwa", "art": "fluss"}, {"von": "60-min", "nach": "computer-prompt", "art": "fluss"}, {"von": "120-min", "nach": "handlungssatz", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#2481cc", "stil": "voll", "text": "Fluss von unten nach oben"}]};
@@ -329,14 +532,32 @@ my $html = <<'HTML_HEAD';
     renderer.render(szene, kamera);
   })();
 })();
-</script>
-</body>
-</html>
-HTML_HEAD
+JAVASCRIPT
+    append_child($doc->{body}, $script2);
+    
+    return $doc;
+}
 
-# In Datei schreiben
-open my $fh, '>', $ausgabe_datei or die "Kann Datei '$ausgabe_datei' nicht öffnen: $!\n";
-print $fh $html;
-close $fh;
+sub main {
+    my @args = @ARGV;
+    
+    if (@args != 1) {
+        print STDERR "Usage: perl script.pl <output-file>\n";
+        exit 1;
+    }
+    
+    my $output_file = $args[0];
+    my $doc = build_document();
+    my $html_content = generate_full_html($doc);
+    
+    open(my $fh, '>:encoding(UTF-8)', $output_file) or do {
+        print STDERR "Error writing file: $!\n";
+        exit 1;
+    };
+    print $fh $html_content;
+    close($fh);
+    
+    print "HTML file generated successfully: $output_file\n";
+}
 
-print "HTML-Datei erfolgreich erstellt: $ausgabe_datei\n";
+main();

@@ -1,13 +1,22 @@
 #!/usr/bin/env node
-// 3d.html — portiert nach javascript
+// 3d_053a4a.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/3d_053a4a.pl
+// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+// 3d.html — portiert nach JavaScript für Node 20
 // Quelle: html, Projects@python-hardener:public/3d.html
 // Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
-function generateHTML() {
-  const html = `<!DOCTYPE html>
+// Parameter: Ausgabedatei
+const ausgabe_datei = process.argv[2] || (() => {
+    console.error(`Verwendung: ${process.argv[1]} <ausgabedatei>`);
+    process.exit(1);
+})();
+
+// HTML-Dokument erzeugen
+const htmlContent = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -329,27 +338,6 @@ function generateHTML() {
 </body>
 </html>`;
 
-  return html;
-}
+fs.writeFileSync(ausgabe_datei, htmlContent);
 
-function main() {
-  const args = process.argv.slice(2);
-  
-  if (args.length !== 1) {
-    console.error('Usage: node 3d.js <output-file>');
-    process.exit(1);
-  }
-  
-  const outputFile = args[0];
-  
-  try {
-    const htmlContent = generateHTML();
-    fs.writeFileSync(outputFile, htmlContent, 'utf8');
-    console.log(`HTML file generated successfully: ${outputFile}`);
-  } catch (error) {
-    console.error('Error generating HTML file:', error.message);
-    process.exit(1);
-  }
-}
-
-main();
+console.log(`HTML-Datei wurde erfolgreich erstellt: ${ausgabe_datei}`);

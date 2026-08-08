@@ -1,32 +1,20 @@
 #!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
-# Quelle: html, Projects@python-hardener:public/3d.html
+# 3d_053a4a.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl 8.6 script to generate 3d.html
-# Usage: tclsh this_script.tcl > 3d.html
+package require Tcl 8.6
 
-# This script generates the complete HTML document programmatically
-# rather than embedding it as a string literal.
-
-proc generate_html {} {
-    set html [list]
-    
-    # DOCTYPE and html tag
-    lappend html {<!DOCTYPE html>}
-    lappend html {<html lang="de">}
-    
-    # Head section
-    lappend html {<head>}
-    lappend html {<meta charset="utf-8">}
-    lappend html {<meta name="viewport" content="width=device-width, initial-scale=1">}
-    lappend html {<title>Python Hardener — Interaktive Architektur</title>}
-    lappend html {<meta name="description" content="Der Messplatz: zwei Läufe, dieselben Behauptungen, ein Ergebnis — drehen, zoomen, Knoten auswählen.">}
-    lappend html {<meta name="theme-color" content="#b45309">}
-    
-    # CSS styles
-    lappend html {<style>}
-    lappend html {
+proc generateHTML {} {
+    set html {<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python Hardener — Interaktive Architektur</title>
+<meta name="description" content="Der Messplatz: zwei Läufe, dieselben Behauptungen, ein Ergebnis — drehen, zoomen, Knoten auswählen.">
+<meta name="theme-color" content="#b45309">
+<style>
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#b45309; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -71,52 +59,46 @@ proc generate_html {} {
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-}
-    lappend html {</style>}
-    lappend html {</head>}
-    
-    # Body section
-    lappend html {<body>}
-    lappend html {<div class="wrap">}
-    
-    lappend html {<p class="technik">three.js · r128</p>}
-    lappend html {<h1>Python Hardener</h1>}
-    lappend html {<p class="lede">Der Messplatz: zwei Läufe, dieselben Behauptungen, ein Ergebnis — drehen, zoomen, Knoten auswählen.</p>}
-    
-    lappend html {<div class="raster">}
-    lappend html {<div class="buehne" id="buehne">}
-    lappend html {<div class="knoepfe">}
-    lappend html {<button id="btn-plus" title="Näher">+</button>}
-    lappend html {<button id="btn-minus" title="Weiter weg">−</button>}
-    lappend html {<button id="btn-reset">Zurücksetzen</button>}
-    lappend html {<button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>}
-    lappend html {</div>}
-    lappend html {</div>}
-    
-    lappend html {<aside class="karte">}
-    lappend html {<h2>Ausgewählter Knoten</h2>}
-    lappend html {<h3 id="k-name">—</h3>}
-    lappend html {<p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>}
-    lappend html {<dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>}
-    lappend html {<dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>}
-    lappend html {<div class="blaettern">}
-    lappend html {<button id="btn-prev">←<br>Vorheriger</button>}
-    lappend html {<button id="btn-next">Nächster<br>→</button>}
-    lappend html {</div>}
-    lappend html {</aside>}
-    lappend html {</div>}
-    
-    lappend html {<div class="legende" id="legende"></div>}
-    lappend html {<p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>}
-    
-    lappend html {</div>}
-    
-    # External script
-    lappend html {<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>}
-    
-    # Inline script
-    lappend html {<script>}
-    lappend html {(function(){
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="technik">three.js · r128</p>
+  <h1>Python Hardener</h1>
+  <p class="lede">Der Messplatz: zwei Läufe, dieselben Behauptungen, ein Ergebnis — drehen, zoomen, Knoten auswählen.</p>
+
+  <div class="raster">
+    <div class="buehne" id="buehne">
+      <div class="knoepfe">
+        <button id="btn-plus" title="Näher">+</button>
+        <button id="btn-minus" title="Weiter weg">−</button>
+        <button id="btn-reset">Zurücksetzen</button>
+        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
+      </div>
+    </div>
+
+    <aside class="karte">
+      <h2>Ausgewählter Knoten</h2>
+      <h3 id="k-name">—</h3>
+      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
+      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
+      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
+      <div class="blaettern">
+        <button id="btn-prev">←<br>Vorheriger</button>
+        <button id="btn-next">Nächster<br>→</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="legende" id="legende"></div>
+  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
   "use strict";
   var SPEC = {"schichten": [{"name": "Eingaben", "farbe": "#5f6773", "blocks": [{"id": "job-runner-py", "name": "job_runner.py", "untertitel": "Cronjob"}, {"id": "report-db-py", "name": "report_db.py", "untertitel": "SQL"}]}, {"name": "Laeufe", "farbe": "#2481cc", "blocks": [{"id": "with-skill", "name": "with_skill", "untertitel": "mit Skill"}, {"id": "without-skill", "name": "without_skill", "untertitel": "Gegenprobe"}]}, {"name": "Pruefung", "farbe": "#6d5bd0", "blocks": [{"id": "ast-assertions", "name": "AST-Assertions", "untertitel": "Syntaxbaum"}, {"id": "not-contains", "name": "not_contains", "untertitel": "Textregel"}, {"id": "grading", "name": "Grading", "untertitel": "je Behauptung"}]}, {"name": "Ergebnis", "farbe": "#b45309", "blocks": [{"id": "benchmark-json", "name": "benchmark.json", "untertitel": "pass_rate"}, {"id": "timing-json", "name": "timing.json", "untertitel": "Laufzeit"}, {"id": "eval-review-html", "name": "eval-review.html", "untertitel": "Gegenueberstellung"}]}], "kanten": [{"von": "job-runner-py", "nach": "with-skill", "art": "fluss"}, {"von": "report-db-py", "nach": "without-skill", "art": "fluss"}, {"von": "with-skill", "nach": "ast-assertions", "art": "fluss"}, {"von": "without-skill", "nach": "not-contains", "art": "fluss"}, {"von": "ast-assertions", "nach": "benchmark-json", "art": "fluss"}, {"von": "not-contains", "nach": "timing-json", "art": "fluss"}, {"von": "grading", "nach": "eval-review-html", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#b45309", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
@@ -342,14 +324,33 @@ proc generate_html {} {
     renderer.render(szene, kamera);
   })();
 })();
-}
-    lappend html {</script>}
-    lappend html {</body>}
-    lappend html {</html>}
+</script>
+</body>
+</html>}
     
-    # Join all lines with newlines
-    return [join $html "\n"]
+    return $html
 }
 
-# Main execution
-puts [generate_html]
+proc main {} {
+    global argv
+    
+    if {[llength $argv] != 1} {
+        puts stderr "Usage: tclsh 3d.tcl <output-file>"
+        exit 1
+    }
+    
+    set outputFile [lindex $argv 0]
+    
+    try {
+        set htmlContent [generateHTML]
+        set fileId [open $outputFile "w"]
+        puts -nonewline $fileId $htmlContent
+        close $fileId
+        puts "HTML file generated successfully: $outputFile"
+    } on error {error} {
+        puts stderr "Error generating HTML file: $error"
+        exit 1
+    }
+}
+
+main

@@ -1,16 +1,13 @@
 #!/usr/bin/env node
-// 3d.html — portiert nach javascript
-// Quelle: html, Projects@TikTok-Live-Companion-iOS:public/3d.html
+// 3d_31a461.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/3d_31a461.pl
 // Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync } from 'fs';
-import { createRequire } from 'module';
+const fs = require('fs');
 
-const require = createRequire(import.meta.url);
-const THREE = require('three');
+const outputFile = process.argv[2] || '3d.html';
 
-function generateHTML() {
-  return `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -331,13 +328,7 @@ function generateHTML() {
 </script>
 </body>
 </html>`;
-}
 
-function main() {
-  const outputFile = process.argv[2] || '3d.html';
-  const htmlContent = generateHTML();
-  writeFileSync(outputFile, htmlContent, 'utf8');
-  console.log(`HTML file generated: ${outputFile}`);
-}
+fs.writeFileSync(outputFile, htmlContent);
 
-main();
+console.log(`HTML file generated: ${outputFile}`);

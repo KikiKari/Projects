@@ -1,19 +1,16 @@
 #!/bin/bash
-# 3d.html — portiert nach shell
-# Quelle: html, Projects@MCP-Server-Monitor:public/3d.html
+# 3d.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/3d.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Dieses Skript erzeugt die 3d.html-Datei mit dem interaktiven 3D-Visualisierer
-# für die MCP-Server-Architektur. Es akzeptiert einen optionalen Parameter
-# für den Ausgabepfad, standardmäßig wird in die aktuelle Arbeitsdatei geschrieben.
+# 3d.html — portiert nach bash
+# Quelle: html, Projects@MCP-Server-Monitor:public/3d.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Standard-Ausgabedatei
-output_file="${1:-3d.html}"
-
-# Erzeuge das HTML-Dokument
-cat > "$output_file" << 'EOF'
+generate_html() {
+  cat <<'EOF'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -336,5 +333,20 @@ cat > "$output_file" << 'EOF'
 </body>
 </html>
 EOF
+}
 
-echo "HTML-Datei wurde erfolgreich erstellt: $output_file"
+main() {
+  local args=("$@")
+  
+  if [ ${#args[@]} -ne 1 ]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+  fi
+  
+  local output_file="${args[0]}"
+  
+  generate_html > "$output_file"
+  echo "HTML file generated successfully: $output_file"
+}
+
+main "$@"

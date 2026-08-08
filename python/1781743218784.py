@@ -1,40 +1,21 @@
 #!/usr/bin/env python3
-# 1781743218784.html — portiert nach python
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# -*- coding: utf-8 -*-
-"""
-Generiert die HTML-Datei für das Secret-Vault Public Tool.
-"""
-
-import json
-import base64
-import os
 import sys
-from datetime import datetime
+import os
 
-def generate_html(output_file):
-    """
-    Generiert die vollständige HTML-Datei für das Secret-Vault Public Tool.
-    
-    Args:
-        output_file (str): Pfad zur Ausgabedatei
-    """
-    
-    # Metadaten des Artefakts
-    artifact_meta = {
-        "name": "Secret Vault Public",
-        "schemaVersion": 1,
-        "description": "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
-        "mcpTools": [],
-        "mcpServerNames": []
-    }
-    
-    # HTML-Template mit eingebetteten Styles und JavaScript
-    html_content = '''<!DOCTYPE html>
+def generateHTML():
+    html = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
-''' + json.dumps(artifact_meta, indent=2, ensure_ascii=False) + '''
+{
+  "name": "Secret Vault Public",
+  "schemaVersion": 1,
+  "description": "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
+  "mcpTools": [],
+  "mcpServerNames": []
+}
 </script>
 <html lang="de">
 <head>
@@ -231,21 +212,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>'''
-    
-    # Schreibe die HTML-Datei
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    
-    print(f"HTML-Datei erfolgreich generiert: {output_file}")
+
+    return html
 
 def main():
-    """Hauptfunktion"""
-    if len(sys.argv) != 2:
-        print("Verwendung: python script.py <ausgabedatei.html>")
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print('Usage: python3 script.py <output-file>', file=sys.stderr)
         sys.exit(1)
     
-    output_file = sys.argv[1]
-    generate_html(output_file)
+    output_file = args[0]
+    
+    try:
+        html_content = generateHTML()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f'HTML file generated: {output_file}')
+    except Exception as error:
+        print(f'Error generating HTML file: {error}', file=sys.stderr)
+        sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -1,21 +1,99 @@
 #!/usr/bin/env python3
-# 3d.html — portiert nach python
-# Quelle: html, Projects@Weather-Check:public/3d.html
+# 3d_111adf.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/3d_111adf.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
-def generate_html(output_file):
-    html_content = '''<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Weather-Check — Interaktive Architektur</title>
-<meta name="description" content="Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#2481cc">
-<style>
+def create_html_document():
+    doc = {
+        'html': None,
+        'head': None,
+        'body': None,
+        'createElement': lambda tag: {'tag': tag, 'attrs': {}, 'children': [], 'textContent': ''},
+        'createTextNode': lambda text: {'text': text}
+    }
+
+    doc['html'] = doc['createElement']('html')
+    doc['html']['attrs']['lang'] = 'de'
+    
+    doc['head'] = doc['createElement']('head')
+    doc['body'] = doc['createElement']('body')
+    
+    doc['html']['children'].append(doc['head'])
+    doc['html']['children'].append(doc['body'])
+    
+    return doc
+
+def append_child(parent, child):
+    if 'children' not in parent:
+        parent['children'] = []
+    parent['children'].append(child)
+
+def set_attribute(element, name, value):
+    if 'attrs' not in element:
+        element['attrs'] = {}
+    element['attrs'][name] = value
+
+def insert_adjacent_html(element, position, html):
+    if position == 'beforeend':
+        if 'children' not in element:
+            element['children'] = []
+        element['children'].append({'html': html})
+
+def generate_html(node):
+    if 'text' in node:
+        return node['text']
+    
+    if 'html' in node:
+        return node['html']
+    
+    attrs = ''
+    if 'attrs' in node:
+        for key, value in node['attrs'].items():
+            attrs += f' {key}="{value}"'
+    
+    if 'children' in node and len(node['children']) > 0:
+        children_html = ''.join(generate_html(child) for child in node['children'])
+        return f"<{node['tag']}{attrs}>{children_html}</{node['tag']}>"
+    else:
+        return f"<{node['tag']}{attrs}></{node['tag']}>"
+
+def generate_full_html(doc):
+    doctype = '<!DOCTYPE html>'
+    html_content = generate_html(doc['html'])
+    return f"{doctype}\n{html_content}"
+
+def build_document():
+    doc = create_html_document()
+    
+    # Build head section
+    meta_charset = doc['createElement']('meta')
+    set_attribute(meta_charset, 'charset', 'utf-8')
+    append_child(doc['head'], meta_charset)
+    
+    meta_viewport = doc['createElement']('meta')
+    set_attribute(meta_viewport, 'name', 'viewport')
+    set_attribute(meta_viewport, 'content', 'width=device-width, initial-scale=1')
+    append_child(doc['head'], meta_viewport)
+    
+    title = doc['createElement']('title')
+    title['textContent'] = 'Weather-Check — Interaktive Architektur'
+    append_child(doc['head'], title)
+    
+    meta_description = doc['createElement']('meta')
+    set_attribute(meta_description, 'name', 'description')
+    set_attribute(meta_description, 'content', 'Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.')
+    append_child(doc['head'], meta_description)
+    
+    meta_theme_color = doc['createElement']('meta')
+    set_attribute(meta_theme_color, 'name', 'theme-color')
+    set_attribute(meta_theme_color, 'content', '#2481cc')
+    append_child(doc['head'], meta_theme_color)
+    
+    style = doc['createElement']('style')
+    style['textContent'] = '''
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#2481cc; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -60,48 +138,143 @@ def generate_html(output_file):
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <p class="technik">three.js · r128</p>
-  <h1>Weather-Check</h1>
-  <p class="lede">Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.</p>
-
-  <div class="raster">
-    <div class="buehne" id="buehne">
-      <div class="knoepfe">
-        <button id="btn-plus" title="Näher">+</button>
-        <button id="btn-minus" title="Weiter weg">−</button>
-        <button id="btn-reset">Zurücksetzen</button>
-        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
-      </div>
-    </div>
-
-    <aside class="karte">
-      <h2>Ausgewählter Knoten</h2>
-      <h3 id="k-name">—</h3>
-      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
-      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
-      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
-      <div class="blaettern">
-        <button id="btn-prev">←<br>Vorheriger</button>
-        <button id="btn-next">Nächster<br>→</button>
-      </div>
-    </aside>
-  </div>
-
-  <div class="legende" id="legende"></div>
-  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function(){
+'''
+    append_child(doc['head'], style)
+    
+    # Build body section
+    wrap = doc['createElement']('div')
+    set_attribute(wrap, 'class', 'wrap')
+    append_child(doc['body'], wrap)
+    
+    technik = doc['createElement']('p')
+    set_attribute(technik, 'class', 'technik')
+    technik['textContent'] = 'three.js · r128'
+    append_child(wrap, technik)
+    
+    h1 = doc['createElement']('h1')
+    h1['textContent'] = 'Weather-Check'
+    append_child(wrap, h1)
+    
+    lede = doc['createElement']('p')
+    set_attribute(lede, 'class', 'lede')
+    lede['textContent'] = 'Sechs Quellen, eine Einschätzung: der Weg vom Radarbild zum Handlungssatz — drehen, zoomen, Knoten auswählen.'
+    append_child(wrap, lede)
+    
+    raster = doc['createElement']('div')
+    set_attribute(raster, 'class', 'raster')
+    append_child(wrap, raster)
+    
+    buehne = doc['createElement']('div')
+    set_attribute(buehne, 'class', 'buehne')
+    set_attribute(buehne, 'id', 'buehne')
+    append_child(raster, buehne)
+    
+    knoepfe = doc['createElement']('div')
+    set_attribute(knoepfe, 'class', 'knoepfe')
+    append_child(buehne, knoepfe)
+    
+    btn_plus = doc['createElement']('button')
+    set_attribute(btn_plus, 'id', 'btn-plus')
+    set_attribute(btn_plus, 'title', 'Näher')
+    btn_plus['textContent'] = '+'
+    append_child(knoepfe, btn_plus)
+    
+    btn_minus = doc['createElement']('button')
+    set_attribute(btn_minus, 'id', 'btn-minus')
+    set_attribute(btn_minus, 'title', 'Weiter weg')
+    btn_minus['textContent'] = '−'
+    append_child(knoepfe, btn_minus)
+    
+    btn_reset = doc['createElement']('button')
+    set_attribute(btn_reset, 'id', 'btn-reset')
+    btn_reset['textContent'] = 'Zurücksetzen'
+    append_child(knoepfe, btn_reset)
+    
+    btn_iso = doc['createElement']('button')
+    set_attribute(btn_iso, 'id', 'btn-iso')
+    set_attribute(btn_iso, 'aria-pressed', 'true')
+    set_attribute(btn_iso, 'title', 'Isometrisch oder perspektivisch')
+    btn_iso['textContent'] = 'Iso'
+    append_child(knoepfe, btn_iso)
+    
+    karte = doc['createElement']('aside')
+    set_attribute(karte, 'class', 'karte')
+    append_child(raster, karte)
+    
+    karte_h2 = doc['createElement']('h2')
+    karte_h2['textContent'] = 'Ausgewählter Knoten'
+    append_child(karte, karte_h2)
+    
+    k_name = doc['createElement']('h3')
+    set_attribute(k_name, 'id', 'k-name')
+    k_name['textContent'] = '—'
+    append_child(karte, k_name)
+    
+    k_sub = doc['createElement']('p')
+    set_attribute(k_sub, 'class', 'sub')
+    set_attribute(k_sub, 'id', 'k-sub')
+    k_sub['textContent'] = 'Knoten anklicken oder durchblättern'
+    append_child(karte, k_sub)
+    
+    feld1 = doc['createElement']('dl')
+    set_attribute(feld1, 'class', 'feld')
+    append_child(karte, feld1)
+    
+    feld1_dt = doc['createElement']('dt')
+    feld1_dt['textContent'] = 'Schicht'
+    append_child(feld1, feld1_dt)
+    
+    feld1_dd = doc['createElement']('dd')
+    set_attribute(feld1_dd, 'id', 'k-schicht')
+    feld1_dd['textContent'] = '—'
+    append_child(feld1, feld1_dd)
+    
+    feld2 = doc['createElement']('dl')
+    set_attribute(feld2, 'class', 'feld')
+    append_child(karte, feld2)
+    
+    feld2_dt = doc['createElement']('dt')
+    feld2_dt['textContent'] = 'ID'
+    append_child(feld2, feld2_dt)
+    
+    feld2_dd = doc['createElement']('dd')
+    set_attribute(feld2_dd, 'id', 'k-id')
+    feld2_dd['textContent'] = '—'
+    append_child(feld2, feld2_dd)
+    
+    blaettern = doc['createElement']('div')
+    set_attribute(blaettern, 'class', 'blaettern')
+    append_child(karte, blaettern)
+    
+    btn_prev = doc['createElement']('button')
+    set_attribute(btn_prev, 'id', 'btn-prev')
+    btn_prev['innerHTML'] = '←<br>Vorheriger'
+    append_child(blaettern, btn_prev)
+    
+    btn_next = doc['createElement']('button')
+    set_attribute(btn_next, 'id', 'btn-next')
+    btn_next['innerHTML'] = 'Nächster<br>→'
+    append_child(blaettern, btn_next)
+    
+    legende = doc['createElement']('div')
+    set_attribute(legende, 'class', 'legende')
+    set_attribute(legende, 'id', 'legende')
+    append_child(wrap, legende)
+    
+    fuss = doc['createElement']('p')
+    set_attribute(fuss, 'class', 'fuss')
+    fuss['textContent'] = 'Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.'
+    append_child(wrap, fuss)
+    
+    # Add scripts
+    script1 = doc['createElement']('script')
+    set_attribute(script1, 'src', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+    append_child(doc['body'], script1)
+    
+    script2 = doc['createElement']('script')
+    script2['textContent'] = '''(function(){
   "use strict";
-  var SPEC = ''' + json.dumps(SPEC, separators=(',', ':')) + ''';
+  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "dwd-radar", "name": "DWD-Radar", "untertitel": "Zugbahn"}, {"id": "messstationen", "name": "Messstationen", "untertitel": "Ist-Wert"}, {"id": "open-meteo", "name": "Open-Meteo", "untertitel": "Minutenwerte"}, {"id": "satellit", "name": "Satellit", "untertitel": "Bewoelkung"}, {"id": "webcams", "name": "Webcams", "untertitel": "Sichtpruefung"}, {"id": "handyfoto", "name": "Handyfoto", "untertitel": "Wolkenbasis"}]}, {"name": "Zusammenfuehrung", "farbe": "#2481cc", "blocks": [{"id": "zugbahn", "name": "Zugbahn", "untertitel": "extrapoliert"}, {"id": "gewichtung", "name": "Gewichtung", "untertitel": "je Quelle"}, {"id": "widerspruchspruefung", "name": "Widerspruchspruefung", "untertitel": "benennen statt mitteln"}]}, {"name": "Einschaetzung", "farbe": "#6d5bd0", "blocks": [{"id": "30-min", "name": "30 min", "untertitel": "hohe Sicherheit"}, {"id": "60-min", "name": "60 min", "untertitel": "mittel"}, {"id": "120-min", "name": "120 min", "untertitel": "grob"}]}, {"name": "Ausgabe", "farbe": "#0f766e", "blocks": [{"id": "pwa", "name": "PWA", "untertitel": "Service Worker"}, {"id": "computer-prompt", "name": "Computer-Prompt", "untertitel": "Perplexity"}, {"id": "handlungssatz", "name": "Handlungssatz", "untertitel": "eine Entscheidung"}]}], "kanten": [{"von": "dwd-radar", "nach": "zugbahn", "art": "fluss"}, {"von": "messstationen", "nach": "gewichtung", "art": "fluss"}, {"von": "open-meteo", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "satellit", "nach": "zugbahn", "art": "fluss"}, {"von": "webcams", "nach": "gewichtung", "art": "fluss"}, {"von": "handyfoto", "nach": "widerspruchspruefung", "art": "fluss"}, {"von": "zugbahn", "nach": "30-min", "art": "fluss"}, {"von": "gewichtung", "nach": "60-min", "art": "fluss"}, {"von": "widerspruchspruefung", "nach": "120-min", "art": "fluss"}, {"von": "30-min", "nach": "pwa", "art": "fluss"}, {"von": "60-min", "nach": "computer-prompt", "art": "fluss"}, {"von": "120-min", "nach": "handlungssatz", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#2481cc", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -324,80 +497,29 @@ def generate_html(output_file):
     stelle();
     renderer.render(szene, kamera);
   })();
-})();
-</script>
-</body>
-</html>'''
+})();'''
+    append_child(doc['body'], script2)
+    
+    return doc
 
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
-# Specification data structure
-SPEC = {
-    "schichten": [
-        {
-            "name": "Quellen",
-            "farbe": "#5f6773",
-            "blocks": [
-                {"id": "dwd-radar", "name": "DWD-Radar", "untertitel": "Zugbahn"},
-                {"id": "messstationen", "name": "Messstationen", "untertitel": "Ist-Wert"},
-                {"id": "open-meteo", "name": "Open-Meteo", "untertitel": "Minutenwerte"},
-                {"id": "satellit", "name": "Satellit", "untertitel": "Bewoelkung"},
-                {"id": "webcams", "name": "Webcams", "untertitel": "Sichtpruefung"},
-                {"id": "handyfoto", "name": "Handyfoto", "untertitel": "Wolkenbasis"}
-            ]
-        },
-        {
-            "name": "Zusammenfuehrung",
-            "farbe": "#2481cc",
-            "blocks": [
-                {"id": "zugbahn", "name": "Zugbahn", "untertitel": "extrapoliert"},
-                {"id": "gewichtung", "name": "Gewichtung", "untertitel": "je Quelle"},
-                {"id": "widerspruchspruefung", "name": "Widerspruchspruefung", "untertitel": "benennen statt mitteln"}
-            ]
-        },
-        {
-            "name": "Einschaetzung",
-            "farbe": "#6d5bd0",
-            "blocks": [
-                {"id": "30-min", "name": "30 min", "untertitel": "hohe Sicherheit"},
-                {"id": "60-min", "name": "60 min", "untertitel": "mittel"},
-                {"id": "120-min", "name": "120 min", "untertitel": "grob"}
-            ]
-        },
-        {
-            "name": "Ausgabe",
-            "farbe": "#0f766e",
-            "blocks": [
-                {"id": "pwa", "name": "PWA", "untertitel": "Service Worker"},
-                {"id": "computer-prompt", "name": "Computer-Prompt", "untertitel": "Perplexity"},
-                {"id": "handlungssatz", "name": "Handlungssatz", "untertitel": "eine Entscheidung"}
-            ]
-        }
-    ],
-    "kanten": [
-        {"von": "dwd-radar", "nach": "zugbahn", "art": "fluss"},
-        {"von": "messstationen", "nach": "gewichtung", "art": "fluss"},
-        {"von": "open-meteo", "nach": "widerspruchspruefung", "art": "fluss"},
-        {"von": "satellit", "nach": "zugbahn", "art": "fluss"},
-        {"von": "webcams", "nach": "gewichtung", "art": "fluss"},
-        {"von": "handyfoto", "nach": "widerspruchspruefung", "art": "fluss"},
-        {"von": "zugbahn", "nach": "30-min", "art": "fluss"},
-        {"von": "gewichtung", "nach": "60-min", "art": "fluss"},
-        {"von": "widerspruchspruefung", "nach": "120-min", "art": "fluss"},
-        {"von": "30-min", "nach": "pwa", "art": "fluss"},
-        {"von": "60-min", "nach": "computer-prompt", "art": "fluss"},
-        {"von": "120-min", "nach": "handlungssatz", "art": "fluss"}
-    ],
-    "kantenarten": [
-        {"art": "fluss", "farbe": "#2481cc", "stil": "voll", "text": "Fluss von unten nach oben"}
-    ]
-}
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 script.py <output_file>")
+def main():
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print('Usage: python3 script.py <output-file>', file=sys.stderr)
         sys.exit(1)
     
-    output_file = sys.argv[1]
-    generate_html(output_file)
+    output_file = args[0]
+    doc = build_document()
+    html_content = generate_full_html(doc)
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f'HTML file generated successfully: {output_file}')
+    except Exception as error:
+        print(f'Error writing file: {error}', file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

@@ -1,84 +1,14 @@
 #!/usr/bin/perl
-# 3d.html — portiert nach perl5
-# Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
+# 3d_166113.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/3d_166113.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use File::Basename;
 
-# Parameter: Ausgabedatei
-my $ausgabe_datei = $ARGV[0] or die "Verwendung: $0 <ausgabedatei>\n";
-
-# Spezifikation der Architektur
-my $SPEC = {
-  "schichten" => [
-    {
-      "name" => "Quelle",
-      "farbe" => "#5f6773",
-      "blocks" => [
-        {"id" => "tiktok-webview", "name" => "TikTok-WebView", "untertitel" => "Hauptframe"},
-        {"id" => "www-tiktok-com", "name" => "www.tiktok.com", "untertitel" => "nur diese Origin"},
-        {"id" => "hauptframe", "name" => "Hauptframe", "untertitel" => "kein iframe"}
-      ]
-    },
-    {
-      "name" => "Bruecke",
-      "farbe" => "#2481cc",
-      "blocks" => [
-        {"id" => "mobile-bridge-v1", "name" => "Mobile Bridge v1", "untertitel" => "Origin + Typ"},
-        {"id" => "origin-pruefung", "name" => "Origin-Pruefung", "untertitel" => "fail closed"},
-        {"id" => "typ-groesse", "name" => "Typ + Groesse", "untertitel" => "begrenzt"}
-      ]
-    },
-    {
-      "name" => "App",
-      "farbe" => "#6d5bd0",
-      "blocks" => [
-        {"id" => "kotlin", "name" => "Kotlin", "untertitel" => "Sprache"},
-        {"id" => "jetpack-compose", "name" => "Jetpack Compose", "untertitel" => "Oberflaeche"},
-        {"id" => "androidx-webkit", "name" => "AndroidX WebKit", "untertitel" => "WebView"}
-      ]
-    },
-    {
-      "name" => "Audio",
-      "farbe" => "#b45309",
-      "blocks" => [
-        {"id" => "shazamkit", "name" => "ShazamKit", "untertitel" => "nur nach Klick"},
-        {"id" => "mikrofon", "name" => "Mikrofon", "untertitel" => "stabil"},
-        {"id" => "webview-pcm-exp", "name" => "WebView-PCM (exp.)", "untertitel" => "experimentell"}
-      ]
-    },
-    {
-      "name" => "Ausgabe",
-      "farbe" => "#fe2c55",
-      "blocks" => [
-        {"id" => "fluechtiger-streamzustand", "name" => "fluechtiger Streamzustand", "untertitel" => "nicht persistiert"},
-        {"id" => "panel", "name" => "Panel", "untertitel" => "Anzeige"},
-        {"id" => "apk", "name" => "APK", "untertitel" => "Android-Artefakt"}
-      ]
-    }
-  ],
-  "kanten" => [
-    {"von" => "tiktok-webview", "nach" => "mobile-bridge-v1", "art" => "fluss"},
-    {"von" => "www-tiktok-com", "nach" => "origin-pruefung", "art" => "fluss"},
-    {"von" => "hauptframe", "nach" => "typ-groesse", "art" => "fluss"},
-    {"von" => "mobile-bridge-v1", "nach" => "kotlin", "art" => "fluss"},
-    {"von" => "origin-pruefung", "nach" => "jetpack-compose", "art" => "fluss"},
-    {"von" => "typ-groesse", "nach" => "androidx-webkit", "art" => "fluss"},
-    {"von" => "kotlin", "nach" => "shazamkit", "art" => "fluss"},
-    {"von" => "jetpack-compose", "nach" => "mikrofon", "art" => "fluss"},
-    {"von" => "androidx-webkit", "nach" => "webview-pcm-exp", "art" => "fluss"},
-    {"von" => "shazamkit", "nach" => "fluechtiger-streamzustand", "art" => "fluss"},
-    {"von" => "mikrofon", "nach" => "panel", "art" => "fluss"},
-    {"von" => "webview-pcm-exp", "nach" => "apk", "art" => "fluss"}
-  ],
-  "kantenarten" => [
-    {"art" => "fluss", "farbe" => "#fe2c55", "stil" => "voll", "text" => "Fluss von unten nach oben"}
-  ]
-};
-
-# HTML-Template
-my $html_template = <<'HTML';
+sub generateHTML {
+  return <<'HTML_END';
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -173,7 +103,7 @@ my $html_template = <<'HTML';
 <script>
 (function(){
   "use strict";
-  var SPEC = %s;
+  var SPEC = {"schichten": [{"name": "Quelle", "farbe": "#5f6773", "blocks": [{"id": "tiktok-webview", "name": "TikTok-WebView", "untertitel": "Hauptframe"}, {"id": "www-tiktok-com", "name": "www.tiktok.com", "untertitel": "nur diese Origin"}, {"id": "hauptframe", "name": "Hauptframe", "untertitel": "kein iframe"}]}, {"name": "Bruecke", "farbe": "#2481cc", "blocks": [{"id": "mobile-bridge-v1", "name": "Mobile Bridge v1", "untertitel": "Origin + Typ"}, {"id": "origin-pruefung", "name": "Origin-Pruefung", "untertitel": "fail closed"}, {"id": "typ-groesse", "name": "Typ + Groesse", "untertitel": "begrenzt"}]}, {"name": "App", "farbe": "#6d5bd0", "blocks": [{"id": "kotlin", "name": "Kotlin", "untertitel": "Sprache"}, {"id": "jetpack-compose", "name": "Jetpack Compose", "untertitel": "Oberflaeche"}, {"id": "androidx-webkit", "name": "AndroidX WebKit", "untertitel": "WebView"}]}, {"name": "Audio", "farbe": "#b45309", "blocks": [{"id": "shazamkit", "name": "ShazamKit", "untertitel": "nur nach Klick"}, {"id": "mikrofon", "name": "Mikrofon", "untertitel": "stabil"}, {"id": "webview-pcm-exp", "name": "WebView-PCM (exp.)", "untertitel": "experimentell"}]}, {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": [{"id": "fluechtiger-streamzustand", "name": "fluechtiger Streamzustand", "untertitel": "nicht persistiert"}, {"id": "panel", "name": "Panel", "untertitel": "Anzeige"}, {"id": "apk", "name": "APK", "untertitel": "Android-Artefakt"}]}], "kanten": [{"von": "tiktok-webview", "nach": "mobile-bridge-v1", "art": "fluss"}, {"von": "www-tiktok-com", "nach": "origin-pruefung", "art": "fluss"}, {"von": "hauptframe", "nach": "typ-groesse", "art": "fluss"}, {"von": "mobile-bridge-v1", "nach": "kotlin", "art": "fluss"}, {"von": "origin-pruefung", "nach": "jetpack-compose", "art": "fluss"}, {"von": "typ-groesse", "nach": "androidx-webkit", "art": "fluss"}, {"von": "kotlin", "nach": "shazamkit", "art": "fluss"}, {"von": "jetpack-compose", "nach": "mikrofon", "art": "fluss"}, {"von": "androidx-webkit", "nach": "webview-pcm-exp", "art": "fluss"}, {"von": "shazamkit", "nach": "fluechtiger-streamzustand", "art": "fluss"}, {"von": "mikrofon", "nach": "panel", "art": "fluss"}, {"von": "webview-pcm-exp", "nach": "apk", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#fe2c55", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -400,63 +330,30 @@ my $html_template = <<'HTML';
 </script>
 </body>
 </html>
-HTML
-
-# JSON-Serialisierung der Spezifikation
-my $json_spec = to_json($SPEC);
-
-# HTML-Datei generieren
-my $html_content = sprintf($html_template, $json_spec);
-
-# In Datei schreiben
-open my $fh, '>', $ausgabe_datei or die "Kann Datei '$ausgabe_datei' nicht öffnen: $!";
-print $fh $html_content;
-close $fh;
-
-print "HTML-Datei wurde erfolgreich erstellt: $ausgabe_datei\n";
-
-# Hilfsfunktion zur JSON-Serialisierung
-sub to_json {
-    my ($data) = @_;
-    my $json = "";
-    
-    if (ref($data) eq 'HASH') {
-        $json .= "{";
-        my @pairs;
-        for my $key (sort keys %$data) {
-            my $value = $data->{$key};
-            my $key_json = '"' . $key . '"';
-            my $value_json = to_json($value);
-            push @pairs, "$key_json:$value_json";
-        }
-        $json .= join(",", @pairs);
-        $json .= "}";
-    } elsif (ref($data) eq 'ARRAY') {
-        $json .= "[";
-        my @items;
-        for my $item (@$data) {
-            push @items, to_json($item);
-        }
-        $json .= join(",", @items);
-        $json .= "]";
-    } elsif (!defined($data)) {
-        $json .= "null";
-    } elsif ($data =~ /^[+-]?\d+$/) {
-        $json .= $data;
-    } elsif ($data =~ /^[+-]?\d*\.\d+$/) {
-        $json .= $data;
-    } elsif ($data eq "true" || $data eq "false") {
-        $json .= $data;
-    } else {
-        # String escapen
-        my $escaped = $data;
-        $escaped =~ s/\\/\\\\/g;
-        $escaped =~ s/"/\\"/g;
-        $escaped =~ s/\n/\\n/g;
-        $escaped =~ s/\r/\\r/g;
-        $escaped =~ s/\t/\\t/g;
-        $json .= '"' . $escaped . '"';
-    }
-    
-    return $json;
+HTML_END
 }
+
+sub main {
+  my @args = @ARGV;
+  
+  if (@args != 1) {
+    print STDERR "Usage: perl 3d.pl <output-file>\n";
+    exit 1;
+  }
+  
+  my $outputFile = $args[0];
+  
+  eval {
+    my $htmlContent = generateHTML();
+    open(my $fh, '>', $outputFile) or die "Cannot open file '$outputFile': $!";
+    print $fh $htmlContent;
+    close($fh);
+    print "HTML file generated successfully: $outputFile\n";
+  };
+  if ($@) {
+    print STDERR "Error generating HTML file: $@\n";
+    exit 1;
+  }
+}
+
+main();

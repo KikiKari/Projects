@@ -1,16 +1,18 @@
 #!/usr/bin/perl
-# 3d.html — portiert nach perl5
-# Quelle: html, Projects@Vision-Check:public/3d.html
+# 3d_44b946.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/3d_44b946.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use File::Spec;
+use File::Basename;
 
-# Parameter: Ausgabedatei
-my $ausgabedatei = $ARGV[0] // die "Bitte gib eine Ausgabedatei als Parameter an.\n";
-
-# HTML-Struktur erzeugen
-my $html = q(<!DOCTYPE html>
+sub generateHTML {
+    my ($outputPath) = @_;
+    
+    my $html = <<'HTML_END';
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -331,11 +333,18 @@ my $html = q(<!DOCTYPE html>
 </script>
 </body>
 </html>
-);
+HTML_END
 
-# In Datei schreiben
-open my $fh, '>', $ausgabedatei or die "Kann $ausgabedatei nicht öffnen: $!";
-print $fh $html;
-close $fh;
+    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Could not open file '$outputPath': $!";
+    print $fh $html;
+    close $fh;
+    print "HTML file generated: $outputPath\n";
+}
 
-print "HTML-Datei wurde erfolgreich in '$ausgabedatei' gespeichert.\n";
+# Main execution
+if (!caller) {
+    my $outputPath = $ARGV[0] || '3d.html';
+    generateHTML($outputPath);
+}
+
+1;

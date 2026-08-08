@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
+# 3d_166113.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/3d_166113.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
 # 3d.html — portiert nach python
 # Quelle: html, Projects@TikTok-Live-Companion-Android:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-"""
-Generates the 3D architecture visualization HTML file for TikTok LIVE Companion Android.
-"""
-
 import sys
 import os
 
-def generate_html():
-    """Generate the complete HTML content as a string."""
+def generateHTML():
     return '''<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -335,24 +334,22 @@ def generate_html():
 </html>'''
 
 def main():
-    """Main function to write the HTML file."""
-    if len(sys.argv) != 2:
-        print("Usage: {} <output_file>".format(sys.argv[0]))
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print('Usage: python3 3d.py <output-file>', file=sys.stderr)
         sys.exit(1)
     
-    output_file = sys.argv[1]
+    output_file = args[0]
     
-    # Generate the HTML content
-    html_content = generate_html()
-    
-    # Write to file
     try:
+        html_content = generateHTML()
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print("Successfully generated {}".format(output_file))
-    except IOError as e:
-        print("Error writing to file {}: {}".format(output_file, e))
+        print(f'HTML file generated successfully: {output_file}')
+    except Exception as error:
+        print(f'Error generating HTML file: {error}', file=sys.stderr)
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

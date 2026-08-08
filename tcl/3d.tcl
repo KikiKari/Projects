@@ -1,15 +1,16 @@
 #!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
+# 3d.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach Tcl
 # Quelle: html, Projects@MCP-Server-Monitor:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl/Tk port of 3d.html - MCP Server Monitor
-# Generates HTML file with 3D visualization using three.js
+package require Tcl 8.6
 
-proc generate_html {filename} {
-    set html [open $filename w]
-    
-    puts $html {<!DOCTYPE html>
+proc generateHTML {} {
+    return {<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -330,14 +331,29 @@ proc generate_html {filename} {
 </script>
 </body>
 </html>}
+}
+
+proc main {args} {
+    if {[llength $args] != 1} {
+        puts stderr "Usage: tclsh script.tcl <output-file>"
+        exit 1
+    }
     
-    close $html
+    set outputFile [lindex $args 0]
+    
+    if [catch {
+        set htmlContent [generateHTML]
+        set fileId [open $outputFile w]
+        puts -nonewline $fileId $htmlContent
+        close $fileId
+        puts "HTML file generated successfully: $outputFile"
+    } error] {
+        puts stderr "Error writing file: $error"
+        exit 1
+    }
 }
 
-# Main execution
-if {$argc != 1} {
-    puts stderr "Usage: $argv0 <output-file>"
-    exit 1
+# Check if script is run directly
+if {[info script] eq $argv0} {
+    main {*}$argv
 }
-
-generate_html [lindex $argv 0]

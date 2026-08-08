@@ -1,13 +1,26 @@
 #!/usr/bin/env node
-// 3d.html — portiert nach javascript
+// 3d_44b946.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/3d_44b946.pl
+// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+// 3d.html — portiert nach JavaScript fuer Node 20
 // Quelle: html, Projects@Vision-Check:public/3d.html
 // Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-const fs = require('fs');
-const path = require('path');
+import { writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-function generateHTML(outputPath) {
-  const html = `<!DOCTYPE html>
+// Parameter: Ausgabedatei
+const args = process.argv.slice(2);
+const ausgabedatei = args[0];
+if (!ausgabedatei) {
+    console.error("Bitte gib eine Ausgabedatei als Parameter an.");
+    process.exit(1);
+}
+
+// HTML-Struktur erzeugen
+const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -327,16 +340,14 @@ function generateHTML(outputPath) {
 })();
 </script>
 </body>
-</html>`;
+</html>
+`;
 
-  fs.writeFileSync(outputPath, html, 'utf8');
-  console.log(`HTML file generated: ${outputPath}`);
+// In Datei schreiben
+try {
+    writeFileSync(ausgabedatei, html);
+    console.log(`HTML-Datei wurde erfolgreich in '${ausgabedatei}' gespeichert.`);
+} catch (err) {
+    console.error(`Kann ${ausgabedatei} nicht öffnen: ${err.message}`);
+    process.exit(1);
 }
-
-// Main execution
-if (require.main === module) {
-  const outputPath = process.argv[2] || '3d.html';
-  generateHTML(outputPath);
-}
-
-module.exports = { generateHTML };

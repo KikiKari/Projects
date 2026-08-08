@@ -1,14 +1,18 @@
 #!/usr/bin/env pwsh
-# 3d.html — portiert nach powershell
+# 3d_44b946.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/3d_44b946.js
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach PowerShell 7
 # Quelle: html, Projects@Vision-Check:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
+function Generate-HTML {
+    param(
+        [string]$OutputPath = "3d.html"
+    )
 
-$htmlContent = @"
+    $html = @'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -330,6 +334,18 @@ $htmlContent = @"
 </script>
 </body>
 </html>
-"@
+'@
 
-$htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8
+    $html | Out-File -FilePath $OutputPath -Encoding UTF8
+    Write-Output "HTML file generated: $OutputPath"
+}
+
+# Main execution
+if ($MyInvocation.InvocationName -eq '.' -or $MyInvocation.InvocationName -eq '&') {
+    # Wenn das Skript direkt ausgeführt wird
+    $outputPath = if ($args.Count -gt 0) { $args[0] } else { "3d.html" }
+    Generate-HTML -OutputPath $outputPath
+} else {
+    # Exportiere die Funktion für den Fall, dass das Skript als Modul geladen wird
+    Export-ModuleMember -Function Generate-HTML
+}
