@@ -1,28 +1,31 @@
 #!/bin/bash
-# 3d.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/3d.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 3d.html — portiert nach shell
+# Quelle: html, Projects@clawhub:public/3d.html
+# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 3d.html — portiert nach bash
-# Quelle: html, Projects@MCP-Server-Monitor:public/3d.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Parameter: Ausgabedatei
+if [[ $# -ne 1 ]]; then
+    echo "Aufruf: $0 <ausgabedatei.html>" >&2
+    exit 1
+fi
+ausgabe="$1"
 
-generate_html() {
-  cat <<'EOF'
+# Erzeuge das HTML-Dokument
+cat > "$ausgabe" << 'HTML_ANFANG'
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP-Server-Monitor — Interaktive Architektur</title>
-<meta name="description" content="Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#6d5bd0">
+<title>ClawHub-Git-Sync — Interaktive Architektur</title>
+<meta name="description" content="Zwei Seiten, ein Abgleich: Vergleich, Absicherung, Übertragung — drehen, zoomen, Knoten auswählen.">
+<meta name="theme-color" content="#f5654a">
 <style>
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
-    --ac:#6d5bd0; --buehne:#0e1420; --buehne-line:#1d2739;
+    --ac:#f5654a; --buehne:#0e1420; --buehne-line:#1d2739;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -70,8 +73,8 @@ generate_html() {
 <div class="wrap">
 
   <p class="technik">three.js · r128</p>
-  <h1>MCP-Server-Monitor</h1>
-  <p class="lede">Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.</p>
+  <h1>ClawHub-Git-Sync</h1>
+  <p class="lede">Zwei Seiten, ein Abgleich: Vergleich, Absicherung, Übertragung — drehen, zoomen, Knoten auswählen.</p>
 
   <div class="raster">
     <div class="buehne" id="buehne">
@@ -105,7 +108,7 @@ generate_html() {
 <script>
 (function(){
   "use strict";
-  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "mcp-domain", "name": "mcp.DOMAIN", "untertitel": "Streamable HTTP"}, {"id": "docs-mcp", "name": "docs/mcp", "untertitel": "Anbieterdoku"}, {"id": "well-known", "name": ".well-known", "untertitel": "OAuth-Metadaten"}, {"id": "config-json", "name": "config.json", "untertitel": "claude_desktop_config"}]}, {"name": "Sonde", "farbe": "#2481cc", "blocks": [{"id": "discovery-py", "name": "discovery.py", "untertitel": "sechs Pfade"}, {"id": "config-py", "name": "config.py", "untertitel": "MSIX-Falle"}]}, {"name": "Klassifikation", "farbe": "#6d5bd0", "blocks": [{"id": "state-py", "name": "state.py", "untertitel": "fuenf Zustaende"}]}, {"name": "Ausgabe", "farbe": "#15803d", "blocks": [{"id": "report-py", "name": "report.py", "untertitel": "Textausgabe"}, {"id": "server-py", "name": "server.py", "untertitel": "127.0.0.1"}, {"id": "index-html", "name": "index.html", "untertitel": "statische Seite"}]}], "kanten": [{"von": "mcp-domain", "nach": "discovery-py", "art": "fluss"}, {"von": "docs-mcp", "nach": "config-py", "art": "fluss"}, {"von": "well-known", "nach": "discovery-py", "art": "fluss"}, {"von": "config-json", "nach": "config-py", "art": "fluss"}, {"von": "discovery-py", "nach": "state-py", "art": "fluss"}, {"von": "config-py", "nach": "state-py", "art": "fluss"}, {"von": "state-py", "nach": "report-py", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#6d5bd0", "stil": "voll", "text": "Fluss von unten nach oben"}]};
+  var SPEC = {"schichten": [{"name": "Seiten", "farbe": "#5f6773", "blocks": [{"id": "workspace-skills", "name": "workspace/skills", "untertitel": "ClawHub-Seite"}, {"id": "workspace-git-skills", "name": "workspace/git/skills", "untertitel": "Git-Seite"}]}, {"name": "Vergleich", "farbe": "#2481cc", "blocks": [{"id": "zeitstempel", "name": "Zeitstempel", "untertitel": "welche Seite neuer"}, {"id": "hash", "name": "Hash", "untertitel": "ob geaendert"}, {"id": "konfliktfall", "name": "Konfliktfall", "untertitel": "melden statt raten"}]}, {"name": "Absicherung", "farbe": "#6d5bd0", "blocks": [{"id": "backup", "name": "Backup", "untertitel": "vor jeder Aenderung"}, {"id": "dry-run", "name": "Dry-Run", "untertitel": "Plan zeigen"}, {"id": "freigabe", "name": "Freigabe", "untertitel": "manuell"}]}, {"name": "Uebertragung", "farbe": "#b45309", "blocks": [{"id": "sync-agent-py", "name": "sync_agent.py", "untertitel": "der Abgleich"}, {"id": "git-commit", "name": "git commit", "untertitel": "Historie"}, {"id": "clawhub-publish", "name": "clawhub publish", "untertitel": "Veroeffentlichung"}]}, {"name": "Takt", "farbe": "#f5654a", "blocks": [{"id": "cron-alle-12-h", "name": "Cron alle 12 h", "untertitel": "unbeaufsichtigt"}, {"id": "gateway-skripte", "name": "Gateway-Skripte", "untertitel": "mit Sperre"}]}], "kanten": [{"von": "workspace-skills", "nach": "zeitstempel", "art": "fluss"}, {"von": "workspace-git-skills", "nach": "hash", "art": "fluss"}, {"von": "zeitstempel", "nach": "backup", "art": "fluss"}, {"von": "hash", "nach": "dry-run", "art": "fluss"}, {"von": "konfliktfall", "nach": "freigabe", "art": "fluss"}, {"von": "backup", "nach": "sync-agent-py", "art": "fluss"}, {"von": "dry-run", "nach": "git-commit", "art": "fluss"}, {"von": "freigabe", "nach": "clawhub-publish", "art": "fluss"}, {"von": "sync-agent-py", "nach": "cron-alle-12-h", "art": "fluss"}, {"von": "git-commit", "nach": "gateway-skripte", "art": "fluss"}, {"von": "clawhub-publish", "nach": "cron-alle-12-h", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#f5654a", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -332,21 +335,6 @@ generate_html() {
 </script>
 </body>
 </html>
-EOF
-}
+HTML_ANFANG
 
-main() {
-  local args=("$@")
-  
-  if [ ${#args[@]} -ne 1 ]; then
-    echo "Usage: $0 <output-file>" >&2
-    exit 1
-  fi
-  
-  local output_file="${args[0]}"
-  
-  generate_html > "$output_file"
-  echo "HTML file generated successfully: $output_file"
-}
-
-main "$@"
+echo "HTML-Dokument wurde erfolgreich in '$ausgabe' geschrieben."

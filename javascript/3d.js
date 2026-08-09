@@ -1,31 +1,58 @@
 #!/usr/bin/env node
-// 3d.pl — portiert nach javascript
-// Quelle: perl5, Projects@abstractions:perl5/3d.pl
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+// 3d.html — portiert nach javascript
+// Quelle: html, Projects@tagesstatus-live-public:public/3d.html
+// Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
-const fs = require('fs');
+import { createWriteStream } from 'fs';
+import { JSDOM } from 'jsdom';
+import * as THREE from 'three';
+import { Buffer } from 'buffer';
 
-// Parameter: Ausgabedatei
-const ausgabe_datei = process.argv[2];
-if (!ausgabe_datei) {
-    console.error(`Verwendung: ${process.argv[1]} <ausgabedatei>`);
-    process.exit(1);
-}
+// Erzeuge ein DOM-Dokument
+const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+global.document = dom.window.document;
+global.window = dom.window;
+global.navigator = dom.window.navigator;
 
-// HTML-Inhalt erzeugen
-const html_inhalt = `\
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP-Server-Monitor — Interaktive Architektur</title>
-<meta name="description" content="Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#6d5bd0">
-<style>
+// Erstelle das HTML-Dokument
+function createDocument() {
+  const doc = dom.window.document;
+  const html = doc.documentElement;
+  html.setAttribute('lang', 'de');
+
+  // Head-Bereich
+  const head = doc.head;
+
+  // Meta-Tags
+  const metaCharset = doc.createElement('meta');
+  metaCharset.setAttribute('charset', 'utf-8');
+  head.appendChild(metaCharset);
+
+  const metaViewport = doc.createElement('meta');
+  metaViewport.setAttribute('name', 'viewport');
+  metaViewport.setAttribute('content', 'width=device-width, initial-scale=1');
+  head.appendChild(metaViewport);
+
+  const title = doc.createElement('title');
+  title.textContent = 'Tagesstatus Live Public — Interaktive Architektur';
+  head.appendChild(title);
+
+  const metaDescription = doc.createElement('meta');
+  metaDescription.setAttribute('name', 'description');
+  metaDescription.setAttribute('content', 'Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.');
+  head.appendChild(metaDescription);
+
+  const metaThemeColor = doc.createElement('meta');
+  metaThemeColor.setAttribute('name', 'theme-color');
+  metaThemeColor.setAttribute('content', '#0f766e');
+  head.appendChild(metaThemeColor);
+
+  // Styles
+  const style = doc.createElement('style');
+  style.textContent = `
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
-    --ac:#6d5bd0; --buehne:#0e1420; --buehne-line:#1d2739;
+    --ac:#0f766e; --buehne:#0e1420; --buehne-line:#1d2739;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -67,281 +94,430 @@ const html_inhalt = `\
   .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <p class="technik">three.js · r128</p>
-  <h1>MCP-Server-Monitor</h1>
-  <p class="lede">Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.</p>
-
-  <div class="raster">
-    <div class="buehne" id="buehne">
-      <div class="knoepfe">
-        <button id="btn-plus" title="Näher">+</button>
-        <button id="btn-minus" title="Weiter weg">−</button>
-        <button id="btn-reset">Zurücksetzen</button>
-        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>
-      </div>
-    </div>
-
-    <aside class="karte">
-      <h2>Ausgewählter Knoten</h2>
-      <h3 id="k-name">—</h3>
-      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>
-      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>
-      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>
-      <div class="blaettern">
-        <button id="btn-prev">←<br>Vorheriger</button>
-        <button id="btn-next">Nächster<br>→</button>
-      </div>
-    </aside>
-  </div>
-
-  <div class="legende" id="legende"></div>
-  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function(){
-  "use strict";
-  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "mcp-domain", "name": "mcp.DOMAIN", "untertitel": "Streamable HTTP"}, {"id": "docs-mcp", "name": "docs/mcp", "untertitel": "Anbieterdoku"}, {"id": "well-known", "name": ".well-known", "untertitel": "OAuth-Metadaten"}, {"id": "config-json", "name": "config.json", "untertitel": "claude_desktop_config"}]}, {"name": "Sonde", "farbe": "#2481cc", "blocks": [{"id": "discovery-py", "name": "discovery.py", "untertitel": "sechs Pfade"}, {"id": "config-py", "name": "config.py", "untertitel": "MSIX-Falle"}]}, {"name": "Klassifikation", "farbe": "#6d5bd0", "blocks": [{"id": "state-py", "name": "state.py", "untertitel": "fuenf Zustaende"}]}, {"name": "Ausgabe", "farbe": "#15803d", "blocks": [{"id": "report-py", "name": "report.py", "untertitel": "Textausgabe"}, {"id": "server-py", "name": "server.py", "untertitel": "127.0.0.1"}, {"id": "index-html", "name": "index.html", "untertitel": "statische Seite"}]}], "kanten": [{"von": "mcp-domain", "nach": "discovery-py", "art": "fluss"}, {"von": "docs-mcp", "nach": "config-py", "art": "fluss"}, {"von": "well-known", "nach": "discovery-py", "art": "fluss"}, {"von": "config-json", "nach": "config-py", "art": "fluss"}, {"von": "discovery-py", "nach": "state-py", "art": "fluss"}, {"von": "config-py", "nach": "state-py", "art": "fluss"}, {"von": "state-py", "nach": "report-py", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#6d5bd0", "stil": "voll", "text": "Fluss von unten nach oben"}]};
-
-  var buehne = document.getElementById("buehne");
-  if (typeof THREE === "undefined"){
-    buehne.insertAdjacentHTML("beforeend",
-      '<div class="fehler">three.js konnte nicht geladen werden. ' +
-      'Die Seite braucht einmalig Netzzugang zum CDN.</div>');
-    return;
-  }
-
-  // ---------------------------------------------------------------- Szene ---
-  var szene = new THREE.Scene();
-  szene.background = new THREE.Color(0x0e1420);
-  var renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  buehne.appendChild(renderer.domElement);
-
-  var D = 26, radius = 82, aspekt = 1;
-  var kameraIso = new THREE.OrthographicCamera(-D, D, D, -D, 0.1, 600);
-  var kameraPersp = new THREE.PerspectiveCamera(42, 1, 0.1, 600);
-  var kamera = kameraIso, iso = true;
-
-  szene.add(new THREE.AmbientLight(0xffffff, 0.66));
-  var licht = new THREE.DirectionalLight(0xffffff, 0.8);
-  licht.position.set(30, 46, 26); szene.add(licht);
-  var gegen = new THREE.DirectionalLight(0x8ea2ff, 0.3);
-  gegen.position.set(-32, 16, -28); szene.add(gegen);
-
-  var raster = new THREE.GridHelper(110, 34, 0x25324a, 0x1a2333);
-  raster.position.y = -24; szene.add(raster);
-
-  // ------------------------------------------------------------ Schilder ---
-  // Text auf eine Textur, dann als Billboard — bleibt bei jeder Drehung lesbar.
-  function schild(text, unter){
-    var c = document.createElement("canvas"), x = c.getContext("2d");
-    var f1 = "700 40px -apple-system,Segoe UI,Roboto,sans-serif";
-    var f2 = "500 27px -apple-system,Segoe UI,Roboto,sans-serif";
-    x.font = f1; var w1 = x.measureText(text).width;
-    x.font = f2; var w2 = unter ? x.measureText(unter).width : 0;
-    var w = Math.ceil(Math.max(w1, w2)) + 40, h = unter ? 96 : 62;
-    c.width = w; c.height = h;
-    x = c.getContext("2d");
-    x.fillStyle = "rgba(255,255,255,.95)";
-    if (x.roundRect){ x.beginPath(); x.roundRect(0,0,w,h,13); x.fill(); }
-    else x.fillRect(0,0,w,h);
-    x.fillStyle = "#16191d"; x.font = f1; x.textBaseline = "middle";
-    x.fillText(text, 20, unter ? 32 : 31);
-    if (unter){ x.fillStyle = "#5f6773"; x.font = f2; x.fillText(unter, 20, 68); }
-    var t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter;
-    var s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, transparent:true, depthTest:false}));
-    s.scale.set(w/62*2.5, h/62*2.5, 1);
-    s.renderOrder = 999;
-    return s;
-  }
-
-  // -------------------------------------------------------------- Aufbau ---
-  var BW = 7.4, BD = 4.2, BH = 1.7, LUFT = 1.3, ABSTAND = 11.4, START = -17;
-  var knoten = [], nachId = {}, klickbar = [];
-  var gruppe = new THREE.Group();
-
-  SPEC.schichten.forEach(function(sch, si){
-    var y = START + si * ABSTAND;
-    var bl = sch.blocks.map(function(b){
-      return (typeof b === "string") ? {id:null, name:b, untertitel:""} : b;
-    });
-    var spalten = Math.max(1, Math.ceil(bl.length / 2));
-    var reihen = bl.length <= 1 ? 1 : 2;
-    var gx = spalten*BW + (spalten-1)*LUFT, gz = reihen*BD + (reihen-1)*LUFT;
-
-    var platte = new THREE.Mesh(
-      new THREE.BoxGeometry(gx+3, 0.6, gz+3),
-      new THREE.MeshLambertMaterial({color:new THREE.Color(sch.farbe).multiplyScalar(0.4)}));
-    platte.position.set(0, y-1.7, 0); gruppe.add(platte);
-
-    bl.forEach(function(b, i){
-      var sp = i % spalten, re = Math.floor(i / spalten);
-      var x = -gx/2 + BW/2 + sp*(BW+LUFT), z = -gz/2 + BD/2 + re*(BD+LUFT);
-      var mat = new THREE.MeshLambertMaterial({color:sch.farbe});
-      var m = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), mat);
-      m.position.set(x, y, z);
-      gruppe.add(m); klickbar.push(m);
-      var kante = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),
-        new THREE.LineBasicMaterial({color:0x0e1420, transparent:true, opacity:.55}));
-      kante.position.copy(m.position); gruppe.add(kante);
-
-      var s = schild(b.name, b.untertitel);
-      s.position.set(x, y + BH/2 + (b.untertitel ? 2.1 : 1.6), z);
-      gruppe.add(s);
-
-      var id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
-      var eintrag = {id:id, name:b.name, untertitel:b.untertitel||"", schicht:sch.name,
-                     mesh:m, mat:mat, farbe:new THREE.Color(sch.farbe), pos:m.position};
-      m.userData.index = knoten.length;
-      knoten.push(eintrag); nachId[id] = eintrag;
-    });
-  });
-
-  // -------------------------------------------------------------- Kanten ---
-  var STIL = {};
-  (SPEC.kantenarten || []).forEach(function(a){ STIL[a.art] = a; });
-
-  (SPEC.kanten || []).forEach(function(k){
-    var a = nachId[k.von], b = nachId[k.nach];
-    if (!a || !b) return;
-    var art = STIL[k.art] || {farbe:"#8ea2ff", stil:"voll"};
-    var g = new THREE.BufferGeometry().setFromPoints([
-      a.pos.clone().setY(a.pos.y + 0.9), b.pos.clone().setY(b.pos.y - 0.9)]);
-    var linie;
-    if (art.stil === "gestrichelt"){
-      linie = new THREE.Line(g, new THREE.LineDashedMaterial(
-        {color:art.farbe, dashSize:1.4, gapSize:1.0, transparent:true, opacity:.9}));
-      linie.computeLineDistances();
-    } else {
-      linie = new THREE.Line(g, new THREE.LineBasicMaterial(
-        {color:art.farbe, transparent:true, opacity:.85}));
-    }
-    gruppe.add(linie);
-  });
-
-  szene.add(gruppe);
-
-  var leg = document.getElementById("legende");
-  (SPEC.kantenarten || []).forEach(function(a){
-    var s = document.createElement("span");
-    s.innerHTML = '<i class="strich" style="border-top-color:' + a.farbe +
-                  ';border-top-style:' + (a.stil === "gestrichelt" ? "dashed" : "solid") +
-                  '"></i>' + a.text;
-    leg.appendChild(s);
-  });
-
-  // ------------------------------------------------------------- Auswahl ---
-  var aktiv = -1;
-  function waehle(i){
-    if (aktiv >= 0){
-      knoten[aktiv].mat.color.copy(knoten[aktiv].farbe);
-      knoten[aktiv].mat.emissive.setHex(0x000000);
-      knoten[aktiv].mesh.scale.set(1,1,1);
-    }
-    aktiv = ((i % knoten.length) + knoten.length) % knoten.length;
-    var k = knoten[aktiv];
-    k.mat.emissive.setHex(0x333333);
-    k.mesh.scale.set(1.1, 1.5, 1.1);
-    document.getElementById("k-name").textContent = k.name;
-    document.getElementById("k-sub").textContent = k.untertitel || "—";
-    document.getElementById("k-schicht").textContent = k.schicht;
-    document.getElementById("k-id").textContent = k.id;
-  }
-
-  var strahl = new THREE.Raycaster(), zeiger = new THREE.Vector2();
-  renderer.domElement.addEventListener("click", function(e){
-    if (gezogen) return;
-    var r = renderer.domElement.getBoundingClientRect();
-    zeiger.x = ((e.clientX - r.left) / r.width) * 2 - 1;
-    zeiger.y = -((e.clientY - r.top) / r.height) * 2 + 1;
-    strahl.setFromCamera(zeiger, kamera);
-    var treffer = strahl.intersectObjects(klickbar, false);
-    if (treffer.length) waehle(treffer[0].object.userData.index);
-  });
-  document.getElementById("btn-prev").addEventListener("click", function(){ waehle(aktiv - 1); });
-  document.getElementById("btn-next").addEventListener("click", function(){ waehle(aktiv + 1); });
-
-  // ------------------------------------------------------------- Kamera ----
-  var azimut = Math.PI/4, elevation = 0.62, rotiert = true;
-  function stelle(){
-    var x = radius*Math.cos(elevation)*Math.sin(azimut);
-    var y = radius*Math.sin(elevation);
-    var z = radius*Math.cos(elevation)*Math.cos(azimut);
-    kamera.position.set(x, y, z); kamera.lookAt(0, 0, 0);
-  }
-  var zieht = false, gezogen = false, lx = 0, ly = 0;
-  renderer.domElement.addEventListener("pointerdown", function(e){
-    zieht = true; gezogen = false; lx = e.clientX; ly = e.clientY;
-  });
-  window.addEventListener("pointermove", function(e){
-    if (!zieht) return;
-    if (Math.abs(e.clientX-lx) + Math.abs(e.clientY-ly) > 3){ gezogen = true; rotiert = false; }
-    azimut -= (e.clientX - lx) * 0.006;
-    elevation = Math.max(0.08, Math.min(1.45, elevation + (e.clientY - ly) * 0.005));
-    lx = e.clientX; ly = e.clientY;
-  });
-  window.addEventListener("pointerup", function(){ zieht = false; setTimeout(function(){ gezogen = false; }, 0); });
-
-  function zoom(f){
-    if (iso){ D = Math.max(11, Math.min(54, D * f)); groesse(); }
-    else { radius = Math.max(32, Math.min(160, radius * f)); }
-  }
-  document.getElementById("btn-plus").addEventListener("click", function(){ zoom(0.85); });
-  document.getElementById("btn-minus").addEventListener("click", function(){ zoom(1.18); });
-  renderer.domElement.addEventListener("wheel", function(e){
-    e.preventDefault(); zoom(e.deltaY > 0 ? 1.08 : 0.93);
-  }, {passive:false});
-  document.getElementById("btn-reset").addEventListener("click", function(){
-    azimut = Math.PI/4; elevation = 0.62; D = 26; radius = 82; rotiert = true;
-    iso = true; kamera = kameraIso;
-    document.getElementById("btn-iso").setAttribute("aria-pressed", "true");
-    document.getElementById("btn-iso").textContent = "Iso";
-    waehle(0); groesse();
-  });
-  document.getElementById("btn-iso").addEventListener("click", function(){
-    iso = !iso; kamera = iso ? kameraIso : kameraPersp;
-    this.setAttribute("aria-pressed", String(iso));
-    this.textContent = iso ? "Iso" : "Persp";
-    groesse();
-  });
-
-  function groesse(){
-    var w = buehne.clientWidth, h = buehne.clientHeight;
-    aspekt = w / h;
-    kameraIso.left = -D*aspekt; kameraIso.right = D*aspekt;
-    kameraIso.top = D; kameraIso.bottom = -D; kameraIso.updateProjectionMatrix();
-    kameraPersp.aspect = aspekt; kameraPersp.updateProjectionMatrix();
-    renderer.setSize(w, h, false);
-  }
-  window.addEventListener("resize", groesse);
-
-  groesse();
-  waehle(0);
-  (function schleife(){
-    requestAnimationFrame(schleife);
-    if (rotiert) azimut += 0.003;
-    stelle();
-    renderer.render(szene, kamera);
-  })();
-})();
-</script>
-</body>
-</html>\
 `;
+  head.appendChild(style);
 
-// Inhalt in Datei schreiben
-try {
-    fs.writeFileSync(ausgabe_datei, html_inhalt);
-    console.log(`HTML-Datei wurde erfolgreich erstellt: ${ausgabe_datei}`);
-} catch (err) {
-    console.error(`Kann Datei '${ausgabe_datei}' nicht öffnen: ${err.message}`);
-    process.exit(1);
+  // Body-Bereich
+  const body = doc.body;
+
+  // Wrap container
+  const wrap = doc.createElement('div');
+  wrap.className = 'wrap';
+
+  // Technik
+  const technik = doc.createElement('p');
+  technik.className = 'technik';
+  technik.textContent = 'three.js · r128';
+  wrap.appendChild(technik);
+
+  // Überschrift
+  const h1 = doc.createElement('h1');
+  h1.textContent = 'Tagesstatus Live Public';
+  wrap.appendChild(h1);
+
+  // Lede
+  const lede = doc.createElement('p');
+  lede.className = 'lede';
+  lede.textContent = 'Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.';
+  wrap.appendChild(lede);
+
+  // Raster
+  const raster = doc.createElement('div');
+  raster.className = 'raster';
+
+  // Bühne
+  const buehne = doc.createElement('div');
+  buehne.className = 'buehne';
+  buehne.id = 'buehne';
+
+  // Knöpfe
+  const knoepfe = doc.createElement('div');
+  knoepfe.className = 'knoepfe';
+
+  const btnPlus = doc.createElement('button');
+  btnPlus.id = 'btn-plus';
+  btnPlus.title = 'Näher';
+  btnPlus.textContent = '+';
+  knoepfe.appendChild(btnPlus);
+
+  const btnMinus = doc.createElement('button');
+  btnMinus.id = 'btn-minus';
+  btnMinus.title = 'Weiter weg';
+  btnMinus.textContent = '−';
+  knoepfe.appendChild(btnMinus);
+
+  const btnReset = doc.createElement('button');
+  btnReset.id = 'btn-reset';
+  btnReset.textContent = 'Zurücksetzen';
+  knoepfe.appendChild(btnReset);
+
+  const btnIso = doc.createElement('button');
+  btnIso.id = 'btn-iso';
+  btnIso.setAttribute('aria-pressed', 'true');
+  btnIso.title = 'Isometrisch oder perspektivisch';
+  btnIso.textContent = 'Iso';
+  knoepfe.appendChild(btnIso);
+
+  buehne.appendChild(knoepfe);
+  raster.appendChild(buehne);
+
+  // Karte
+  const aside = doc.createElement('aside');
+  aside.className = 'karte';
+
+  const h2 = doc.createElement('h2');
+  h2.textContent = 'Ausgewählter Knoten';
+  aside.appendChild(h2);
+
+  const h3 = doc.createElement('h3');
+  h3.id = 'k-name';
+  h3.textContent = '—';
+  aside.appendChild(h3);
+
+  const sub = doc.createElement('p');
+  sub.className = 'sub';
+  sub.id = 'k-sub';
+  sub.textContent = 'Knoten anklicken oder durchblättern';
+  aside.appendChild(sub);
+
+  const feld1 = doc.createElement('dl');
+  feld1.className = 'feld';
+  const dt1 = doc.createElement('dt');
+  dt1.textContent = 'Schicht';
+  const dd1 = doc.createElement('dd');
+  dd1.id = 'k-schicht';
+  dd1.textContent = '—';
+  feld1.appendChild(dt1);
+  feld1.appendChild(dd1);
+  aside.appendChild(feld1);
+
+  const feld2 = doc.createElement('dl');
+  feld2.className = 'feld';
+  const dt2 = doc.createElement('dt');
+  dt2.textContent = 'ID';
+  const dd2 = doc.createElement('dd');
+  dd2.id = 'k-id';
+  dd2.textContent = '—';
+  feld2.appendChild(dt2);
+  feld2.appendChild(dd2);
+  aside.appendChild(feld2);
+
+  const blaettern = doc.createElement('div');
+  blaettern.className = 'blaettern';
+
+  const btnPrev = doc.createElement('button');
+  btnPrev.id = 'btn-prev';
+  btnPrev.innerHTML = '←<br>Vorheriger';
+  blaettern.appendChild(btnPrev);
+
+  const btnNext = doc.createElement('button');
+  btnNext.id = 'btn-next';
+  btnNext.innerHTML = 'Nächster<br>→';
+  blaettern.appendChild(btnNext);
+
+  aside.appendChild(blaettern);
+  raster.appendChild(aside);
+  wrap.appendChild(raster);
+
+  // Legende
+  const legende = doc.createElement('div');
+  legende.className = 'legende';
+  legende.id = 'legende';
+  wrap.appendChild(legende);
+
+  // Fuß
+  const fuss = doc.createElement('p');
+  fuss.className = 'fuss';
+  fuss.textContent = 'Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.';
+  wrap.appendChild(fuss);
+
+  body.appendChild(wrap);
+
+  return doc;
 }
+
+// Hauptfunktion zur Erstellung der 3D-Szene
+function create3DScene(doc) {
+  const SPEC = {
+    "schichten": [
+      {
+        "name": "Tokens",
+        "farbe": "#5f6773",
+        "blocks": [
+          {"id": "abfrage-beim-oeffnen", "name": "Abfrage beim Oeffnen", "untertitel": "kein Vorbelegen"},
+          {"id": "localstorage", "name": "localStorage", "untertitel": "nur lokal"},
+          {"id": "keine-vorbelegung", "name": "keine Vorbelegung", "untertitel": "leer geliefert"}
+        ]
+      },
+      {
+        "name": "Quellen",
+        "farbe": "#2481cc",
+        "blocks": [
+          {"id": "github", "name": "GitHub", "untertitel": "Repos, Kontingent"},
+          {"id": "vercel", "name": "Vercel", "untertitel": "Deployments"},
+          {"id": "docker-hub", "name": "Docker Hub", "untertitel": "Abbilder"},
+          {"id": "openrouter", "name": "OpenRouter", "untertitel": "Guthaben"},
+          {"id": "openai", "name": "OpenAI", "untertitel": "Admin-Key"},
+          {"id": "anthropic", "name": "Anthropic", "untertitel": "Admin-Key"},
+          {"id": "tailscale", "name": "Tailscale", "untertitel": "Geraete"},
+          {"id": "clawhub", "name": "ClawHub", "untertitel": "Skills"}
+        ]
+      },
+      {
+        "name": "Abruf",
+        "farbe": "#6d5bd0",
+        "blocks": [
+          {"id": "fetch-je-quelle", "name": "fetch je Quelle", "untertitel": "direkt"},
+          {"id": "cors-pruefung", "name": "CORS-Pruefung", "untertitel": "entscheidet"},
+          {"id": "fehler-isolieren", "name": "Fehler isolieren", "untertitel": "je Kachel"}
+        ]
+      },
+      {
+        "name": "Ausgabe",
+        "farbe": "#0f766e",
+        "blocks": [
+          {"id": "kacheln", "name": "Kacheln", "untertitel": "ein Blick"},
+          {"id": "verbrauch", "name": "Verbrauch", "untertitel": "Zahlen"},
+          {"id": "keine-daten-hinweis", "name": "keine Daten = Hinweis", "untertitel": "mit Grund"}
+        ]
+      }
+    ],
+    "kanten": [
+      {"von": "abfrage-beim-oeffnen", "nach": "github", "art": "fluss"},
+      {"von": "localstorage", "nach": "vercel", "art": "fluss"},
+      {"von": "keine-vorbelegung", "nach": "docker-hub", "art": "fluss"},
+      {"von": "github", "nach": "fetch-je-quelle", "art": "fluss"},
+      {"von": "vercel", "nach": "cors-pruefung", "art": "fluss"},
+      {"von": "docker-hub", "nach": "fehler-isolieren", "art": "fluss"},
+      {"von": "openrouter", "nach": "fetch-je-quelle", "art": "fluss"},
+      {"von": "openai", "nach": "cors-pruefung", "art": "fluss"},
+      {"von": "anthropic", "nach": "fehler-isolieren", "art": "fluss"},
+      {"von": "tailscale", "nach": "fetch-je-quelle", "art": "fluss"},
+      {"von": "clawhub", "nach": "cors-pruefung", "art": "fluss"},
+      {"von": "fetch-je-quelle", "nach": "kacheln", "art": "fluss"},
+      {"von": "cors-pruefung", "nach": "verbrauch", "art": "fluss"},
+      {"von": "fehler-isolieren", "nach": "keine-daten-hinweis", "art": "fluss"}
+    ],
+    "kantenarten": [
+      {"art": "fluss", "farbe": "#0f766e", "stil": "voll", "text": "Fluss von unten nach oben"}
+    ]
+  };
+
+  // Erstelle das Canvas-Element
+  const canvas = doc.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  canvas.style.display = 'block';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+
+  // Füge das Canvas zur Bühne hinzu
+  const buehne = doc.getElementById('buehne');
+  buehne.appendChild(canvas);
+
+  // Erstelle die Three.js Szene
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e1420);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, 2));
+  renderer.setSize(canvas.width, canvas.height);
+
+  const D = 26, radius = 82;
+  const cameraIso = new THREE.OrthographicCamera(-D, D, D, -D, 0.1, 600);
+  const cameraPersp = new THREE.PerspectiveCamera(42, 1, 0.1, 600);
+  let camera = cameraIso, iso = true;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.66));
+  const light = new THREE.DirectionalLight(0xffffff, 0.8);
+  light.position.set(30, 46, 26);
+  scene.add(light);
+  const against = new THREE.DirectionalLight(0x8ea2ff, 0.3);
+  against.position.set(-32, 16, -28);
+  scene.add(against);
+
+  const grid = new THREE.GridHelper(110, 34, 0x25324a, 0x1a2333);
+  grid.position.y = -24;
+  scene.add(grid);
+
+  // Funktion zum Erstellen von Schildern
+  function createSign(text, subtitle) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const font1 = "700 40px -apple-system,Segoe UI,Roboto,sans-serif";
+    const font2 = "500 27px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = font1;
+    const w1 = ctx.measureText(text).width;
+    ctx.font = font2;
+    const w2 = subtitle ? ctx.measureText(subtitle).width : 0;
+    const w = Math.ceil(Math.max(w1, w2)) + 40;
+    const h = subtitle ? 96 : 62;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx2 = canvas.getContext("2d");
+    ctx2.fillStyle = "rgba(255,255,255,.95)";
+    if (ctx2.roundRect) {
+      ctx2.beginPath();
+      ctx2.roundRect(0, 0, w, h, 13);
+      ctx2.fill();
+    } else {
+      ctx2.fillRect(0, 0, w, h);
+    }
+    ctx2.fillStyle = "#16191d";
+    ctx2.font = font1;
+    ctx2.textBaseline = "middle";
+    ctx2.fillText(text, 20, subtitle ? 32 : 31);
+    if (subtitle) {
+      ctx2.fillStyle = "#5f6773";
+      ctx2.font = font2;
+      ctx2.fillText(subtitle, 20, 68);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(w / 62 * 2.5, h / 62 * 2.5, 1);
+    sprite.renderOrder = 999;
+    return sprite;
+  }
+
+  // Aufbau der Szene
+  const BW = 7.4, BD = 4.2, BH = 1.7, LUFT = 1.3, ABSTAND = 11.4, START = -17;
+  const nodes = [], byId = {}, clickable = [];
+  const group = new THREE.Group();
+
+  SPEC.schichten.forEach((sch, si) => {
+    const y = START + si * ABSTAND;
+    const blocks = sch.blocks.map(b => {
+      return (typeof b === "string") ? { id: null, name: b, untertitel: "" } : b;
+    });
+    const columns = Math.max(1, Math.ceil(blocks.length / 2));
+    const rows = blocks.length <= 1 ? 1 : 2;
+    const gx = columns * BW + (columns - 1) * LUFT;
+    const gz = rows * BD + (rows - 1) * LUFT;
+
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(gx + 3, 0.6, gz + 3),
+      new THREE.MeshLambertMaterial({ color: new THREE.Color(sch.farbe).multiplyScalar(0.4) })
+    );
+    plate.position.set(0, y - 1.7, 0);
+    group.add(plate);
+
+    blocks.forEach((b, i) => {
+      const col = i % columns;
+      const row = Math.floor(i / columns);
+      const x = -gx / 2 + BW / 2 + col * (BW + LUFT);
+      const z = -gz / 2 + BD / 2 + row * (BD + LUFT);
+      const material = new THREE.MeshLambertMaterial({ color: sch.farbe });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), material);
+      mesh.position.set(x, y, z);
+      group.add(mesh);
+      clickable.push(mesh);
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry),
+        new THREE.LineBasicMaterial({ color: 0x0e1420, transparent: true, opacity: 0.55 })
+      );
+      edges.position.copy(mesh.position);
+      group.add(edges);
+
+      const sign = createSign(b.name, b.untertitel);
+      sign.position.set(x, y + BH / 2 + (b.untertitel ? 2.1 : 1.6), z);
+      group.add(sign);
+
+      const id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+      const entry = {
+        id: id,
+        name: b.name,
+        untertitel: b.untertitel || "",
+        schicht: sch.name,
+        mesh: mesh,
+        material: material,
+        color: new THREE.Color(sch.farbe),
+        position: mesh.position
+      };
+      mesh.userData.index = nodes.length;
+      nodes.push(entry);
+      byId[id] = entry;
+    });
+  });
+
+  // Kanten
+  const STYLE = {};
+  (SPEC.kantenarten || []).forEach(a => {
+    STYLE[a.art] = a;
+  });
+
+  (SPEC.kanten || []).forEach(k => {
+    const a = byId[k.von], b = byId[k.nach];
+    if (!a || !b) return;
+    const style = STYLE[k.art] || { farbe: "#8ea2ff", stil: "voll" };
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+      a.position.clone().setY(a.position.y + 0.9),
+      b.position.clone().setY(b.position.y - 0.9)
+    ]);
+    let line;
+    if (style.stil === "gestrichelt") {
+      line = new THREE.Line(geometry, new THREE.LineDashedMaterial({
+        color: style.farbe,
+        dashSize: 1.4,
+        gapSize: 1.0,
+        transparent: true,
+        opacity: 0.9
+      }));
+      line.computeLineDistances();
+    } else {
+      line = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+        color: style.farbe,
+        transparent: true,
+        opacity: 0.85
+      }));
+    }
+    group.add(line);
+  });
+
+  scene.add(group);
+
+  // Legende
+  const legend = doc.getElementById("legende");
+  (SPEC.kantenarten || []).forEach(a => {
+    const span = doc.createElement("span");
+    span.innerHTML = `<i class="strich" style="border-top-color:${a.farbe};border-top-style:${a.stil === "gestrichelt" ? "dashed" : "solid"}"></i>${a.text}`;
+    legend.appendChild(span);
+  });
+
+  // Animationsschleife
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  return doc;
+}
+
+// Hauptfunktion
+async function main() {
+  // Prüfe, ob ein Dateiname übergeben wurde
+  if (process.argv.length < 3) {
+    console.error('Verwendung: node 3d.js <dateiname>');
+    process.exit(1);
+  }
+
+  const filename = process.argv[2];
+  
+  // Erstelle das Dokument
+  let doc = createDocument();
+  
+  // Erstelle die 3D-Szene
+  doc = create3DScene(doc);
+  
+  // Schreibe das HTML in eine Datei
+  const stream = createWriteStream(filename);
+  stream.write('<!DOCTYPE html>\n');
+  stream.write(doc.documentElement.outerHTML);
+  stream.end();
+  
+  console.log(`HTML-Datei wurde erfolgreich erstellt: ${filename}`);
+}
+
+main().catch(console.error);

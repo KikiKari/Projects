@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-# 3d.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/3d.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
 # 3d.html — portiert nach python
-# Quelle: html, Projects@MCP-Server-Monitor:public/3d.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Quelle: html, Projects@secret-vault-public:public/3d.html
+# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
+import json
 
-def generateHTML():
-    return '''<!DOCTYPE html>
+def generate_html(output_file):
+    html_content = '''<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP-Server-Monitor — Interaktive Architektur</title>
-<meta name="description" content="Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#6d5bd0">
+<title>Secret-Vault Public — Interaktive Architektur</title>
+<meta name="description" content="Vom Passwort zur verschlüsselten Datei — jede Schicht bleibt im Browser. Drehen, zoomen, Knoten auswählen.">
+<meta name="theme-color" content="#5b5bd6">
 <style>
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
-    --ac:#6d5bd0; --buehne:#0e1420; --buehne-line:#1d2739;
+    --ac:#5b5bd6; --buehne:#0e1420; --buehne-line:#1d2739;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -70,8 +66,8 @@ def generateHTML():
 <div class="wrap">
 
   <p class="technik">three.js · r128</p>
-  <h1>MCP-Server-Monitor</h1>
-  <p class="lede">Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.</p>
+  <h1>Secret-Vault Public</h1>
+  <p class="lede">Vom Passwort zur verschlüsselten Datei — jede Schicht bleibt im Browser. Drehen, zoomen, Knoten auswählen.</p>
 
   <div class="raster">
     <div class="buehne" id="buehne">
@@ -105,7 +101,7 @@ def generateHTML():
 <script>
 (function(){
   "use strict";
-  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "mcp-domain", "name": "mcp.DOMAIN", "untertitel": "Streamable HTTP"}, {"id": "docs-mcp", "name": "docs/mcp", "untertitel": "Anbieterdoku"}, {"id": "well-known", "name": ".well-known", "untertitel": "OAuth-Metadaten"}, {"id": "config-json", "name": "config.json", "untertitel": "claude_desktop_config"}]}, {"name": "Sonde", "farbe": "#2481cc", "blocks": [{"id": "discovery-py", "name": "discovery.py", "untertitel": "sechs Pfade"}, {"id": "config-py", "name": "config.py", "untertitel": "MSIX-Falle"}]}, {"name": "Klassifikation", "farbe": "#6d5bd0", "blocks": [{"id": "state-py", "name": "state.py", "untertitel": "fuenf Zustaende"}]}, {"name": "Ausgabe", "farbe": "#15803d", "blocks": [{"id": "report-py", "name": "report.py", "untertitel": "Textausgabe"}, {"id": "server-py", "name": "server.py", "untertitel": "127.0.0.1"}, {"id": "index-html", "name": "index.html", "untertitel": "statische Seite"}]}], "kanten": [{"von": "mcp-domain", "nach": "discovery-py", "art": "fluss"}, {"von": "docs-mcp", "nach": "config-py", "art": "fluss"}, {"von": "well-known", "nach": "discovery-py", "art": "fluss"}, {"von": "config-json", "nach": "config-py", "art": "fluss"}, {"von": "discovery-py", "nach": "state-py", "art": "fluss"}, {"von": "config-py", "nach": "state-py", "art": "fluss"}, {"von": "state-py", "nach": "report-py", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#6d5bd0", "stil": "voll", "text": "Fluss von unten nach oben"}]};
+  var SPEC = ''' + json.dumps(get_spec(), ensure_ascii=False) + ''';
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -332,24 +328,82 @@ def generateHTML():
 </script>
 </body>
 </html>'''
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 
-def main():
-    args = sys.argv[1:]
-    
-    if len(args) != 1:
-        print('Usage: python3 script.py <output-file>', file=sys.stderr)
-        sys.exit(1)
-    
-    outputFile = args[0]
-    
-    try:
-        htmlContent = generateHTML()
-        with open(outputFile, 'w', encoding='utf-8') as f:
-            f.write(htmlContent)
-        print(f'HTML file generated successfully: {outputFile}')
-    except Exception as error:
-        print(f'Error writing file: {error}', file=sys.stderr)
-        sys.exit(1)
+def get_spec():
+    return {
+        "schichten": [
+            {
+                "name": "Eingaben",
+                "farbe": "#5f6773",
+                "blocks": [
+                    {"id": "passphrase", "name": "Passphrase", "untertitel": "nie gespeichert"},
+                    {"id": "vault-datei", "name": "Vault-Datei", "untertitel": "Ciphertext"},
+                    {"id": "neue-felder", "name": "neue Felder", "untertitel": "Formular"}
+                ]
+            },
+            {
+                "name": "Schluesselableitung",
+                "farbe": "#2481cc",
+                "blocks": [
+                    {"id": "pbkdf2-210k", "name": "PBKDF2 210k", "untertitel": "Iterationen"},
+                    {"id": "salt-16-b", "name": "Salt 16 B", "untertitel": "zufaellig"},
+                    {"id": "sha-256", "name": "SHA-256", "untertitel": "HMAC"}
+                ]
+            },
+            {
+                "name": "Verschluesselung",
+                "farbe": "#5b5bd6",
+                "blocks": [
+                    {"id": "aes-256-gcm", "name": "AES-256-GCM", "untertitel": "authentisiert"},
+                    {"id": "iv-12-b", "name": "IV 12 B", "untertitel": "nie doppelt"},
+                    {"id": "crypto-subtle", "name": "crypto.subtle", "untertitel": "WebCrypto"}
+                ]
+            },
+            {
+                "name": "Verwaltung",
+                "farbe": "#b45309",
+                "blocks": [
+                    {"id": "anbieter", "name": "Anbieter", "untertitel": "Gruppen"},
+                    {"id": "felder", "name": "Felder", "untertitel": "Schluessel/Wert"},
+                    {"id": "rotation", "name": "Rotation", "untertitel": "neuer Wert"}
+                ]
+            },
+            {
+                "name": "Ausgabe",
+                "farbe": "#22a06b",
+                "blocks": [
+                    {"id": "download", "name": "Download", "untertitel": "Blob-URL"},
+                    {"id": "export", "name": "Export", "untertitel": "JSON"},
+                    {"id": "zwischenablage", "name": "Zwischenablage", "untertitel": "nur auf Klick"}
+                ]
+            }
+        ],
+        "kanten": [
+            {"von": "passphrase", "nach": "pbkdf2-210k", "art": "fluss"},
+            {"von": "vault-datei", "nach": "salt-16-b", "art": "fluss"},
+            {"von": "neue-felder", "nach": "sha-256", "art": "fluss"},
+            {"von": "pbkdf2-210k", "nach": "aes-256-gcm", "art": "fluss"},
+            {"von": "salt-16-b", "nach": "iv-12-b", "art": "fluss"},
+            {"von": "sha-256", "nach": "crypto-subtle", "art": "fluss"},
+            {"von": "aes-256-gcm", "nach": "anbieter", "art": "fluss"},
+            {"von": "iv-12-b", "nach": "felder", "art": "fluss"},
+            {"von": "crypto-subtle", "nach": "rotation", "art": "fluss"},
+            {"von": "anbieter", "nach": "download", "art": "fluss"},
+            {"von": "felder", "nach": "export", "art": "fluss"},
+            {"von": "rotation", "nach": "zwischenablage", "art": "fluss"}
+        ],
+        "kantenarten": [
+            {"art": "fluss", "farbe": "#5b5bd6", "stil": "voll", "text": "Fluss von unten nach oben"}
+        ]
+    }
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python3 script.py <output_file>")
+        sys.exit(1)
+    
+    output_file = sys.argv[1]
+    generate_html(output_file)

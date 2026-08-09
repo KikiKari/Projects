@@ -1,29 +1,218 @@
-#!/usr/bin/env perl
-# 3d.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/3d.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 3d.html — portiert nach perl5
+# Quelle: html, Projects@tagesstatus-live-public:public/3d.html
+# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
-use File::Spec;
-use File::Basename;
 
-sub generateHTML {
-    return <<'HTML_END';
+my $spec = {
+  "schichten" => [
+    {
+      "name" => "Tokens",
+      "farbe" => "#5f6773",
+      "blocks" => [
+        {
+          "id" => "abfrage-beim-oeffnen",
+          "name" => "Abfrage beim Oeffnen",
+          "untertitel" => "kein Vorbelegen"
+        },
+        {
+          "id" => "localstorage",
+          "name" => "localStorage",
+          "untertitel" => "nur lokal"
+        },
+        {
+          "id" => "keine-vorbelegung",
+          "name" => "keine Vorbelegung",
+          "untertitel" => "leer geliefert"
+        }
+      ]
+    },
+    {
+      "name" => "Quellen",
+      "farbe" => "#2481cc",
+      "blocks" => [
+        {
+          "id" => "github",
+          "name" => "GitHub",
+          "untertitel" => "Repos, Kontingent"
+        },
+        {
+          "id" => "vercel",
+          "name" => "Vercel",
+          "untertitel" => "Deployments"
+        },
+        {
+          "id" => "docker-hub",
+          "name" => "Docker Hub",
+          "untertitel" => "Abbilder"
+        },
+        {
+          "id" => "openrouter",
+          "name" => "OpenRouter",
+          "untertitel" => "Guthaben"
+        },
+        {
+          "id" => "openai",
+          "name" => "OpenAI",
+          "untertitel" => "Admin-Key"
+        },
+        {
+          "id" => "anthropic",
+          "name" => "Anthropic",
+          "untertitel" => "Admin-Key"
+        },
+        {
+          "id" => "tailscale",
+          "name" => "Tailscale",
+          "untertitel" => "Geraete"
+        },
+        {
+          "id" => "clawhub",
+          "name" => "ClawHub",
+          "untertitel" => "Skills"
+        }
+      ]
+    },
+    {
+      "name" => "Abruf",
+      "farbe" => "#6d5bd0",
+      "blocks" => [
+        {
+          "id" => "fetch-je-quelle",
+          "name" => "fetch je Quelle",
+          "untertitel" => "direkt"
+        },
+        {
+          "id" => "cors-pruefung",
+          "name" => "CORS-Pruefung",
+          "untertitel" => "entscheidet"
+        },
+        {
+          "id" => "fehler-isolieren",
+          "name" => "Fehler isolieren",
+          "untertitel" => "je Kachel"
+        }
+      ]
+    },
+    {
+      "name" => "Ausgabe",
+      "farbe" => "#0f766e",
+      "blocks" => [
+        {
+          "id" => "kacheln",
+          "name" => "Kacheln",
+          "untertitel" => "ein Blick"
+        },
+        {
+          "id" => "verbrauch",
+          "name" => "Verbrauch",
+          "untertitel" => "Zahlen"
+        },
+        {
+          "id" => "keine-daten-hinweis",
+          "name" => "keine Daten = Hinweis",
+          "untertitel" => "mit Grund"
+        }
+      ]
+    }
+  ],
+  "kanten" => [
+    {
+      "von" => "abfrage-beim-oeffnen",
+      "nach" => "github",
+      "art" => "fluss"
+    },
+    {
+      "von" => "localstorage",
+      "nach" => "vercel",
+      "art" => "fluss"
+    },
+    {
+      "von" => "keine-vorbelegung",
+      "nach" => "docker-hub",
+      "art" => "fluss"
+    },
+    {
+      "von" => "github",
+      "nach" => "fetch-je-quelle",
+      "art" => "fluss"
+    },
+    {
+      "von" => "vercel",
+      "nach" => "cors-pruefung",
+      "art" => "fluss"
+    },
+    {
+      "von" => "docker-hub",
+      "nach" => "fehler-isolieren",
+      "art" => "fluss"
+    },
+    {
+      "von" => "openrouter",
+      "nach" => "fetch-je-quelle",
+      "art" => "fluss"
+    },
+    {
+      "von" => "openai",
+      "nach" => "cors-pruefung",
+      "art" => "fluss"
+    },
+    {
+      "von" => "anthropic",
+      "nach" => "fehler-isolieren",
+      "art" => "fluss"
+    },
+    {
+      "von" => "tailscale",
+      "nach" => "fetch-je-quelle",
+      "art" => "fluss"
+    },
+    {
+      "von" => "clawhub",
+      "nach" => "cors-pruefung",
+      "art" => "fluss"
+    },
+    {
+      "von" => "fetch-je-quelle",
+      "nach" => "kacheln",
+      "art" => "fluss"
+    },
+    {
+      "von" => "cors-pruefung",
+      "nach" => "verbrauch",
+      "art" => "fluss"
+    },
+    {
+      "von" => "fehler-isolieren",
+      "nach" => "keine-daten-hinweis",
+      "art" => "fluss"
+    }
+  ],
+  "kantenarten" => [
+    {
+      "art" => "fluss",
+      "farbe" => "#0f766e",
+      "stil" => "voll",
+      "text" => "Fluss von unten nach oben"
+    }
+  ]
+};
+
+my $html = <<'HTML';
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP-Server-Monitor — Interaktive Architektur</title>
-<meta name="description" content="Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.">
-<meta name="theme-color" content="#6d5bd0">
+<title>Tagesstatus Live Public — Interaktive Architektur</title>
+<meta name="description" content="Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.">
+<meta name="theme-color" content="#0f766e">
 <style>
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
-    --ac:#6d5bd0; --buehne:#0e1420; --buehne-line:#1d2739;
+    --ac:#0f766e; --buehne:#0e1420; --buehne-line:#1d2739;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -71,8 +260,8 @@ sub generateHTML {
 <div class="wrap">
 
   <p class="technik">three.js · r128</p>
-  <h1>MCP-Server-Monitor</h1>
-  <p class="lede">Warum fehlen die Tools? Vier Schichten von der Netz-Sonde bis zur Ausgabe — drehen, zoomen, Knoten auswählen.</p>
+  <h1>Tagesstatus Live Public</h1>
+  <p class="lede">Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.</p>
 
   <div class="raster">
     <div class="buehne" id="buehne">
@@ -106,7 +295,7 @@ sub generateHTML {
 <script>
 (function(){
   "use strict";
-  var SPEC = {"schichten": [{"name": "Quellen", "farbe": "#5f6773", "blocks": [{"id": "mcp-domain", "name": "mcp.DOMAIN", "untertitel": "Streamable HTTP"}, {"id": "docs-mcp", "name": "docs/mcp", "untertitel": "Anbieterdoku"}, {"id": "well-known", "name": ".well-known", "untertitel": "OAuth-Metadaten"}, {"id": "config-json", "name": "config.json", "untertitel": "claude_desktop_config"}]}, {"name": "Sonde", "farbe": "#2481cc", "blocks": [{"id": "discovery-py", "name": "discovery.py", "untertitel": "sechs Pfade"}, {"id": "config-py", "name": "config.py", "untertitel": "MSIX-Falle"}]}, {"name": "Klassifikation", "farbe": "#6d5bd0", "blocks": [{"id": "state-py", "name": "state.py", "untertitel": "fuenf Zustaende"}]}, {"name": "Ausgabe", "farbe": "#15803d", "blocks": [{"id": "report-py", "name": "report.py", "untertitel": "Textausgabe"}, {"id": "server-py", "name": "server.py", "untertitel": "127.0.0.1"}, {"id": "index-html", "name": "index.html", "untertitel": "statische Seite"}]}], "kanten": [{"von": "mcp-domain", "nach": "discovery-py", "art": "fluss"}, {"von": "docs-mcp", "nach": "config-py", "art": "fluss"}, {"von": "well-known", "nach": "discovery-py", "art": "fluss"}, {"von": "config-json", "nach": "config-py", "art": "fluss"}, {"von": "discovery-py", "nach": "state-py", "art": "fluss"}, {"von": "config-py", "nach": "state-py", "art": "fluss"}, {"von": "state-py", "nach": "report-py", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#6d5bd0", "stil": "voll", "text": "Fluss von unten nach oben"}]};
+  var SPEC = %s;
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
@@ -181,7 +370,7 @@ sub generateHTML {
     platte.position.set(0, y-1.7, 0); gruppe.add(platte);
 
     bl.forEach(function(b, i){
-      var sp = i % spalten, re = Math.floor(i / spalten);
+      var sp = i %% spalten, re = Math.floor(i / spalten);
       var x = -gx/2 + BW/2 + sp*(BW+LUFT), z = -gz/2 + BD/2 + re*(BD+LUFT);
       var mat = new THREE.MeshLambertMaterial({color:sch.farbe});
       var m = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), mat);
@@ -244,7 +433,7 @@ sub generateHTML {
       knoten[aktiv].mat.emissive.setHex(0x000000);
       knoten[aktiv].mesh.scale.set(1,1,1);
     }
-    aktiv = ((i % knoten.length) + knoten.length) % knoten.length;
+    aktiv = ((i %% knoten.length) + knoten.length) %% knoten.length;
     var k = knoten[aktiv];
     k.mat.emissive.setHex(0x333333);
     k.mesh.scale.set(1.1, 1.5, 1.1);
@@ -333,30 +522,40 @@ sub generateHTML {
 </script>
 </body>
 </html>
-HTML_END
-}
+HTML
 
-sub main {
-    my @args = @ARGV;
-    
-    if (@args != 1) {
-        print STDERR "Usage: perl script.pl <output-file>\n";
-        exit 1;
-    }
-    
-    my $outputFile = $args[0];
-    
-    eval {
-        my $htmlContent = generateHTML();
-        open my $fh, '>:encoding(UTF-8)', $outputFile or die "Cannot open file '$outputFile' for writing: $!";
-        print $fh $htmlContent;
-        close $fh;
-        print "HTML file generated successfully: $outputFile\n";
-    };
-    if ($@) {
-        print STDERR "Error writing file: $@\n";
-        exit 1;
+my $json_spec = to_json($spec);
+$html =~ s/%s/$json_spec/g;
+
+my $filename = $ARGV[0] || '3d.html';
+open my $fh, '>', $filename or die "Cannot open $filename: $!";
+print $fh $html;
+close $fh;
+
+print "HTML file generated: $filename\n";
+
+# Simple JSON encoder for the spec
+sub to_json {
+    my $data = shift;
+    if (ref $data eq 'HASH') {
+        my @pairs;
+        for my $key (sort keys %$data) {
+            push @pairs, '"' . $key . '":' . to_json($data->{$key});
+        }
+        return '{' . join(',', @pairs) . '}';
+    } elsif (ref $data eq 'ARRAY') {
+        return '[' . join(',', map { to_json($_) } @$data) . ']';
+    } elsif (!defined $data) {
+        return 'null';
+    } elsif ($data =~ /^[0-9]+(\.[0-9]+)?$/) {
+        return $data;
+    } else {
+        # Escape string
+        $data =~ s/\\/\\\\/g;
+        $data =~ s/"/\\"/g;
+        $data =~ s/\n/\\n/g;
+        $data =~ s/\r/\\r/g;
+        $data =~ s/\t/\\t/g;
+        return '"' . $data . '"';
     }
 }
-
-main();
