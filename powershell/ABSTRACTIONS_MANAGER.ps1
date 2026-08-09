@@ -1,16 +1,19 @@
 #!/usr/bin/env pwsh
 # ABSTRACTIONS_MANAGER.py — portiert nach powershell
-# Quelle: python, OpenClaw@gateway2:ABSTRACTIONS_MANAGER.py
-# auch in: OpenClaw@gateway2:skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Quelle: python, OpenClaw@gateway2:skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
-<# Compatibility entry point for the canonical Abstractions Manager. #>
+<#
+.SYNOPSIS
+Skill-Einstieg fuer den kanonischen Abstractions Manager.
+#>
 
-$CANONICAL_MANAGER = "/home/openclaw/.openclaw/workspace/abstraction-manager/ABSTRACTIONS_MANAGER.py"
+$KANONISCHER_MANAGER = [System.IO.Path]::Combine($env:HOME, ".openclaw", "workspace", "abstractions", "ABSTRACTIONS_MANAGER.py")
 
-if (-not (Test-Path -Path $CANONICAL_MANAGER -PathType Leaf)) {
-    Write-Error "Kanonischer Abstraction-Manager fehlt: $CANONICAL_MANAGER"
+if (-not (Test-Path $KANONISCHER_MANAGER -PathType Leaf)) {
+    Write-Error "Kanonischer Abstractions Manager fehlt: $KANONISCHER_MANAGER"
     exit 1
 }
 
-python3 $CANONICAL_MANAGER
+# Fuehre das Python-Skript aus
+python3 $KANONISCHER_MANAGER
