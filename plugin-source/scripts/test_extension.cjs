@@ -151,6 +151,27 @@ assert.strictEqual(core.accumulateTeamEvidence({}, "Ben", "Ben ist da", []).team
 assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "1" }, { handle: "demo", roomId: "1" }), false);
 assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "1" }, { handle: "demo", roomId: "2" }), true);
 assert.strictEqual(core.streamIdentityChanged({ handle: "demo", roomId: "" }, { handle: "other", roomId: "" }), true);
+assert.strictEqual(core.liveHandleFromUrl("https://www.tiktok.com/@Demo/live"), "demo");
+assert.strictEqual(core.liveHandleFromUrl("https://www.tiktok.com/embed/live/@Other"), "other");
+assert.strictEqual(core.liveHandleFromUrl("https://www.tiktok.com/@demo"), "");
+assert.strictEqual(core.liveHandleFromUrl("not a url"), "");
+assert.strictEqual(core.parseCompactCount("3,231"), 3231);
+assert.strictEqual(core.parseCompactCount("3.231"), 3231);
+assert.strictEqual(core.parseCompactCount("3.2K"), 3200);
+assert.strictEqual(core.parseCompactCount("1,1M"), 1100000);
+assert.strictEqual(core.parseCompactCount("nicht verfügbar"), null);
+const recommendationItems = core.dedupeRecommendations([
+  { handle: "@Alpha", displayName: "", title: "Erster Stream", viewerCount: null, url: "https://www.tiktok.com/@alpha/live", position: 1 },
+  { handle: "alpha", displayName: "Alpha Live", viewerCount: 123, viewerLabel: "123", position: 2 },
+  { handle: "Beta", displayName: "Beta", viewerCount: 500, url: "https://www.tiktok.com/@beta/live", position: 3 },
+  { handle: "gamma", displayName: "Gamma", viewerCount: null, url: "https://www.tiktok.com/@gamma/live", position: 2 }
+]);
+assert.strictEqual(recommendationItems.length, 3);
+assert.strictEqual(recommendationItems[0].handle, "alpha");
+assert.strictEqual(recommendationItems[0].displayName, "Alpha Live");
+assert.strictEqual(recommendationItems[0].viewerCount, 123);
+assert.deepStrictEqual(core.sortRecommendations(recommendationItems).map((item) => item.handle), ["alpha", "gamma", "beta"]);
+assert.deepStrictEqual(core.sortRecommendations(recommendationItems, "viewers").map((item) => item.handle), ["beta", "alpha", "gamma"]);
 assert.strictEqual(core.sameParticipant({ name: "Anja Schaarschmidt89" }, { nickname: "Anja Schaarschmidt89" }), true);
 assert.strictEqual(core.sameParticipant({ userId: "42", name: "Anja" }, { userId: "42", name: "A. Schaarschmidt" }), true);
 assert.deepStrictEqual(core.sortParticipants([
@@ -280,7 +301,12 @@ assert.ok(backgroundSource.includes('case "TLC_CHAT_MESSAGE"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_PLAYER_STATE"'));
 assert.ok(backgroundSource.includes('case "TLC_CLEAR_CHAT"'));
 assert.ok(backgroundSource.includes('case "TLC_REFRESH_PAGE_INFO"'));
+assert.ok(backgroundSource.includes('case "TLC_SCAN_RECOMMENDATIONS"'));
+assert.ok(backgroundSource.includes('case "TLC_CANCEL_RECOMMENDATION_SCAN"'));
+assert.ok(backgroundSource.includes('case "TLC_RECOMMENDATION_SCAN_PROGRESS"'));
+assert.ok(backgroundSource.includes("recommendationScan: emptyRecommendationScan()"));
 assert.ok(backgroundSource.includes('case "TLC_FORCE_PROFILE"'));
+assert.ok(backgroundSource.includes("handleLiveTabUrlChange(tabId, changeInfo.url"));
 assert.ok(backgroundSource.includes('case "TLC_OPEN_EMBED_LIVE"'));
 assert.ok(backgroundSource.includes('case "TLC_SET_MUTE"'));
 assert.ok(backgroundSource.includes('case "TLC_GIFT_MESSAGE"'));
@@ -419,6 +445,22 @@ assert.ok(panelHtml.includes('id="top-chatters-reset"'));
 assert.ok(sidepanelSource.includes("const allowed = [5, 15, 25, 35, 45, 50]"));
 assert.ok(sidepanelSource.includes("Math.min(50, current + 10)"));
 assert.ok(panelHtml.indexOf('id="page-info-section"') < panelHtml.indexOf('id="stats-heading"'));
+assert.ok(panelHtml.indexOf('id="page-info-section"') < panelHtml.indexOf('id="recommendations-section"'));
+assert.ok(panelHtml.indexOf('id="recommendations-section"') < panelHtml.indexOf('id="stats-heading"'));
+assert.ok(panelHtml.includes('id="recommendation-limit"'));
+assert.ok(panelHtml.includes('min="1" max="50"'));
+assert.ok(panelHtml.includes('id="scan-recommendations"'));
+assert.ok(panelHtml.includes('id="cancel-recommendations"'));
+assert.ok(panelHtml.includes('id="recommendation-progress"'));
+assert.ok(panelHtml.includes('aria-live="polite"'));
+assert.ok(panelHtml.includes('id="recommendation-modal"'));
+assert.ok(sidepanelSource.includes("function renderRecommendations"));
+assert.ok(sidepanelSource.includes("core.sortRecommendations"));
+assert.ok(sidepanelSource.includes('link.textContent = "Stream öffnen"'));
+assert.ok(contentSource.includes("RECOMMENDATION_SCAN_MAX = 50"));
+assert.ok(contentSource.includes('type: "TLC_RECOMMENDATION_SCAN_PROGRESS"'));
+assert.ok(contentSource.includes("noGrowthRounds >= 3"));
+assert.ok(contentSource.includes("window.scrollTo({ left: originalScroll.x, top: originalScroll.y"));
 assert.ok(panelHtml.indexOf('id="stats-heading"') < panelHtml.indexOf('id="hook-heading"'));
 assert.ok(panelHtml.indexOf('id="open-normal-live"') < panelHtml.indexOf('id="player-vlc-frame"'));
 assert.ok(panelHtml.indexOf('id="player-vlc-frame"') < panelHtml.indexOf('id="caption-heading"'));

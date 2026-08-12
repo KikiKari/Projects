@@ -25,6 +25,23 @@ function newBrowserSessionId() {
   return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function emptyRecommendationScan() {
+  return {
+    status: "idle",
+    runId: "",
+    sourceUrl: "",
+    sourceHandle: "",
+    requested: 20,
+    scanned: 0,
+    found: 0,
+    items: [],
+    startedAtUtc: null,
+    updatedAtUtc: null,
+    completedAtUtc: null,
+    error: ""
+  };
+}
+
 function emptyState() {
   return {
     enabled: false,
@@ -33,6 +50,7 @@ function emptyState() {
     captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
     aiSummaryInfo: { ...core.EMPTY_AI_SUMMARY_INFO },
+    recommendationScan: emptyRecommendationScan(),
     menuCaptionAvailable: false,
     menuCaptionActive: false,
     hook: { armed: false, installed: false, connected: false, lastError: null },
@@ -86,6 +104,7 @@ async function getState(tabId) {
     playerState: { ...defaults.playerState, ...(state.playerState || {}) },
     profileInfo: { ...defaults.profileInfo, ...(state.profileInfo || {}) },
     aiSummaryInfo: { ...defaults.aiSummaryInfo, ...(state.aiSummaryInfo || {}) },
+    recommendationScan: { ...defaults.recommendationScan, ...(state.recommendationScan || {}), items: (state.recommendationScan?.items || []).slice(0, 50) },
     chatMessages: state.chatMessages || [],
     participants: state.participants || {},
     participantsTruncated: Boolean(state.participantsTruncated),
@@ -101,11 +120,7 @@ async function getState(tabId) {
 }
 
 function pageHandle(page) {
-  try {
-    const path = decodeURIComponent(new URL(page?.url || "").pathname);
-    return (path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "").toLocaleLowerCase();
-  }
-  catch (_) { return ""; }
+  return core.liveHandleFromUrl(page?.url);
 }
 
 function normalizeHandle(value) {
@@ -133,6 +148,39 @@ function resetPageIdentityState(state, handle) {
   state.profileInfo = { ...core.EMPTY_PROFILE_INFO };
   state.aiSummaryInfo = { ...core.EMPTY_AI_SUMMARY_INFO };
   state.liveStats = { ...state.liveStats, followerCount: null };
+  state.recommendationScan = emptyRecommendationScan();
+}
+
+function cleanRecommendationText(value, limit) {
+  return String(value || "").normalize("NFKC").replace(/\s+/g, " ").trim().slice(0, limit);
+}
+
+function sanitizeRecommendationItem(raw, fallbackPosition) {
+  const handle = normalizeHandle(raw?.handle).replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  if (!handle) return null;
+  let url = "";
+  try {
+    const parsed = new URL(String(raw?.url || ""));
+    if (parsed.protocol === "https:" && parsed.hostname === "www.tiktok.com" && core.liveHandleFromUrl(parsed.href) === handle) url = parsed.href;
+  } catch (_) {}
+  const numericCount = raw?.viewerCount == null ? null : Number(raw.viewerCount);
+  return {
+    handle,
+    displayName: cleanRecommendationText(raw?.displayName, 160),
+    title: cleanRecommendationText(raw?.title, 300),
+    viewerCount: Number.isSafeInteger(numericCount) && numericCount >= 0 ? numericCount : null,
+    viewerLabel: cleanRecommendationText(raw?.viewerLabel, 32),
+    url: url || `https://www.tiktok.com/@${handle}/live`,
+    position: Math.max(1, Math.min(50, Math.round(Number(raw?.position) || fallbackPosition)))
+  };
+}
+
+function sanitizeRecommendationItems(items, limit = 50) {
+  const sanitized = (Array.isArray(items) ? items : [])
+    .slice(0, 100)
+    .map((item, index) => sanitizeRecommendationItem(item, index + 1))
+    .filter(Boolean);
+  return core.dedupeRecommendations(sanitized).slice(0, Math.max(1, Math.min(50, limit)));
 }
 
 function resetPageIdentityIfChanged(state, nextHandle) {
@@ -607,6 +655,16 @@ function applyStreamIdentity(state, identity = {}) {
   else state.stream = { ...state.stream, handle, roomId, key: `${handle}|${roomId}` };
 }
 
+async function handleLiveTabUrlChange(tabId, url, title = "") {
+  const nextHandle = core.liveHandleFromUrl(url);
+  if (!nextHandle) return;
+  const state = await getState(tabId);
+  resetPageIdentityIfChanged(state, nextHandle);
+  applyStreamIdentity(state, { handle: nextHandle });
+  state.page = { ...state.page, url, title: title || state.page?.title || "", scannedAtUtc: null };
+  await setState(tabId, state);
+}
+
 async function addChatMessage(tabId, rawMessage) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
   const rawAuthor = core.sanitizeChatText(rawMessage.nickname || rawMessage.displayId || rawMessage.author || "Chat");
@@ -922,6 +980,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     path: "sidepanel.html",
     enabled: true
   }).catch(() => {});
+  if (changeInfo.url && isTikTok) {
+    handleLiveTabUrlChange(tabId, changeInfo.url, tab.title || "").catch(() => {});
+  }
   if (changeInfo.status === "loading" && isTikTok) {
     getState(tabId).then(async (state) => {
       const shouldArm = Boolean(state.hook.armed);
@@ -1222,6 +1283,78 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "TLC_REFRESH_PAGE_INFO": {
         const response = await chrome.tabs.sendMessage(tabId, { type: message.type });
         sendResponse({ ok: true, response });
+        break;
+      }
+      case "TLC_SCAN_RECOMMENDATIONS": {
+        if (!Number.isInteger(tabId) || tabId < 0) throw new Error("Kein TikTok-Tab ausgewählt.");
+        const tab = await chrome.tabs.get(tabId);
+        const sourceHandle = core.liveHandleFromUrl(tab.url);
+        if (!sourceHandle) throw new Error("Der ausgewählte Tab zeigt keinen TikTok-Livestream.");
+        const limit = Math.max(1, Math.min(50, Math.round(Number(message.limit) || 20)));
+        const runId = newBrowserSessionId();
+        const now = new Date().toISOString();
+        const state = await getState(tabId);
+        state.recommendationScan = {
+          ...emptyRecommendationScan(),
+          status: "running",
+          runId,
+          sourceUrl: String(tab.url || state.page?.url || "").slice(0, 500),
+          sourceHandle,
+          requested: limit,
+          startedAtUtc: now,
+          updatedAtUtc: now
+        };
+        await setState(tabId, state);
+        chrome.tabs.sendMessage(tabId, { type: "TLC_SCAN_RECOMMENDATIONS", runId, limit }).catch(async (error) => {
+          const latest = await getState(tabId);
+          if (latest.recommendationScan?.runId !== runId) return;
+          latest.recommendationScan = {
+            ...latest.recommendationScan,
+            status: "error",
+            error: cleanRecommendationText(error?.message || error, 300),
+            updatedAtUtc: new Date().toISOString(),
+            completedAtUtc: new Date().toISOString()
+          };
+          await setState(tabId, latest);
+        });
+        sendResponse({ ok: true, started: true, runId });
+        break;
+      }
+      case "TLC_CANCEL_RECOMMENDATION_SCAN": {
+        const state = await getState(tabId);
+        const runId = String(message.runId || state.recommendationScan?.runId || "");
+        const response = await chrome.tabs.sendMessage(tabId, { type: "TLC_CANCEL_RECOMMENDATION_SCAN", runId }).catch(() => null);
+        if (!response?.ok && state.recommendationScan?.status === "running" && state.recommendationScan?.runId === runId) {
+          const now = new Date().toISOString();
+          state.recommendationScan = { ...state.recommendationScan, status: "cancelled", updatedAtUtc: now, completedAtUtc: now };
+          await setState(tabId, state);
+        }
+        sendResponse({ ok: true, cancelled: true });
+        break;
+      }
+      case "TLC_RECOMMENDATION_SCAN_PROGRESS": {
+        if (!Number.isInteger(sender.tab?.id) || sender.tab.id !== tabId) throw new Error("Ungültiger Absender für den Empfehlungs-Scan.");
+        const state = await getState(tabId);
+        const current = state.recommendationScan || emptyRecommendationScan();
+        if (!message.runId || current.runId !== message.runId) {
+          sendResponse({ ok: false, stale: true });
+          break;
+        }
+        const status = ["running", "complete", "cancelled", "error"].includes(message.status) ? message.status : "running";
+        const items = sanitizeRecommendationItems(message.items, current.requested);
+        const now = new Date().toISOString();
+        state.recommendationScan = {
+          ...current,
+          status,
+          scanned: Math.max(0, Math.min(current.requested, Math.round(Number(message.scanned) || items.length))),
+          found: items.length,
+          items,
+          updatedAtUtc: now,
+          completedAtUtc: status === "running" ? null : now,
+          error: status === "error" ? cleanRecommendationText(message.error, 300) : ""
+        };
+        await setState(tabId, state);
+        sendResponse({ ok: true });
         break;
       }
       case "TLC_FORCE_PROFILE": {

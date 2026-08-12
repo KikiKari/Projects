@@ -23,6 +23,7 @@
   const POPUP_GUARD_GRACE_MS = 40;
   const QUICK_RECOVER_INTERVAL_MS = 40;
   const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
+  const RECOMMENDATION_SCAN_MAX = 50;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -40,6 +41,7 @@
   let liveProSeenHandle = "";
   let sponsoredContentSeenHandle = "";
   let paidPartnershipSeenHandle = "";
+  let activeRecommendationScan = null;
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -500,6 +502,149 @@
       }
     }
     return null;
+  }
+
+  function recommendationHandle(link) {
+    try { return core.liveHandleFromUrl(new URL(link?.href || "", location.href).href); }
+    catch (_) { return ""; }
+  }
+
+  function recommendationGridRoot() {
+    const heading = [...document.querySelectorAll("h1,h2,h3")].find((element) =>
+      /^empfohlene livestreams$/i.test(visibleText(element))
+    );
+    if (!heading) return null;
+    let node = heading.parentElement;
+    for (let depth = 0; node && depth < 6; depth += 1, node = node.parentElement) {
+      const handles = new Set([...node.querySelectorAll('a[href*="/live"]')].map(recommendationHandle).filter(Boolean));
+      if (handles.size >= 1) return node;
+    }
+    return null;
+  }
+
+  function recommendationCardFromLink(link, root) {
+    const handle = recommendationHandle(link);
+    if (!handle) return null;
+    let node = link;
+    for (let depth = 0; node && depth < 7 && root?.contains(node); depth += 1, node = node.parentElement) {
+      const rect = node.getBoundingClientRect?.() || { width: 0, height: 0 };
+      const linked = node.querySelectorAll ? [...node.querySelectorAll('a[href*="/live"]')] : [];
+      const handles = new Set(linked.map(recommendationHandle).filter(Boolean));
+      const cardLike = Boolean(node.querySelector?.("video,img")) && handles.size === 1 && handles.has(handle);
+      if (cardLike && rect.width >= 120 && rect.width <= 700 && rect.height > 80 && rect.height <= 650) return node;
+      if (node === root) break;
+    }
+    return null;
+  }
+
+  function recommendationCards() {
+    const root = recommendationGridRoot();
+    if (!root) return [];
+    const seen = new Set();
+    const cards = [];
+    for (const link of root.querySelectorAll('a[href*="/live"]')) {
+      const handle = recommendationHandle(link);
+      if (!handle || seen.has(handle)) continue;
+      const card = recommendationCardFromLink(link, root);
+      if (!card) continue;
+      seen.add(handle);
+      cards.push({ handle, card, url: new URL(link.href, location.href).href });
+    }
+    return cards;
+  }
+
+  function recommendationCount(card) {
+    const candidates = [...card.querySelectorAll("span,div,p,strong")]
+      .filter(isVisible)
+      .map((element) => visibleText(element))
+      .filter((value) => /^[0-9]+(?:[.,][0-9]+)?[KMB]?$/i.test(value));
+    for (const viewerLabel of candidates) {
+      const viewerCount = core.parseCompactCount(viewerLabel);
+      if (viewerCount != null) return { viewerCount, viewerLabel };
+    }
+    return { viewerCount: null, viewerLabel: "" };
+  }
+
+  function recommendationText(card, handle) {
+    const matchingLinks = [...card.querySelectorAll('a[href*="/live"]')].filter((link) => recommendationHandle(link) === handle);
+    const title = matchingLinks.map((link) => String(link.getAttribute("title") || "").trim()).find(Boolean) || "";
+    const lines = matchingLinks.flatMap((link) => String(link.innerText || "").split(/\r?\n/))
+      .map((value) => value.trim())
+      .filter((value) => value && !/^live$/i.test(value) && !/^[0-9]+(?:[.,][0-9]+)?[KMB]?$/i.test(value));
+    const useful = lines.filter((value) => !/^(?:jetzt anschauen und mit anderen in echtzeit interagieren!?|lets go live!?)$/i.test(value));
+    return {
+      displayName: String(useful.at(-1) || handle).slice(0, 160),
+      title: String(title || useful.find((value) => value !== useful.at(-1)) || "").slice(0, 300)
+    };
+  }
+
+  function recommendationItem(entry, position) {
+    const count = recommendationCount(entry.card);
+    const text = recommendationText(entry.card, entry.handle);
+    return {
+      handle: entry.handle,
+      displayName: text.displayName,
+      title: text.title,
+      viewerCount: count.viewerCount,
+      viewerLabel: count.viewerLabel,
+      url: entry.url,
+      position
+    };
+  }
+
+  async function emitRecommendationProgress(run, status, items, error = "") {
+    await chrome.runtime.sendMessage({
+      type: "TLC_RECOMMENDATION_SCAN_PROGRESS",
+      runId: run.runId,
+      status,
+      sourceUrl: run.sourceUrl,
+      sourceHandle: run.sourceHandle,
+      requested: run.limit,
+      scanned: items.length,
+      items,
+      error: String(error || "").slice(0, 300)
+    }).catch(() => {});
+  }
+
+  async function scanRecommendations(run) {
+    const originalScroll = { x: window.scrollX, y: window.scrollY };
+    const items = [];
+    const scannedHandles = new Set();
+    let noGrowthRounds = 0;
+    try {
+      await emitRecommendationProgress(run, "running", items);
+      while (!run.cancelled && items.length < run.limit && location.href === run.sourceUrl) {
+        const cards = recommendationCards();
+        let addedThisRound = 0;
+        for (const entry of cards) {
+          if (run.cancelled || items.length >= run.limit || location.href !== run.sourceUrl) break;
+          if (scannedHandles.has(entry.handle)) continue;
+          scannedHandles.add(entry.handle);
+          entry.card.scrollIntoView({ block: "center", inline: "nearest" });
+          await new Promise((resolve) => setTimeout(resolve, 180));
+          for (const type of ["pointerover", "mouseover", "mouseenter"]) {
+            entry.card.dispatchEvent(new MouseEvent(type, { bubbles: true, view: window }));
+          }
+          await new Promise((resolve) => setTimeout(resolve, 320));
+          items.push(recommendationItem(entry, items.length + 1));
+          addedThisRound += 1;
+          await emitRecommendationProgress(run, "running", core.dedupeRecommendations(items));
+        }
+        if (run.cancelled || items.length >= run.limit || location.href !== run.sourceUrl) break;
+        if (addedThisRound === 0) noGrowthRounds += 1;
+        else noGrowthRounds = 0;
+        if (noGrowthRounds >= 3) break;
+        window.scrollBy({ top: Math.max(600, Math.round(window.innerHeight * 0.8)), left: 0, behavior: "auto" });
+        await new Promise((resolve) => setTimeout(resolve, 650));
+      }
+      const status = run.cancelled || location.href !== run.sourceUrl ? "cancelled" : "complete";
+      await emitRecommendationProgress(run, status, core.dedupeRecommendations(items));
+    } catch (error) {
+      await emitRecommendationProgress(run, "error", core.dedupeRecommendations(items), error?.message || error);
+    } finally {
+      window.scrollTo({ left: originalScroll.x, top: originalScroll.y, behavior: "auto" });
+      if (activeRecommendationScan?.runId === run.runId) activeRecommendationScan = null;
+    }
   }
 
   function explicitCardSummary(card) {
@@ -1370,6 +1515,27 @@
     if (message.type === "TLC_REFRESH_PAGE_INFO") {
       scanPage({ refreshProfile: true }).then((result) => sendResponse(result)).catch((error) => sendResponse({ activated: false, error: String(error) }));
       return true;
+    }
+    if (message.type === "TLC_SCAN_RECOMMENDATIONS") {
+      if (activeRecommendationScan) activeRecommendationScan.cancelled = true;
+      const run = {
+        runId: String(message.runId || ""),
+        limit: Math.max(1, Math.min(RECOMMENDATION_SCAN_MAX, Math.round(Number(message.limit) || 20))),
+        sourceUrl: location.href,
+        sourceHandle: currentHandle().toLocaleLowerCase(),
+        cancelled: false
+      };
+      activeRecommendationScan = run;
+      scanRecommendations(run).catch(() => {});
+      sendResponse({ ok: true, started: true, runId: run.runId });
+      return false;
+    }
+    if (message.type === "TLC_CANCEL_RECOMMENDATION_SCAN") {
+      if (activeRecommendationScan && (!message.runId || activeRecommendationScan.runId === message.runId)) {
+        activeRecommendationScan.cancelled = true;
+      }
+      sendResponse({ ok: true, cancelled: true, runId: activeRecommendationScan?.runId || "" });
+      return false;
     }
     if (message.type === "TLC_SET_QUALITY") {
       setQuality(message.quality, message.sdkKey).then((result) => sendResponse(result)).catch((error) => sendResponse({ activated: false, error: String(error) }));

@@ -33,10 +33,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .site-header { min-height: 74px; display: flex; align-items: center; gap: 30px; padding: 12px max(24px, calc((100vw - 1240px) / 2)); border-bottom: 1px solid rgba(217, 226, 236, .8); background: rgba(255, 253, 249, .95); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; white-space: nowrap; letter-spacing: -.02em; }
 .brand b { color: var(--coral-dark); }
-.brand-mark { width: 28px; height: 28px; display: inline-block; position: relative; border: 3px solid var(--coral); border-radius: 9px 9px 12px 7px; transform: rotate(-6deg); flex: 0 0 auto; }
-.brand-mark::after { content: ""; position: absolute; right: -6px; bottom: -6px; width: 10px; height: 10px; background: var(--cyan); border: 3px solid var(--paper); border-radius: 50%; }
-.brand-mark span:first-child { position: absolute; left: 5px; top: 6px; width: 3px; height: 9px; background: var(--cyan); border-radius: 3px; }
-.brand-mark span:last-child { position: absolute; left: 11px; top: 3px; width: 3px; height: 12px; background: var(--coral); border-radius: 3px; }
+.brand-mark { width: 28px; height: 28px; display: block; object-fit: contain; flex: 0 0 auto; }
 .site-header nav { display: flex; align-items: center; gap: 24px; margin-inline: auto; }
 .site-header nav a { text-decoration: none; font-size: .9rem; font-weight: 650; color: #42516b; padding: 11px 0; border-bottom: 2px solid transparent; }
 .site-header nav a:hover, .site-header nav a.active { color: var(--ink); border-bottom-color: var(--coral); }
@@ -203,7 +200,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .search-results p { padding: 20px; color: var(--muted); }
 footer { padding: 36px 0; background: #101d34; color: #d8e0eb; }
 footer .page-width { display: flex; align-items: center; gap: 24px; }
-.footer-brand .brand-mark::after { border-color: #101d34; }
 footer p { color: #9facbd; margin-right: auto; }
 footer div > div:last-child { display: flex; gap: 18px; }
 

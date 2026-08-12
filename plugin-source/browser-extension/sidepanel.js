@@ -11,6 +11,7 @@
     "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report", "player-vlc-frame",
     "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-strength", "limiter-strength-output", "multi-guest-status",
     "page-info-section", "page-info-source", "profile-info", "summary-info", "refresh-page-info", "force-page-info",
+    "recommendations-section", "recommendation-status", "recommendation-limit", "recommendation-sort", "scan-recommendations", "cancel-recommendations", "recommendation-progress", "recommendation-list", "recommendation-actions", "recommendation-more", "recommendation-modal", "recommendation-modal-list", "close-recommendations",
     "scan", "enable-captions",
     "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "export-log", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
   ].map((id) => [id, document.getElementById(id)]));
@@ -857,6 +858,80 @@
     }
   }
 
+  function createRecommendationRow(item) {
+    const row = document.createElement("article");
+    row.className = "recommendation-row";
+    const head = document.createElement("div");
+    head.className = "recommendation-head";
+    const name = document.createElement("p");
+    name.className = "recommendation-name";
+    const displayName = String(item.displayName || "").trim();
+    name.textContent = displayName && displayName.toLocaleLowerCase() !== item.handle
+      ? `@${item.handle} · ${displayName}`
+      : `@${item.handle}`;
+    const viewers = document.createElement("span");
+    viewers.className = "recommendation-viewers";
+    viewers.textContent = `${formatCount(item.viewerCount)} Zuschauer*innen`;
+    head.append(name, viewers);
+    row.append(head);
+    if (item.title) {
+      const description = document.createElement("p");
+      description.className = "recommendation-description";
+      description.textContent = item.title;
+      row.append(description);
+    }
+    const link = document.createElement("a");
+    link.className = "recommendation-link";
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Stream öffnen";
+    row.append(link);
+    return row;
+  }
+
+  function sortedRecommendations(state = currentState) {
+    return core.sortRecommendations(state?.recommendationScan?.items || [], elements["recommendation-sort"].value);
+  }
+
+  function renderRecommendationModal(state = currentState) {
+    const items = sortedRecommendations(state);
+    clearChildren(elements["recommendation-modal-list"]);
+    elements["recommendation-modal-list"].classList.toggle("empty", !items.length);
+    if (!items.length) {
+      elements["recommendation-modal-list"].textContent = "Noch keine Empfehlungen erfasst.";
+      return;
+    }
+    for (const item of items) elements["recommendation-modal-list"].append(createRecommendationRow(item));
+  }
+
+  function renderRecommendations(state) {
+    const scan = state.recommendationScan || {};
+    const running = scan.status === "running";
+    const labels = { idle: "bereit", running: "läuft", complete: "fertig", cancelled: "abgebrochen", error: "Fehler" };
+    elements["recommendation-status"].textContent = labels[scan.status] || "bereit";
+    elements["recommendation-status"].classList.toggle("active", running || scan.status === "complete");
+    elements["recommendation-limit"].disabled = running;
+    elements["scan-recommendations"].hidden = running;
+    elements["cancel-recommendations"].hidden = !running;
+    const scanned = Number(scan.scanned || 0);
+    const requested = Number(scan.requested || 20);
+    const found = Number(scan.found || 0);
+    elements["recommendation-progress"].textContent = scan.status === "idle"
+      ? "Noch kein Scan gestartet."
+      : scan.status === "running" ? `${scanned} von bis zu ${requested} geprüft · ${found} gefunden.`
+      : scan.status === "cancelled" ? `Abgebrochen · ${found} Empfehlungen behalten.`
+      : scan.status === "error" ? `Scan fehlgeschlagen: ${scan.error || "Unbekannter Fehler"}`
+      : `${found} Empfehlungen erfasst.`;
+    const items = sortedRecommendations(state);
+    clearChildren(elements["recommendation-list"]);
+    elements["recommendation-list"].classList.toggle("empty", !items.length);
+    if (!items.length) elements["recommendation-list"].textContent = "Noch keine Empfehlungen erfasst.";
+    else for (const item of items.slice(0, 5)) elements["recommendation-list"].append(createRecommendationRow(item));
+    elements["recommendation-actions"].hidden = items.length <= 5;
+    if (!elements["recommendation-modal"].hidden) renderRecommendationModal(state);
+  }
+
   function render(state) {
     currentState = state;
     const tabSpeechEnabled = Boolean(state.speech?.enabled);
@@ -884,6 +959,7 @@
     renderLiveStats(state);
     renderPlayer(state.playerState || {});
     renderPageInfo(state);
+    renderRecommendations(state);
     renderMedia(state.media || []);
     renderCaptions(state.captions || []);
     elements["debug-enabled"].checked = Boolean(state.debug?.enabled);
@@ -1226,6 +1302,38 @@
     elements["audience-modal"].hidden = false;
     elements["close-audience"].focus();
   });
+  elements["scan-recommendations"].addEventListener("click", async () => {
+    const limit = Math.max(1, Math.min(50, Math.round(Number(elements["recommendation-limit"].value) || 20)));
+    elements["recommendation-limit"].value = String(limit);
+    elements.notice.textContent = "";
+    try {
+      await send("TLC_SCAN_RECOMMENDATIONS", { limit });
+    } catch (error) {
+      elements.notice.textContent = String(error?.message || error);
+    }
+  });
+  elements["cancel-recommendations"].addEventListener("click", async () => {
+    try {
+      await send("TLC_CANCEL_RECOMMENDATION_SCAN", { runId: currentState?.recommendationScan?.runId || "" });
+    } catch (error) {
+      elements.notice.textContent = String(error?.message || error);
+    }
+  });
+  elements["recommendation-sort"].addEventListener("change", () => {
+    if (currentState) renderRecommendations(currentState);
+  });
+  elements["recommendation-more"].addEventListener("click", () => {
+    renderRecommendationModal();
+    elements["recommendation-modal"].hidden = false;
+    elements["close-recommendations"].focus();
+  });
+  elements["close-recommendations"].addEventListener("click", () => {
+    elements["recommendation-modal"].hidden = true;
+    elements["recommendation-more"].focus();
+  });
+  elements["recommendation-modal"].addEventListener("click", (event) => {
+    if (event.target === elements["recommendation-modal"]) elements["close-recommendations"].click();
+  });
   elements["top-chatters-reset"].addEventListener("click", () => setTopChatterLimit(5));
   elements["top-chatters-more"].addEventListener("click", () => {
     const current = topChatterLimit();
@@ -1253,7 +1361,12 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements["audience-modal"].hidden) elements["close-audience"].click();
     else if (event.key === "Escape" && !elements["chat-history-modal"].hidden) elements["close-chat-history"].click();
-    const openModal = !elements["audience-modal"].hidden ? elements["audience-modal"] : !elements["chat-history-modal"].hidden ? elements["chat-history-modal"] : null;
+    else if (event.key === "Escape" && !elements["recommendation-modal"].hidden) elements["close-recommendations"].click();
+    const openModal = !elements["audience-modal"].hidden
+      ? elements["audience-modal"]
+      : !elements["chat-history-modal"].hidden
+        ? elements["chat-history-modal"]
+        : !elements["recommendation-modal"].hidden ? elements["recommendation-modal"] : null;
     if (event.key === "Tab" && openModal) {
       const focusable = [...openModal.querySelectorAll('button,select,[href],input:not([disabled])')];
       if (!focusable.length) return;
