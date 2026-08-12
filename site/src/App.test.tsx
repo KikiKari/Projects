@@ -15,6 +15,14 @@ describe("documentation site", () => {
     render(<MemoryRouter initialEntries={["/de"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Öffentliche TikTok-LIVE-Streams zugänglicher nutzen" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Version 0.7.1 herunterladen/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-extension-0.7.1.zip");
+    expect(screen.getByRole("heading", { name: "Version 0.7.1 auf drei Plattformen" })).toBeInTheDocument();
+  });
+
+  it("uses the shared globe artwork for every visible brand mark", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/de"]}><App/></MemoryRouter>);
+    const marks = Array.from(container.querySelectorAll<HTMLImageElement>("img.brand-mark"));
+    expect(marks.length).toBeGreaterThanOrEqual(3);
+    marks.forEach(mark => expect(mark).toHaveAttribute("src", "/branding/staenderglobus-ios.png"));
   });
 
   it("opens keyboard search and lists English architecture", () => {

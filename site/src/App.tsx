@@ -6,7 +6,7 @@ const pageOrder = Object.keys(pageSlugs) as PageKey[];
 const Architecture3D = lazy(() => import("./Architecture3D"));
 
 function BrandMark() {
-  return <span className="brand-mark" aria-hidden="true"><span /><span /></span>;
+  return <img className="brand-mark" src="/branding/staenderglobus-ios.png" alt="" />;
 }
 
 function Icon({ name }: { name: "download" | "external" | "search" | "play" | "caption" | "link" | "info" | "sound" | "monitor" | "pulse" }) {
