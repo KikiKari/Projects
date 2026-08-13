@@ -57,4 +57,20 @@ enum JSONValue: Decodable, Equatable {
     var numberValue: Double? { if case .number(let value) = self { return value }; return nil }
     var objectValue: [String: JSONValue]? { if case .object(let value) = self { return value }; return nil }
     var arrayValue: [JSONValue]? { if case .array(let value) = self { return value }; return nil }
+    var foundationValue: Any {
+        switch self {
+        case .string(let value): return value
+        case .number(let value): return value
+        case .bool(let value): return value
+        case .object(let value): return value.mapValues { $0.foundationValue }
+        case .array(let value): return value.map { $0.foundationValue }
+        case .null: return NSNull()
+        }
+    }
+}
+
+extension BridgeEnvelope {
+    var rawObject: [String: Any] {
+        ["version": version, "type": type, "streamId": streamId, "sequence": sequence, "timestamp": timestamp, "payload": payload.mapValues { $0.foundationValue }]
+    }
 }

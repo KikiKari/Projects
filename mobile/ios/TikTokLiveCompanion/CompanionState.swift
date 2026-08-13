@@ -25,6 +25,8 @@ import Foundation
     @Published var limiterEnabled = false
     @Published var limiterStrength = 30
     @Published var lastError: String?
+    @Published var debugEnabled = false
+    @Published var debugEvents: [[String: Any]] = []
     var sendCommand: ((String, [String: Any]) -> Void)?
     let recognizer: RecognitionService
     private let speaker = AVSpeechSynthesizer()
@@ -63,6 +65,7 @@ import Foundation
 
     func handle(_ envelope: BridgeEnvelope) {
         connected = true
+        if debugEnabled { debugEvents.append(envelope.rawObject) }
         switch envelope.type {
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
@@ -145,6 +148,36 @@ import Foundation
     }
 
     func bestVlcMediaURL() -> URL? { bestVlcMediaURL(in: mediaLinks) }
+
+    func clearDebugEvents() { debugEvents.removeAll() }
+
+    func debugReport(vlcInstalled: Bool) -> String {
+        let report: [String: Any] = [
+            "generatedAtUtc": ISO8601DateFormatter().string(from: Date()),
+            "version": "0.7.1",
+            "platform": "ios",
+            "components": [
+                "layout": ["liveInformationBeforePageInformation": true],
+                "vlcReplacement": ["placement": "main-video-frame", "installed": vlcInstalled, "active": vlcReplacementURL != nil, "candidateCount": mediaLinks.count],
+                "speechAndChatSettings": ["settingsDialogAvailable": false, "auddTokenConfigured": false, "pairingConfigured": false, "universalCaptionApiKeyConfigured": false, "shortenNames": shortenNames, "gameModeEnabled": gameModeEnabled],
+                "captions": ["rawBridgeStreamCaptured": true, "available": captionsAvailable],
+                "songRecognition": ["path": "ios-native-shazamkit", "source": recognitionSource.rawValue],
+                "topChatters": ["mutedCount": mutedAuthors.count, "resetAvailable": true]
+            ],
+            "raw": [
+                "connected": connected,
+                "hookAvailable": hookAvailable,
+                "captionsAvailable": captionsAvailable,
+                "liveInformation": liveValues,
+                "chat": chatLines,
+                "mutedAuthors": Array(mutedAuthors).sorted(),
+                "mediaUrls": mediaLinks.map { ["url": $0.url.absoluteString, "type": $0.type, "label": $0.label] },
+                "bridgeEvents": debugEvents
+            ]
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) else { return "{}" }
+        return String(data: data, encoding: .utf8) ?? "{}"
+    }
 
     private func bestVlcMediaURL(in links: [MobileMediaLink]) -> URL? {
         links.first(where: { $0.url.absoluteString.localizedCaseInsensitiveContains(".m3u8") })?.url

@@ -73,5 +73,30 @@ struct ContentView: View {
         }
     }
     private func commandButton(_ label: String, _ command: String, _ icon: String) -> some View { Button { state.sendCommand?(command, [:]) } label: { Label(label, systemImage: icon).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered) }
-    private var moreView: some View { VStack(alignment: .leading, spacing: 12) { Text("Mehr").font(.headline); Toggle("Auto-Reconnect", isOn: $state.autoReconnectEnabled); Toggle("Debugmodus", isOn: .constant(false)); Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.borderedProminent); Button("Untertitel aktivieren") { state.sendCommand?("captions", [:]) }.buttonStyle(.bordered); Button("Refresh") { state.sendCommand?("refresh", [:]) }.buttonStyle(.bordered); Button("Force") { state.sendCommand?("force-profile", [:]) }.buttonStyle(.bordered); Button("Melden öffnen") { state.sendCommand?("open-report", [:]) }.buttonStyle(.bordered); Text("Refresh leert App- und WebView-Cache, behält Cookies bei und startet den Stream erneut.").font(.footnote).foregroundStyle(.secondary); Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.").font(.footnote).foregroundStyle(.secondary) } }
+    private var moreView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Mehr").font(.headline)
+            Toggle("Auto-Reconnect", isOn: $state.autoReconnectEnabled)
+            Toggle("Debugmodus", isOn: $state.debugEnabled)
+            Text("\(state.debugEvents.count) vollständige Rohereignisse").font(.footnote).foregroundStyle(.secondary)
+            ForEach(Array(state.debugEvents.enumerated()), id: \.offset) { _, event in
+                Text(String(data: (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys])) ?? Data(), encoding: .utf8) ?? "{}")
+                    .font(.caption2.monospaced())
+            }
+            HStack {
+                Button("Debug kopieren") {
+                    let installed = UIApplication.shared.canOpenURL(URL(string: "vlc-x-callback://x-callback-url/stream")!)
+                    UIPasteboard.general.string = state.debugReport(vlcInstalled: installed)
+                }.disabled(state.debugEvents.isEmpty)
+                Button("Leeren", action: state.clearDebugEvents).disabled(state.debugEvents.isEmpty)
+            }
+            Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.borderedProminent)
+            Button("Untertitel aktivieren") { state.sendCommand?("captions", [:]) }.buttonStyle(.bordered)
+            Button("Refresh") { state.sendCommand?("refresh", [:]) }.buttonStyle(.bordered)
+            Button("Force") { state.sendCommand?("force-profile", [:]) }.buttonStyle(.bordered)
+            Button("Melden öffnen") { state.sendCommand?("open-report", [:]) }.buttonStyle(.bordered)
+            Text("Refresh leert App- und WebView-Cache, behält Cookies bei und startet den Stream erneut.").font(.footnote).foregroundStyle(.secondary)
+            Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
 }

@@ -51,4 +51,16 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(commands.first?.0, "set-auto-reconnect")
         XCTAssertEqual(commands.last?.0, "set-limiter")
     }
+
+    func testDebugLogIsOptInAndKeepsCompleteRawPayload() {
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: UserDefaults(suiteName: #function)!)
+        let envelope = BridgeEnvelope(version: 1, type: "caption", streamId: "live-1", sequence: 7, timestamp: "2026-08-13T12:00:00Z", payload: ["text": .string("vollständiger RAW-Text")])
+        state.handle(envelope)
+        XCTAssertTrue(state.debugEvents.isEmpty)
+        state.debugEnabled = true
+        state.handle(envelope)
+        XCTAssertEqual(state.debugEvents.count, 1)
+        XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("vollständiger RAW-Text"))
+        XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("ios-native-shazamkit"))
+    }
 }
