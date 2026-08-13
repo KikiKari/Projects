@@ -43,14 +43,15 @@ class FollowupMediaTest {
         assertTrue(started)
     }
 
-    @Test fun debugLogIsOptInPayloadFreeAndBounded() {
+    @Test fun debugLogIsOptInKeepsCompletePayloadWithoutLimit() {
         val model = CompanionViewModel(FollowupFakeEngine())
         model.handle(envelope("chat", mapOf("content" to "secret")))
         assertTrue(model.state.value.debugEvents.isEmpty())
         model.setDebugEnabled(true)
         repeat(205) { model.handle(envelope("command-result", mapOf("data" to "secret-$it"))) }
-        assertEquals(200, model.state.value.debugEvents.size)
-        assertFalse(model.state.value.debugEvents.any { it.contains("secret") })
+        assertEquals(205, model.state.value.debugEvents.size)
+        assertTrue(model.state.value.debugEvents.first().contains("secret-0"))
+        assertTrue(model.debugReport(false).contains("bridgeEvents"))
     }
 
     @Test fun followupUiAndBackgroundServiceStayInTheirIntendedAreas() {

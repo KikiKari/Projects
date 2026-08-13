@@ -229,10 +229,10 @@ class MainActivity : ComponentActivity() {
         state.forceRecoveryUrl?.let { OutlinedButton(onClick = { model.recoverForce() }, modifier = Modifier.fillMaxWidth()) { Text("Manuell zum LIVE-Stream zurück") } }
         Text("Debugmodus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Validierte Diagnoseereignisse protokollieren", Modifier.weight(1f)); Switch(state.debugEnabled, model::setDebugEnabled) }
-        Text("${state.debugEvents.size} Ereignisse · maximal 200", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        state.debugEvents.takeLast(20).forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+        Text("${state.debugEvents.size} vollständige Rohereignisse", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.debugEvents.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", state.debugEvents.joinToString("\n"))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
+            OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; val vlcInstalled = runCatching { context.packageManager.getPackageInfo("org.videolan.vlc", 0) }.isSuccess; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", model.debugReport(vlcInstalled))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
             OutlinedButton(onClick = model::clearDebugEvents, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Leeren") }
         }
         Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)

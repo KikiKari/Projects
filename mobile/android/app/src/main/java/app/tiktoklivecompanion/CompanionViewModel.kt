@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class CompanionUiState(
     val tab: CompanionTab = CompanionTab.SONG,
@@ -102,6 +104,34 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun clearError() = mutable.update { it.copy(error = null) }
     fun setDebugEnabled(enabled: Boolean) = mutable.update { it.copy(debugEnabled = enabled) }
     fun clearDebugEvents() = mutable.update { it.copy(debugEvents = emptyList()) }
+    fun debugReport(vlcInstalled: Boolean): String {
+        val current = mutable.value
+        return JSONObject(mapOf(
+            "generatedAtUtc" to java.time.Instant.now().toString(),
+            "version" to "0.7.1",
+            "platform" to "android",
+            "components" to mapOf(
+                "layout" to mapOf("liveInformationBeforePageInformation" to true),
+                "vlcReplacement" to mapOf("placement" to "main-video-frame", "installed" to vlcInstalled, "active" to (current.vlcReplacementUrl != null), "candidateCount" to current.mediaUrls.size),
+                "speechAndChatSettings" to mapOf("settingsDialogAvailable" to false, "auddTokenConfigured" to false, "pairingConfigured" to false, "universalCaptionApiKeyConfigured" to false, "speakNames" to current.ttsSpeakNames, "shortenNames" to current.ttsShortenNames, "gameModeEnabled" to current.gameModeEnabled),
+                "captions" to mapOf("rawBridgeStreamCaptured" to true, "available" to current.captionsAvailable),
+                "songRecognition" to mapOf("path" to "android-native-audd-microphone-or-webview", "source" to current.source.label),
+                "topChatters" to mapOf("observedCount" to current.participants.size, "mutedCount" to current.mutedAuthors.size, "resetAvailable" to true)
+            ),
+            "raw" to mapOf(
+                "connected" to current.connected,
+                "hookAvailable" to current.hookAvailable,
+                "captionsAvailable" to current.captionsAvailable,
+                "pageInformation" to current.pageInfo,
+                "liveInformation" to current.liveValues,
+                "chat" to current.chats,
+                "participants" to current.participants.mapValues { mapOf("messages" to it.value.messages, "words" to it.value.words) },
+                "mutedAuthors" to current.mutedAuthors.toList(),
+                "mediaUrls" to current.mediaUrls.map { mapOf("url" to it.url, "kind" to it.kind) },
+                "bridgeEvents" to JSONArray(current.debugEvents)
+            )
+        )).toString(2)
+    }
     fun setGameMode(enabled: Boolean) = mutable.update { it.copy(gameModeEnabled = enabled) }
     fun toggleVideoExpanded() {
         val expanded = !mutable.value.videoExpanded
@@ -226,7 +256,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
 
     fun handle(envelope: BridgeEnvelope) {
         mutable.update {
-            val events = if (it.debugEnabled) (it.debugEvents + "${envelope.timestamp.take(19)} · ${envelope.type}").takeLast(200) else it.debugEvents
+            val rawEvent = JSONObject(mapOf("timestamp" to envelope.timestamp, "type" to envelope.type, "streamId" to envelope.streamId, "sequence" to envelope.sequence, "payload" to JSONObject(envelope.payload))).toString()
+            val events = if (it.debugEnabled) it.debugEvents + rawEvent else it.debugEvents
             it.copy(connected = true, debugEvents = events)
         }
         when (envelope.type) {
