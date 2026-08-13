@@ -50,6 +50,10 @@ if extension_dir.exists():
     shutil.rmtree(extension_dir)
 shutil.copytree(ROOT / "browser-extension", extension_dir)
 shutil.copytree(ROOT / "companion-service", extension_dir / "companion-service")
+(extension_dir / "Sprachdienst-reparieren.cmd").write_text(
+    '@echo off\r\ncall "%~dp0companion-service\\Sprachdienst-reparieren.cmd"\r\n',
+    encoding="utf-8"
+)
 (extension_dir / "package.json").write_text(json.dumps({
     "name": "tiktok-live-companion-extension-package",
     "private": True,
@@ -85,7 +89,8 @@ if args.android_apk:
     source_apk = args.android_apk.resolve()
     if not source_apk.is_file() or source_apk.suffix.lower() != ".apk":
         raise RuntimeError("--android-apk must point to an existing APK")
-    shutil.copy2(source_apk, android_apk)
+    if source_apk != android_apk.resolve():
+        shutil.copy2(source_apk, android_apk)
 
 artifacts = [extension_zip, plugin_zip, service_zip, ios_source_zip, android_source_zip]
 if android_apk.exists():

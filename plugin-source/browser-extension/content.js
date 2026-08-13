@@ -23,7 +23,10 @@
   const POPUP_GUARD_GRACE_MS = 40;
   const QUICK_RECOVER_INTERVAL_MS = 40;
   const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
+  const QUICK_RECOVER_CONFIRM_MS = 3000;
   const RECOMMENDATION_SCAN_MAX = 50;
+  const RECOMMENDATION_SCAN_MAX_ROUNDS = 12;
+  const RECOMMENDATION_SCAN_MAX_MS = 45000;
   let lastDomCaptionText = "";
   let scanTimer = null;
   let profilePageCache = null;
@@ -33,15 +36,23 @@
   let tabActive = false;
   let chatSourceOnly = false;
   let quickRecoverEnabled = false;
+  let quickRecoverConfirmMs = QUICK_RECOVER_CONFIRM_MS;
   let quickRecoverArmed = false;
   let tabRuntimeStarted = false;
   let quickRecoverFailures = 0;
-  let lastQuickRecoverAt = 0;
+  let quickRecoverReasonSince = 0;
+  let lastQuickRecoverReason = "";
+  let quickRecoverPending = false;
   let fullscreenWasActive = false;
   let liveProSeenHandle = "";
   let sponsoredContentSeenHandle = "";
   let paidPartnershipSeenHandle = "";
   let activeRecommendationScan = null;
+  let mediaFallbackRunning = false;
+  let mediaFallbackPageUrl = "";
+  let activeMediaFallbackItem = null;
+  let activeMediaFallbackPlayer = null;
+  const attemptedMediaFallbackUrls = new Set();
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
@@ -611,9 +622,13 @@
     const items = [];
     const scannedHandles = new Set();
     let noGrowthRounds = 0;
+    let rounds = 0;
+    const startedAt = Date.now();
     try {
       await emitRecommendationProgress(run, "running", items);
-      while (!run.cancelled && items.length < run.limit && location.href === run.sourceUrl) {
+      while (!run.cancelled && items.length < run.limit && location.href === run.sourceUrl
+        && rounds < RECOMMENDATION_SCAN_MAX_ROUNDS && Date.now() - startedAt < RECOMMENDATION_SCAN_MAX_MS) {
+        rounds += 1;
         const cards = recommendationCards();
         let addedThisRound = 0;
         for (const entry of cards) {
@@ -1003,7 +1018,7 @@
   }
 
   function quickRecoverReason() {
-    if (!quickRecoverEnabled || !tabActive || !isLivePage()) return "";
+    if (!quickRecoverEnabled || !tabActive || !isLivePage() || mediaFallbackRunning || document.getElementById("tlc-media-fallback")) return "";
     const video = primaryVideo();
     if (video && !video.error && !video.ended && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       quickRecoverArmed = true;
@@ -1021,12 +1036,22 @@
   }
 
   async function tryQuickRecover(reason) {
+    if (quickRecoverPending) return;
     dismissTimedLiveInterruption();
     quickRecoverFailures += 1;
-    if (quickRecoverFailures < 1 || Date.now() - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
+    const now = Date.now();
+    if (reason !== lastQuickRecoverReason) {
+      lastQuickRecoverReason = reason;
+      quickRecoverReasonSince = now;
+      quickRecoverFailures = 1;
+      return;
+    }
+    if (now - quickRecoverReasonSince < quickRecoverConfirmMs) return;
     quickRecoverFailures = 0;
-    lastQuickRecoverAt = Date.now();
-    chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason }).catch(() => {});
+    quickRecoverPending = true;
+    chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason })
+      .then((response) => { if (!response?.reloading) quickRecoverPending = false; })
+      .catch(() => { quickRecoverPending = false; });
   }
 
   function monitorQuickRecover() {
@@ -1034,6 +1059,9 @@
       const reason = quickRecoverReason();
       if (!reason) {
         quickRecoverFailures = 0;
+        quickRecoverReasonSince = 0;
+        lastQuickRecoverReason = "";
+        quickRecoverPending = false;
         return;
       }
       tryQuickRecover(reason).catch((error) => debug("quick-recover-error", { reason, error: String(error?.message || error).slice(0, 300) }));
@@ -1090,6 +1118,10 @@
     });
   }
 
+  function mediaFallbackKey(item) {
+    return String(item?.url || "");
+  }
+
   function setMediaFallbackStatus(text) {
     const status = document.getElementById("tlc-media-fallback-status");
     if (status) status.textContent = text;
@@ -1123,53 +1155,134 @@
     return holder.querySelector("video");
   }
 
+  function destroyMediaFallbackPlayer() {
+    if (!activeMediaFallbackPlayer) return;
+    try { activeMediaFallbackPlayer.pause(); } catch (_) {}
+    try { activeMediaFallbackPlayer.unload(); } catch (_) {}
+    try { activeMediaFallbackPlayer.detachMediaElement(); } catch (_) {}
+    try { activeMediaFallbackPlayer.destroy(); } catch (_) {}
+    activeMediaFallbackPlayer = null;
+  }
+
   function tryMediaUrl(video, item) {
     return new Promise((resolve) => {
       let finished = false;
+      const startedAt = Number(video.currentTime || 0);
+      let candidatePlayer = null;
       const done = (ok, reason = "") => {
         if (finished) return;
         finished = true;
         clearTimeout(timeout);
-        video.removeEventListener("canplay", onCanPlay);
         video.removeEventListener("playing", onPlaying);
+        video.removeEventListener("timeupdate", onTimeUpdate);
         video.removeEventListener("error", onError);
-        resolve({ ok, item, reason });
+        if (!ok && candidatePlayer) {
+          try { candidatePlayer.pause(); } catch (_) {}
+          try { candidatePlayer.unload(); } catch (_) {}
+          try { candidatePlayer.detachMediaElement(); } catch (_) {}
+          try { candidatePlayer.destroy(); } catch (_) {}
+        }
+        resolve({ ok, item, reason, player: ok ? candidatePlayer : null });
       };
-      const onCanPlay = () => done(true);
       const onPlaying = () => done(true);
+      const onTimeUpdate = () => {
+        if (!video.paused && Number(video.currentTime || 0) > startedAt + 0.2) done(true);
+      };
       const onError = () => done(false, video.error?.message || "media-error");
-      const timeout = setTimeout(() => done(false, "timeout"), 4500);
-      video.addEventListener("canplay", onCanPlay);
+      const timeout = setTimeout(() => done(false, "timeout"), 15000);
       video.addEventListener("playing", onPlaying);
+      video.addEventListener("timeupdate", onTimeUpdate);
       video.addEventListener("error", onError);
-      video.src = item.url;
-      video.load();
-      video.play().catch(() => {});
+      if (/flv/i.test(item.protocol || "")) {
+        if (!globalThis.mpegts?.isSupported?.()) {
+          done(false, "FLV wird von diesem Browser nicht über MediaSource unterstützt");
+          return;
+        }
+        try {
+          candidatePlayer = globalThis.mpegts.createPlayer({ type: "flv", isLive: true, url: item.url }, {
+            enableWorker: false,
+            enableStashBuffer: false,
+            stashInitialSize: 128,
+            liveBufferLatencyChasing: true
+          });
+          candidatePlayer.on(globalThis.mpegts.Events.ERROR, (_type, detail, info) => done(false, String(info?.msg || detail || "flv-error")));
+          candidatePlayer.attachMediaElement(video);
+          candidatePlayer.load();
+          candidatePlayer.play().catch(() => {});
+        } catch (error) {
+          done(false, error?.message || "flv-error");
+        }
+      } else {
+        video.src = item.url;
+        video.load();
+        video.play().catch(() => {});
+      }
     });
   }
 
+  async function restoreMediaFallback(video) {
+    if (!activeMediaFallbackItem) return false;
+    destroyMediaFallbackPlayer();
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    const restored = await tryMediaUrl(video, activeMediaFallbackItem);
+    if (restored.ok) activeMediaFallbackPlayer = restored.player;
+    return restored.ok;
+  }
+
   async function playMediaFallback(media = []) {
-    const candidates = mediaFallbackCandidates(media);
+    if (mediaFallbackRunning) {
+      return { activated: false, action: "play-vlc-source", reason: "Ein Verbindungsversuch läuft bereits.", playerState: getPlayerState() };
+    }
+    if (mediaFallbackPageUrl !== location.href) {
+      attemptedMediaFallbackUrls.clear();
+      mediaFallbackPageUrl = location.href;
+      activeMediaFallbackItem = null;
+    }
+    const allCandidates = mediaFallbackCandidates(media);
+    const candidates = allCandidates.filter((item) => !attemptedMediaFallbackUrls.has(mediaFallbackKey(item)));
     const video = ensureMediaFallbackVideo();
     if (!candidates.length) {
-      setMediaFallbackStatus("Keine Video-Links erkannt.");
-      return { activated: false, action: "play-vlc-source", reason: "Keine Video-Links erkannt.", playerState: getPlayerState() };
+      const reason = allCandidates.length ? "Alle erkannten Video-Links wurden bereits getestet." : "Keine Video-Links erkannt.";
+      setMediaFallbackStatus(activeMediaFallbackItem ? `${reason} Die letzte funktionierende Quelle läuft weiter.` : reason);
+      return { activated: Boolean(activeMediaFallbackItem), action: "play-vlc-source", reason, remaining: 0, playerState: getPlayerState() };
     }
-    setMediaFallbackStatus(`Prüfe ${candidates.length} Video-Link(s).`);
+    mediaFallbackRunning = true;
+    setMediaFallbackStatus(`Prüfe ${candidates.length} noch nicht getestete Video-Link(s).`);
     const failures = [];
-    for (const item of candidates) {
-      setMediaFallbackStatus(`Prüfe ${item.quality || "Video"} ${item.protocol || ""}.`.trim());
-      const result = await tryMediaUrl(video, item);
-      if (result.ok) {
-        setMediaFallbackStatus(`${item.quality || "Video"} wird abgespielt.`);
-        debug("media-fallback", { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" });
-        return { activated: true, action: "play-vlc-source", media: { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" }, playerState: getPlayerState() };
+    try {
+      for (const item of candidates) {
+        destroyMediaFallbackPlayer();
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        attemptedMediaFallbackUrls.add(mediaFallbackKey(item));
+        setMediaFallbackStatus(`Prüfe ${item.quality || "Video"} ${item.protocol || ""} – bis zu 15 Sekunden.`.trim());
+        const result = await tryMediaUrl(video, item);
+        if (result.ok) {
+          activeMediaFallbackItem = item;
+          activeMediaFallbackPlayer = result.player;
+          setMediaFallbackStatus(`${item.quality || "Video"} wird abgespielt. Erneuter Klick prüft die nächste ungetestete Quelle.`);
+          debug("media-fallback", { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" });
+          return { activated: true, action: "play-vlc-source", media: { protocol: item.protocol, quality: item.quality, hostname: item.hostname || "" }, remaining: Math.max(0, allCandidates.length - attemptedMediaFallbackUrls.size), playerState: getPlayerState() };
+        }
+        failures.push(`${item.quality || "?"} ${item.protocol || "?"}: ${result.reason}`);
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
       }
-      failures.push(`${item.quality || "?"} ${item.protocol || "?"}: ${result.reason}`);
+      const reason = `Kein ungetesteter Link konnte abgespielt werden. ${failures.slice(0, 3).join("; ")}`;
+      if (activeMediaFallbackItem) {
+        const restored = await restoreMediaFallback(video);
+        setMediaFallbackStatus(`${reason} ${restored ? "Die letzte funktionierende Quelle wurde wiederhergestellt." : "Die letzte funktionierende Quelle konnte nicht wiederhergestellt werden."}`);
+      } else {
+        setMediaFallbackStatus(reason);
+      }
+      return { activated: Boolean(activeMediaFallbackItem), action: "play-vlc-source", reason, remaining: 0, playerState: getPlayerState() };
+    } finally {
+      mediaFallbackRunning = false;
     }
-    const reason = `Kein Link konnte im Browser-Player abgespielt werden. ${failures.slice(0, 3).join("; ")}`;
-    setMediaFallbackStatus(reason);
-    return { activated: false, action: "play-vlc-source", reason, playerState: getPlayerState() };
   }
 
   async function configureLimiter(video, enabled, thresholdDbfs) {
@@ -1489,6 +1602,7 @@
       tabActive = Boolean(message.enabled);
       debugEnabled = Boolean(message.debugEnabled);
       quickRecoverEnabled = Boolean(message.quickRecoverEnabled);
+      quickRecoverConfirmMs = Math.max(1000, Math.min(59000, Math.round(Number(message.quickRecoverSeconds) || 3) * 1000));
       chatSourceOnly = Boolean(message.chatSourceOnly);
       if (tabActive) startTabRuntime();
       sendResponse({ enabled: tabActive });
@@ -1496,7 +1610,8 @@
     }
     if (message.type === "TLC_QUICK_RECOVER_CONFIG") {
       quickRecoverEnabled = Boolean(message.enabled);
-      sendResponse({ enabled: quickRecoverEnabled });
+      quickRecoverConfirmMs = Math.max(1000, Math.min(59000, Math.round(Number(message.seconds) || 3) * 1000));
+      sendResponse({ enabled: quickRecoverEnabled, seconds: quickRecoverConfirmMs / 1000 });
       return false;
     }
     if (message.type === "TLC_DEBUG_CONFIG") {

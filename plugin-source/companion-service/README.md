@@ -4,6 +4,8 @@ Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschl
 
 ## Aktualisierung von einem alten entpackten Paket
 
+Wenn sich beim Sidepanel-Button noch ein altes CMD-Fenster mit `npm error ENOENT` und `C:\Users\...\Documents\package.json` öffnet, ist der am 2. August erzeugte Windows-Protokollstarter weiterhin aktiv. Im aktuellen entpackten Paket einmal `companion-service\Sprachdienst-reparieren.cmd` doppelklicken. Eine vorhandene Erweiterungs-ID, der Pairing-Code und bereits installierte Sherpa-Dateien werden wiederverwendet. Nur wenn noch keine gültige Erweiterungs-ID gespeichert ist, fragt die Reparatur danach. Anschließend im Sidepanel `Sprachdienst starten` anklicken; der Pairing-Code wird automatisch übernommen.
+
 Wenn das Sidepanel meldet `Lokaler Dienst ist veraltet`, läuft auf `127.0.0.1:43117` noch ein alter Dienst. In der alten PowerShell zuerst `Ctrl+C` drücken und danach aus dem aktuell entpackten 0.7.1-Paket starten:
 
 ```powershell
@@ -12,7 +14,7 @@ npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
 npm start
 ```
 
-Der im Sidepanel erzeugte Befehl `npm run setup -- -ExtensionId …` ist der einmalige technische PowerShell-Schritt: Er bindet die lokale Konfiguration an genau diese Erweiterung, installiert die deutschen und englischen Standardstimmen, registriert `tiktok-live-companion://start` und führt abschließend `npm start` verborgen aus. Danach startet der Sidepanel-Button den eingerichteten Dienst automatisch. Ein kurzlebiger lokaler Bootstrap-Nonce übergibt den bereits lokal erzeugten Pairing-Code einmalig an die gebundene Erweiterung; er muss nicht abgetippt werden.
+Der einmalige Setup-Schritt bindet die lokale Konfiguration an genau diese Erweiterung, installiert die deutschen und englischen Standardstimmen, registriert `tiktok-live-companion://start` und führt abschließend `npm start` verborgen aus. Danach starten und reparieren die Sidepanel-Buttons den eingerichteten Dienst über absolute Skriptpfade; der aktuelle Arbeitsordner ist dabei unerheblich. Ein kurzlebiger lokaler Bootstrap-Nonce übergibt den bereits lokal erzeugten Pairing-Code einmalig an die gebundene Erweiterung; er muss nicht abgetippt werden.
 
 Der Pairing-Code wird aus `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` wiederverwendet und ändert sich normalerweise nicht. Er ändert sich nur, wenn diese Konfigurationsdatei gelöscht oder neu erzeugt wird. Die PowerShell mit `npm start` muss während der Nutzung offen bleiben, wenn der Dienst nicht über den registrierten Protokollstarter im Hintergrund läuft.
 

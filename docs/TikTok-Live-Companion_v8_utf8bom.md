@@ -1,6 +1,6 @@
 ﻿# TikTok LIVE Companion – Dokumentation v0.7.1
 
-**Version:** 0.7.1 · **Dokumentrevision:** v8 · **Status:** finalisiert · **Stand:** 2. August 2026
+**Version:** 0.7.1 · **Dokumentrevision:** v8 · **Status:** finalisiert · **Stand:** 2. August 2026, 17:00 Uhr
 **Projektwurzel:** `C:\Users\silve\Documents\Codex\TikTok-Live-Companion`
 **Veröffentlichter Checkout:** `.publish-repo/` · **Mobile-Worktrees:** `android-implementation/`, `ios-implementation/`
 **Kanonische Quelle:** GitHub · `KikiKari/Projects`
@@ -9,6 +9,37 @@
 **CoAuthoring:** Claude Dispatcher (Versenden) · Übergabe an Codex zur Ausarbeitung von 0.8.0 am 08.08.2026
 
 > Dieses unabhängige Projekt ist nicht mit TikTok verbunden und wird nicht von TikTok unterstützt.
+
+### Fortschreibung 02.08.2026, Nachmittag · 0PE-94 bis 0PE-103
+
+Nach der Veröffentlichung von `0PE-93` wurde die Sitzung mit einer weiteren Ausbau- und Konsolidierungsrunde fortgesetzt. Diese Fassung ist der maßgebliche Übergabestand.
+
+**Umgesetzt und veröffentlicht.**
+
+| Issue | Inhalt | Status |
+|---|---|---|
+| `0PE-97` | **VLC Ersatz** verlässt die Playersteuerung und steht unter **WebSocket-Hook** rechts neben **Normal**; der lokale Dienst erhält authentifizierte, idempotente VLC-Status- und Installationsoperationen | `Done` |
+| `0PE-98` | **LIVE-Informationen** stehen direkt unter **Seiteninformationen** | `Done` |
+| `0PE-102` | **Top-Chatter** erweitert sich über `mehr…` von 5 auf 15, 25, 35, 45 und höchstens 50 Einträge; ab 15 Einträgen erscheint `Reset` | `Done` |
+| `0PE-94` | Bekannter Android-Strukturtestfehler behoben: Android-Player-Bridge wiederhergestellt, Shared-Mobile-Kopie synchronisiert, Suite `31/31` grün | `Done` |
+
+**Neu erfasst und noch offen.**
+
+| Issue | Inhalt | Status |
+|---|---|---|
+| `0PE-96` | **0.8.0 Release-Gate** — Browser, Android und iOS vollständig konsolidieren; Zieltermin 08.08.2026; verbindlich mit vollständigem nativem iOS-Actions-Lauf | `Todo`, `Urgent` |
+| `0PE-93` | Pairing-, AudD- und Chat-Einstellungen über ein **Einstellungsrad** rechts neben `Sherpa aktiv!` in einem Konfigurations-Pop-up öffnen; Felder bleiben dauerhaft änderbar und werden **nicht mehr ausgeblendet** | `Todo`, `High` |
+| `0PE-103` | Debugmodus in Browser, Android und iOS um die neuen Komponenten erweitern | `Todo`, `High` |
+| `0PE-99` | RAW-Datenstrom und JSON-Export der Untertitelerkennung für externe Verarbeitungssysteme; nutzt den in `0PE-93` vorbereiteten `Universal API-Key` | `Todo` |
+| `0PE-100` / `0PE-101` | Songerkennung in Android und iOS wirksam umsetzen samt anwenderfreundlichem Installations- und Konfigurationspfad nach dem Muster des Browser-Sprachdienstes | `Todo` |
+| `0PE-95` | 16 `workflow:iOS`-Läufe prüfen und korrigieren; die drei aktuellen erfolgreichen und 13 historisch fehlgeschlagenen Läufe werden getrennt behandelt | `Backlog`, `High` |
+| `0PE-72` | Songerkennung im Browser scheitert trotz gültigem AudD- und Pairing-Setup mit `Extension has not been invoked for the current page`; zusätzlich fehlt Shazam in der Browserversion | `Backlog`, `High` — wieder geöffnet |
+
+**Veröffentlichter Endstand dieser Sitzung.** Browser `809de33`, Android `0bebb07` (getesteter Funktionsstand `8cd5c3d`), iOS `6efa242`. GitHub-Prereleases, die drei GHCR-Pakete und die Vercel-Deployments sind auf diesen Stand gebracht. Releases und Packages bleiben ausdrücklich bis zum 08.08.2026 als `0.7.1 alpha` markiert und wechseln erst mit 0.8.0 auf `published`.
+
+**Entwicklungsumgebung.** Die persistente Container-Umgebung läuft auf Port `5173`. **Perplexity Pro ist dauerhaft als primäre Websuche konfiguriert, Tavily nur noch als Rückfall** — sowohl in der Entwicklungsumgebung als auch im lokalen Docker. Der Schlüssel wurde ohne Offenlegung geprüft; eine Vault-Passphrase wird nicht verwendet und die zwischenzeitlich gesetzte Benutzer-Umgebungsvariable wurde wieder entfernt.
+
+---
 
 ### Fortschreibung 30.07. – 02.08.2026 · finalisiert
 
@@ -57,11 +88,13 @@ Mit 0.7.1 stehen **alle drei Plattformen auf demselben Versions- und Artefaktsta
 
 | Plattform | Technik | Songerkennung | Branch | Produkt- und Artefakt-Commit |
 |---|---|---|---|---|
-| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `f44f946` |
-| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) | `TikTok-Live-Companion-Android` | `b3d1770` |
-| iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit | `TikTok-Live-Companion-iOS` | `0a4fc63` |
+| Edge / Chrome | Manifest V3 Erweiterung + lokaler Windows-Dienst | AudD auf Knopfdruck | `TikTok-Live-Companion` | `809de33` |
+| Android / HyperOS | Kotlin + Jetpack Compose + AndroidX WebKit, `minSdk 21` | ShazamKit (AAR) + LibVLC | `TikTok-Live-Companion-Android` | `0bebb07` |
+| iOS 15+ | SwiftUI + WKWebView + ShazamKit | ShazamKit + MobileVLCKit | `TikTok-Live-Companion-iOS` | `6efa242` |
 
-Android `b3d1770`, iOS `0a4fc63` und der Browser-Stand `f44f946` sind gepusht und gegen das Remote bestätigt. Zwischenstände der Browser-Implementierung sind separat als `35a0651` (Fachimplementierung), `29f1d8a` (Sidepanel-Hotfix `0PE-92`) und `faabada` (Dokumentationsstand) nachvollziehbar.
+Browser `809de33`, Android `0bebb07` und iOS `6efa242` sind gepusht und gegen das Remote bestätigt. Der getestete Android-Funktionsstand für `0PE-94` ist `8cd5c3d`.
+
+Zwischenstände der Sitzung sind separat nachvollziehbar: `35a0651` (Fachimplementierung der neun aktiven Issues), `29f1d8a` (`0PE-92`), `039ec54` (Installationsnachweis), `f44f946` (`0PE-93`), `3534bb5` (Issue-Korrekturen), `3476d17` (`0PE-97`/`0PE-98`/`0PE-102`) und `4fda3fd` (Release-Paketierung).
 
 Der lokale Arbeitsbaum in `.publish-repo/` enthält nur noch unversionierte reproduzierbare Bauausgaben unter `.artifacts/`; der Quell- und Dokumentationsstand ist veröffentlicht.
 
@@ -228,6 +261,10 @@ Der Hook beobachtet `WebcastRoomUserSeqMessage`, `WebcastLikeMessage` und `Webca
 
 Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild, Vollbild und Melden-öffnen bedienen TikToks vorhandenen Player.
 
+**Sidepanel-Reihenfolge 0.7.1 (`0PE-88`, `0PE-98`).** Top-Chatter → Seiteninformationen → LIVE-Informationen → WebSocket-Hook → Untertitel → Playersteuerung → Songerkennung. Der Button **VLC Ersatz** steht seit `0PE-97` nicht mehr in der Playersteuerung, sondern unter **WebSocket-Hook** direkt rechts neben **Normal**.
+
+**Top-Chatter mit `mehr…` und `Reset` (`0PE-102`).** Die Box zeigt standardmäßig fünf Einträge. Jeder Klick auf `mehr…` erweitert die Liste um zehn Einträge — 5 → 15 → 25 → 35 → 45 → höchstens 50. Ab der ersten Erweiterung erscheint links davon `Reset` und stellt sofort die Standardanzeige mit fünf Einträgen wieder her. `mehr…` verschwindet, sobald keine weiteren Einträge vorhanden sind oder 50 erreicht ist. Die Erweiterung ist tab- und streambezogen; die vorhandene Stummschaltung gilt für alle angezeigten Top-Chatter, und das bestehende Limit des Fensters **Zuschauer\*innen** bleibt unverändert.
+
 **Auto-Reconnect** greift mit einem Mindest-Cooldown von `400 ms` und wird erst nach dem Start des Players scharfgestellt, damit ein noch nicht verbundener Player keine Reconnect-Schleife auslöst.
 
 **Vollbild-Rückkehr (Browser, 0PE-89).** Die Speech-Queue und Ausgabe laufen in einem MV3-Offscreen-Dokument weiter. Das neu geöffnete Sidepanel stellt TTS- und Tabzustand nach dem Verlassen des Vollbilds aus dem tabbezogenen Speicher wieder her. Struktur- und Logiktests sind grün; die reale Abnahme mit geladener Erweiterung steht noch aus.
@@ -236,6 +273,8 @@ Play/Pause, Neuladen, Lautstärke, Stumm, Bild-in-Bild, Vollbild und Melden-öff
 
 Erkannte FLV-/HLS-Quellen werden als kopierbare Links angezeigt; die Auswahl bevorzugt VLC-kompatible Varianten. Signierte Links können ablaufen und sind bis dahin sensibel.
 
+**VLC Ersatz im Browser (`0PE-97`).** Der Button ersetzt die größte sichtbare zentrale Playerfläche durch den internen HTML-Video-Ersatz. Fehlt VLC auf dem System, bietet der gepaarte lokale Dienst eine authentifizierte, idempotente Status- und Installationsoperation an. Unter Windows wird ausschließlich der aktuelle **stabile** VideoLAN-x64-Installer von `get.videolan.org` verwendet — keine Beta. Vor der normalen Windows-Systembestätigung werden SHA-256 und die VideoLAN-Authenticode-Signatur geprüft. Verbindliche Quellen sind [videolan/vlc](https://github.com/videolan/vlc) und [code.videolan.org](https://code.videolan.org/videolan/vlc), jeweils Branch `master`. Eine tatsächliche Windows-UAC-Installation wurde in dieser Sitzung **nicht** durchgeführt und wird nicht als erfolgt behauptet.
+
 Die separate Qualitätsbox der Erweiterung ist in 0.7.1 **ersatzlos entfernt**, ebenso sechs Erklärungstexte. Es bleiben keine leeren Container zurück. TikToks eigenes Qualitätsmenü und die interne Medienerkennung sind davon unberührt.
 
 Das Caption-Protokoll lässt sich als JSONL exportieren. Der abschaltbare Debugmodus exportiert bereinigte Ereignisse ohne Chattext, Cookies, API-Keys oder Werte signierter URL-Parameter.
@@ -243,6 +282,15 @@ Das Caption-Protokoll lässt sich als JSONL exportieren. Der abschaltbare Debugm
 `Force` speichert die LIVE-URL, öffnet bewusst kurz die Profilseite ohne `/live`, übernimmt die dort geladenen öffentlichen Werte und stellt anschließend die LIVE-URL wieder her. Auf Mobilgeräten ist dieser Ablauf zusätzlich mit Popup-Behandlung, Wiederholversuchen, einem 20-Sekunden-Watchdog und manueller Recovery abgesichert.
 
 ### 3.7 Funktionsparität auf Mobilgeräten
+
+**VLC auf Mobilgeräten (`0PE-97`).** Im Player-Tab stehen ohne zusätzliche Beschreibungen direkt untereinander die Buttons `VLC Ersatz` und `VLC Player`.
+
+| Button | Verhalten |
+|---|---|
+| `VLC Ersatz` | ersetzt den sichtbaren WebView-Player durch einen eingebetteten VLC-Player mit der besten erkannten Stream-/Media-URL; erneutes Betätigen stellt den WebView-Player wieder her |
+| `VLC Player` | übergibt dieselbe URL an die **externe** VLC-App — Android über einen expliziten `ACTION_VIEW`-Intent, iOS über das unterstützte VLC-URL-Schema mit URL-kodierter Streamadresse |
+
+Android bindet `org.videolan.android:libvlc-all:3.7.5`, iOS `MobileVLCKit 3.7.3` — jeweils fest gepinnte stabile Versionen. Fehlt die VLC-App, öffnet der Button unmittelbar den offiziellen Play-Store- beziehungsweise App-Store-Eintrag; zusätzliche Status- oder Erklärungstexte werden nicht eingeblendet. Ein Rückkehrbutton oder Callback in die Companion-App ist ausdrücklich nicht vorgesehen. Der Zustand wird beim Streamwechsel zurückgesetzt.
 
 Volle Funktionsparität wird über **native Entsprechungen** erreicht, nicht über identische Implementierung. Chrome-spezifische APIs haben auf iOS und Android keine Entsprechung und wurden ersetzt:
 
@@ -534,6 +582,10 @@ Der öffentliche Sicherheitsabschnitt enthält keine Proof-of-Concepts und keine
 
 ## 7. Entwicklungsumgebung, CI und Auslieferungswege
 
+### 7.0 Websuche in Entwicklungsumgebung und Docker
+
+**Perplexity Pro ist die primäre Websuche; Tavily bleibt ausschließlich Rückfallebene.** Die Priorität gilt dauerhaft in der persistenten Entwicklungsumgebung und im lokalen Docker. Der Schlüssel wird als Umgebungsvariable `PERPLEXITY_API_KEY` in den Container gereicht und wurde ohne Offenlegung des Wertes gegen `https://api.perplexity.ai/search` geprüft. Eine Vault-Passphrase wird nicht verwendet; die zur Prüfung zwischenzeitlich gesetzte Benutzer-Umgebungsvariable wurde nach dem Test wieder entfernt.
+
 ### 7.1 Persistente Container-Entwicklungsumgebung
 
 Die Android-Builds und die Dokumentationssite laufen in einem dauerhaften Docker-Setup statt in einer Wegwerf-Sandbox.
@@ -664,7 +716,22 @@ Debugmodus erst zur Fehlersuche aktivieren. Der Export enthält keinen Chattext 
 
 Ablage: `release/0.7.1/` · Prüfsummendatei: `release/0.7.1/tiktok-live-companion-0.7.1-SHA256.txt`
 
-**Veröffentlichter Stand (Commit `f44f946`, GitHub Release, GHCR, Vercel):**
+**Veröffentlichter Endstand der Sitzung (Browser `809de33`, Android `0bebb07`, iOS `6efa242`):**
+
+| Artefakt | SHA-256 |
+|---|---|
+| `tiktok-live-companion-extension-0.7.1.zip` | `67e61580df9309844901b6c73bd1e63aad5dc08df2dd698d4de8fdf856936725` |
+| `tiktok-live-companion-plugin-0.7.1.zip` | `6f8b0334240d1e3c0b9ff2ba012d87c63102b54c5b2e4dc992294cbffa3f9894` |
+| `tiktok-live-companion-service-0.7.1.zip` | `53370c64966ba6f323f276e5b9c305968533e0cc513c11b8e78b4dbbe6947ce2` |
+| `tiktok-live-companion-ios-0.7.1-source.zip` | `8aecd3fb450f9e0c00d67fe10dd9de41bae82a099d689709627012204a79c1cf` |
+| `tiktok-live-companion-android-0.7.1-source.zip` | `b9547af7c086f72f76999a4ddcb34f04f50dedc24113d3a9892218102ec52583` |
+| `tiktok-live-companion-android-0.7.1.apk` | `dcbda38884534a899cc71c0a5fdfbba302153f3b478065cbbc75f6f3d275c65d` |
+
+Reproduktionsverzeichnis: `.publish-repo/.artifacts/0.7.1-ope94-20260802/`. Die APK misst `119.648.191` Bytes.
+
+**APK-Größe.** Eine getestete verlustfreie Komprimierung der nativen Bibliotheken wurde **nicht** übernommen, weil sie das Paket um `3.793` Bytes vergrößerte. R8 und Resource-Shrinking wurden entsprechend der Vorgabe ohne vollständigen Verlustfreiheitsnachweis ebenfalls **nicht** aktiviert. Grundlage ist die Referenz zum [Android-JNI-Library-Packaging](https://developer.android.com/reference/tools/gradle-api/8.4/com/android/build/api/dsl/JniLibsPackaging).
+
+**Vorheriger Zwischenstand (Commit `f44f946`, `0PE-93`):**
 
 | Artefakt | SHA-256 |
 |---|---|
@@ -690,6 +757,8 @@ Alle sechs veröffentlichten Werte wurden am 02.08.2026 in zwei unabhängigen Pa
 **Debug-Nachweis:** `tiktok-live-companion-debug-2026-08-02T07-08-45-137Z.json` dient ausschließlich als Bestätigung der darin funktionierenden Komponenten. Unterbrechungen durch Browser-Tabwechsel, Streamwechsel und das erneute Aktivieren des Debugmodus sind keine Fehler- oder Dauerlaufnachweise.
 
 **Timings:** Startschutz `40 ms`, Prüfintervall `40 ms`, Reload-Abstand `400 ms`. Diese drei Werte sind ausdrücklich vom Nutzer vorgegeben und bleiben unverändert.
+
+**CI-Nachweise der letzten Runde.** iOS-Actions-Lauf `30748478805` vollständig erfolgreich. Android-Lauf `30748539909` erzeugte die APK; der damals verbliebene Fehler war ausschließlich das getrennt geführte `0PE-94`-Strukturgate. Lauf `30749884929` übernahm genau dieses APK-Artefakt ohne Neubau in das bestehende Prerelease. Der abschließende Android-Lauf `30752210199` bestätigt `31/31` Tests, die Shared-Mobile-Verträge und den APK-Build.
 
 **Kein IPA** — unter Windows ist weder ein Xcode-Build noch eine Apple-Signierung möglich.
 
@@ -795,60 +864,66 @@ xcodebuild test \
 
 ## 10. Übergabe an Codex für Version 0.8.0
 
-Dieses Dokument wird Codex vor der finalen Ausarbeitung aller Komponenten auf **Version 0.8.0 am 08.08.2026** zur Verwendung und Miteinarbeitung übergeben.
+Dieses Dokument wird Codex vor der finalen Ausarbeitung aller Komponenten auf **Version 0.8.0 am 08.08.2026** zur Verwendung und Miteinarbeitung übergeben. Das verbindliche Release-Gate ist [`0PE-96`](https://linear.app/0penclaw/issue/0PE-96/080-release-gate-browser-android-und-ios-vollstandig-konsolidieren) mit Priorität `Urgent` und Meilenstein `Aug 8`.
 
 ### 10.1 Ausgangslage der Übergabe
 
 | Ebene | Stand |
 |---|---|
-| Veröffentlicht | Browser `f44f946`, Android `b3d1770`, iOS `0a4fc63`; GitHub Releases und Tags, GHCR und Vercel bestätigt |
-| Lokale Bauausgaben | `.publish-repo/.artifacts/`; zweimal reproduzierbar paketiert, nicht Teil des Git-Commits |
-| Testinstallation | `C:\Users\silve\Documents\TikTok-Live-Companion`, byteidentisch zum lokalen Paket, Dienst gesund als 0.7.1 |
-| Mobilgerät | `Redmi Note 11S` (`100.94.134.39`), aktuelle APK per Taildrop übergeben |
+| Browser | `809de33` — GitHub-Prerelease, GHCR und Vercel-Production bestätigt |
+| Android | `0bebb07`, getesteter Funktionsstand `8cd5c3d` — Actions-Lauf `30752210199` mit `31/31` Tests |
+| iOS | `6efa242` — vollständiger nativer Actions-Lauf `30748478805` erfolgreich |
+| Releases und Packages | ausdrücklich `0.7.1 alpha`; Wechsel auf `published` erst mit 0.8.0 |
+| Testinstallation | `C:\Users\silve\Documents\TikTok-Live-Companion`, byteidentisch zum Paket, Dienst gesund als 0.7.1 |
+| Mobilgerät | `redmi-note-11s` (`100.94.134.39`), aktuelle APK per Taildrop übergeben |
+| Entwicklungsumgebung | CDE auf Port `5173`; Perplexity primär, Tavily als Rückfall |
 
-### 10.2 Am 02.08.2026 veröffentlichter Arbeitsstand
+### 10.2 Verbindlicher Umfang von 0PE-96
 
-Die folgenden Änderungen sind mit Browser-Commit `f44f946` umgesetzt, getestet, gepusht, paketiert und über GitHub Release, GHCR und Vercel veröffentlicht. Sie bilden die 0.7.1-Ausgangsbasis für 0.8.0.
+Browsererweiterung, Android und iOS werden vollständig konsolidiert und gegeneinander abgeglichen, sodass alle drei Varianten einen einheitlichen Stand besitzen bei:
 
-| Bereich | Änderung |
-|---|---|
-| Chat | Puffer 50 → 500 Zeilen je Tab; anklickbarer roter Zähler öffnet die vollständige Chatübersicht; Hauptansicht bleibt bei fünf Zeilen |
-| Chat | `Auto-Chat Refresh` mit 1–60 Minuten; leert ausschließlich die Chatanzeige, löst keinen Tab-Reload aus |
-| Chat | Reihenfolge `Chatnamen sprechen` → `Chatnamen kürzen` → `Game-Mode` → `Auto-Chat Refresh`; `Chatnamen` umbenannt zu `Chatnamen sprechen` |
-| Stimmen | feste Gruppierung DE/EN zuerst ab `Sherpa Eva`, danach Kyrillisch, Asiatisch, Abjad, Indisch; Installationsstatus ohne Einfluss auf die Reihenfolge |
-| Installation | CMD als Primärweg, PowerShell als Rückfall; Konsolenfenster bleibt mit Pairing-Code und Kopieranweisung geöffnet |
-| Installation | Bestandsschutz für Pairing-Code, AudD-Token, Stimmen und Benutzerkonfiguration |
-| Sicherheit | Pairing-Code und AudD-Token werden vor dem Speichern geprüft; ungültige Werte werden verworfen |
-| Oberfläche | Pairing- und AudD-Felder werden bei aktivem Sprachdienst und Sherpa ausgeblendet |
-| Oberfläche | `Sprachdienst aktiv!` wird wie `Sherpa aktiv!` grau und nicht mehr anklickbar; `https://AudD.io` öffnet als echter Link einen neuen Tab |
-| Oberfläche | AudD-Beschriftungen je Token-Zustand |
-| Diagnose | Debug-Export um `localService` erweitert, ohne Geheimnisse |
-| Timings | `40 / 40 / 400 ms` — vom Nutzer vorgegeben, unverändert zu belassen |
+- Softwareversion sowie Versions- und Buildnummern
+- Funktionen, Komponenten, Modulen und gemeinsamen Bridge-Kopien
+- Installations- und Upgradeprozeduren
+- Konfigurations- und Debugpfaden
 
-### 10.3 Verbindliche Schutzgrenzen
+Ein vollständiger **neuer nativer iOS-Actions-Lauf** ist verbindlicher Teil des Gates.
+
+### 10.3 Offene Issues für 0.8.0
+
+| Issue | Priorität | Inhalt |
+|---|---|---|
+| [`0PE-96`](https://linear.app/0penclaw/issue/0PE-96) | `Urgent` | 0.8.0 Release-Gate: Browser, Android und iOS vollständig konsolidieren |
+| [`0PE-93`](https://linear.app/0penclaw/issue/0PE-93) | `High` | Einstellungsrad rechts neben `Sherpa aktiv!`; Konfigurations-Pop-up mit `AudD API-Token`, `Pairing-Code` und vorbereitetem `Universal API-Key`; die drei Checkboxen `Chatnamen sprechen`, `Chatnamen kürzen` und `Game-Mode` wandern dorthin. Die Felder werden **nicht mehr ausgeblendet**, sondern bleiben dauerhaft verfügbar und änderbar |
+| [`0PE-103`](https://linear.app/0penclaw/issue/0PE-103) | `High` | Debugmodus in allen drei Branches um VLC-Platzierung und Installationsstatus, Reihenfolge von LIVE- und Seiteninformationen, Einstellungsrad, Konfigurationsfenster sowie AudD-, Pairing- und Universal-API-Key-Status erweitern |
+| [`0PE-95`](https://linear.app/0penclaw/issue/0PE-95) | `High` | 16 `workflow:iOS`-Läufe prüfen und korrigieren |
+| [`0PE-72`](https://linear.app/0penclaw/issue/0PE-72) | `High` | Browser-Songerkennung scheitert mit `Extension has not been invoked for the current page`; zusätzlich fehlt Shazam in der Browserversion |
+| [`0PE-85`](https://linear.app/0penclaw/issue/0PE-85) | `Medium` | VLC-Ersatz — reale Browserabnahme der vollständigen Frame-Ersetzung |
+| [`0PE-89`](https://linear.app/0penclaw/issue/0PE-89) / [`0PE-90`](https://linear.app/0penclaw/issue/0PE-90) | `High` | reale Zwei-Tab-, Embed- und Vollbild-TTS-Abnahme |
+| [`0PE-99`](https://linear.app/0penclaw/issue/0PE-99) | `Medium` | Untertitel-RAW-Datenstrom und JSON-Export für externe Verarbeitungssysteme |
+| [`0PE-100`](https://linear.app/0penclaw/issue/0PE-100) / [`0PE-101`](https://linear.app/0penclaw/issue/0PE-101) | `Low` | Songerkennung in Android und iOS wirksam umsetzen samt Installations- und Konfigurationspfad |
+| [`0PE-58`](https://linear.app/0penclaw/issue/0PE-58), [`0PE-70`](https://linear.app/0penclaw/issue/0PE-70), [`0PE-80`](https://linear.app/0penclaw/issue/0PE-80) | `Medium` | mobiles Backlog: Seitenelemente ausblenden, Vollbild-Toggle, wiederkehrende Pop-ups |
+| [`0PE-41`](https://linear.app/0penclaw/issue/0PE-41) / [`0PE-43`](https://linear.app/0penclaw/issue/0PE-43) | `Low` | Low/P3 aus dem 0.5.0-Security-Scan: Bridge-Payloads und gzip-Ausgabe begrenzen |
+
+### 10.4 Verbindliche Schutzgrenzen
 
 - Der Workspace-Stamm ist **kein** gültiges Git-Repository. Alle Git-Operationen laufen über `.publish-repo/` oder die beiden Worktrees `android-implementation/` und `ios-implementation/`.
 - Die Timings `40 / 40 / 400 ms` sind ausdrücklich angeordnet und dürfen nicht eigeninitiativ verändert werden.
 - Der Installationsablauf mit sichtbarem Pairing-Code und manueller Übernahme per `Strg+C` / `Strg+V` bleibt bestehen; Zugangsdaten des Nutzers werden ihm nicht vorenthalten.
+- Pairing-Code und AudD-Token werden ab `0PE-93` **nicht mehr ausgeblendet**, sondern über das Einstellungsrad dauerhaft zugänglich gemacht.
+- VLC wird ausschließlich in der aktuellen stabilen Version aus offiziellen VideoLAN-Quellen installiert; keine Beta.
+- Perplexity bleibt primäre Websuche, Tavily nur Rückfall.
 - Bestehende Docker-Volumes, Tailscale-Konfigurationen, Logins und fachfremde Container bleiben unangetastet.
 - Frühere Dokumentrevisionen v6 und v7 werden nicht überschrieben.
 
-### 10.4 Offene Punkte für 0.8.0
+### 10.5 Nicht als durchgeführt behauptet
 
-| # | Punkt | Bezug |
-|---|---|---|
-| 1 | Reale Zwei-Tab-, Embed- und Vollbild-TTS-Abnahme im Browser durchführen | `0PE-85`, `0PE-89`, `0PE-90` |
-| 2 | Android-Gesamtsuite normalisieren; 30 Tests, ein bekannter Strukturtestfehler bei unveränderten nativen Quellen | `0PE-94` |
-| 3 | Pairing- und AudD-Felder bleiben bei aktivem Sprachdienst und Sherpa sichtbar | `0PE-93` am 02.08.2026 angelegt; CSS-Ursache (`display: grid` überschreibt `hidden`) mit `f44f946` veröffentlicht |
-| 4 | `0PE-41` und `0PE-43` aus dem Backlog umsetzen | Low/P3 |
-| 5 | Mobile Backlog-Issues `0PE-58`, `0PE-70`, `0PE-80` bearbeiten | mobile |
-| 6 | Linear-Release-Sync für Android/iOS bleibt ohne `LINEAR_ACCESS_KEY` planbedingt rot; kein Produktcode-Fehler | Business-Plan erforderlich |
-| 7 | Mobile-Entwurfsbild von `0.7.0` auf `0.8.0` fortschreiben | Design |
-| 8 | Meilenstein-Prozentwerte in Linear neu erheben; Stand ist der 18.07.2026 | Projekt |
-| 9 | Linear-Release-Sync aktivieren, sobald `LINEAR_ACCESS_KEY` verfügbar ist | Business-Plan erforderlich |
-| 10 | Apple-Capability, Media-ID, privaten Schlüssel und ShazamKit-AAR bereitstellen; danach Shazam-Produktvariante statt Mock-APK bauen | Nutzer |
-| 11 | Alle 16 sichtbaren `workflow:iOS`-Läufe prüfen und einen vollständigen nativen iOS-Actions-Lauf für den finalen Stand ausführen | `0PE-95`, `0PE-83` |
-| 12 | Browser, Android und iOS samt Software-, Versions-, Funktions-, Komponenten-, Modul- und Installationsständen für 0.8.0 konsolidieren | `0PE-96`, Ziel 08.08.2026 |
+| Punkt | Grund |
+|---|---|
+| Reale Browserabnahme für Zwei-Tab, Embed und Vollbild/TTS | lokale Extensiondatei wurde vom in-app Browser gemäß URL-Sicherheitsrichtlinie nicht geöffnet; keine Umgehung vorgenommen |
+| Tatsächliche Windows-UAC-VLC-Installation | nur der geprüfte Installationspfad ist implementiert |
+| Zweiter formaler Security-Scan | `0PE-42` auf Nutzeranweisung `Canceled`; das Seal für 0.7.1 bleibt gültig |
+| Linear-Release-Sync produktiv | `LINEAR_ACCESS_KEY` planbedingt nicht verfügbar |
 
 ---
 
@@ -856,7 +931,7 @@ Die folgenden Änderungen sind mit Browser-Commit `f44f946` umgesetzt, getestet,
 
 | Version | Schwerpunkt | Status |
 |---|---|---|
-| 0.8.0 | geplante Ausarbeitung aller Komponenten am 08.08.2026 | vorbereitet, siehe Kapitel 10 |
+| 0.8.0 | vollständige Konsolidierung von Browser, Android und iOS am 08.08.2026; Release-Gate `0PE-96` | vorbereitet, siehe Kapitel 10 |
 | 0.7.1 | einheitlicher Stand aller Komponenten; tabbezogene Browsermodule, Offscreen-TTS, CMD-gestützter Dienststart, kuratierter Sherpa-Katalog mit 26 Stimmen, 500 Chatzeilen mit Verlaufsansicht, Auto-Chat Refresh, Validierung von Pairing-Code und AudD-Token, Mobile-Textentfernungen, iOS-Buildnummer und reproduzierbare Pakete | Browser `f44f946`, Android `b3d1770`, iOS `0a4fc63`; Alpha-Releases und Packages aktualisiert |
 | 0.7.0 | iOS, Android/HyperOS, ShazamKit, Token-Dienst, WebView-Bridge sowie reproduzierbare SVG-, GIF- und Three.js-Architektur | in 0.7.1 aufgegangen |
 | 0.6.0 | Chat-TTS-Aufbereitung, Zuschauerstatistik, Songerkennung, Profil-Force, lokaler Dienst, sprechfreundliche Nicknamen | archiviert |
@@ -875,4 +950,4 @@ Die folgenden Änderungen sind mit Browser-Commit `f44f946` umgesetzt, getestet,
 
 ---
 
-*Ende der Dokumentation · TikTok LIVE Companion 0.7.1 · Dokumentrevision v8, finalisiert · Stand 2. August 2026 · CoAuthoring Claude Dispatcher (Versenden) · Übergabe an Codex für 0.8.0 am 08.08.2026*
+*Ende der Dokumentation · TikTok LIVE Companion 0.7.1 · Dokumentrevision v8, finalisiert · Stand 2. August 2026, 17:00 Uhr · CoAuthoring Claude Dispatcher (Versenden) · Übergabe an Codex für 0.8.0 am 08.08.2026 · Release-Gate 0PE-96*
