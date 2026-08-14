@@ -15,7 +15,8 @@
   const ALLOWED_COMMANDS = new Set([
     "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "reload-player", "captions", "refresh", "set-player-expanded", "reject-cookies",
-    "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter", "set-auto-reconnect"
+    "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter", "set-auto-reconnect",
+    "scan-recommendations", "cancel-recommendation-scan"
   ]);
   let sequence = 0;
   let streamId = "";
@@ -32,8 +33,11 @@
   let audibleStartRequested = false;
   let playerExpanded = false;
   let autoReconnectEnabled = true;
+  let autoReconnectDelayMs = 3_000;
+  let activeRecommendationScan = null;
   let lastQuickRecoverAt = 0;
   let quickRecoverFailures = 0;
+  let quickRecoverReloadTimer = 0;
   const contentCore = root.TLC_CONTENT_CORE;
 
   function nativePost(message) {
@@ -49,6 +53,79 @@
 
   function text(value, max = 2048) {
     return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+  }
+
+  function liveHandle(link) {
+    try { return decodeURIComponent(new URL(link?.href || "", location.href).pathname).match(/^\/@([^/]+)\/live\/?$/i)?.[1] || ""; }
+    catch (_) { return ""; }
+  }
+
+  function parseCompactCount(value) {
+    const raw = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+    const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)([KMB])?$/);
+    if (!match) return null;
+    const suffix = match[2] || "";
+    const decimal = suffix ? match[1].replace(",", ".") : match[1].replace(/[.,](?=\d{3}(?:\D|$))/g, "").replace(",", ".");
+    const number = Number(decimal);
+    return Number.isFinite(number) ? Math.round(number * ({ K: 1e3, M: 1e6, B: 1e9 }[suffix] || 1)) : null;
+  }
+
+  function recommendationCards() {
+    const heading = [...document.querySelectorAll("h1,h2,h3")].find((node) => /^empfohlene livestreams$/i.test(text(node.innerText, 100)));
+    if (!heading) return [];
+    let rootNode = heading.parentElement;
+    for (let depth = 0; rootNode && depth < 6; depth += 1, rootNode = rootNode.parentElement) {
+      if (new Set([...rootNode.querySelectorAll('a[href*="/live"]')].map(liveHandle).filter(Boolean)).size) break;
+    }
+    if (!rootNode) return [];
+    const seen = new Set();
+    const cards = [];
+    for (const link of rootNode.querySelectorAll('a[href*="/live"]')) {
+      const handle = liveHandle(link);
+      if (!handle || seen.has(handle)) continue;
+      let card = link;
+      for (let depth = 0; card && depth < 7 && rootNode.contains(card); depth += 1, card = card.parentElement) {
+        const handles = new Set([...card.querySelectorAll?.('a[href*="/live"]') || []].map(liveHandle).filter(Boolean));
+        if (card.querySelector?.("video,img") && handles.size === 1 && handles.has(handle)) break;
+      }
+      if (!card || card === rootNode) continue;
+      seen.add(handle);
+      cards.push({ handle, card, url: new URL(link.href, location.href).href });
+    }
+    return cards;
+  }
+
+  function recommendationItem(entry, position) {
+    const values = [...entry.card.querySelectorAll("span,div,p,strong")].map((node) => text(node.innerText, 80)).filter((value) => /^[0-9]+(?:[.,][0-9]+)?[KMB]?$/i.test(value));
+    const viewerLabel = values.find((value) => parseCompactCount(value) != null) || "";
+    const lines = [...entry.card.querySelectorAll('a[href*="/live"]')].filter((link) => liveHandle(link) === entry.handle).flatMap((link) => String(link.innerText || "").split(/\r?\n/)).map((value) => text(value, 300)).filter((value) => value && !/^live$/i.test(value) && value !== viewerLabel);
+    return { handle: entry.handle, displayName: lines.at(-1) || entry.handle, title: text(entry.card.querySelector('a[title]')?.getAttribute("title") || lines[0] || "", 300), viewerCount: parseCompactCount(viewerLabel), viewerLabel, url: entry.url, position };
+  }
+
+  async function scanRecommendations(run) {
+    const original = { x: scrollX, y: scrollY };
+    const items = [];
+    const scanned = new Set();
+    let noGrowth = 0;
+    try {
+      emit("recommendation-scan-progress", { status: "running", requested: run.limit, scanned: 0, items });
+      for (let round = 0; round < 20 && noGrowth < 3 && !run.cancelled && items.length < run.limit; round += 1) {
+        let added = 0;
+        for (const entry of recommendationCards()) {
+          if (run.cancelled || items.length >= run.limit || scanned.has(entry.handle)) continue;
+          scanned.add(entry.handle); entry.card.scrollIntoView({ block: "center" });
+          await new Promise((resolve) => setTimeout(resolve, 180));
+          for (const eventName of ["pointerover", "mouseover", "mouseenter"]) entry.card.dispatchEvent(new MouseEvent(eventName, { bubbles: true, view: root }));
+          await new Promise((resolve) => setTimeout(resolve, 320));
+          items.push(recommendationItem(entry, items.length + 1)); added += 1;
+          emit("recommendation-scan-progress", { status: "running", requested: run.limit, scanned: items.length, items });
+        }
+        noGrowth = added ? 0 : noGrowth + 1;
+        if (!run.cancelled && items.length < run.limit && noGrowth < 3) { scrollBy(0, Math.max(600, innerHeight * 0.8)); await new Promise((resolve) => setTimeout(resolve, 650)); }
+      }
+      emit("recommendation-scan-progress", { status: run.cancelled ? "cancelled" : "complete", requested: run.limit, scanned: items.length, items });
+    } catch (error) { emit("recommendation-scan-progress", { status: "error", requested: run.limit, scanned: items.length, items, error: text(error?.message || error, 300) }); }
+    finally { scrollTo(original.x, original.y); if (activeRecommendationScan === run) activeRecommendationScan = null; }
   }
 
   function primaryVideo() {
@@ -125,7 +202,7 @@
       video.dataset.tlcMediaObserved = "true";
       for (const eventName of ["loadedmetadata", "canplay", "playing"]) video.addEventListener(eventName, collectMediaUrls);
       for (const eventName of ["stalled", "error", "waiting"]) video.addEventListener(eventName, () => quickRecover(eventName), { passive: true });
-      video.addEventListener("playing", () => { quickRecoverFailures = 0; }, { passive: true });
+      video.addEventListener("playing", () => { quickRecoverFailures = 0; clearTimeout(quickRecoverReloadTimer); }, { passive: true });
     }
     document.documentElement.setAttribute("data-tlc-mobile-focus", "true");
     video?.setAttribute("data-tlc-mobile-primary-video", "true");
@@ -178,7 +255,8 @@
     emit("quick-recover", { reason, attempt: quickRecoverFailures, cooldownMs: QUICK_RECOVER_RELOAD_COOLDOWN_MS });
     if (quickRecoverFailures >= 3) {
       quickRecoverFailures = 0;
-      location.reload();
+      clearTimeout(quickRecoverReloadTimer);
+      quickRecoverReloadTimer = setTimeout(() => location.reload(), autoReconnectDelayMs);
     }
   }
 
@@ -440,6 +518,14 @@
       else if (name === "start-audible") await attemptAudibleStart();
       else if (name === "set-volume" && video) video.volume = Math.max(0, Math.min(1, Number(payload.value) || 0));
       else if (name === "reload-player" && video) video.load();
+      else if (name === "fullscreen" && video) {
+        if (document.fullscreenElement) await document.exitFullscreen?.();
+        else await video.requestFullscreen?.();
+      }
+      else if (name === "picture-in-picture" && video) {
+        if (document.pictureInPictureElement) await document.exitPictureInPicture?.();
+        else if (document.pictureInPictureEnabled) await video.requestPictureInPicture?.();
+      }
       else if (name === "captions") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /caption|untertitel/i.test(node.textContent || ""))?.click();
       else if (name === "refresh") location.reload();
       else if (name === "reject-cookies") rejectCookieConsent();
@@ -460,7 +546,9 @@
       else if (name === "start-webview-audio") await startAudioCapture();
       else if (name === "stop-webview-audio") await stopAudioCapture();
       else if (name === "set-limiter") await applyLimiter(payload);
-      else if (name === "set-auto-reconnect") autoReconnectEnabled = payload.enabled === true;
+      else if (name === "set-auto-reconnect") { autoReconnectEnabled = payload.enabled === true; autoReconnectDelayMs = Math.max(1, Math.min(59, Number(payload.delaySeconds) || 3)) * 1000; }
+      else if (name === "scan-recommendations") { if (activeRecommendationScan) activeRecommendationScan.cancelled = true; activeRecommendationScan = { limit: Math.max(1, Math.min(50, Number(payload.limit) || 20)), cancelled: false }; scanRecommendations(activeRecommendationScan); }
+      else if (name === "cancel-recommendation-scan" && activeRecommendationScan) activeRecommendationScan.cancelled = true;
       emit("command-result", { command: name, ok: true });
     } catch (error) {
       emit("command-result", { command: name, ok: false, error: text(error?.message || error, 512) });
@@ -488,5 +576,5 @@
     }, 500);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
-  emit("bridge-ready", { version: "0.7.1", origin: location.origin, documentStart: true });
+  emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true, autoReconnectDelayMs });
 })(globalThis);

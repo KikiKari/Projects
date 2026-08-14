@@ -52,7 +52,6 @@ $startScriptPath = Join-Path $configDir "start-service.ps1"
 $installScriptPath = Join-Path $configDir "install-service.ps1"
 $protocolScriptPath = Join-Path $configDir "protocol-handler.cmd"
 $setupScriptPath = Join-Path $serviceDir "setup.ps1"
-$serviceRoot = Split-Path -Parent $serviceDir
 foreach ($generatedScriptPath in @($startScriptPath, $installScriptPath)) {
   if (Test-Path -LiteralPath $generatedScriptPath) {
     Remove-Item -LiteralPath $generatedScriptPath -Force
@@ -68,8 +67,8 @@ Set-Location -LiteralPath "$serviceDir"
 try {
   & "$setupScriptPath" -ExtensionId `$ExtensionId -BootstrapNonce `$BootstrapNonce
   Write-Host "Einrichtung abgeschlossen. Der Sprachdienst wurde gestartet."
-  Write-Host "Den individuellen Pairing-Code oben markieren und mit STRG+C kopieren."
-  Write-Host "Danach im Sidepanel in das Feld Pairing-Code klicken und mit STRG+V einfuegen."
+  Write-Host "Der Pairing-Code wird automatisch an die anfragende Erweiterung uebergeben."
+  Write-Host "Nur falls die Kopplung nicht bestaetigt wird, kann der oben angezeigte Code manuell verwendet werden."
   Read-Host "Eingabetaste zum Schliessen"
 } catch {
   Write-Error `$_
@@ -130,12 +129,7 @@ for /f "tokens=1,2 delims=/" %%A in ("!TLC_PAYLOAD!") do (
 if not defined TLC_EXTENSION exit /b 2
 if not defined TLC_NONCE exit /b 2
 
-cd /d "$serviceRoot"
 echo TikTok LIVE Companion wird mit CMD eingerichtet ...
-call "$npmPath" run setup -- -ExtensionId "!TLC_EXTENSION!" -BootstrapNonce "!TLC_NONCE!"
-if not errorlevel 1 goto install_complete
-
-echo CMD-Installation fehlgeschlagen. PowerShell-Fallback wird ausgefuehrt ...
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$setupScriptPath" -ExtensionId "!TLC_EXTENSION!" -BootstrapNonce "!TLC_NONCE!"
 if errorlevel 1 (
   echo Installation fehlgeschlagen. Das Fenster bleibt zur Diagnose offen.
@@ -146,8 +140,8 @@ if errorlevel 1 (
 :install_complete
 echo.
 echo Einrichtung abgeschlossen. Der Sprachdienst wurde gestartet.
-echo Den individuellen Pairing-Code oben markieren und mit STRG+C kopieren.
-echo Danach im Sidepanel in das Feld Pairing-Code klicken und mit STRG+V einfuegen.
+echo Der Pairing-Code wird automatisch an die anfragende Erweiterung uebergeben.
+echo Falls das Sidepanel die Kopplung nicht bestaetigt, kann der oben angezeigte Code weiterhin manuell verwendet werden.
 echo.
 pause
 exit /b 0
@@ -166,26 +160,15 @@ $protocolCommand = "cmd.exe /d /c `"`"$protocolScriptPath`" `"%1`"`""
 New-ItemProperty -Path "$protocolKey\shell\open\command" -Name "(Default)" -Value $protocolCommand -PropertyType String -Force | Out-Null
 
 if ($BootstrapNonce) {
-  $headers = @{
-    Origin = "chrome-extension://$configuredExtensionId"
-    Authorization = "Bearer $pairingCode"
-  }
-  $runningService = $null
+  $listenerPid = 0
   try {
-    $runningService = Invoke-RestMethod -Uri "http://127.0.0.1:43117/v1/health" -Headers $headers -Method Get -TimeoutSec 2
+    $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort 43117 -State Listen -ErrorAction Stop | Select-Object -First 1
+    $listenerPid = [int]$listener.OwningProcess
   } catch {
-    $runningService = $null
+    $netstatLine = netstat -ano -p tcp | Select-String -Pattern '^\s*TCP\s+127\.0\.0\.1:43117\s+\S+\s+LISTENING\s+(\d+)\s*$' | Select-Object -First 1
+    if ($netstatLine -and $netstatLine.Matches.Count) { $listenerPid = [int]$netstatLine.Matches[0].Groups[1].Value }
   }
-  if ($runningService -and $runningService.version -eq "0.7.1") {
-    $listenerPid = 0
-    try {
-      $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort 43117 -State Listen -ErrorAction Stop | Select-Object -First 1
-      $listenerPid = [int]$listener.OwningProcess
-    } catch {
-      $netstatLine = netstat -ano -p tcp | Select-String -Pattern '^\s*TCP\s+127\.0\.0\.1:43117\s+\S+\s+LISTENING\s+(\d+)\s*$' | Select-Object -First 1
-      if ($netstatLine -and $netstatLine.Matches.Count) { $listenerPid = [int]$netstatLine.Matches[0].Groups[1].Value }
-    }
-    if ($listenerPid -le 0) { throw "Der laufende Sprachdienst konnte nicht eindeutig ermittelt werden." }
+  if ($listenerPid -gt 0) {
     $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $listenerPid"
     if (-not $listenerProcess -or $listenerProcess.Name -ne "node.exe" -or $listenerProcess.CommandLine -notmatch '(?i)\bnode(?:\.exe)?\b\s+server\.mjs\b') {
       throw "Port 43117 wird nicht vom erwarteten TikTok-LIVE-Companion-Dienst verwendet."

@@ -6,7 +6,7 @@ Run **Inspect page** first. `caption_info` and a visible menu item indicate avai
 
 ## Hook remains disconnected
 
-Use **Refresh** in the hook area. This clears only volatile tab state, registers the hook again, and reloads without cache. Auto-hook can keep registration across browser restarts.
+Use **Refresh** in the hook area. The current LIVE stream receives a new tab-scoped browser-session ID and opens in a new tab/document context with the hook enabled; the previous tab is then closed. Only if replacement is unavailable does the same tab reload without cache with a new session ID. Cookies, login, and other TikTok tabs remain unchanged.
 
 ## Player action rejected
 

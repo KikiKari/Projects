@@ -19,7 +19,7 @@
           <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
           <button id="chat-count" class="count count-button" type="button" aria-haspopup="dialog" title="Gesammelte Chatzeilen öffnen">0</button>
           <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Refresh</button>
-          <button id="toggle-speech" class="secondary compact" aria-pressed="false">Vorlesen an</button>
+          <button id="toggle-speech" class="secondary compact" aria-pressed="false">Vorlesen</button>
           <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
         </div>
       </div>
@@ -27,23 +27,15 @@
       <p id="speech-status" role="status" class="inline-status">Vorlesen ist ausgeschaltet.</p>
       <div class="control-label"><label for="speech-volume">Vorleselautstärke</label><output id="speech-volume-output" for="speech-volume">100%</output></div>
       <input id="speech-volume" type="range" min="0" max="100" step="5" value="50">
-      <div class="settings-grid speech-settings">
-        <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
-        <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
-        <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid )</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
-        <label id="pairing-code-setting"><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
-      </div>
       <div class="button-row">
-        <button id="service-action" class="secondary">Sprachdienst installieren</button>
-        <button id="sherpa-action" class="secondary">Sherpa installieren</button>
+        <button id="service-action" class="secondary">Sprachdienst</button>
+        <button id="sherpa-action" class="secondary">Sherpa</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Sprach- und Chat-Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
       </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
       <div id="service-setup" class="inline-status" hidden>
         <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
       </div>
-      <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
-      <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
-      <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
       <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
       <label class="option-row"><input id="keep-speech-active" type="checkbox"> Permanent aktiv</label>
     </section>
@@ -98,7 +90,27 @@
       </div>
       <p id="hook-status" class="inline-status"></p>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
-      <label class="option-row"><input id="quick-recover" type="checkbox"> Auto-Reconnect</label>
+      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Auto-Reconnect <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Auto-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+    </section>
+
+    <section id="recommendations-section" aria-labelledby="recommendations-heading">
+      <div class="section-title">
+        <h2 id="recommendations-heading">LIVE-Empfehlungen</h2>
+        <span id="recommendation-status" class="live-indicator">bereit</span>
+      </div>
+      <div class="recommendation-controls">
+        <label><span>Anzahl</span><input id="recommendation-limit" type="number" min="1" max="50" step="1" value="20" inputmode="numeric"></label>
+        <label><span>Sortierung</span><select id="recommendation-sort"><option value="tiktok">TikTok-Reihenfolge</option><option value="viewers">Zuschauer*innen</option></select></label>
+      </div>
+      <div class="button-row">
+        <button id="scan-recommendations" class="primary">Empfehlungen scannen</button>
+        <button id="cancel-recommendations" class="secondary" hidden>Abbrechen</button>
+      </div>
+      <p id="recommendation-progress" class="inline-status" aria-live="polite">Noch kein Scan gestartet.</p>
+      <div id="recommendation-list" class="recommendation-list empty">Noch keine Empfehlungen erfasst.</div>
+      <div id="recommendation-actions" class="top-chatters-actions" hidden>
+        <button id="recommendation-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
     </section>
 
     <section aria-labelledby="caption-heading">
@@ -161,7 +173,8 @@
         <span id="caption-count" class="count">0</span>
       </div>
       <div class="button-row">
-        <button id="export-log" class="secondary">JSONL exportieren</button>
+        <button id="export-log" class="secondary">JSON-L-Export</button>
+        <button id="export-caption-raw" class="secondary">RAW-JSON-Export</button>
         <button id="clear" class="ghost">Anzeige leeren</button>
       </div>
       <div id="caption-list" class="list empty">Noch keine CaptionMessages empfangen.</div>
@@ -191,6 +204,25 @@
       </section>
     </div>
 
+    <div id="speech-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="speech-settings-heading">
+        <div class="section-title">
+          <h2 id="speech-settings-heading">Sprach- und Chat-Einstellungen</h2>
+          <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
+        </div>
+        <div class="settings-grid speech-integration-settings">
+          <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
+          <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
+          <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
+          <label id="pairing-code-setting"><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
+          <label><span>Universal API-Key für Untertitel</span><input id="universal-caption-api-key" type="password" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
+        <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
+        <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
+      </section>
+    </div>
+
     <div id="chat-history-modal" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="chat-history-heading">
         <div class="section-title">
@@ -199,6 +231,16 @@
         </div>
         <p id="chat-history-limit" class="inline-status"></p>
         <div id="chat-history-list" class="chat-history-list"></div>
+      </section>
+    </div>
+
+    <div id="recommendation-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="recommendation-modal-heading">
+        <div class="section-title">
+          <h2 id="recommendation-modal-heading">Gescannte LIVE-Empfehlungen</h2>
+          <button id="close-recommendations" class="secondary compact" aria-label="Empfehlungen schließen">Schließen</button>
+        </div>
+        <div id="recommendation-modal-list" class="recommendation-list"></div>
       </section>
     </div>
 

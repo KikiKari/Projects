@@ -384,6 +384,74 @@
     return `${author} ${isQuestion ? "fragt" : "sagt"}${body ? ` ${body}` : ""}`.trim();
   }
 
+  function liveHandleFromUrl(value) {
+    try {
+      const path = decodeURIComponent(new URL(String(value || "")).pathname);
+      return (path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "").toLocaleLowerCase();
+    }
+    catch (_) { return ""; }
+  }
+
+  function parseCompactCount(value) {
+    const raw = String(value ?? "").trim().replace(/\s+/g, "");
+    if (!raw) return null;
+    const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)([KMB])?$/i);
+    if (!match) return null;
+    const suffix = String(match[2] || "").toLocaleUpperCase();
+    if (!suffix) {
+      const digits = raw.replace(/[.,]/g, "");
+      const parsed = Number(digits);
+      return Number.isSafeInteger(parsed) ? parsed : null;
+    }
+    const base = Number(match[1].replace(",", "."));
+    const multiplier = suffix === "K" ? 1_000 : suffix === "M" ? 1_000_000 : 1_000_000_000;
+    const parsed = Math.round(base * multiplier);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  }
+
+  function dedupeRecommendations(items = []) {
+    const byHandle = new Map();
+    for (const raw of items) {
+      const handle = String(raw?.handle || "").replace(/^@/, "").trim().toLocaleLowerCase();
+      if (!handle) continue;
+      const position = Math.max(1, Math.round(Number(raw.position) || byHandle.size + 1));
+      const item = {
+        handle,
+        displayName: String(raw.displayName || "").trim(),
+        title: String(raw.title || "").trim(),
+        viewerCount: raw.viewerCount != null && Number.isSafeInteger(Number(raw.viewerCount)) ? Number(raw.viewerCount) : null,
+        viewerLabel: String(raw.viewerLabel || "").trim(),
+        url: String(raw.url || "").trim(),
+        position
+      };
+      const existing = byHandle.get(handle);
+      if (!existing) {
+        byHandle.set(handle, item);
+        continue;
+      }
+      byHandle.set(handle, {
+        ...existing,
+        displayName: existing.displayName || item.displayName,
+        title: existing.title || item.title,
+        viewerCount: item.viewerCount ?? existing.viewerCount,
+        viewerLabel: item.viewerLabel || existing.viewerLabel,
+        url: existing.url || item.url,
+        position: Math.min(existing.position, item.position)
+      });
+    }
+    return [...byHandle.values()].sort((left, right) => left.position - right.position);
+  }
+
+  function sortRecommendations(items = [], mode = "tiktok") {
+    const result = dedupeRecommendations(items);
+    if (mode !== "viewers") return result;
+    return result.sort((left, right) => {
+      const leftCount = Number.isSafeInteger(left.viewerCount) ? left.viewerCount : -1;
+      const rightCount = Number.isSafeInteger(right.viewerCount) ? right.viewerCount : -1;
+      return rightCount - leftCount || left.position - right.position;
+    });
+  }
+
   function gameModeSpeechKey(value) {
     return sanitizeChatText(value)
       .toLocaleLowerCase()
@@ -629,6 +697,10 @@
     contentHasToken,
     accumulateTeamEvidence,
     streamIdentityChanged,
+    liveHandleFromUrl,
+    parseCompactCount,
+    dedupeRecommendations,
+    sortRecommendations,
     sameParticipant,
     sortParticipants,
     mergeParticipantRecord,

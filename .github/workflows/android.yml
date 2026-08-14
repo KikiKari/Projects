@@ -13,7 +13,7 @@ on:
 
 jobs:
   test-and-package:
-    if: github.event_name != 'workflow_dispatch' && !contains(github.event.head_commit.message, '[skip android build]')
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip android build]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -46,64 +46,12 @@ jobs:
       - name: Upload mock debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: TikTok-Live-Companion-Android-0.7.1-alpha-mock-debug
+          name: TikTok-Live-Companion-Android-0.8.0-mock-debug
           path: mobile/android/app/build/outputs/apk/mock/debug/*.apk
           if-no-files-found: error
 
       - name: Preserve Android structure-test gate
         if: steps.unit_tests.outcome != 'success'
         run: |
-          echo "The known Android structure-test gate remains open under 0PE-94." >&2
+          echo "The Android structure-test gate failed for the current 0.8.0 commit." >&2
           exit 1
-
-  promote-existing-apk:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      actions: read
-      contents: write
-      packages: write
-    steps:
-      - name: Download verified APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: TikTok-Live-Companion-Android-0.7.1-alpha-mock-debug
-          path: release-asset
-          run-id: 30748539909
-          github-token: ${{ github.token }}
-
-      - name: Normalize release asset name
-        run: mv release-asset/app-mock-debug.apk release-asset/tiktok-live-companion-android-0.7.1.apk
-
-      - name: Upload APK to existing prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload tlc-android-v0.7.1-alpha release-asset/tiktok-live-companion-android-0.7.1.apk --clobber --repo KikiKari/Projects
-
-      - name: Download source and checksums from prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download tlc-android-v0.7.1-alpha --repo KikiKari/Projects --dir release-asset --pattern 'tiktok-live-companion-android-0.7.1-source.zip' --pattern 'tiktok-live-companion-0.7.1-SHA256.txt' --clobber
-
-      - name: Build Android artifact image
-        run: |
-          printf '%s\n' \
-            'FROM alpine:3.22' \
-            'LABEL org.opencontainers.image.source="https://github.com/KikiKari/Projects"' \
-            'LABEL org.opencontainers.image.revision="b27f39fd9ece151348763cd70c7556642bdb8909"' \
-            'LABEL org.opencontainers.image.version="0.7.1-alpha"' \
-            'LABEL org.opencontainers.image.title="TikTok LIVE Companion Android"' \
-            'LABEL org.opencontainers.image.licenses="MIT"' \
-            'COPY release-asset /artifacts' \
-            'CMD ["sh", "-c", "ls -la /artifacts && cat /artifacts/tiktok-live-companion-0.7.1-SHA256.txt"]' \
-            > Dockerfile.release
-          docker build --provenance=false -f Dockerfile.release -t ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha .
-
-      - name: Publish Android artifact image
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker push ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha

@@ -12,6 +12,23 @@ data class ParticipantStats(val messages: Int = 0, val words: Int = 0)
 data class TopChatter(val author: String, val messages: Int, val words: Int)
 data class SpeechRequest(val id: Long, val text: String, val languageTag: String?)
 data class StreamMediaUrl(val url: String, val kind: String)
+data class CaptionRecord(
+    val timestamp: String,
+    val sentenceId: String,
+    val definite: Boolean,
+    val language: String,
+    val text: String,
+    val rawJson: String
+)
+data class RecommendationItem(
+    val handle: String,
+    val displayName: String,
+    val title: String,
+    val viewerCount: Long?,
+    val viewerLabel: String,
+    val url: String,
+    val position: Int
+)
 
 data class RecognitionResult(
     val matched: Boolean,

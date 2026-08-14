@@ -37,7 +37,7 @@ test("health requires pairing and reports providers", async (t) => {
   const response = await fetch(`${base}/v1/health`, { headers });
   assert.equal(response.status, 200);
   const health = await response.json();
-  assert.equal(health.version, "0.7.1");
+  assert.equal(health.version, "0.8.0");
   assert.equal(health.bootstrapPairing, true);
   assert.equal(health.auddConfigured, true);
   assert.equal(health.bootstrapPending, false);

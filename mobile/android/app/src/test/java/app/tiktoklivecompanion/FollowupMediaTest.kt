@@ -54,6 +54,23 @@ class FollowupMediaTest {
         assertTrue(model.debugReport(false).contains("bridgeEvents"))
     }
 
+    @Test fun releaseEightSettingsCaptionsRecommendationsAndReconnectArePersistedInState() {
+        val model = CompanionViewModel(FollowupFakeEngine())
+        model.setAuddToken("audd")
+        model.setPairingCode("pair")
+        model.setUniversalCaptionApiKey("caption")
+        model.setAutoReconnectDelay(59)
+        model.startRecommendationScan(99)
+        model.handle(envelope("caption", mapOf("sentenceId" to "1", "definite" to true, "contents" to listOf(mapOf("lang" to "de", "text" to "Hallo")))))
+        val state = model.state.value
+        assertEquals(59, state.autoReconnectDelaySeconds)
+        assertEquals(50, state.recommendationLimit)
+        assertEquals(1, state.captionRecords.size)
+        assertTrue(model.captionJsonLines().contains("Hallo"))
+        assertTrue(model.debugReport(false).contains("0.8.0"))
+        assertTrue(model.debugReport(false).contains("settingsDialogAvailable"))
+    }
+
     @Test fun followupUiAndBackgroundServiceStayInTheirIntendedAreas() {
         val sourceRoot = listOf(File("src/main"), File("app/src/main"), File("mobile/android/app/src/main")).first { File(it, "AndroidManifest.xml").isFile }
         val ui = File(sourceRoot, "java/app/tiktoklivecompanion/MainActivity.kt").readText()
@@ -64,6 +81,10 @@ class FollowupMediaTest {
         assertFalse(live.contains("Top-Chatter"))
         assertTrue(live.contains("Personen stummschalten"))
         assertTrue(ui.substringAfter("private fun MoreTab").contains("Debugmodus"))
+        assertTrue(ui.contains("Sprach- und Chat-Einstellungen"))
+        assertTrue(ui.contains("JSON-L-Export"))
+        assertTrue(ui.contains("RAW-JSON-Export"))
+        assertTrue(live.contains("LIVE-Empfehlungen"))
         assertFalse(ui.contains("Direkte TikTok-Media-URLs sind temporär"))
         assertFalse(ui.contains("Es werden nur Ereignistyp und Zeit erfasst"))
         val manifest = File(sourceRoot, "AndroidManifest.xml").readText()

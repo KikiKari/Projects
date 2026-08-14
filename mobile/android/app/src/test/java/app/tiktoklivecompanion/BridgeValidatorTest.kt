@@ -27,4 +27,5 @@ class BridgeValidatorTest {
         }
     }
     @Test fun validatesExternalLinks() { assertNotNull(BridgeValidator.safeHttpsUrl("https://www.shazam.com/song/1")); assertNull(BridgeValidator.safeHttpsUrl("javascript:alert(1)")) }
+    @Test fun acceptsRecommendationProgress() { assertEquals("recommendation-scan-progress", BridgeValidator.decode(ready.replace("bridge-ready", "recommendation-scan-progress"), BridgeValidator.ALLOWED_ORIGIN, true)?.type) }
 }

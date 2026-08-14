@@ -17,19 +17,28 @@
 
 ## Optional local speech and song service
 
-1. Extract `tiktok-live-companion-service-0.7.1.zip` and open PowerShell in that folder.
-2. Run `npm run setup`; an AudD token is required only for song recognition.
-3. Start the service with `npm start`.
-4. Enter the displayed pairing code in the side panel. The service listens only on `127.0.0.1:43117`.
+1. Select **Sprachdienst starten**. If one-time setup is still required, the side panel shows only **Installation abschließen!**; it does not display commands or the extension ID.
+2. **Installation abschließen!** opens PowerShell in the actual service directory, runs setup with the correct extension ID, and starts the service automatically.
+3. The locally generated pairing code is inserted into the side panel automatically. The installation button disappears after a successful health check.
+4. Later starts use `tiktok-live-companion://start`; a short-lived nonce protects pairing transfer.
+5. The service listens only on `127.0.0.1:43117`.
+
+If the side panel reports that the local service is outdated, stop the process from the older extracted package, load the current unpacked extension, and select **Installation abschließen!** again. No additional manual start is required; an already running service is detected instead of launching a second process.
+
+The pairing code is stored in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` and normally stays unchanged. It changes only if that file is deleted or recreated.
+
+The **AudD API-Token** field stores the AudD key persistently in the same local configuration. Sherpa-ONNX voices are installed automatically by the current 0.7.1 service or through **Sherpa installieren**.
 
 ## First run
 
 1. **Inspect page** reads caption metadata, visible controls, and stream information.
 2. **Enable captions** activates only a clearly identified TikTok menu item.
-3. **Set hook** registers observation before player code and reloads the tab.
+3. **Set hook** enables observation only for the current tab before player code and reloads that tab.
 4. After reload, chat, caption, and LIVE events appear when TikTok supplies them.
 
-**Refresh** clears only the extension's volatile state for the current tab, re-enables the hook, and reloads TikTok without page cache. Cookies and login remain intact.
+**Refresh** creates a new tab-scoped browser-session ID, opens the current LIVE stream in a new tab/document context, enables the hook there, and then closes the previous tab. If the tab cannot be replaced, it still receives a new session ID and reloads without page cache. Cookies, login, and other TikTok tabs remain unchanged.
+
+**Play/Pause** remains available when TikTok's video element is temporarily missing or disabled. The extension retries TikTok's own player control.
 
 ## iOS 15 or newer
 
