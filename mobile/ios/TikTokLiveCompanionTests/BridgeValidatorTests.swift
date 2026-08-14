@@ -15,13 +15,28 @@ final class BridgeValidatorTests: XCTestCase {
         }
     }
 
-    func testRejectsWrongOriginAndFrame() {
+    func testRejectsWrongOrigin() {
         XCTAssertThrowsError(try BridgeValidator.decode(data: ready, origin: "https://evil.example", isMainFrame: true))
-        XCTAssertThrowsError(try BridgeValidator.decode(data: ready, origin: "https://www.tiktok.com", isMainFrame: false))
+    }
+
+    func testAcceptsSameOriginSubframe() throws {
+        XCTAssertEqual(try BridgeValidator.decode(data: ready, origin: "https://www.tiktok.com", isMainFrame: false).type, "bridge-ready")
+    }
+
+    func testAcceptsNewDiagnosticTypes() throws {
+        for type in ["socket-open", "force-start", "force-return", "media-url", "player-state"] {
+            let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: type).data(using: .utf8)!
+            XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, type)
+        }
     }
 
     func testOnlyAllowsHTTPSResultLinks() {
         XCTAssertNotNil(BridgeValidator.validatedHTTPS("https://www.shazam.com/song/1"))
         XCTAssertNil(BridgeValidator.validatedHTTPS("javascript:alert(1)"))
+    }
+
+    func testRecommendationProgressIsAllowed() throws {
+        let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: "recommendation-scan-progress").data(using: .utf8)!
+        XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, "recommendation-scan-progress")
     }
 }

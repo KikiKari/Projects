@@ -1,0 +1,72 @@
+name: iOS
+
+on:
+  push:
+    branches:
+      - TikTok-Live-Companion-iOS
+    paths:
+      - ".github/workflows/ios.yml"
+      - "mobile/ios/**"
+      - "plugin-source/mobile-shared/**"
+      - "plugin-source/scripts/test_mobile_projects.py"
+  pull_request:
+    paths:
+      - ".github/workflows/ios.yml"
+      - "mobile/ios/**"
+      - "plugin-source/mobile-shared/**"
+      - "plugin-source/scripts/test_mobile_projects.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulator-build-and-tests:
+    name: Simulator Build and Tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+
+      - name: Validate mobile project contracts
+        run: python3 plugin-source/scripts/test_mobile_projects.py
+
+      - name: Install pinned MobileVLCKit
+        run: |
+          gem install cocoapods --no-document
+          cd mobile/ios
+          pod install --repo-update
+
+      - name: Resolve available iOS simulator
+        id: simulator
+        run: |
+          set -euo pipefail
+          udid="$(xcrun simctl list devices available --json | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=[d for runtime in data.get("devices", {}).values() for d in runtime if d.get("isAvailable") and d.get("name", "").startswith("iPhone")]; print(devices[0]["udid"] if devices else "")')"
+          if [[ -z "$udid" ]]; then
+            echo "No available iPhone simulator found." >&2
+            exit 1
+          fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      - name: Test on iOS simulator
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -workspace mobile/ios/TikTokLiveCompanion.xcworkspace \
+            -scheme TikTokLiveCompanion \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/tlc-ios-derived-data" \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_TESTABILITY=YES \
+            SWIFT_OPTIMIZATION_LEVEL=-Onone

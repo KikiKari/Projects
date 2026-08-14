@@ -43,7 +43,7 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.7.1");
+assert.strictEqual(manifest.version, "0.8.0");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
@@ -571,7 +571,7 @@ assert.ok(!setupSource.includes('$serviceRoot ='));
 assert.ok(!setupSource.includes('call "$npmPath" run setup --'));
 assert.ok(!setupSource.includes('CMD-Installation fehlgeschlagen. PowerShell-Fallback'));
 assert.ok(setupSource.includes('cmd.exe /d /c'));
-assert.ok(!setupSource.includes('$runningService.version -eq "0.7.1"'));
+assert.ok(!setupSource.includes('$runningService.version -eq "0.8.0"'));
 assert.ok(setupSource.includes('Stop-Process -Id $listenerPid -Force'));
 assert.ok(setupSource.includes('$listenerProcess.Name -ne "node.exe"'));
 assert.ok(panelHtml.includes('id="sherpa-action" class="secondary">Sherpa</button>'));
@@ -727,4 +727,4 @@ assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 
-console.log(`PASS: manifest 0.7.1, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
+console.log(`PASS: manifest 0.8.0, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

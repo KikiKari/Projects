@@ -1,4 +1,4 @@
-# Lokaler Begleitdienst 0.7.1
+# Lokaler Begleitdienst 0.8.0
 
 Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschließlich manuell aufgenommene Audioausschnitte an AudD weiter. Er bindet nur an `127.0.0.1`.
 
@@ -6,10 +6,10 @@ Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschl
 
 Wenn sich beim Sidepanel-Button noch ein altes CMD-Fenster mit `npm error ENOENT` und `C:\Users\...\Documents\package.json` öffnet, ist der am 2. August erzeugte Windows-Protokollstarter weiterhin aktiv. Im aktuellen entpackten Paket einmal `companion-service\Sprachdienst-reparieren.cmd` doppelklicken. Eine vorhandene Erweiterungs-ID, der Pairing-Code und bereits installierte Sherpa-Dateien werden wiederverwendet. Nur wenn noch keine gültige Erweiterungs-ID gespeichert ist, fragt die Reparatur danach. Anschließend im Sidepanel `Sprachdienst starten` anklicken; der Pairing-Code wird automatisch übernommen.
 
-Wenn das Sidepanel meldet `Lokaler Dienst ist veraltet`, läuft auf `127.0.0.1:43117` noch ein alter Dienst. In der alten PowerShell zuerst `Ctrl+C` drücken und danach aus dem aktuell entpackten 0.7.1-Paket starten:
+Wenn das Sidepanel meldet `Lokaler Dienst ist veraltet`, läuft auf `127.0.0.1:43117` noch ein alter Dienst. In der alten PowerShell zuerst `Ctrl+C` drücken und danach aus dem aktuell entpackten 0.8.0-Paket starten:
 
 ```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1"
+cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.8.0"
 npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
 npm start
 ```
@@ -25,7 +25,7 @@ Manuell eingegebene Pairing-Codes werden erst nach einem erfolgreichen Health-Ch
 Falls die automatische Installation auf einem System blockiert wird, kann sie manuell aus dem entpackten Paket gestartet werden:
 
 ```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.7.1\companion-service"
+cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.8.0\companion-service"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sherpa.ps1
 npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
 npm start

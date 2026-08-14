@@ -25,7 +25,10 @@ final class ShazamRecognitionService: NSObject, RecognitionService, SHSessionDel
         source = .microphone
         AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
             guard let self else { return }
-            guard allowed else { return self.onError?("Mikrofonzugriff wurde abgelehnt") }
+            guard allowed else {
+                self.onError?("Mikrofonzugriff wurde abgelehnt")
+                return
+            }
             do {
                 let audioSession = AVAudioSession.sharedInstance()
                 try audioSession.setCategory(.record, mode: .measurement)
@@ -69,6 +72,7 @@ final class ShazamRecognitionService: NSObject, RecognitionService, SHSessionDel
         audioEngine?.stop()
         audioEngine = nil
         try? AVAudioSession.sharedInstance().setActive(false)
+        BackgroundAudioController.shared.restoreIfNeeded()
     }
 
     func session(_ session: SHSession, didFind match: SHMatch) {

@@ -16,13 +16,13 @@ android {
         minSdk = 21
         targetSdk = 36
         versionCode = 8
-        versionName = "0.7.1"
+        versionName = "0.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SHAZAM_TOKEN_URL", "\"${tokenUrl.get().replace("\"", "\\\"")}\"")
     }
     flavorDimensions += "recognition"
     productFlavors {
-        create("mock") { dimension = "recognition"; applicationIdSuffix = ".test" }
+        create("mock") { dimension = "recognition" }
         create("shazam") { dimension = "recognition" }
     }
     buildFeatures { compose = true; buildConfig = true }
@@ -45,6 +45,7 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.videolan.android:libvlc-all:3.7.5")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")

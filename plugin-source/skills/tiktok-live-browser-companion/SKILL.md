@@ -1,6 +1,6 @@
 ---
 name: tiktok-live-browser-companion
-description: Installiert und bedient TikTok LIVE Companion 0.7.1 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung, Auto-Reconnect, Embed/Normal und Streaminformationen.
+description: Installiert und bedient TikTok LIVE Companion 0.8.0 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung, Auto-Reconnect, Embed/Normal und Streaminformationen.
 ---
 
 # TikTok LIVE Browser Companion

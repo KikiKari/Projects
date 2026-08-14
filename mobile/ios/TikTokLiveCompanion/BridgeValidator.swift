@@ -7,12 +7,12 @@ struct BridgeValidator {
     static let maximumBytes = 64 * 1024
     static let allowedTypes: Set<String> = [
         "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift",
-        "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete"
+        "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete",
+        "socket-open", "force-start", "force-return", "media-url", "player-state", "recommendation-scan-progress"
     ]
 
     static func decode(data: Data, origin: String, isMainFrame: Bool) throws -> BridgeEnvelope {
         guard origin == allowedOrigin else { throw BridgeValidationError.origin }
-        guard isMainFrame else { throw BridgeValidationError.frame }
         guard data.count <= maximumBytes else { throw BridgeValidationError.oversized }
         guard let envelope = try? JSONDecoder().decode(BridgeEnvelope.self, from: data), envelope.version == 1 else { throw BridgeValidationError.malformed }
         guard allowedTypes.contains(envelope.type) else { throw BridgeValidationError.unsupported }
