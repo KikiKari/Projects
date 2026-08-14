@@ -63,4 +63,22 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("vollständiger RAW-Text"))
         XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("ios-native-shazamkit"))
     }
+
+    func testReleaseEightSettingsCaptionsRecommendationsAndReconnectPersist() {
+        let suite = #function
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        state.auddToken = "audd"
+        state.pairingCode = "pair"
+        state.universalCaptionApiKey = "caption"
+        state.autoReconnectDelaySeconds = 59
+        state.handle(BridgeEnvelope(version: 1, type: "caption", streamId: "live", sequence: 1, timestamp: "2026-08-13T12:00:00Z", payload: ["sentenceId": .string("1"), "definite": .bool(true), "contents": .array([.object(["lang": .string("de"), "text": .string("Hallo")])])]))
+        XCTAssertEqual(state.captionRecords.count, 1)
+        XCTAssertTrue(state.captionJSONLines().contains("Hallo"))
+        XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("0.8.0"))
+        let restored = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertEqual(restored.auddToken, "audd")
+        XCTAssertEqual(restored.autoReconnectDelaySeconds, 59)
+    }
 }

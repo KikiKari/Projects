@@ -39,6 +39,43 @@ struct MobileMediaLink: Equatable, Identifiable {
     let label: String
 }
 
+struct CaptionRecord: Equatable, Identifiable {
+    let id = UUID()
+    let timestamp: String
+    let sentenceId: String
+    let definite: Bool
+    let language: String
+    let text: String
+    let raw: [String: Any]
+
+    static func == (lhs: CaptionRecord, rhs: CaptionRecord) -> Bool {
+        lhs.timestamp == rhs.timestamp && lhs.sentenceId == rhs.sentenceId && lhs.language == rhs.language && lhs.text == rhs.text
+    }
+}
+
+struct RecommendationItem: Equatable, Identifiable {
+    var id: String { handle.lowercased() }
+    let handle: String
+    let displayName: String
+    let title: String
+    let viewerCount: Int?
+    let viewerLabel: String
+    let url: URL
+    let position: Int
+}
+
+struct ParticipantStats: Equatable {
+    var messages = 0
+    var words = 0
+}
+
+struct TopChatter: Identifiable, Equatable {
+    var id: String { author.lowercased() }
+    let author: String
+    let messages: Int
+    let words: Int
+}
+
 enum JSONValue: Decodable, Equatable {
     case string(String), number(Double), bool(Bool), object([String: JSONValue]), array([JSONValue]), null
 

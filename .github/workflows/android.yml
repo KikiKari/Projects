@@ -1,0 +1,57 @@
+name: Android
+
+on:
+  push:
+    branches:
+      - TikTok-Live-Companion-Android
+    paths:
+      - ".github/workflows/android.yml"
+      - "mobile/android/**"
+      - "plugin-source/mobile-shared/**"
+      - "plugin-source/scripts/test_mobile_projects.py"
+  workflow_dispatch:
+
+jobs:
+  test-and-package:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip android build]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Validate shared mobile contracts
+        run: python plugin-source/scripts/test_mobile_projects.py
+
+      - name: Run mock debug unit tests
+        id: unit_tests
+        continue-on-error: true
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon testMockDebugUnitTest
+
+      - name: Build mock debug APK
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleMockDebug
+
+      - name: Upload mock debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TikTok-Live-Companion-Android-0.8.0-mock-debug
+          path: mobile/android/app/build/outputs/apk/mock/debug/*.apk
+          if-no-files-found: error
+
+      - name: Preserve Android structure-test gate
+        if: steps.unit_tests.outcome != 'success'
+        run: |
+          echo "The Android structure-test gate failed for the current 0.8.0 commit." >&2
+          exit 1

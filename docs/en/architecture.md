@@ -41,4 +41,4 @@ This view is project-specific: depth separates browser, iOS, and Android/HyperOS
 
 ## Text alternative
 
-In the browser, the TikTok tab supplies public DOM/metadata to the isolated content script and observed WebSocket events to the MAIN-world hook. Both forward sanitized results to the service worker. It keeps volatile per-tab state and sends it to the side panel. CDN requests are observed passively only. On mobile, the same decoder is injected at document start into the allowed TikTok WebView and forwards only validated event envelopes to native state.
+In the browser, each explicitly activated TikTok tab supplies public DOM/metadata to the isolated content script and observed WebSocket events to its tab-targeted MAIN-world hook. Both forward sanitized results to the service worker. It keeps activation and data as volatile per-tab state and sends only the selected tab to the side panel. CDN requests are observed passively only for activated tabs. On mobile, the same decoder is injected at document start into the allowed TikTok WebView and forwards only validated event envelopes to native state.

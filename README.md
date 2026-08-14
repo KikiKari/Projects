@@ -1,24 +1,20 @@
-# TikTok LIVE Companion 0.7.1
-
-> Plattformbranch `TikTok-Live-Companion-iOS`: enthält die native SwiftUI-/WKWebView-/ShazamKit-App. Der Android-/HyperOS-Quellstand liegt im Branch `TikTok-Live-Companion-Android`.
+# TikTok LIVE Companion 0.8.0
 
 TikTok LIVE Companion ist eine lokale Manifest-V3-Erweiterung für Edge und Chrome. Sie macht öffentliche TikTok-LIVE-Streams zugänglicher: Chatzeilen werden als bereinigter Text angezeigt und auf Wunsch lokal vorgelesen, native Untertitel werden geprüft, LIVE-Werte und Stream-Qualitäten werden sichtbar und der vorhandene Player lässt sich über ein Seitenpanel steuern.
 
-Version 0.7.1 ergänzt native Quellprojekte für iOS sowie Android/HyperOS. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
-
-![Mobile-Entwurf 0.7.1 für iOS und Android/HyperOS](docs/mobile/mobile-0.7.1-concept.png)
+Version 0.8.0 bündelt die Browser-Erweiterung, den lokalen Windows-Dienst, das Codex-Plugin und die Mobile-Quellarchive im einheitlichen Release-Stand. Die Browser-Erweiterung erkennt Songs weiterhin manuell über AudD; die nativen Apps verwenden ShazamKit mit Mikrofon als stabilem und WebView-PCM als experimentellem Audioweg.
 
 [![TikTok LIVE Companion – Plattformarchitektur für Browser, iOS und Android/HyperOS](docs/diagrams/tiktok-live-companion-architecture.svg)](https://tiktok-live-companion.vercel.app/de/architecture-3d)
 
-Die Visualisierung zeigt den tatsächlichen 0.7.1-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, Mermaid-Diagramm und Three.js-Ansicht bilden denselben projektspezifischen Datenfluss ab.
+Die Visualisierung zeigt den tatsächlichen 0.8.0-Datenfluss: Browser-Songerkennung über AudD nur nach Klick sowie native iOS-/Android-/HyperOS-Erkennung über ShazamKit. SVG, Mermaid-Diagramm und Three.js-Ansicht bilden denselben projektspezifischen Datenfluss ab.
 
 - [Interaktive Three.js-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.1-concept.png)
+- [Freigegebener Mobile-Entwurf](docs/mobile/mobile-0.7.0-concept.png)
 - [Visualisierungsvertrag und Textalternative](docs/diagrams/tiktok-live-companion-visualization-contract.md)
 
 ## Schnellstart
 
-1. Lade `release/0.7.1/tiktok-live-companion-extension-0.7.1.zip` herunter und entpacke die Datei.
+1. Lade `release/0.8.0/tiktok-live-companion-extension-0.8.0.zip` herunter und entpacke die Datei.
 2. Öffne `edge://extensions` oder `chrome://extensions` und aktiviere den Entwicklermodus.
 3. Wähle **Entpackte Erweiterung laden** und den Ordner mit `manifest.json`.
 4. Öffne einen öffentlichen TikTok-LIVE-Tab und klicke auf **TikTok LIVE Companion**.
@@ -71,7 +67,7 @@ Quelle: [`docs/diagrams/architecture.mmd`](docs/diagrams/architecture.mmd)
 **[▶ Begehbare Schichtansicht öffnen](https://tiktok-live-companion.vercel.app/de/architecture-3d)** — ziehen zum Drehen, Rad zum Zoomen,
 Umschalter zwischen isometrisch und perspektivisch. Ergänzt die
 [interaktive Datenfluss-Ansicht](https://tiktok-live-companion.vercel.app/de/architecture-3d)
-um die Schichtsicht dieses Plattformbranches.
+um die Schichtsicht.
 
 </div>
 
@@ -79,15 +75,14 @@ um die Schichtsicht dieses Plattformbranches.
 
 | Schicht | Wo | Verantwortung | Sendet |
 |---|---|---|---|
-| **Quelle** | WKWebView | `www.tiktok.com` im Hauptframe | — |
-| **Brücke** | Mobile Bridge v1 | Origin-, Typ- und Größenprüfung | nein |
-| **App** | Swift, SwiftUI, WebKit | Oberfläche, Zustand, Steuerung | nein |
-| **Audio** | ShazamKit | nur nach Nutzeraktion | ja, auf Klick |
-| **Ausgabe** | Panel, IPA | flüchtiger Streamzustand | nein |
+| **Quelle** | TikTok-Tab | öffentliche DOM- und Metadaten | — |
+| **Beobachtung** | `content.js`, WebSocket-Hook | isolierte Prüfung, passives Mitlesen | nein |
+| **Zustand** | `background.js`, `storage.session` | Filterung, Tab-Zustand, flüchtige Ablage | nein |
+| **Ausgabe** | Seitenpanel | `textContent`, Vorlesen, Playersteuerung | nein |
+| **Doku** | `docs/de`, `docs/en` | zweisprachige statische Site | — |
 
-**Die Brücke ist die Sicherheitsgrenze.** Alles, was aus dem WebView kommt, wird auf Herkunft,
-Typ und Größe geprüft, bevor die App es überhaupt ansieht. Ohne diese Prüfung wäre jede
-Änderung an der TikTok-Seite ein Einfallstor in die native App.
+Der WebSocket-Hook liest, er sendet nie. `storage.session` ist bewusst flüchtig: Nach dem
+Schließen des Tabs bleibt nichts zurück, was jemand später auslesen könnte.
 
 Standbild und GIF entstehen aus `docs/architektur.json`:
 
@@ -99,70 +94,64 @@ python tools/render_3d.py docs/architektur.json docs/assets
 
 ## Abläufe
 
-### Ein Ereignis vom WebView in die App
+### Eine Chatzeile bis ins Seitenpanel
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant W as WKWebView
-    participant B as Mobile Bridge v1
-    participant A as iOS-App
-    participant P as Panel
+    participant T as TikTok-LIVE-Tab
+    participant H as WebSocket-Hook
+    participant C as content.js
+    participant B as background.js
+    participant S as storage.session
+    participant P as Seitenpanel
 
-    W-->>B: DOM- oder WebSocket-Ereignis
-    B->>B: Origin pruefen
-    alt Origin ist www.tiktok.com
-        B->>B: Typ pruefen, Groesse begrenzen
-        B->>A: validierter Ereignisumschlag
-        A->>A: fluechtigen Streamzustand fortschreiben
-        A-->>P: Anzeige
-    else fremde Origin oder unerwarteter Typ
-        B--xA: verworfen, nichts erreicht die App
-        Note over B: Fail closed. Im Zweifel nichts<br/>durchlassen — nicht "vermutlich ok".
-    end
+    T-->>H: Chat-Ereignis (passiv mitgelesen)
+    H->>C: Rohereignis
+    C->>C: bereinigen, Typ pruefen, Groesse begrenzen
+    Note over C: Isolierte Welt: das Seitenskript<br/>der Seite kommt hier nicht heran
+    C->>B: bereinigtes Ergebnis
+    B->>B: filtern, Tab-Zustand fortschreiben
+    B->>S: flüchtig ablegen
+    S-->>P: Zeile als textContent
+    P-->>P: optional lokal vorlesen
+    Note over H,P: An keiner Stelle geht etwas hinaus.<br/>Gelesen, niemals gesendet.
 ```
 
-### Songerkennung mit ShazamKit
+### Songerkennung — nur nach Klick
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor N as Nutzer
-    participant A as iOS-App
-    participant M as Mikrofon
-    participant S as ShazamKit
-    participant T as Token-Endpunkt (Vercel)
+    participant P as Seitenpanel
+    participant A as AudD
 
-    Note over A: Ohne Nutzeraktion passiert nichts.<br/>Kein Dauerlauschen, kein Mitschnitt.
-    N->>A: "Song erkennen"
-    A->>T: kurzlebiges ES256-Token anfordern
-    T-->>A: Token, gueltig fuer wenige Minuten
-    A->>M: kurzen Ausschnitt aufnehmen
-    M-->>A: PCM
-    A->>S: Ausschnitt + Token
-    S-->>A: Titel, Interpret oder "nichts erkannt"
-    A-->>N: Ergebnis im Panel
-    Note over T: Das Token ist kurzlebig und wird<br/>serverseitig ausgestellt — der Schluessel<br/>selbst liegt nie in der App.
+    Note over P: Ohne Klick passiert nichts.<br/>Keine Dauererkennung, kein Mitschnitt.
+    N->>P: "Song erkennen"
+    P->>P: kurzen Ausschnitt aufnehmen
+    P->>A: Ausschnitt senden
+    A-->>P: Titel, Interpret oder "nichts erkannt"
+    P-->>N: Ergebnis im Panel
 ```
 
-### Der experimentelle Audioweg
+### Untertitel prüfen
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant W as WKWebView
-    participant A as iOS-App
-    participant S as ShazamKit
+    participant C as content.js
+    participant T as TikTok-Player
+    participant P as Seitenpanel
 
-    alt Weg 1 — Mikrofon (stabil)
-        A->>A: Systemmikrofon aufnehmen
-        A->>S: PCM
-        S-->>A: Treffer
-    else Weg 2 — WebView-PCM (experimentell)
-        W-->>A: Audio aus dem WebView abgreifen
-        Note over W,A: Umgeht Umgebungsgeraeusche,<br/>haengt aber an WebView-Interna —<br/>deshalb ausdruecklich experimentell.
-        A->>S: PCM
-        S-->>A: Treffer oder Fehlschlag
+    C->>T: vorhandene Untertitelspuren pruefen
+    alt native Untertitel vorhanden
+        T-->>C: Spur + Sprache
+        C->>P: anzeigen, Zustand "vorhanden"
+    else keine Spur
+        T-->>C: nichts
+        C->>P: Zustand "keine Untertitel"
+        Note over P: Der Companion erzeugt keine<br/>Untertitel. Er sagt, ob es welche gibt.
     end
 ```
 
@@ -193,10 +182,11 @@ Die veröffentlichte Dokumentationssite enthält dieselben Inhalte mit Sprachums
 
 - `plugin-source/` – reproduzierbarer Plugin-Quellstand einschließlich Browser-Erweiterung, Tests und Packaging-Script
 - `docs/` – deutsche und englische Dokumentation sowie Mermaid-Quellen
-- `release/` – reproduzierbare 0.7.1-Artefakte und SHA-256-Prüfsummen
+- `release/` – reproduzierbare 0.8.0-Artefakte und SHA-256-Prüfsummen
 - `plugin-source/companion-service/` – optionaler lokaler Windows-Dienst für verstärkte Sprachausgabe und manuelle Songerkennung
 - `site/` – statische React-/TypeScript-/Vite-Dokumentationssite
 - `mobile/ios/` – SwiftUI-, WKWebView- und ShazamKit-Xcode-Projekt ab iOS 15
+- `mobile/android/` – Kotlin-/Compose-/AndroidX-WebKit-Projekt ab API 21, ohne Google-Play-Services-Abhängigkeit
 - `plugin-source/mobile-shared/` – versionierte, origin-beschränkte WebView-Bridge
 
 ## Verifikation

@@ -16,12 +16,18 @@ def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
         if not path.is_file() or EXCLUDED_PARTS.intersection(path.parts) or path.suffix in {".pyc", ".aar"}:
             continue
         relative = path.relative_to(source)
-        archive.write(path, Path(prefix) / relative)
+        archive_path = (Path(prefix) / relative).as_posix()
+        entry = zipfile.ZipInfo(archive_path, date_time=(1980, 1, 1, 0, 0, 0))
+        entry.compress_type = zipfile.ZIP_DEFLATED
+        entry.external_attr = 0o100644 << 16
+        archive.writestr(entry, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 
 parser = argparse.ArgumentParser(description="Package TikTok LIVE Companion artifacts.")
 parser.add_argument("--output-dir", type=Path, required=True)
 parser.add_argument("--android-apk", type=Path, help="Optional verified mockDebug or shazamDebug APK")
+parser.add_argument("--android-source", type=Path, default=PROJECT_ROOT / "mobile" / "android", help="Verified Android source root")
+parser.add_argument("--ios-source", type=Path, default=PROJECT_ROOT / "mobile" / "ios", help="Verified iOS source root")
 args = parser.parse_args()
 args.output_dir.mkdir(parents=True, exist_ok=True)
 output_dir = args.output_dir.resolve()
@@ -43,9 +49,24 @@ if resolved_extension_dir.parent != output_dir:
 if extension_dir.exists():
     shutil.rmtree(extension_dir)
 shutil.copytree(ROOT / "browser-extension", extension_dir)
+shutil.copytree(ROOT / "companion-service", extension_dir / "companion-service")
+(extension_dir / "Sprachdienst-reparieren.cmd").write_text(
+    '@echo off\r\ncall "%~dp0companion-service\\Sprachdienst-reparieren.cmd"\r\n',
+    encoding="utf-8"
+)
+(extension_dir / "package.json").write_text(json.dumps({
+    "name": "tiktok-live-companion-extension-package",
+    "private": True,
+    "version": version,
+    "scripts": {
+        "setup": "npm --prefix companion-service run setup --",
+        "start": "npm --prefix companion-service start",
+        "test": "npm --prefix companion-service test"
+    }
+}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 with zipfile.ZipFile(extension_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, ROOT / "browser-extension")
+    add_tree(archive, extension_dir)
 
 with zipfile.ZipFile(plugin_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ROOT, "tiktok-live-companion")
@@ -53,17 +74,23 @@ with zipfile.ZipFile(plugin_zip, "w", compression=zipfile.ZIP_DEFLATED, compress
 with zipfile.ZipFile(service_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ROOT / "companion-service")
 
+ios_source = args.ios_source.resolve()
+android_source = args.android_source.resolve()
+if not ios_source.is_dir() or not android_source.is_dir():
+    raise RuntimeError("--ios-source and --android-source must point to existing source directories")
+
 with zipfile.ZipFile(ios_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, PROJECT_ROOT / "mobile" / "ios", "TikTokLiveCompanion-iOS")
+    add_tree(archive, ios_source, "TikTokLiveCompanion-iOS")
 
 with zipfile.ZipFile(android_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    add_tree(archive, PROJECT_ROOT / "mobile" / "android", "TikTokLiveCompanion-Android")
+    add_tree(archive, android_source, "TikTokLiveCompanion-Android")
 
 if args.android_apk:
     source_apk = args.android_apk.resolve()
     if not source_apk.is_file() or source_apk.suffix.lower() != ".apk":
         raise RuntimeError("--android-apk must point to an existing APK")
-    shutil.copy2(source_apk, android_apk)
+    if source_apk != android_apk.resolve():
+        shutil.copy2(source_apk, android_apk)
 
 artifacts = [extension_zip, plugin_zip, service_zip, ios_source_zip, android_source_zip]
 if android_apk.exists():

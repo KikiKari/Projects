@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TikTok LIVE Companion iOS — Interaktive Architektur</title>
-<meta name="description" content="Die Schichtsicht der iOS-App: WKWebView, Brücke, SwiftUI, ShazamKit.">
+<title>TikTok LIVE Companion — Interaktive Architektur</title>
+<meta name="description" content="Die Schichtsicht der Browser-Erweiterung: Quelle, Beobachtung, Zustand, Ausgabe.">
 <meta name="theme-color" content="#fe2c55">
 <style>
   :root{
@@ -57,8 +57,8 @@
 <div class="wrap">
 
   <p class="technik">three.js · r128</p>
-  <h1>TikTok LIVE Companion iOS</h1>
-  <p class="lede">Die Schichtsicht der iOS-App: WKWebView, Brücke, SwiftUI, ShazamKit.</p>
+  <h1>TikTok LIVE Companion</h1>
+  <p class="lede">Die Schichtsicht der Browser-Erweiterung: Quelle, Beobachtung, Zustand, Ausgabe.</p>
 
   <div class="raster">
     <div class="buehne" id="buehne">
@@ -92,7 +92,7 @@
 <script>
 (function(){
   "use strict";
-  var SPEC = {"schichten": [{"name": "Quelle", "farbe": "#5f6773", "blocks": [{"id": "wkwebview", "name": "WKWebView", "untertitel": "Hauptframe"}, {"id": "www-tiktok-com", "name": "www.tiktok.com", "untertitel": "nur diese Origin"}, {"id": "hauptframe", "name": "Hauptframe", "untertitel": "kein iframe"}]}, {"name": "Bruecke", "farbe": "#2481cc", "blocks": [{"id": "mobile-bridge-v1", "name": "Mobile Bridge v1", "untertitel": "Origin + Typ"}, {"id": "origin-pruefung", "name": "Origin-Pruefung", "untertitel": "fail closed"}, {"id": "typ-groesse", "name": "Typ + Groesse", "untertitel": "begrenzt"}]}, {"name": "App", "farbe": "#6d5bd0", "blocks": [{"id": "swift", "name": "Swift", "untertitel": "Sprache"}, {"id": "swiftui", "name": "SwiftUI", "untertitel": "Oberflaeche"}, {"id": "webkit", "name": "WebKit", "untertitel": "WebView"}]}, {"name": "Audio", "farbe": "#b45309", "blocks": [{"id": "shazamkit", "name": "ShazamKit", "untertitel": "nur nach Klick"}, {"id": "mikrofon", "name": "Mikrofon", "untertitel": "stabil"}, {"id": "webview-pcm-exp", "name": "WebView-PCM (exp.)", "untertitel": "experimentell"}]}, {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": [{"id": "fluechtiger-streamzustand", "name": "fluechtiger Streamzustand", "untertitel": "nicht persistiert"}, {"id": "panel", "name": "Panel", "untertitel": "Anzeige"}, {"id": "ipa", "name": "IPA", "untertitel": "iOS-Artefakt"}]}], "kanten": [{"von": "wkwebview", "nach": "mobile-bridge-v1", "art": "fluss"}, {"von": "www-tiktok-com", "nach": "origin-pruefung", "art": "fluss"}, {"von": "hauptframe", "nach": "typ-groesse", "art": "fluss"}, {"von": "mobile-bridge-v1", "nach": "swift", "art": "fluss"}, {"von": "origin-pruefung", "nach": "swiftui", "art": "fluss"}, {"von": "typ-groesse", "nach": "webkit", "art": "fluss"}, {"von": "swift", "nach": "shazamkit", "art": "fluss"}, {"von": "swiftui", "nach": "mikrofon", "art": "fluss"}, {"von": "webkit", "nach": "webview-pcm-exp", "art": "fluss"}, {"von": "shazamkit", "nach": "fluechtiger-streamzustand", "art": "fluss"}, {"von": "mikrofon", "nach": "panel", "art": "fluss"}, {"von": "webview-pcm-exp", "nach": "ipa", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#fe2c55", "stil": "voll", "text": "Fluss von unten nach oben"}]};
+  var SPEC = {"schichten": [{"name": "Quelle", "farbe": "#5f6773", "blocks": [{"id": "tiktok-live-tab", "name": "TikTok-LIVE-Tab", "untertitel": "oeffentliche Seite"}, {"id": "oeffentliche-dom-daten", "name": "oeffentliche DOM-Daten", "untertitel": "gelesen"}, {"id": "eingebettete-metadaten", "name": "eingebettete Metadaten", "untertitel": "JSON"}]}, {"name": "Beobachtung", "farbe": "#2481cc", "blocks": [{"id": "content-js", "name": "content.js", "untertitel": "isolierte Welt"}, {"id": "websocket-hook", "name": "WebSocket-Hook", "untertitel": "passiv"}]}, {"name": "Zustand", "farbe": "#6d5bd0", "blocks": [{"id": "background-js", "name": "background.js", "untertitel": "Filter + Zustand"}, {"id": "storage-session", "name": "storage.session", "untertitel": "fluechtig"}]}, {"name": "Ausgabe", "farbe": "#fe2c55", "blocks": [{"id": "seitenpanel", "name": "Seitenpanel", "untertitel": "textContent"}, {"id": "vorlesen", "name": "Vorlesen", "untertitel": "lokal"}, {"id": "playersteuerung", "name": "Playersteuerung", "untertitel": "vorhandener Player"}]}, {"name": "Doku", "farbe": "#0f766e", "blocks": [{"id": "docs-de", "name": "docs/de", "untertitel": "deutsch"}, {"id": "docs-en", "name": "docs/en", "untertitel": "englisch"}, {"id": "vercel-site", "name": "Vercel-Site", "untertitel": "statisch"}]}], "kanten": [{"von": "tiktok-live-tab", "nach": "content-js", "art": "fluss"}, {"von": "oeffentliche-dom-daten", "nach": "websocket-hook", "art": "fluss"}, {"von": "eingebettete-metadaten", "nach": "content-js", "art": "fluss"}, {"von": "content-js", "nach": "background-js", "art": "fluss"}, {"von": "websocket-hook", "nach": "storage-session", "art": "fluss"}, {"von": "background-js", "nach": "seitenpanel", "art": "fluss"}, {"von": "storage-session", "nach": "vorlesen", "art": "fluss"}, {"von": "seitenpanel", "nach": "docs-de", "art": "fluss"}, {"von": "vorlesen", "nach": "docs-en", "art": "fluss"}, {"von": "playersteuerung", "nach": "vercel-site", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#fe2c55", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){

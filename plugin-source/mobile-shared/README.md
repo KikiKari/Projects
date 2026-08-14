@@ -1,4 +1,4 @@
-# Mobile WebView bridge 0.7.1
+# Mobile WebView bridge 0.7.0
 
 `webview-bridge.js` is injected only into the main frame of `https://www.tiktok.com` after `content-core.js` and `proto-main.js`. It exposes a narrow event envelope and an allowlisted command function. It never reads cookies, credentials, local storage, or session storage.
 

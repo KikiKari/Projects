@@ -34,4 +34,9 @@ final class BridgeValidatorTests: XCTestCase {
         XCTAssertNotNil(BridgeValidator.validatedHTTPS("https://www.shazam.com/song/1"))
         XCTAssertNil(BridgeValidator.validatedHTTPS("javascript:alert(1)"))
     }
+
+    func testRecommendationProgressIsAllowed() throws {
+        let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: "recommendation-scan-progress").data(using: .utf8)!
+        XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, "recommendation-scan-progress")
+    }
 }

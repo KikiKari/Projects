@@ -6,10 +6,11 @@ Die Erweiterung besteht aus sechs Laufzeitbereichen:
 - `content.js`: DOM-Prüfung und lokale Player-/Audioaktionen in der isolierten Welt;
 - `proto-main.js`: minimaler Protobuf-Decoder für öffentliche LIVE-Ereignisse;
 - `hook.js`: MAIN-World-WebSocket-Proxy, der nur Listener ergänzt;
-- `background.js`: passives CDN-Monitoring und flüchtiger Tab-Zustand;
+- `background.js`: passives CDN-Monitoring, flüchtiger Tab-Zustand und Offscreen-TTS-Steuerung;
+- `offscreen.*`: tabbezogene Speech-Queue und Audioausgabe unabhängig von der Sichtbarkeit des Sidepanels;
 - `sidepanel.*`: lokale Darstellung, Export- und Kopieraktionen.
 
-Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertrauenswürdig und werden mit `textContent` ausgegeben. Stream-Daten, Captions, Chat und Diagnosen liegen in `storage.session`; `storage.local` enthält nur Autostart-, Vorlese- und Lautstärkepräferenzen.
+Der Hook ersetzt `WebSocket.send()` nicht. Seiteninhalte gelten als nicht vertrauenswürdig und werden mit `textContent` ausgegeben. Aktivierung, Stream-Daten, Captions, Chat, TTS-Zustand, Player-Recovery und Diagnosen liegen getrennt je Tab in `storage.session`; `storage.local` enthält nur Benutzerpräferenzen, lokale Dienstadresse, Pairing und optionale Zugangsdaten. Vollbild beendet weder Speech-Queue noch Tabzustand; nach Rückkehr liest das Sidepanel denselben tabbezogenen Zustand erneut.
 
 ## Mobile Laufzeitbereiche
 

@@ -4,13 +4,13 @@ const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
 const SERVICE_INSTALL_KEY = "tlc-service-install";
+const quickRecoverInFlight = new Set();
 const PROFILE_PREFIX = "tlc-profile-";
 const STREAM_CACHE_PREFIX = "tlc-stream-";
 const MAX_MEDIA = 60;
 const MAX_CAPTIONS = 2000;
 const MAX_CHAT = 500;
 const MAX_EVENT_IDS = 500;
-const MAX_DEBUG = 500;
 const MAX_PARTICIPANTS = 5000;
 const core = globalThis.TLC_CONTENT_CORE;
 let offscreenCreation = null;
@@ -25,6 +25,23 @@ function newBrowserSessionId() {
   return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function emptyRecommendationScan() {
+  return {
+    status: "idle",
+    runId: "",
+    sourceUrl: "",
+    sourceHandle: "",
+    requested: 20,
+    scanned: 0,
+    found: 0,
+    items: [],
+    startedAtUtc: null,
+    updatedAtUtc: null,
+    completedAtUtc: null,
+    error: ""
+  };
+}
+
 function emptyState() {
   return {
     enabled: false,
@@ -33,6 +50,7 @@ function emptyState() {
     captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
     aiSummaryInfo: { ...core.EMPTY_AI_SUMMARY_INFO },
+    recommendationScan: emptyRecommendationScan(),
     menuCaptionAvailable: false,
     menuCaptionActive: false,
     hook: { armed: false, installed: false, connected: false, lastError: null },
@@ -66,6 +84,7 @@ function emptyState() {
     streamMutes: [],
     recentGiftIds: [],
     quickRecoverEnabled: false,
+    quickRecoverSeconds: 3,
     speech: { enabled: false, status: "Vorlesen ist ausgeschaltet.", lastSpokenKey: "", lastSpokenAtUtc: null, queueDepth: 0 },
     recovery: { lastQuickRecoverAtUtc: null, lastReason: "" },
     debug: { enabled: false, entries: [] }
@@ -86,6 +105,7 @@ async function getState(tabId) {
     playerState: { ...defaults.playerState, ...(state.playerState || {}) },
     profileInfo: { ...defaults.profileInfo, ...(state.profileInfo || {}) },
     aiSummaryInfo: { ...defaults.aiSummaryInfo, ...(state.aiSummaryInfo || {}) },
+    recommendationScan: { ...defaults.recommendationScan, ...(state.recommendationScan || {}), items: (state.recommendationScan?.items || []).slice(0, 50) },
     chatMessages: state.chatMessages || [],
     participants: state.participants || {},
     participantsTruncated: Boolean(state.participantsTruncated),
@@ -101,11 +121,7 @@ async function getState(tabId) {
 }
 
 function pageHandle(page) {
-  try {
-    const path = decodeURIComponent(new URL(page?.url || "").pathname);
-    return (path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "").toLocaleLowerCase();
-  }
-  catch (_) { return ""; }
+  return core.liveHandleFromUrl(page?.url);
 }
 
 function normalizeHandle(value) {
@@ -133,6 +149,39 @@ function resetPageIdentityState(state, handle) {
   state.profileInfo = { ...core.EMPTY_PROFILE_INFO };
   state.aiSummaryInfo = { ...core.EMPTY_AI_SUMMARY_INFO };
   state.liveStats = { ...state.liveStats, followerCount: null };
+  state.recommendationScan = emptyRecommendationScan();
+}
+
+function cleanRecommendationText(value, limit) {
+  return String(value || "").normalize("NFKC").replace(/\s+/g, " ").trim().slice(0, limit);
+}
+
+function sanitizeRecommendationItem(raw, fallbackPosition) {
+  const handle = normalizeHandle(raw?.handle).replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  if (!handle) return null;
+  let url = "";
+  try {
+    const parsed = new URL(String(raw?.url || ""));
+    if (parsed.protocol === "https:" && parsed.hostname === "www.tiktok.com" && core.liveHandleFromUrl(parsed.href) === handle) url = parsed.href;
+  } catch (_) {}
+  const numericCount = raw?.viewerCount == null ? null : Number(raw.viewerCount);
+  return {
+    handle,
+    displayName: cleanRecommendationText(raw?.displayName, 160),
+    title: cleanRecommendationText(raw?.title, 300),
+    viewerCount: Number.isSafeInteger(numericCount) && numericCount >= 0 ? numericCount : null,
+    viewerLabel: cleanRecommendationText(raw?.viewerLabel, 32),
+    url: url || `https://www.tiktok.com/@${handle}/live`,
+    position: Math.max(1, Math.min(50, Math.round(Number(raw?.position) || fallbackPosition)))
+  };
+}
+
+function sanitizeRecommendationItems(items, limit = 50) {
+  const sanitized = (Array.isArray(items) ? items : [])
+    .slice(0, 100)
+    .map((item, index) => sanitizeRecommendationItem(item, index + 1))
+    .filter(Boolean);
+  return core.dedupeRecommendations(sanitized).slice(0, Math.max(1, Math.min(50, limit)));
 }
 
 function resetPageIdentityIfChanged(state, nextHandle) {
@@ -171,7 +220,7 @@ async function addDebug(tabId, event, detail = {}) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
   const state = await getState(tabId);
   if (!state.debug?.enabled) return;
-  state.debug.entries = [...(state.debug.entries || []), { atUtc: new Date().toISOString(), event, detail }].slice(-MAX_DEBUG);
+  state.debug.entries = [...(state.debug.entries || []), { atUtc: new Date().toISOString(), event, detail }];
   await setState(tabId, state);
 }
 
@@ -205,6 +254,7 @@ async function getSettings() {
     serviceUrl: "http://127.0.0.1:43117",
     pairingCode: "",
     auddApiToken: "",
+    universalCaptionApiKey: "",
     playerVolume: 100,
     limiterStrength: 30,
     limiterEnabled: false,
@@ -212,6 +262,7 @@ async function getSettings() {
     hookEnabled: false,
     autoHook: false,
     quickRecoverEnabled: false,
+    quickRecoverSeconds: 3,
     speechEnabled: false,
     waitingForTikTok: true,
     debugEnabled: false,
@@ -245,6 +296,49 @@ function normalizePlayerState(playerState = {}) {
     pipActive: booleanValue(playerState.pipActive),
     fullscreenActive: booleanValue(playerState.fullscreenActive),
     multiGuest: booleanValue(playerState.multiGuest)
+  };
+}
+
+function buildCaptionRawExport(state, tabId, universalApiKeyConfigured = false) {
+  const messages = Array.isArray(state.captions) ? state.captions.slice(-MAX_CAPTIONS) : [];
+  const text = messages
+    .map((message) => core.captionText(message))
+    .filter(Boolean);
+  const languages = new Set(Array.isArray(state.captionInfo?.supportLang) ? state.captionInfo.supportLang : []);
+  const sources = new Set();
+  for (const message of messages) {
+    if (message?.source) sources.add(String(message.source));
+    if (message?.method) sources.add(String(message.method));
+    for (const content of message?.contents || []) {
+      if (content?.lang) languages.add(String(content.lang));
+    }
+  }
+  const playerTexts = Object.entries(state.playerState || {})
+    .filter(([key, value]) => /text$/i.test(key) && typeof value === "string" && value.trim())
+    .map(([field, value]) => ({ field, text: value.trim() }));
+  return {
+    schema: "tiktok-live-companion-caption-raw-v1",
+    generatedAtUtc: new Date().toISOString(),
+    version: chrome.runtime.getManifest().version,
+    tabId,
+    browserSessionId: state.browserSessionId || "",
+    stream: {
+      handle: state.stream?.handle || pageHandle(state.page) || "",
+      roomId: state.stream?.roomId || null,
+      page: state.page || null
+    },
+    configuration: { universalApiKeyConfigured: Boolean(universalApiKeyConfigured) },
+    text,
+    data: {
+      captionInfo: state.captionInfo || null,
+      playerState: state.playerState || null
+    },
+    sources: [...sources],
+    languages: [...languages],
+    messages: messages,
+    dataStreams: Array.isArray(state.media) ? state.media : [],
+    playerTexts: playerTexts,
+    captionProtocol: messages
   };
 }
 
@@ -607,6 +701,16 @@ function applyStreamIdentity(state, identity = {}) {
   else state.stream = { ...state.stream, handle, roomId, key: `${handle}|${roomId}` };
 }
 
+async function handleLiveTabUrlChange(tabId, url, title = "") {
+  const nextHandle = core.liveHandleFromUrl(url);
+  if (!nextHandle) return;
+  const state = await getState(tabId);
+  resetPageIdentityIfChanged(state, nextHandle);
+  applyStreamIdentity(state, { handle: nextHandle });
+  state.page = { ...state.page, url, title: title || state.page?.title || "", scannedAtUtc: null };
+  await setState(tabId, state);
+}
+
 async function addChatMessage(tabId, rawMessage) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
   const rawAuthor = core.sanitizeChatText(rawMessage.nickname || rawMessage.displayId || rawMessage.author || "Chat");
@@ -922,6 +1026,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     path: "sidepanel.html",
     enabled: true
   }).catch(() => {});
+  if (changeInfo.url && isTikTok) {
+    handleLiveTabUrlChange(tabId, changeInfo.url, tab.title || "").catch(() => {});
+  }
   if (changeInfo.status === "loading" && isTikTok) {
     getState(tabId).then(async (state) => {
       const shouldArm = Boolean(state.hook.armed);
@@ -940,13 +1047,15 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     patchState(tabId, { page: { url: tab.url, title: tab.title || "", scannedAtUtc: null } }).catch(() => {});
   }
   if (changeInfo.status === "complete" && isTikTok) {
-    getState(tabId).then((state) => {
+    getState(tabId).then(async (state) => {
       if (!state.enabled) return;
+      const settings = await getSettings();
       return chrome.tabs.sendMessage(tabId, {
         type: "TLC_SET_TAB_ACTIVE",
         enabled: true,
         debugEnabled: Boolean(state.debug?.enabled),
         quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+        quickRecoverSeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3))),
         chatSourceOnly: Boolean(state.chatSourceOnly)
       });
     }).catch(() => {});
@@ -984,6 +1093,9 @@ chrome.webRequest.onBeforeRequest.addListener(
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = message.tabId ?? sender.tab?.id;
   (async () => {
+    if (sender.tab && Number.isInteger(tabId) && message?.type !== "TLC_DEBUG_EVENT") {
+      await addDebug(tabId, `raw:${String(message?.type || "unknown")}`, message || {});
+    }
     switch (message.type) {
       case "TLC_GET_STATE":
         {
@@ -997,8 +1109,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ ok: true, state });
         }
         break;
+      case "TLC_GET_CAPTION_RAW_EXPORT": {
+        const state = await getState(tabId);
+        const settings = await getSettings();
+        sendResponse({
+          ok: true,
+          report: buildCaptionRawExport(state, tabId, Boolean(settings.universalCaptionApiKey))
+        });
+        break;
+      }
       case "TLC_ACTIVATE_TAB": {
         const state = await getState(tabId);
+        const settings = await getSettings();
         state.enabled = true;
         if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
         await setState(tabId, state);
@@ -1007,6 +1129,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           enabled: true,
           debugEnabled: Boolean(state.debug?.enabled),
           quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+          quickRecoverSeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3))),
           chatSourceOnly: Boolean(state.chatSourceOnly)
         }).catch(() => {});
         sendResponse({ ok: true, state });
@@ -1107,12 +1230,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_SET_QUICK_RECOVER": {
         const state = await getState(tabId);
+        const seconds = Math.max(1, Math.min(59, Math.round(Number(message.seconds) || 3)));
         state.quickRecoverEnabled = Boolean(message.enabled);
+        await setSettings({ quickRecoverSeconds: seconds });
         await setState(tabId, state);
         if (Number.isInteger(tabId) && tabId >= 0) {
-          await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: state.quickRecoverEnabled }).catch(() => {});
+          await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: state.quickRecoverEnabled, seconds }).catch(() => {});
         }
-        sendResponse({ ok: true, state });
+        sendResponse({ ok: true, state, seconds });
         break;
       }
       case "TLC_SET_SPEECH_PREFERENCE": {
@@ -1122,6 +1247,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.language == null ? {} : { speechLanguage: message.language === "auto" || /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(String(message.language)) ? String(message.language) : "auto" }),
           ...(message.voiceName == null ? {} : { speechVoiceName: String(message.voiceName).slice(0, 160) }),
           ...(message.auddApiToken == null ? {} : { auddApiToken: String(message.auddApiToken).trim().slice(0, 512) }),
+          ...(message.universalCaptionApiKey == null ? {} : { universalCaptionApiKey: String(message.universalCaptionApiKey).trim().slice(0, 512) }),
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
@@ -1224,6 +1350,78 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, response });
         break;
       }
+      case "TLC_SCAN_RECOMMENDATIONS": {
+        if (!Number.isInteger(tabId) || tabId < 0) throw new Error("Kein TikTok-Tab ausgewählt.");
+        const tab = await chrome.tabs.get(tabId);
+        const sourceHandle = core.liveHandleFromUrl(tab.url);
+        if (!sourceHandle) throw new Error("Der ausgewählte Tab zeigt keinen TikTok-Livestream.");
+        const limit = Math.max(1, Math.min(50, Math.round(Number(message.limit) || 20)));
+        const runId = newBrowserSessionId();
+        const now = new Date().toISOString();
+        const state = await getState(tabId);
+        state.recommendationScan = {
+          ...emptyRecommendationScan(),
+          status: "running",
+          runId,
+          sourceUrl: String(tab.url || state.page?.url || "").slice(0, 500),
+          sourceHandle,
+          requested: limit,
+          startedAtUtc: now,
+          updatedAtUtc: now
+        };
+        await setState(tabId, state);
+        chrome.tabs.sendMessage(tabId, { type: "TLC_SCAN_RECOMMENDATIONS", runId, limit }).catch(async (error) => {
+          const latest = await getState(tabId);
+          if (latest.recommendationScan?.runId !== runId) return;
+          latest.recommendationScan = {
+            ...latest.recommendationScan,
+            status: "error",
+            error: cleanRecommendationText(error?.message || error, 300),
+            updatedAtUtc: new Date().toISOString(),
+            completedAtUtc: new Date().toISOString()
+          };
+          await setState(tabId, latest);
+        });
+        sendResponse({ ok: true, started: true, runId });
+        break;
+      }
+      case "TLC_CANCEL_RECOMMENDATION_SCAN": {
+        const state = await getState(tabId);
+        const runId = String(message.runId || state.recommendationScan?.runId || "");
+        const response = await chrome.tabs.sendMessage(tabId, { type: "TLC_CANCEL_RECOMMENDATION_SCAN", runId }).catch(() => null);
+        if (!response?.ok && state.recommendationScan?.status === "running" && state.recommendationScan?.runId === runId) {
+          const now = new Date().toISOString();
+          state.recommendationScan = { ...state.recommendationScan, status: "cancelled", updatedAtUtc: now, completedAtUtc: now };
+          await setState(tabId, state);
+        }
+        sendResponse({ ok: true, cancelled: true });
+        break;
+      }
+      case "TLC_RECOMMENDATION_SCAN_PROGRESS": {
+        if (!Number.isInteger(sender.tab?.id) || sender.tab.id !== tabId) throw new Error("Ungültiger Absender für den Empfehlungs-Scan.");
+        const state = await getState(tabId);
+        const current = state.recommendationScan || emptyRecommendationScan();
+        if (!message.runId || current.runId !== message.runId) {
+          sendResponse({ ok: false, stale: true });
+          break;
+        }
+        const status = ["running", "complete", "cancelled", "error"].includes(message.status) ? message.status : "running";
+        const items = sanitizeRecommendationItems(message.items, current.requested);
+        const now = new Date().toISOString();
+        state.recommendationScan = {
+          ...current,
+          status,
+          scanned: Math.max(0, Math.min(current.requested, Math.round(Number(message.scanned) || items.length))),
+          found: items.length,
+          items,
+          updatedAtUtc: now,
+          completedAtUtc: status === "running" ? null : now,
+          error: status === "error" ? cleanRecommendationText(message.error, 300) : ""
+        };
+        await setState(tabId, state);
+        sendResponse({ ok: true });
+        break;
+      }
       case "TLC_FORCE_PROFILE": {
         const response = await forceProfileRefresh(tabId);
         sendResponse({ ok: true, response, reloading: true });
@@ -1314,29 +1512,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_QUICK_RECOVER": {
-        const state = await getState(tabId);
-        if (!state.quickRecoverEnabled) {
-          sendResponse({ ok: true, skipped: true, reason: "disabled" });
+        if (quickRecoverInFlight.has(tabId)) {
+          sendResponse({ ok: true, skipped: true, reason: "in-flight" });
           break;
         }
-        const lastAt = Date.parse(state.recovery?.lastQuickRecoverAtUtc || "") || 0;
-        if (Date.now() - lastAt < 400) {
-          sendResponse({ ok: true, skipped: true, reason: "throttled" });
-          break;
+        quickRecoverInFlight.add(tabId);
+        try {
+          const state = await getState(tabId);
+          if (!state.quickRecoverEnabled) {
+            sendResponse({ ok: true, skipped: true, reason: "disabled" });
+            break;
+          }
+          const tab = await chrome.tabs.get(tabId).catch(() => null);
+          if (!tab?.url?.startsWith("https://www.tiktok.com/")) {
+            sendResponse({ ok: true, skipped: true, reason: "not-tiktok" });
+            break;
+          }
+          state.enabled = true;
+          if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
+          state.hook = { ...state.hook, armed: true, lastError: null };
+          state.recovery = { lastQuickRecoverAtUtc: new Date().toISOString(), lastReason: String(message.reason || "").slice(0, 80) };
+          await setState(tabId, state);
+          await addDebug(tabId, "quick-recover", { reason: state.recovery.lastReason, url: redactUrl(tab.url || "") });
+          await chrome.tabs.reload(tabId);
+          sendResponse({ ok: true, reloading: true });
+        } finally {
+          quickRecoverInFlight.delete(tabId);
         }
-        const tab = await chrome.tabs.get(tabId).catch(() => null);
-        if (!tab?.url?.startsWith("https://www.tiktok.com/")) {
-          sendResponse({ ok: true, skipped: true, reason: "not-tiktok" });
-          break;
-        }
-        state.enabled = true;
-        if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
-        state.hook = { ...state.hook, armed: true, lastError: null };
-        state.recovery = { lastQuickRecoverAtUtc: new Date().toISOString(), lastReason: String(message.reason || "").slice(0, 80) };
-        await setState(tabId, state);
-        await addDebug(tabId, "quick-recover", { reason: state.recovery.lastReason, url: redactUrl(tab.url || "") });
-        await chrome.tabs.reload(tabId);
-        sendResponse({ ok: true, reloading: true });
         break;
       }
       case "TLC_SET_QUALITY": {
@@ -1449,6 +1651,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             };
           }
         }
+        const participants = Object.values(state.participants || {});
+        const captionSources = [...new Set((state.captions || []).map((item) => String(item?.source || "")).filter(Boolean))].slice(0, 50);
+        const captionLanguages = [...new Set((state.captions || []).map((item) => String(item?.language || item?.lang || "")).filter(Boolean))].slice(0, 50);
         sendResponse({ ok: true, report: {
           generatedAtUtc: new Date().toISOString(), version: chrome.runtime.getManifest().version,
           browserSessionId: state.browserSessionId,
@@ -1458,6 +1663,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           media: state.media.map((item) => ({ ...item, url: redactUrl(item.url) })),
           counts: { chat: state.chatMessages.length, captions: state.captions.length },
           localService,
+          components: {
+            layout: {
+              liveInformationBeforePageInformation: true,
+              recommendationsAfterWebSocketHook: true
+            },
+            vlcReplacement: {
+              placement: "main-video-frame",
+              engine: "mpegts.js-media-source-extensions",
+              bundled: true,
+              active: Boolean(state.playerState?.vlcReplacementActive),
+              candidateCount: state.media.length
+            },
+            speechAndChatSettings: {
+              settingsDialogAvailable: true,
+              languageControlAvailable: true,
+              voiceControlAvailable: true,
+              auddTokenConfigured: Boolean(settings.auddApiToken),
+              pairingConfigured: Boolean(settings.pairingCode),
+              universalCaptionApiKeyConfigured: Boolean(settings.universalCaptionApiKey),
+              speakNames: settings.speakNames !== false,
+              shortenNames: Boolean(settings.shortenNames),
+              gameModeEnabled: Boolean(settings.gameModeEnabled)
+            },
+            captions: {
+              rawJsonExportAvailable: true,
+              jsonLinesExportAvailable: true,
+              protocolCount: state.captions.length,
+              sources: captionSources,
+              languages: captionLanguages
+            },
+            songRecognition: {
+              path: "browser-local-service-audd",
+              enabled: Boolean(settings.songRecognitionEnabled),
+              providerConfigured: Boolean(settings.auddApiToken)
+            },
+            topChatters: {
+              observedCount: participants.length,
+              resetAvailable: true,
+              mutedCount: (state.streamMutes || []).length,
+              permanentMutedCount: (settings.permanentMutes || []).length
+            },
+            autoReconnect: {
+              enabled: Boolean(state.quickRecoverEnabled),
+              delaySeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3)))
+            }
+          },
+          raw: state,
           debug: state.debug
         } });
         break;

@@ -1,4 +1,4 @@
-# TikTok LIVE Companion iOS 0.7.1
+# TikTok LIVE Companion iOS 0.8.0
 
 Native SwiftUI/WKWebView companion for iOS 15 and newer. Music recognition uses Apple's ShazamKit. The stable path records twelve seconds from the microphone after explicit user action; WebView PCM capture is marked experimental and falls back to the microphone when unavailable.
 

@@ -11,7 +11,7 @@ const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "Ti
 const defaultConfigPath = path.join(defaultConfigDir, "service.json");
 const sherpaVoicesPath = path.join(defaultConfigDir, "sherpa-voices.json");
 const voiceCatalogPath = path.join(root, "voice-catalog.json");
-export const VERSION = "0.7.1";
+export const VERSION = "0.8.0";
 export { defaultConfigPath };
 
 let sherpaInstallPromise = null;

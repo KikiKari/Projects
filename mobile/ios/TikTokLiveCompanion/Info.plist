@@ -6,7 +6,7 @@
   <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
   <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.7.1</string>
+  <key>CFBundleShortVersionString</key><string>0.8.0</string>
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
   <key>UILaunchScreen</key><dict/>
   <key>NSMicrophoneUsageDescription</key><string>Die Songerkennung hört nach Ihrem Klick bis zu zwölf Sekunden zu.</string>

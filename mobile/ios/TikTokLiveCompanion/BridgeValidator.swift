@@ -8,7 +8,7 @@ struct BridgeValidator {
     static let allowedTypes: Set<String> = [
         "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift",
         "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete",
-        "socket-open", "force-start", "force-return", "media-url", "player-state"
+        "socket-open", "force-start", "force-return", "media-url", "player-state", "recommendation-scan-progress"
     ]
 
     static func decode(data: Data, origin: String, isMainFrame: Bool) throws -> BridgeEnvelope {

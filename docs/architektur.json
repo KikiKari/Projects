@@ -1,5 +1,5 @@
 {
-  "titel": "TikTok LIVE Companion iOS — Schichten",
+  "titel": "TikTok LIVE Companion — Schichten",
   "akzent": "#fe2c55",
   "schichten": [
     {
@@ -7,82 +7,51 @@
       "farbe": "#5f6773",
       "blocks": [
         {
-          "id": "wkwebview",
-          "name": "WKWebView",
-          "untertitel": "Hauptframe"
+          "id": "tiktok-live-tab",
+          "name": "TikTok-LIVE-Tab",
+          "untertitel": "oeffentliche Seite"
         },
         {
-          "id": "www-tiktok-com",
-          "name": "www.tiktok.com",
-          "untertitel": "nur diese Origin"
+          "id": "oeffentliche-dom-daten",
+          "name": "oeffentliche DOM-Daten",
+          "untertitel": "gelesen"
         },
         {
-          "id": "hauptframe",
-          "name": "Hauptframe",
-          "untertitel": "kein iframe"
+          "id": "eingebettete-metadaten",
+          "name": "eingebettete Metadaten",
+          "untertitel": "JSON"
         }
       ]
     },
     {
-      "name": "Bruecke",
+      "name": "Beobachtung",
       "farbe": "#2481cc",
       "blocks": [
         {
-          "id": "mobile-bridge-v1",
-          "name": "Mobile Bridge v1",
-          "untertitel": "Origin + Typ"
+          "id": "content-js",
+          "name": "content.js",
+          "untertitel": "isolierte Welt"
         },
         {
-          "id": "origin-pruefung",
-          "name": "Origin-Pruefung",
-          "untertitel": "fail closed"
-        },
-        {
-          "id": "typ-groesse",
-          "name": "Typ + Groesse",
-          "untertitel": "begrenzt"
+          "id": "websocket-hook",
+          "name": "WebSocket-Hook",
+          "untertitel": "passiv"
         }
       ]
     },
     {
-      "name": "App",
+      "name": "Zustand",
       "farbe": "#6d5bd0",
       "blocks": [
         {
-          "id": "swift",
-          "name": "Swift",
-          "untertitel": "Sprache"
+          "id": "background-js",
+          "name": "background.js",
+          "untertitel": "Filter + Zustand"
         },
         {
-          "id": "swiftui",
-          "name": "SwiftUI",
-          "untertitel": "Oberflaeche"
-        },
-        {
-          "id": "webkit",
-          "name": "WebKit",
-          "untertitel": "WebView"
-        }
-      ]
-    },
-    {
-      "name": "Audio",
-      "farbe": "#b45309",
-      "blocks": [
-        {
-          "id": "shazamkit",
-          "name": "ShazamKit",
-          "untertitel": "nur nach Klick"
-        },
-        {
-          "id": "mikrofon",
-          "name": "Mikrofon",
-          "untertitel": "stabil"
-        },
-        {
-          "id": "webview-pcm-exp",
-          "name": "WebView-PCM (exp.)",
-          "untertitel": "experimentell"
+          "id": "storage-session",
+          "name": "storage.session",
+          "untertitel": "fluechtig"
         }
       ]
     },
@@ -91,82 +60,93 @@
       "farbe": "#fe2c55",
       "blocks": [
         {
-          "id": "fluechtiger-streamzustand",
-          "name": "fluechtiger Streamzustand",
-          "untertitel": "nicht persistiert"
+          "id": "seitenpanel",
+          "name": "Seitenpanel",
+          "untertitel": "textContent"
         },
         {
-          "id": "panel",
-          "name": "Panel",
-          "untertitel": "Anzeige"
+          "id": "vorlesen",
+          "name": "Vorlesen",
+          "untertitel": "lokal"
         },
         {
-          "id": "ipa",
-          "name": "IPA",
-          "untertitel": "iOS-Artefakt"
+          "id": "playersteuerung",
+          "name": "Playersteuerung",
+          "untertitel": "vorhandener Player"
+        }
+      ]
+    },
+    {
+      "name": "Doku",
+      "farbe": "#0f766e",
+      "blocks": [
+        {
+          "id": "docs-de",
+          "name": "docs/de",
+          "untertitel": "deutsch"
+        },
+        {
+          "id": "docs-en",
+          "name": "docs/en",
+          "untertitel": "englisch"
+        },
+        {
+          "id": "vercel-site",
+          "name": "Vercel-Site",
+          "untertitel": "statisch"
         }
       ]
     }
   ],
   "kanten": [
     {
-      "von": "wkwebview",
-      "nach": "mobile-bridge-v1",
+      "von": "tiktok-live-tab",
+      "nach": "content-js",
       "art": "fluss"
     },
     {
-      "von": "www-tiktok-com",
-      "nach": "origin-pruefung",
+      "von": "oeffentliche-dom-daten",
+      "nach": "websocket-hook",
       "art": "fluss"
     },
     {
-      "von": "hauptframe",
-      "nach": "typ-groesse",
+      "von": "eingebettete-metadaten",
+      "nach": "content-js",
       "art": "fluss"
     },
     {
-      "von": "mobile-bridge-v1",
-      "nach": "swift",
+      "von": "content-js",
+      "nach": "background-js",
       "art": "fluss"
     },
     {
-      "von": "origin-pruefung",
-      "nach": "swiftui",
+      "von": "websocket-hook",
+      "nach": "storage-session",
       "art": "fluss"
     },
     {
-      "von": "typ-groesse",
-      "nach": "webkit",
+      "von": "background-js",
+      "nach": "seitenpanel",
       "art": "fluss"
     },
     {
-      "von": "swift",
-      "nach": "shazamkit",
+      "von": "storage-session",
+      "nach": "vorlesen",
       "art": "fluss"
     },
     {
-      "von": "swiftui",
-      "nach": "mikrofon",
+      "von": "seitenpanel",
+      "nach": "docs-de",
       "art": "fluss"
     },
     {
-      "von": "webkit",
-      "nach": "webview-pcm-exp",
+      "von": "vorlesen",
+      "nach": "docs-en",
       "art": "fluss"
     },
     {
-      "von": "shazamkit",
-      "nach": "fluechtiger-streamzustand",
-      "art": "fluss"
-    },
-    {
-      "von": "mikrofon",
-      "nach": "panel",
-      "art": "fluss"
-    },
-    {
-      "von": "webview-pcm-exp",
-      "nach": "ipa",
+      "von": "playersteuerung",
+      "nach": "vercel-site",
       "art": "fluss"
     }
   ],
@@ -178,7 +158,7 @@
       "text": "Fluss von unten nach oben"
     }
   ],
-  "untertitel": "Die Schichtsicht der iOS-App: WKWebView, Brücke, SwiftUI, ShazamKit.",
+  "untertitel": "Die Schichtsicht der Browser-Erweiterung: Quelle, Beobachtung, Zustand, Ausgabe.",
   "technik": "three.js · r128",
   "fussnote": "Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal."
 }

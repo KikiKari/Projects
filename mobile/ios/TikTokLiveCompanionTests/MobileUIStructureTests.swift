@@ -36,6 +36,10 @@ final class MobileUIStructureTests: XCTestCase {
         let controller = try String(contentsOf: mobileRoot.appendingPathComponent("TikTokLiveCompanion/BackgroundAudioController.swift"))
         XCTAssertTrue(controller.contains("setCategory(.playback"))
         XCTAssertTrue(source.components(separatedBy: "private var moreView")[1].contains("Debugmodus"))
+        XCTAssertTrue(source.contains("Sprach- und Chat-Einstellungen"))
+        XCTAssertTrue(source.contains("JSON-L-Export"))
+        XCTAssertTrue(source.contains("RAW-JSON-Export"))
+        XCTAssertTrue(status.contains("LIVE-Empfehlungen"))
     }
 
     func testMobilePlayerFocusUsesCenterFrameThenLiveOverviewAndPureFullscreen() throws {
