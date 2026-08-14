@@ -157,8 +157,6 @@ sequenceDiagram
 
 ## Dokumentation
 
-- [Vollständige Dokumentation V7](docs/TikTok-Live-Companion_v7_utf8bom.md)
-- [Links und Erreichbarkeiten V7](docs/Links-und-Erreichbarkeiten_v7_utf8bom.md)
 - [Deutsch](docs/de/overview.md)
 - [English](docs/en/overview.md)
 - [Architekturdiagramm](docs/diagrams/architecture.mmd)
