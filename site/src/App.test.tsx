@@ -57,7 +57,7 @@ describe("documentation site", () => {
     expect(screen.getByRole("link", { name: /Windows service ZIP/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-service-0.8.0.zip");
     expect(screen.getByRole("link", { name: /iOS source project/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-ios-0.8.0-source.zip");
     expect(screen.getByRole("link", { name: /Android\/HyperOS source/ })).toHaveAttribute("href", "/downloads/tiktok-live-companion-android-0.8.0-source.zip");
-    expect(screen.getByRole("link", { name: /Android test APK/ })).toHaveAttribute("href", "https://github.com/KikiKari/Projects/releases/download/tlc-android-v0.8.0-alpha/tiktok-live-companion-android-0.8.0.apk");
+    expect(screen.getByRole("link", { name: /Android test APK/ })).toHaveAttribute("href", "https://github.com/KikiKari/Projects/releases/download/tlc-android-v0.8.0/tiktok-live-companion-android-0.8.0.apk");
     expect(screen.getByRole("button", { name: "Copy checksums" })).toBeInTheDocument();
   });
 
