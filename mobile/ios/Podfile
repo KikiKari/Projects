@@ -1,6 +1,0 @@
-platform :ios, '15.0'
-
-target 'TikTokLiveCompanion' do
-  use_frameworks!
-  pod 'MobileVLCKit', '3.7.3'
-end
