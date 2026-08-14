@@ -87,7 +87,7 @@ struct ContentView: View {
         }
     }
     private var speechSettingsView: some View {
-        NavigationStack { Form {
+        NavigationView { Form {
             SecureField("AudD API-Token", text: $state.auddToken)
             SecureField("Pairing-Code", text: $state.pairingCode)
             SecureField("Universal API-Key für Untertitel", text: $state.universalCaptionApiKey)
@@ -97,6 +97,7 @@ struct ContentView: View {
             Toggle("Chatnamen kürzen", isOn: $state.shortenNames)
             Toggle("Game-Mode", isOn: $state.gameModeEnabled)
         }.navigationTitle("Sprach- und Chat-Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
+        .navigationViewStyle(.stack)
     }
     private var statusView: some View {
         VStack(alignment: .leading, spacing: 12) {
