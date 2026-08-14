@@ -1,6 +1,0 @@
-/.gradle/
-/.kotlin/
-/local.properties
-/**/build/
-/app/libs/*.aar
-!/app/libs/README.md

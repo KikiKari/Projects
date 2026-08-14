@@ -1,1 +1,0 @@
-<resources><style name="Theme.TikTokLiveCompanion" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">#FF1C50</item><item name="android:navigationBarColor">#FFFFFF</item><item name="android:statusBarColor">#FFFFFF</item><item name="android:windowLightStatusBar">true</item></style></resources>
