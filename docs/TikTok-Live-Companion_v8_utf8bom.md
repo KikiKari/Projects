@@ -800,7 +800,7 @@ Lokal auf Windows sind `gh 2.76.2` und `vercel 58.3.0` verfügbar. `gh` wurde oh
 | `.github/workflows/ios.yml` | `TikTok-Live-Companion-iOS` | `macos-15`, Timeout 30 min, `test_mobile_projects.py`, automatische Simulator-Ermittlung über `xcrun simctl`, `xcodebuild test` mit `CODE_SIGNING_ALLOWED=NO` |
 | `.github/workflows/linear-release-sync.yml` | alle drei Branches | `linear/linear-release-action@v0`, getrennte Sync-Schritte je Branch mit Pfadfiltern |
 
-Der iOS-Workflow benötigt **keine** GitHub Secrets und kein Apple-Signing, weil er nur gegen den Simulator baut. Letzter bestätigter Lauf: `#14`, Commit `34e0dbb`, Status `success`. Voraussetzung ist das geteilte Scheme unter `mobile/ios/TikTokLiveCompanion.xcodeproj/xcshareddata/xcschemes/TikTokLiveCompanion.xcscheme` mit App- und XCTest-Target.
+Der iOS-Workflow benötigt **keine** GitHub Secrets und kein Apple-Signing, weil er nur gegen den Simulator baut. Der vollständige 0.8.0-Lauf `31776903231` auf Commit `fc1553f` hat Simulator-Build und Tests erfolgreich abgeschlossen. Voraussetzung ist das geteilte Scheme unter `mobile/ios/TikTokLiveCompanion.xcodeproj/xcshareddata/xcschemes/TikTokLiveCompanion.xcscheme` mit App- und XCTest-Target.
 
 Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linear Releases sind plan-gated, ohne Business-Plan lässt sich kein `LINEAR_ACCESS_KEY` erzeugen. Ohne Secret protokolliert der Workflow nun einen erfolgreichen, ausdrücklichen Skip und blockiert die Weiterentwicklung nicht. Sobald der Plan verfügbar ist, genügt das Hinterlegen des Pipeline-Access-Keys unter `Settings → Secrets and variables → Actions`.
 
@@ -809,14 +809,14 @@ Der Linear-Release-Sync ist vollständig hinterlegt, aber **nicht aktiv**: Linea
 | Weg | Stand |
 |---|---|
 | GitHub-Branches | drei Branches im öffentlichen Repository `KikiKari/Projects` |
-| GitHub Releases | `tlc-browser-v0.7.1-alpha`, `tlc-android-v0.7.1-alpha`, `tlc-ios-v0.7.1-alpha` mit Artefakten und SHA-Datei |
-| GHCR-Container | `ghcr.io/kikikari/tiktok-live-companion-{browser,android,ios}:0.7.1-alpha`, `public`, Artefakte unter `/artifacts` |
+| GitHub Releases | `tlc-browser-v0.8.0`, `tlc-android-v0.8.0`, `tlc-ios-v0.8.0` mit Artefakten und SHA-Datei |
+| GHCR-Container | `ghcr.io/kikikari/tiktok-live-companion-{browser,android,ios}:0.8.0`, Artefakte unter `/artifacts` |
 | Vercel-Downloads | `site/public/downloads/`, bytegenau gegen die Prüfsummendatei verifiziert |
 | Taildrop | APK-Übertragung an `100.94.134.39` im Tailnet, Exit-Code `0` |
 
 Die GHCR-Pakete wurden von GitHub zunächst als `private` angelegt; die REST-Umschaltung der Sichtbarkeit antwortet mit `404`, weil Container-Pakete darüber nicht umgestellt werden. Der UI-Schritt ist erfolgt: alle drei Pakete stehen auf `public`, `Inherit access from source repository` ist aktiviert, das Quellrepository ist über das Dockerfile-Label `org.opencontainers.image.source` verifiziert, und `Projects` hat für Actions und Codespaces jeweils die Rolle `Read`. Übersicht: https://github.com/KikiKari?tab=packages&repo_name=Projects
 
-Bestätigte OCI-Index-Digests am 02.08.2026: Browser `sha256:3822dc57c1b850149b6825c5892476c6383ae05cbe116fc16f071509a0865752`, Android `sha256:6cbb85768154f7d5ac5faffcf5cb72c1ca8233cfa41b444ffda9000324c443a2`, iOS `sha256:eb1d69ebff7c4bb20737cc5159bafedbe756c10ea39d8734b676f3cc9921b1ad`.
+Die endgültigen 0.8.0-OCI-Index-Digests werden mit dem Veröffentlichungsnachweis in Linear und Notion festgehalten. Die Container bleiben über das Quellrepository `KikiKari/Projects` nachvollziehbar.
 
 ### 7.4 Vercel-Konfiguration (`96f4c55`, 08.08.2026)
 
@@ -1411,29 +1411,30 @@ Version 8 ist abgeschlossen. Dieser Abschnitt grenzt ab, was **nicht** Teil des 
 
 | Nachweis | Wert |
 |---|---|
-| Android-Workflow auf `db40999` | GitHub-Actions-Lauf `31707719317` — erfolgreich; die APK dieses Laufs geht unverändert in die Paketierung |
-| iOS-Workflow auf `b683661` | erfolgreich |
+| Android-Workflow auf dem finalen Android-Quellstand | GitHub-Actions-Lauf `31773591974` — erfolgreich; die APK dieses Laufs geht unverändert in die Paketierung |
+| iOS-Workflow auf dem finalen iOS-Quellstand | GitHub-Actions-Lauf `31776903231` — Simulator-Build und Tests erfolgreich |
 | Browsertests auf `1cb2d26` | `test_extension.cjs` bestanden, `node --check` für `background.js`, `content.js` und `sidepanel.js` bestanden |
 | Diensttests | `npm test` im Companion-Service bestanden |
 | Umfang des Abschlusscommits | 19 Dateien, +986/−860 |
-| Downloads | sieben Dateien aus den drei aktuellen Branch-Arbeitsständen — **erstellt und gehasht**; die APK stammt unverändert aus Actions-Lauf `31707719317` |
+| Downloads | sieben Dateien aus den drei aktuellen Branch-Arbeitsständen — **zweimal bytegleich erstellt und gehasht**; die APK stammt unverändert aus Actions-Lauf `31773591974` |
 | Paketierung | `plugin-source/scripts/package_artifacts.py --output-dir …` gegen ein eigenes Downloadverzeichnis außerhalb der Projektwurzel |
 
 **Nachtragsfelder des Release-Commits.** `0PE-96` ist abgeschlossen; die folgenden Kennungen entstehen technisch erst mit dem Release-Commit und werden von Codex unmittelbar danach hier eingesetzt. Sie sind bewusst nicht vorbelegt, damit keine erfundene Prüfsumme oder Run-ID in die Dokumentation gelangt.
 
 | Nachweis | Wert |
 |---|---|
-| Release-Commit Browser | wird nach dem Push eingetragen |
-| Release-Commit Android | wird nach dem Push eingetragen |
-| Release-Commit iOS | wird nach dem Push eingetragen |
-| `tiktok-live-companion-extension-0.8.0.zip` | SHA-256 `9D7701556791B567FAF5E1D570DD921F51B8CC5537BED4544DA5516F0ED58C00` |
-| `tiktok-live-companion-plugin-0.8.0.zip` | SHA-256 `418ABE84514FC76E1D1A30B9A9E163100736EC22705D6025742A08335DCF4A2E` |
+| Finaler 0.8.0-Quellstand Browser | `1b14a9fa0052849920149e5d42425df13c50a59b` |
+| Finaler 0.8.0-Quellstand Android | `ff452fcd3ca33b4f746d944e15d983c6b4419cc5` |
+| Finaler 0.8.0-Quellstand iOS | `fc1553fbac00cf52f1cad8d0a443a0f6550e23b1` |
+| `tiktok-live-companion-extension-0.8.0.zip` | SHA-256 `0F242F1642B739F0006E907C8B76FEE4ED2199E7F1B2C5F223094C423F3DBC0F` |
+| `tiktok-live-companion-plugin-0.8.0.zip` | SHA-256 `F87BE24165AA67CF2E776F904EE2A6372F1620E63AECE1B72638D1B3B4BB0694` |
 | `tiktok-live-companion-service-0.8.0.zip` | SHA-256 `0520B3675B4F79BEF9C7E0ECC32DE3EA16B84E0CA13FA6A030B2D3C53F156674` |
-| `tiktok-live-companion-ios-0.8.0-source.zip` | SHA-256 `1D0549DD0C8CD935653B0EBCBAECF07A6EDD1647C1125A0282A836E1C839CA37` |
+| `tiktok-live-companion-ios-0.8.0-source.zip` | SHA-256 `0EAF79CEBF2FA9F4C5783B473F7F8AC961D12E5E374667F25EC0EE393818B6DD` |
 | `tiktok-live-companion-android-0.8.0-source.zip` | SHA-256 `7D3473CBB7E0EEC839FD73E79471FD3E00D8040A4A11CBFD2D2A455C9E538363` |
-| `tiktok-live-companion-android-0.8.0.apk` | SHA-256 `347BDF26BAD4C3F9E6D364587E8AAC9D978CB26A0A0DA2361C72D81D4D3AB68B` |
-| Nativer iOS-Actions-Lauf auf dem finalen 0.8.0-Release-Commit | wird nach dem GitHub-Lauf eingetragen |
-| Android-Suite auf dem finalen 0.8.0-Release-Commit | wird nach dem GitHub-Lauf eingetragen |
+| `tiktok-live-companion-android-0.8.0.apk` | SHA-256 `BA4588F648D32E071056424A0C4F12E6A6EEC23265A6129684A9C46827048E25` — aus Actions-Lauf `31773591974` |
+| `tiktok-live-companion-0.8.0-SHA256.txt` | SHA-256 `D8D52D32217B04B0CDDD80FFC7BA66991E751D81451E935E49419AAD8E8782CD` |
+| Nativer iOS-Actions-Lauf auf dem finalen 0.8.0-Quellstand | `31776903231` — Simulator-Build und Tests erfolgreich |
+| Android-Suite auf dem finalen 0.8.0-Quellstand | `31773591974` — Unit-Tests und APK-Build erfolgreich |
 | Vercel-Produktionsdeployment | wird nach `READY` eingetragen |
 | Vercel-Deployments Android/iOS-Branch | werden nach `READY` eingetragen |
 | GHCR-OCI-Index-Digests | werden nach der Veröffentlichung eingetragen |
