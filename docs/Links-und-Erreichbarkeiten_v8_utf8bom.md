@@ -33,7 +33,7 @@ Linear-Status: live aus Linear am 02.08.2026, 17:00 Uhr abgeglichen — für 0.8
 | `TikTok-Live-Companion-Android` | `db40999` | 13.08.2026 | `feat(android): capture complete debug diagnostics` | `0PE-103` |
 | `TikTok-Live-Companion-iOS` | `b683661` | 13.08.2026 | `feat(ios): capture complete debug diagnostics` | `0PE-103` |
 
-**CI-Nachweise dieser Runde.** Android-Actions-Lauf `31707719317` auf `db40999` erfolgreich; die APK dieses Laufs geht unverändert in die Paketierung. Der iOS-Workflow auf `b683661` ist ebenfalls erfolgreich. Browsertests (`test_extension.cjs`, `node --check`) und Diensttests (`npm test`) bestanden.
+**CI-Nachweise dieser Runde.** Android-Actions-Lauf `31773591974` auf dem finalen Android-Quellstand erfolgreich; die APK dieses Laufs geht unverändert in die Paketierung. Der vollständige iOS-Simulatorlauf `31776903231` auf dem finalen iOS-Quellstand ist einschließlich Tests erfolgreich. Browsertests (`test_extension.cjs`, `node --check`) und Diensttests (`npm test`) bestanden.
 
 **Ablauf des Pushes.** Der Browser-Push wurde zunächst als nicht-linear zurückgewiesen, weil auf GitHub vier neuere Commits lagen. Sie wurden nicht überschrieben, sondern eingeholt; der neue Commit wurde daraufgesetzt. Die vier echten Überschneidungen betrafen die Scanner-, VLC- und Sidepanel-Dateien und wurden einzeln aufgelöst. Ein pauschales Überschreiben mit den Sitzungskopien wurde als Risiko abgelehnt.
 
@@ -57,9 +57,9 @@ Umgesetzt wurden `0PE-73`, `0PE-78`, `0PE-79`, `0PE-85`, `0PE-86`, `0PE-87`, `0P
 
 | Branch | Adresse | Stand vor dem 0.8.0-Release-Commit | Vorheriger Release-Commit (0.7.1) | Status |
 |---|---|---|---|---|
-| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `1cb2d26` | `809de33` | ✅ Push und Remote bestätigt; Browser- und Diensttests bestanden |
-| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `db40999` | `0bebb07` | ✅ Push bestätigt; Actions-Lauf `31707719317` erfolgreich |
-| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `b683661` | `6efa242` | ✅ Push bestätigt; iOS-Workflow erfolgreich |
+| `TikTok-Live-Companion` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion | `1b14a9f` | `809de33` | ✅ finaler 0.8.0-Quellstand gepusht; Browser- und Diensttests bestanden |
+| `TikTok-Live-Companion-Android` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-Android | `ff452fc` | `0bebb07` | ✅ finaler Android-Quellstand; Actions-Lauf `31773591974` erfolgreich |
+| `TikTok-Live-Companion-iOS` | https://github.com/KikiKari/Projects/tree/TikTok-Live-Companion-iOS | `fc1553f` | `6efa242` | ✅ finaler iOS-Quellstand; Simulatorlauf `31776903231` erfolgreich |
 
 Der eigentliche 0.8.0-Release-Commit je Branch steht in Abschnitt 10.10 der Dokumentation.
 
@@ -127,7 +127,7 @@ Alle sechs Verzeichnisse sind Git-Worktrees desselben Repositories (`.publish-re
 
 Der Workspace-Root selbst ist **kein** gültiges Git-Repository; sein `.git`-Verzeichnis ist leer. Alle Git-Operationen laufen über `.publish-repo` oder einen der Worktrees.
 
-**Lokale Tags:** `tlc-browser-v0.7.1-alpha`, `tlc-android-v0.7.1-alpha`, `tlc-ios-v0.7.1-alpha`.
+**Release-Tags:** `tlc-browser-v0.8.0`, `tlc-android-v0.8.0`, `tlc-ios-v0.8.0`.
 
 ### Weitere Remote-Branches
 
@@ -145,8 +145,8 @@ Der Workspace-Root selbst ist **kein** gültiges Git-Repository; sein `.git`-Ver
 | GitHub-Repository | https://github.com/KikiKari/Projects | ✅ öffentlich |
 | GitHub-Issues offen | https://github.com/KikiKari/Projects/issues | 🔗 |
 | GitHub-Issues geschlossen | https://github.com/KikiKari/Projects/issues?q=is%3Aissue+state%3Aclosed | 🔗 |
-| GitHub-Releases | https://github.com/KikiKari/Projects/releases | ✅ drei 0.7.1-Alpha-Releases |
-| GitHub-Actions | https://github.com/KikiKari/Projects/actions | ✅ iOS-Workflow läuft |
+| GitHub-Releases | https://github.com/KikiKari/Projects/releases | ✅ drei Version-8-Ausgaben |
+| GitHub-Actions | https://github.com/KikiKari/Projects/actions | ✅ Browser-, Android- und iOS-Nachweise |
 | Dokumentationssite Deutsch | https://tiktok-live-companion.vercel.app/de | ✅ live |
 | Dokumentationssite English | https://tiktok-live-companion.vercel.app/en | ✅ live |
 | Interaktive Architektur Deutsch | https://tiktok-live-companion.vercel.app/de/architecture-3d | ✅ live |
@@ -164,15 +164,15 @@ Der Workspace-Root selbst ist **kein** gültiges Git-Repository; sein `.git`-Ver
 
 ---
 
-## 3. GitHub Releases 0.7.1 ✅
+## 3. GitHub Releases 0.8.0
 
 | Release | Tag | Assets |
 |---|---|---|
-| Browser Alpha | https://github.com/KikiKari/Projects/releases/tag/tlc-browser-v0.7.1-alpha | Extension-ZIP, Plugin-ZIP, Service-ZIP, SHA-Datei |
-| Android Alpha | https://github.com/KikiKari/Projects/releases/tag/tlc-android-v0.7.1-alpha | Android-APK, Android-Source-ZIP |
-| iOS Alpha | https://github.com/KikiKari/Projects/releases/tag/tlc-ios-v0.7.1-alpha | iOS-Source-ZIP |
+| Browser | https://github.com/KikiKari/Projects/releases/tag/tlc-browser-v0.8.0 | Extension-ZIP, Plugin-ZIP, Service-ZIP, SHA-Datei |
+| Android | https://github.com/KikiKari/Projects/releases/tag/tlc-android-v0.8.0 | Android-APK, Android-Source-ZIP, SHA-Datei |
+| iOS | https://github.com/KikiKari/Projects/releases/tag/tlc-ios-v0.8.0 | iOS-Source-ZIP, SHA-Datei |
 
-Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Store-Einträge und keine signierten Store-Pakete.
+Die drei Ausgaben bilden gemeinsam den freigegebenen Version-8-Stand. Es existieren weiterhin keine Store-Einträge und keine signierten Store-Pakete.
 
 ---
 
@@ -182,11 +182,11 @@ Alle drei sind ausdrücklich als `alpha` gekennzeichnet. Es existieren keine Sto
 
 | Paket | Referenz | Sichtbarkeit | Quellrepository |
 |---|---|---|---|
-| Browser | `ghcr.io/kikikari/tiktok-live-companion-browser:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
-| Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
-| iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.7.1-alpha` | ✅ `public` | ✅ `KikiKari/Projects` |
+| Browser | `ghcr.io/kikikari/tiktok-live-companion-browser:0.8.0` | `public` | ✅ `KikiKari/Projects` |
+| Android | `ghcr.io/kikikari/tiktok-live-companion-android:0.8.0` | `public` | ✅ `KikiKari/Projects` |
+| iOS | `ghcr.io/kikikari/tiktok-live-companion-ios:0.8.0` | `public` | ✅ `KikiKari/Projects` |
 
-OCI-Index-Digests des Endstandes: Android `sha256:1a34ab9849769aa8c3bc86a29197ab5a3aa0bffeb39b58635303393c50981df1` (nach `0PE-94`). Vorherige Digests der Sitzung: Browser `sha256:3822dc57c1b850149b6825c5892476c6383ae05cbe116fc16f071509a0865752`, Android `sha256:6cbb85768154f7d5ac5faffcf5cb72c1ca8233cfa41b444ffda9000324c443a2`, iOS `sha256:eb1d69ebff7c4bb20737cc5159bafedbe756c10ea39d8734b676f3cc9921b1ad`.
+Die endgültigen OCI-Index-Digests des Version-8-Standes werden im Freigabenachweis von Linear und Notion dokumentiert.
 
 Package-Settings-Adressen: `https://github.com/users/KikiKari/packages/container/tiktok-live-companion-{browser,android,ios}/settings`
 
