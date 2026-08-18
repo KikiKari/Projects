@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-# 1781743218784.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_61166d.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_61166d.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
+import base64
 import json
+from datetime import datetime
 
 def generate_html():
     return '''<!DOCTYPE html>
@@ -214,18 +217,25 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
 def main():
-    if len(sys.argv) != 2:
-        print("Verwendung: {} <ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
+    args = sys.argv[1:]
+    output_file = args[0] if args else None
+    
+    if not output_file:
+        print("Verwendung: python3 script.py <ausgabedatei>", file=sys.stderr)
         sys.exit(1)
     
-    output_file = sys.argv[1]
-    
     try:
+        html_content = generate_html()
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(generate_html())
-        print("HTML-Datei erfolgreich erstellt: {}".format(output_file))
-    except Exception as e:
-        print("Fehler beim Erstellen der HTML-Datei: {}".format(str(e)), file=sys.stderr)
+            f.write(html_content)
+        
+        if os.path.exists(output_file):
+            print(f"HTML-Datei erfolgreich erstellt: {output_file}")
+        else:
+            print("Fehler beim Erstellen der HTML-Datei", file=sys.stderr)
+            sys.exit(1)
+    except Exception as error:
+        print(f"Fehler beim Erstellen der HTML-Datei: {str(error)}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

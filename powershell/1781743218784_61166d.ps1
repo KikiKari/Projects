@@ -1,9 +1,13 @@
 #!/usr/bin/env pwsh
-# 1781743218784.sh — portiert nach powershell
+# 1781743218784_61166d.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_61166d.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784.sh
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.html — portiert nach shell
+# 1781743218784.html — portiert nach JavaScript
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
@@ -11,7 +15,7 @@
 # Erzeugt die vollständige HTML-Datei mit allen Inhalten
 
 function Generate-Html {
-    return @'
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,43 +221,33 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
 # Hauptprogramm
 function Main {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$OutputFile
-    )
+    $args = $args
+    $outputFile = $args[0]
     
-    if ([string]::IsNullOrEmpty($OutputFile)) {
-        Write-Error "Verwendung: $($MyInvocation.MyCommand.Name) <ausgabedatei>"
+    if (-not $outputFile) {
+        Write-Error "Verwendung: pwsh script.ps1 <ausgabedatei>"
         exit 1
     }
     
     try {
         $htmlContent = Generate-Html
-        $htmlContent | Out-File -FilePath $OutputFile -Encoding utf8
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
         
-        if (Test-Path $OutputFile) {
-            Write-Host "HTML-Datei erfolgreich erstellt: $OutputFile"
+        if (Test-Path $outputFile) {
+            Write-Output "HTML-Datei erfolgreich erstellt: $outputFile"
         } else {
             Write-Error "Fehler beim Erstellen der HTML-Datei"
             exit 1
         }
     } catch {
-        Write-Error "Fehler beim Erstellen der HTML-Datei: $_"
+        Write-Error "Fehler beim Erstellen der HTML-Datei: $($_.Exception.Message)"
         exit 1
     }
 }
 
-# Wenn das Skript direkt ausgeführt wird
-if ($MyInvocation.InvocationName -ne '.') {
-    if ($args.Count -eq 0) {
-        Write-Error "Verwendung: $($MyInvocation.MyCommand.Name) <ausgabedatei>"
-        exit 1
-    }
-    
-    Main -OutputFile $args[0]
-}
+Main @args

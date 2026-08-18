@@ -1,21 +1,18 @@
 #!/usr/bin/env pwsh
-# 1781743218784.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_ca3884.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_ca3884.py
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.html — portiert nach perl5
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# Get output file from command line argument
-if ($args.Count -eq 0) {
-    Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output_file>"
+# Prüfe, ob die richtige Anzahl an Argumenten übergeben wurde
+if ($args.Count -ne 1) {
+    Write-Host "Usage: $($MyInvocation.MyCommand.Name) <output_file>"
     exit 1
 }
-$output_file = $args[0]
 
-# HTML content with embedded JSON and JavaScript
-$html_content = @'
+$outputFile = $args[0]
+
+# HTML-Inhalt mit eingebettetem JSON und JavaScript
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,11 +220,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Write HTML content to the specified file
+# Schreibe den HTML-Inhalt in die angegebene Datei
 try {
-    [System.IO.File]::WriteAllText($output_file, $html_content)
-    Write-Output "HTML file generated: $output_file"
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error "Could not write to file '$output_file': $_"
+    Write-Host "Could not open file '$outputFile' for writing: $_"
     exit 1
 }
+
+Write-Host "HTML file generated: $outputFile"

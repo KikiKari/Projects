@@ -1,19 +1,23 @@
 #!/usr/bin/env perl
-# 1781743218784.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_526e72.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_526e72.py
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use Getopt::Long;
 
-# 1781743218784.html — portiert nach powershell
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+sub main {
+    my $output_path;
+    GetOptions(
+        'OutputPath=s' => \$output_path,
+    ) or die "Error in command line arguments\n";
 
-my $output_path = shift @ARGV;
-die "Usage: $0 <output_path>\n" unless defined $output_path;
+    if (!defined $output_path) {
+        die "Missing required argument: OutputPath\n";
+    }
 
-my $html_content = <<'HTML_END';
+    my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,6 +225,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open my $fh, '>:encoding(UTF-8)', $output_path or die "Could not open file '$output_path': $!";
-print $fh $html_content;
-close $fh;
+    eval {
+        open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Could not open file '$output_path': $!";
+        print $fh $html_content;
+        close($fh);
+    };
+    if ($@) {
+        print STDERR "Error writing file: $@\n";
+        exit(1);
+    }
+}
+
+main() unless caller;

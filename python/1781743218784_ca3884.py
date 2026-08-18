@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-# 1781743218784.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html — portiert nach perl5
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_ca3884.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_ca3884.ps1
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Get output file from command line argument
-if len(sys.argv) != 2:
-    print(f"Usage: {sys.argv[0]} <output_file>")
+if len(sys.argv) == 1:
+    print("Usage: {} <output_file>".format(sys.argv[0]), file=sys.stderr)
     sys.exit(1)
 
 output_file = sys.argv[1]
@@ -221,15 +218,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Write HTML content to the specified file
 try:
-    with open(output_file, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    print(f"HTML file generated: {output_file}")
 except Exception as e:
-    print(f"Could not open file '{output_file}' for writing: {e}")
+    print(f"Could not write to file '{output_file}': {e}", file=sys.stderr)
     sys.exit(1)
-
-print(f"HTML file generated: {output_file}")

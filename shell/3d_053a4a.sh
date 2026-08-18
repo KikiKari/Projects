@@ -1,16 +1,19 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 3d_053a4a.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 3d.html — portiert nach bash
-# Quelle: html, Projects@python-hardener:public/3d.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Parameter: Ausgabedatei
+if [ $# -eq 0 ]; then
+    echo "Verwendung: $0 <ausgabedatei>" >&2
+    exit 1
+fi
+ausgabe_datei="$1"
 
-generateHTML() {
-  cat <<'HTML_END'
+# HTML-Dokument erzeugen
+cat > "$ausgabe_datei" << 'EOF'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -332,19 +335,6 @@ generateHTML() {
 </script>
 </body>
 </html>
-HTML_END
-}
+EOF
 
-main() {
-  if [ $# -ne 1 ]; then
-    echo 'Usage: bash 3d.sh <output-file>' >&2
-    exit 1
-  fi
-
-  local outputFile="$1"
-
-  generateHTML > "$outputFile"
-  echo "HTML file generated successfully: $outputFile"
-}
-
-main "$@"
+echo "HTML-Datei wurde erfolgreich erstellt: $ausgabe_datei"

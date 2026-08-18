@@ -1,20 +1,21 @@
-#!/usr/bin/env perl
-# 3d_053a4a.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# 3d.html — portiert nach tcl
-# Quelle: html, Projects@python-hardener:public/3d.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# Tcl 8.6 script to generate 3d.html
-# Usage: tclsh this_script.tcl > 3d.html
-
-# This script generates the complete HTML document programmatically
-# rather than embedding it as a string literal.
+#!/usr/bin/perl
+# 3d_053a4a_2780c2.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a_2780c2.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+
+# 3d_053a4a.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach JavaScript
+# Quelle: html, Projects@python-hardener:public/3d.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# Node.js script to generate 3d.html
+# Usage: node this_script.js > 3d.html
 
 sub generate_html {
     my @html = ();
@@ -33,7 +34,7 @@ sub generate_html {
     
     # CSS styles
     push @html, '<style>';
-    push @html, <<'CSS_END';
+    push @html, '
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#b45309; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -79,7 +80,7 @@ sub generate_html {
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
 }
-CSS_END
+    ';
     push @html, '</style>';
     push @html, '</head>';
     
@@ -124,16 +125,15 @@ CSS_END
     
     # Inline script
     push @html, '<script>';
-    push @html, <<'JS_END';
-(function(){
+    push @html, '(function(){
   "use strict";
   var SPEC = {"schichten": [{"name": "Eingaben", "farbe": "#5f6773", "blocks": [{"id": "job-runner-py", "name": "job_runner.py", "untertitel": "Cronjob"}, {"id": "report-db-py", "name": "report_db.py", "untertitel": "SQL"}]}, {"name": "Laeufe", "farbe": "#2481cc", "blocks": [{"id": "with-skill", "name": "with_skill", "untertitel": "mit Skill"}, {"id": "without-skill", "name": "without_skill", "untertitel": "Gegenprobe"}]}, {"name": "Pruefung", "farbe": "#6d5bd0", "blocks": [{"id": "ast-assertions", "name": "AST-Assertions", "untertitel": "Syntaxbaum"}, {"id": "not-contains", "name": "not_contains", "untertitel": "Textregel"}, {"id": "grading", "name": "Grading", "untertitel": "je Behauptung"}]}, {"name": "Ergebnis", "farbe": "#b45309", "blocks": [{"id": "benchmark-json", "name": "benchmark.json", "untertitel": "pass_rate"}, {"id": "timing-json", "name": "timing.json", "untertitel": "Laufzeit"}, {"id": "eval-review-html", "name": "eval-review.html", "untertitel": "Gegenueberstellung"}]}], "kanten": [{"von": "job-runner-py", "nach": "with-skill", "art": "fluss"}, {"von": "report-db-py", "nach": "without-skill", "art": "fluss"}, {"von": "with-skill", "nach": "ast-assertions", "art": "fluss"}, {"von": "without-skill", "nach": "not-contains", "art": "fluss"}, {"von": "ast-assertions", "nach": "benchmark-json", "art": "fluss"}, {"von": "not-contains", "nach": "timing-json", "art": "fluss"}, {"von": "grading", "nach": "eval-review-html", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#b45309", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
   var buehne = document.getElementById("buehne");
   if (typeof THREE === "undefined"){
     buehne.insertAdjacentHTML("beforeend",
-      '<div class="fehler">three.js konnte nicht geladen werden. ' +
-      'Die Seite braucht einmalig Netzzugang zum CDN.</div>');
+      \'<div class="fehler">three.js konnte nicht geladen werden. \' +
+      \'Die Seite braucht einmalig Netzzugang zum CDN.</div>\');
     return;
   }
 
@@ -251,9 +251,9 @@ CSS_END
   var leg = document.getElementById("legende");
   (SPEC.kantenarten || []).forEach(function(a){
     var s = document.createElement("span");
-    s.innerHTML = '<i class="strich" style="border-top-color:' + a.farbe +
-                  ';border-top-style:' + (a.stil === "gestrichelt" ? "dashed" : "solid") +
-                  '"></i>' + a.text;
+    s.innerHTML = \'<i class="strich" style="border-top-color:\' + a.farbe +
+                  \';border-top-style:\' + (a.stil === "gestrichelt" ? "dashed" : "solid") +
+                  \'"></i>\' + a.text;
     leg.appendChild(s);
   });
 
@@ -351,7 +351,8 @@ CSS_END
     renderer.render(szene, kamera);
   })();
 })();
-JS_END
+}
+    ';
     push @html, '</script>';
     push @html, '</body>';
     push @html, '</html>';

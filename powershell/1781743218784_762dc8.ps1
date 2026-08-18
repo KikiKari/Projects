@@ -1,16 +1,20 @@
 #!/usr/bin/env pwsh
-# 1781743218784.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_762dc8.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_762dc8.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 <#
 .SYNOPSIS
 Generiert die HTML-Datei für das Secret-Vault Public Tool.
+
 .DESCRIPTION
-Dieses Skript erzeugt eine eigenständige HTML-Datei für das Secret-Vault Public Tool,
-das vollständig clientseitig im Browser läuft und auf WebCrypto-API basiert.
+Dieses Skript generiert eine eigenständige HTML-Datei für das Secret-Vault Public Tool.
+Das Tool ermöglicht die clientseitige Verschlüsselung und Entschlüsselung von Secrets
+im Browser mittels WebCrypto-API (AES-256-GCM + PBKDF2).
+
 .PARAMETER OutputFile
-Der Pfad zur zu erstellenden HTML-Ausgabedatei.
+Pfad zur zu erstellenden HTML-Ausgabedatei.
+
 .EXAMPLE
 .\script.ps1 .\vault.html
 #>
@@ -27,11 +31,11 @@ function Generate-Html {
 
     # Metadaten des Artefakts
     $artifactMeta = @{
-        name = "Secret Vault Public"
-        schemaVersion = 1
-        description = "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet."
-        mcpTools = @()
-        mcpServerNames = @()
+        "name" = "Secret Vault Public"
+        "schemaVersion" = 1
+        "description" = "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet."
+        "mcpTools" = @()
+        "mcpServerNames" = @()
     }
 
     # HTML-Template mit eingebetteten Styles und JavaScript
@@ -238,7 +242,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 "@
 
     # Schreibe die HTML-Datei
-    Set-Content -Path $outputFile -Value $htmlContent -Encoding Utf8
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+    
     Write-Host "HTML-Datei erfolgreich generiert: $outputFile"
 }
 

@@ -1,31 +1,21 @@
 #!/usr/bin/env node
-// 1781743218784.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-/**
- * Generiert die HTML-Datei für das Secret-Vault Public Tool.
- */
+// 1781743218784_762dc8.ps1 — portiert nach javascript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_762dc8.ps1
+// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 const path = require('path');
 
 function generateHtml(outputFile) {
-    /**
-     * Generiert die vollständige HTML-Datei für das Secret-Vault Public Tool.
-     * 
-     * @param {string} outputFile - Pfad zur Ausgabedatei
-     */
-    
     // Metadaten des Artefakts
     const artifactMeta = {
-        "name": "Secret Vault Public",
-        "schemaVersion": 1,
-        "description": "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
-        "mcpTools": [],
-        "mcpServerNames": []
+        name: "Secret Vault Public",
+        schemaVersion: 1,
+        description: "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
+        mcpTools: [],
+        mcpServerNames: []
     };
-    
+
     // HTML-Template mit eingebetteten Styles und JavaScript
     const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -226,24 +216,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>`;
-    
+
     // Schreibe die HTML-Datei
-    fs.writeFileSync(outputFile, htmlContent, 'utf-8');
-    
+    fs.writeFileSync(outputFile, htmlContent, 'utf8');
     console.log(`HTML-Datei erfolgreich generiert: ${outputFile}`);
 }
 
-function main() {
-    /** Hauptfunktion */
+// Hauptfunktion
+if (require.main === module) {
     if (process.argv.length !== 3) {
-        console.log("Verwendung: node script.js <ausgabedatei.html>");
+        console.error('Verwendung: node script.js <Ausgabedatei>');
         process.exit(1);
     }
     
     const outputFile = process.argv[2];
     generateHtml(outputFile);
-}
-
-if (require.main === module) {
-    main();
 }

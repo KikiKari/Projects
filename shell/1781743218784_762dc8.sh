@@ -1,12 +1,12 @@
 #!/bin/bash
-# 1781743218784.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_762dc8.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_762dc8.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.html — portiert nach bash
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# 1781743218784.py — portiert nach bash
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_762dc8.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # Generiert die HTML-Datei für das Secret-Vault Public Tool.
@@ -28,9 +28,7 @@ generate_html() {
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 EOF
-    
     echo "$artifact_meta" >> "$output_file"
-    
     cat >> "$output_file" << 'EOF'
 </script>
 <html lang="de">
@@ -234,7 +232,8 @@ EOF
 }
 
 main() {
-    if [ $# -ne 1 ]; then
+    # Hauptfunktion
+    if [[ $# -ne 1 ]]; then
         echo "Verwendung: $0 <ausgabedatei.html>"
         exit 1
     fi

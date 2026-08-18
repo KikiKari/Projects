@@ -1,12 +1,22 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
 # 3d_053a4a.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 3d_053a4a.tcl — portiert von javascript
 # Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
+# Prüfen ob Ausgabedatei angegeben ist
+if {$argc != 1} {
+    puts stderr "Verwendung: [info script] <ausgabedatei>"
+    exit 1
+}
 
-proc generateHTML {} {
-    set html {<!DOCTYPE html>
+set ausgabe_datei [lindex $argv 0]
+
+# HTML-Inhalt generieren
+set htmlContent {<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -327,30 +337,10 @@ proc generateHTML {} {
 </script>
 </body>
 </html>}
-    
-    return $html
-}
 
-proc main {} {
-    global argv
-    
-    if {[llength $argv] != 1} {
-        puts stderr "Usage: tclsh 3d.tcl <output-file>"
-        exit 1
-    }
-    
-    set outputFile [lindex $argv 0]
-    
-    try {
-        set htmlContent [generateHTML]
-        set fileId [open $outputFile "w"]
-        puts -nonewline $fileId $htmlContent
-        close $fileId
-        puts "HTML file generated successfully: $outputFile"
-    } on error {error} {
-        puts stderr "Error generating HTML file: $error"
-        exit 1
-    }
-}
+# HTML-Datei schreiben
+set fh [open $ausgabe_datei w]
+puts -nonewline $fh $htmlContent
+close $fh
 
-main
+puts "HTML-Datei wurde erfolgreich erstellt: $ausgabe_datei"

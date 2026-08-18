@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-# 1781743218784.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_526e72.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-import argparse
 import sys
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('OutputPath', help='The path where to save the HTML file')
-    args = parser.parse_args()
+# 1781743218784.html — portiert nach powershell
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-    html_content = '''<!DOCTYPE html>
+if len(sys.argv) != 2:
+    print(f"Usage: {sys.argv[0]} <output_path>")
+    sys.exit(1)
+
+output_path = sys.argv[1]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -215,15 +219,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-    try:
-        with open(args.OutputPath, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print(f"Error writing file: {e}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+with open(output_path, 'w', encoding='utf-8') as fh:
+    fh.write(html_content)

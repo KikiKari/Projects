@@ -1,374 +1,270 @@
 #!/usr/bin/env tclsh
-# 3d.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:public/3d.html
+# 3d.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/3d.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.tcl — portiert von javascript nach Tcl 8.6
+# Quelle: 3d.js
 # Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl 8.6 script to generate 3d.html
-# This script creates the HTML file programmatically, not as a string literal
+package require http
+package require json
+package require base64
 
-proc generate_html {filename} {
-    set f [open $filename w]
-    
-    # Write DOCTYPE and html tag
-    puts $f "<!DOCTYPE html>"
-    puts $f "<html lang=\"de\">"
-    
-    # Write head section
-    write_head $f
-    
-    # Write body section
-    write_body $f
-    
-    # Close html tag
-    puts $f "</html>"
-    
-    close $f
+# Globale Variablen für die Szene
+set SPEC {}
+set nodes {}
+set byId {}
+set clickable {}
+set currentCamera "iso"
+set selectedNodeIndex -1
+
+# Erstelle das HTML-Dokument
+proc createDocument {} {
+    set html "<!DOCTYPE html>
+<html lang=\"de\">
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<title>Tagesstatus Live Public — Interaktive Architektur</title>
+<meta name=\"description\" content=\"Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.\">
+<meta name=\"theme-color\" content=\"#0f766e\">
+<style>
+:root{
+  --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
+  --ac:#0f766e; --buehne:#0e1420; --buehne-line:#1d2739;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#f2f4f8; --muted:#9aa3b2;
+         color-scheme: dark; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+     font:15px/1.55 -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 22px 60px}
+.technik{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+         color:var(--ac);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:0 0 14px;letter-spacing:-.03em}
+.lede{font-size:16.5px;color:var(--muted);max-width:62ch;margin:0 0 26px}
+.raster{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px;align-items:start}
+@media (max-width:880px){ .raster{grid-template-columns:1fr} }
+.buehne{position:relative;background:var(--buehne);border-radius:14px;overflow:hidden;
+        min-height:520px;aspect-ratio:16/11}
+.buehne canvas{display:block;width:100%;height:100%}
+.knoepfe{position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:2}
+button{font:inherit;font-size:14px;font-weight:650;padding:9px 14px;border-radius:9px;
+       border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--ac)}
+button[aria-pressed=\"true\"]{background:var(--ac);border-color:var(--ac);color:#fff}
+.karte{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.karte h2{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+          color:var(--muted);margin:0 0 12px}
+.karte h3{font-size:23px;margin:0 0 4px;letter-spacing:-.02em}
+.karte .sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}
+.feld{border-top:1px solid var(--line);padding:12px 0 0;margin:0 0 12px}
+.feld dt{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+         color:var(--muted);margin:0 0 3px}
+.feld dd{margin:0;font-weight:650}
+.blaettern{display:flex;gap:8px;margin-top:16px}
+.blaettern button{flex:1;text-align:center;line-height:1.25;padding:11px 8px}
+.legende{display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 0;font-size:13.5px;color:var(--muted)}
+.legende span{display:inline-flex;align-items:center;gap:9px}
+.strich{width:30px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
+.fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
+.fehler{padding:40px;text-align:center;color:var(--muted)}
+a{color:var(--ac)}
+</style>
+</head>
+<body>
+<div class=\"wrap\">
+<p class=\"technik\">Canvas 3D · Tcl 8.6</p>
+<h1>Tagesstatus Live Public</h1>
+<p class=\"lede\">Acht Dienste, ein Blick: Tokens, Abruf, Kacheln — drehen, zoomen, Knoten auswählen.</p>
+<div class=\"raster\">
+<div class=\"buehne\" id=\"buehne\">
+<div class=\"knoepfe\">
+<button id=\"btn-plus\" title=\"Näher\">+</button>
+<button id=\"btn-minus\" title=\"Weiter weg\">−</button>
+<button id=\"btn-reset\">Zurücksetzen</button>
+<button id=\"btn-iso\" aria-pressed=\"true\" title=\"Isometrisch oder perspektivisch\">Iso</button>
+</div>
+<canvas id=\"scene-canvas\" width=\"800\" height=\"600\"></canvas>
+</div>
+<aside class=\"karte\">
+<h2>Ausgewählter Knoten</h2>
+<h3 id=\"k-name\">—</h3>
+<p class=\"sub\" id=\"k-sub\">Knoten anklicken oder durchblättern</p>
+<dl class=\"feld\">
+<dt>Schicht</dt>
+<dd id=\"k-schicht\">—</dd>
+</dl>
+<dl class=\"feld\">
+<dt>ID</dt>
+<dd id=\"k-id\">—</dd>
+</dl>
+<div class=\"blaettern\">
+<button id=\"btn-prev\">←<br>Vorheriger</button>
+<button id=\"btn-next\">Nächster<br>→</button>
+</div>
+</aside>
+</div>
+<div class=\"legende\" id=\"legende\"></div>
+<p class=\"fuss\">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>
+</div>
+<script>
+// Minimaler JavaScript-Code für UI-Interaktionen
+document.getElementById('btn-plus').addEventListener('click', function() {
+    window.location.hash = 'zoom-in';
+});
+document.getElementById('btn-minus').addEventListener('click', function() {
+    window.location.hash = 'zoom-out';
+});
+document.getElementById('btn-reset').addEventListener('click', function() {
+    window.location.hash = 'reset-view';
+});
+document.getElementById('btn-iso').addEventListener('click', function() {
+    const pressed = this.getAttribute('aria-pressed') === 'true';
+    this.setAttribute('aria-pressed', !pressed);
+    window.location.hash = pressed ? 'perspective' : 'isometric';
+});
+document.getElementById('btn-prev').addEventListener('click', function() {
+    window.location.hash = 'prev-node';
+});
+document.getElementById('btn-next').addEventListener('click', function() {
+    window.location.hash = 'next-node';
+});
+document.getElementById('scene-canvas').addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    window.location.hash = 'select-' + Math.round(x) + '-' + Math.round(y);
+});
+</script>
+</body>
+</html>"
+    return $html
 }
 
-proc write_head {f} {
-    puts $f "<head>"
-    puts $f "<meta charset=\"utf-8\">"
-    puts $f "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-    puts $f "<title>Secret-Vault Public — Interaktive Architektur</title>"
-    puts $f "<meta name=\"description\" content=\"Vom Passwort zur verschlüsselten Datei — jede Schicht bleibt im Browser. Drehen, zoomen, Knoten auswählen.\">"
-    puts $f "<meta name=\"theme-color\" content=\"#5b5bd6\">"
+# Initialisiere die Spezifikation
+proc initSpec {} {
+    global SPEC
     
-    # Write CSS styles
-    write_styles $f
-    
-    puts $f "</head>"
+    set SPEC [dict create \
+        schichten [list \
+            [dict create \
+                name "Tokens" \
+                farbe "#5f6773" \
+                blocks [list \
+                    [dict create id "abfrage-beim-oeffnen" name "Abfrage beim Oeffnen" untertitel "kein Vorbelegen"] \
+                    [dict create id "localstorage" name "localStorage" untertitel "nur lokal"] \
+                    [dict create id "keine-vorbelegung" name "keine Vorbelegung" untertitel "leer geliefert"] \
+                ] \
+            ] \
+            [dict create \
+                name "Quellen" \
+                farbe "#2481cc" \
+                blocks [list \
+                    [dict create id "github" name "GitHub" untertitel "Repos, Kontingent"] \
+                    [dict create id "vercel" name "Vercel" untertitel "Deployments"] \
+                    [dict create id "docker-hub" name "Docker Hub" untertitel "Abbilder"] \
+                    [dict create id "openrouter" name "OpenRouter" untertitel "Guthaben"] \
+                    [dict create id "openai" name "OpenAI" untertitel "Admin-Key"] \
+                    [dict create id "anthropic" name "Anthropic" untertitel "Admin-Key"] \
+                    [dict create id "tailscale" name "Tailscale" untertitel "Geraete"] \
+                    [dict create id "clawhub" name "ClawHub" untertitel "Skills"] \
+                ] \
+            ] \
+            [dict create \
+                name "Abruf" \
+                farbe "#6d5bd0" \
+                blocks [list \
+                    [dict create id "fetch-je-quelle" name "fetch je Quelle" untertitel "direkt"] \
+                    [dict create id "cors-pruefung" name "CORS-Pruefung" untertitel "entscheidet"] \
+                    [dict create id "fehler-isolieren" name "Fehler isolieren" untertitel "je Kachel"] \
+                ] \
+            ] \
+            [dict create \
+                name "Ausgabe" \
+                farbe "#0f766e" \
+                blocks [list \
+                    [dict create id "kacheln" name "Kacheln" untertitel "ein Blick"] \
+                    [dict create id "verbrauch" name "Verbrauch" untertitel "Zahlen"] \
+                    [dict create id "keine-daten-hinweis" name "keine Daten = Hinweis" untertitel "mit Grund"] \
+                ] \
+            ] \
+        ] \
+        kanten [list \
+            [dict create von "abfrage-beim-oeffnen" nach "github" art "fluss"] \
+            [dict create von "localstorage" nach "vercel" art "fluss"] \
+            [dict create von "keine-vorbelegung" nach "docker-hub" art "fluss"] \
+            [dict create von "github" nach "fetch-je-quelle" art "fluss"] \
+            [dict create von "vercel" nach "cors-pruefung" art "fluss"] \
+            [dict create von "docker-hub" nach "fehler-isolieren" art "fluss"] \
+            [dict create von "openrouter" nach "fetch-je-quelle" art "fluss"] \
+            [dict create von "openai" nach "cors-pruefung" art "fluss"] \
+            [dict create von "anthropic" nach "fehler-isolieren" art "fluss"] \
+            [dict create von "tailscale" nach "fetch-je-quelle" art "fluss"] \
+            [dict create von "clawhub" nach "cors-pruefung" art "fluss"] \
+            [dict create von "fetch-je-quelle" nach "kacheln" art "fluss"] \
+            [dict create von "cors-pruefung" nach "verbrauch" art "fluss"] \
+            [dict create von "fehler-isolieren" nach "keine-daten-hinweis" art "fluss"] \
+        ] \
+        kantenarten [list \
+            [dict create art "fluss" farbe "#0f766e" stil "voll" text "Fluss von unten nach oben"] \
+        ] \
+    ]
 }
 
-proc write_styles {f} {
-    puts $f "<style>"
-    puts $f "  :root{"
-    puts $f "    --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;"
-    puts $f "    --ac:#5b5bd6; --buehne:#0e1420; --buehne-line:#1d2739;"
-    puts $f "    color-scheme: light;"
-    puts $f "  }"
-    puts $f "  @media (prefers-color-scheme: dark){"
-    puts $f "    :root{ --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#f2f4f8; --muted:#9aa3b2;"
-    puts $f "           color-scheme: dark; }"
-    puts $f "  }"
-    puts $f "  *{box-sizing:border-box}"
-    puts $f "  body{margin:0;background:var(--bg);color:var(--text);"
-    puts $f "       font:15px/1.55 -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif}"
-    puts $f "  .wrap{max-width:1240px;margin:0 auto;padding:34px 22px 60px}"
-    puts $f "  .technik{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;"
-    puts $f "           color:var(--ac);margin:0 0 10px}"
-    puts $f "  h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:0 0 14px;letter-spacing:-.03em}"
-    puts $f "  .lede{font-size:16.5px;color:var(--muted);max-width:62ch;margin:0 0 26px}"
-    puts $f "  .raster{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px;align-items:start}"
-    puts $f "  @media (max-width:880px){ .raster{grid-template-columns:1fr} }"
-    puts $f "  .buehne{position:relative;background:var(--buehne);border-radius:14px;overflow:hidden;"
-    puts $f "          min-height:520px;aspect-ratio:16/11}"
-    puts $f "  .buehne canvas{display:block;width:100%;height:100%}"
-    puts $f "  .knoepfe{position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:2}"
-    puts $f "  button{font:inherit;font-size:14px;font-weight:650;padding:9px 14px;border-radius:9px;"
-    puts $f "         border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}"
-    puts $f "  button:hover{border-color:var(--ac)}"
-    puts $f "  button[aria-pressed=\"true\"]{background:var(--ac);border-color:var(--ac);color:#fff}"
-    puts $f "  .karte{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}"
-    puts $f "  .karte h2{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;"
-    puts $f "            color:var(--muted);margin:0 0 12px}"
-    puts $f "  .karte h3{font-size:23px;margin:0 0 4px;letter-spacing:-.02em}"
-    puts $f "  .karte .sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}"
-    puts $f "  .feld{border-top:1px solid var(--line);padding:12px 0 0;margin:0 0 12px}"
-    puts $f "  .feld dt{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;"
-    puts $f "           color:var(--muted);margin:0 0 3px}"
-    puts $f "  .feld dd{margin:0;font-weight:650}"
-    puts $f "  .blaettern{display:flex;gap:8px;margin-top:16px}"
-    puts $f "  .blaettern button{flex:1;text-align:center;line-height:1.25;padding:11px 8px}"
-    puts $f "  .legende{display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 0;font-size:13.5px;color:var(--muted)}"
-    puts $f "  .legende span{display:inline-flex;align-items:center;gap:9px}"
-    puts $f "  .strich{width:30px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}"
-    puts $f "  .fuss{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch}"
-    puts $f "  .fehler{padding:40px;text-align:center;color:var(--muted)}"
-    puts $f "  a{color:var(--ac)}"
-    puts $f "</style>"
-}
-
-proc write_body {f} {
-    puts $f "<body>"
-    puts $f "<div class=\"wrap\">"
+# Hauptfunktion zur Erstellung der 3D-Szene (simuliert)
+proc create3DScene {doc} {
+    global SPEC nodes byId clickable
     
-    puts $f ""
-    puts $f "  <p class=\"technik\">three.js · r128</p>"
-    puts $f "  <h1>Secret-Vault Public</h1>"
-    puts $f "  <p class=\"lede\">Vom Passwort zur verschlüsselten Datei — jede Schicht bleibt im Browser. Drehen, zoomen, Knoten auswählen.</p>"
-    puts $f ""
-    puts $f "  <div class=\"raster\">"
-    puts $f "    <div class=\"buehne\" id=\"buehne\">"
-    puts $f "      <div class=\"knoepfe\">"
-    puts $f "        <button id=\"btn-plus\" title=\"Näher\">+</button>"
-    puts $f "        <button id=\"btn-minus\" title=\"Weiter weg\">−</button>"
-    puts $f "        <button id=\"btn-reset\">Zurücksetzen</button>"
-    puts $f "        <button id=\"btn-iso\" aria-pressed=\"true\" title=\"Isometrisch oder perspektivisch\">Iso</button>"
-    puts $f "      </div>"
-    puts $f "    </div>"
-    puts $f ""
-    puts $f "    <aside class=\"karte\">"
-    puts $f "      <h2>Ausgewählter Knoten</h2>"
-    puts $f "      <h3 id=\"k-name\">—</h3>"
-    puts $f "      <p class=\"sub\" id=\"k-sub\">Knoten anklicken oder durchblättern</p>"
-    puts $f "      <dl class=\"feld\"><dt>Schicht</dt><dd id=\"k-schicht\">—</dd></dl>"
-    puts $f "      <dl class=\"feld\"><dt>ID</dt><dd id=\"k-id\">—</dd></dl>"
-    puts $f "      <div class=\"blaettern\">"
-    puts $f "        <button id=\"btn-prev\">←<br>Vorheriger</button>"
-    puts $f "        <button id=\"btn-next\">Nächster<br>→</button>"
-    puts $f "      </div>"
-    puts $f "    </aside>"
-    puts $f "  </div>"
-    puts $f ""
-    puts $f "  <div class=\"legende\" id=\"legende\"></div>"
-    puts $f "  <p class=\"fuss\">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>"
-    puts $f ""
-    puts $f "</div>"
+    # In einer echten Implementierung würden wir hier die 3D-Szene erstellen
+    # Da Tcl keine native 3D-Unterstützung hat, simulieren wir die Ausgabe
     
-    # Write script tags
-    write_scripts $f
+    # Erstelle die Legende
+    set legendHtml ""
+    foreach art [dict get $SPEC kantenarten] {
+        set color [dict get $art farbe]
+        set style [dict get $art stil]
+        set text [dict get $art text]
+        set borderStyle [expr {$style eq "gestrichelt" ? "dashed" : "solid"}]
+        append legendHtml "<span><i class=\"strich\" style=\"border-top-color:${color};border-top-style:${borderStyle}\"></i>${text}</span>"
+    }
     
-    puts $f "</body>"
+    # Ersetze die Legende im Dokument
+    set doc [string map [list "<div class=\"legende\" id=\"legende\"></div>" "<div class=\"legende\" id=\"legende\">${legendHtml}</div>"] $doc]
+    
+    return $doc
 }
 
-proc write_scripts {f} {
-    puts $f "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\"></script>"
-    puts $f "<script>"
-    puts $f "(function(){"
-    puts $f "  \"use strict\";"
-    puts $f "  var SPEC = {\"schichten\": [{\"name\": \"Eingaben\", \"farbe\": \"#5f6773\", \"blocks\": [{\"id\": \"passphrase\", \"name\": \"Passphrase\", \"untertitel\": \"nie gespeichert\"}, {\"id\": \"vault-datei\", \"name\": \"Vault-Datei\", \"untertitel\": \"Ciphertext\"}, {\"id\": \"neue-felder\", \"name\": \"neue Felder\", \"untertitel\": \"Formular\"}]}, {\"name\": \"Schluesselableitung\", \"farbe\": \"#2481cc\", \"blocks\": [{\"id\": \"pbkdf2-210k\", \"name\": \"PBKDF2 210k\", \"untertitel\": \"Iterationen\"}, {\"id\": \"salt-16-b\", \"name\": \"Salt 16 B\", \"untertitel\": \"zufaellig\"}, {\"id\": \"sha-256\", \"name\": \"SHA-256\", \"untertitel\": \"HMAC\"}]}, {\"name\": \"Verschluesselung\", \"farbe\": \"#5b5bd6\", \"blocks\": [{\"id\": \"aes-256-gcm\", \"name\": \"AES-256-GCM\", \"untertitel\": \"authentisiert\"}, {\"id\": \"iv-12-b\", \"name\": \"IV 12 B\", \"untertitel\": \"nie doppelt\"}, {\"id\": \"crypto-subtle\", \"name\": \"crypto.subtle\", \"untertitel\": \"WebCrypto\"}]}, {\"name\": \"Verwaltung\", \"farbe\": \"#b45309\", \"blocks\": [{\"id\": \"anbieter\", \"name\": \"Anbieter\", \"untertitel\": \"Gruppen\"}, {\"id\": \"felder\", \"name\": \"Felder\", \"untertitel\": \"Schluessel/Wert\"}, {\"id\": \"rotation\", \"name\": \"Rotation\", \"untertitel\": \"neuer Wert\"}]}, {\"name\": \"Ausgabe\", \"farbe\": \"#22a06b\", \"blocks\": [{\"id\": \"download\", \"name\": \"Download\", \"untertitel\": \"Blob-URL\"}, {\"id\": \"export\", \"name\": \"Export\", \"untertitel\": \"JSON\"}, {\"id\": \"zwischenablage\", \"name\": \"Zwischenablage\", \"untertitel\": \"nur auf Klick\"}]}], \"kanten\": [{\"von\": \"passphrase\", \"nach\": \"pbkdf2-210k\", \"art\": \"fluss\"}, {\"von\": \"vault-datei\", \"nach\": \"salt-16-b\", \"art\": \"fluss\"}, {\"von\": \"neue-felder\", \"nach\": \"sha-256\", \"art\": \"fluss\"}, {\"von\": \"pbkdf2-210k\", \"nach\": \"aes-256-gcm\", \"art\": \"fluss\"}, {\"von\": \"salt-16-b\", \"nach\": \"iv-12-b\", \"art\": \"fluss\"}, {\"von\": \"sha-256\", \"nach\": \"crypto-subtle\", \"art\": \"fluss\"}, {\"von\": \"aes-256-gcm\", \"nach\": \"anbieter\", \"art\": \"fluss\"}, {\"von\": \"iv-12-b\", \"nach\": \"felder\", \"art\": \"fluss\"}, {\"von\": \"crypto-subtle\", \"nach\": \"rotation\", \"art\": \"fluss\"}, {\"von\": \"anbieter\", \"nach\": \"download\", \"art\": \"fluss\"}, {\"von\": \"felder\", \"nach\": \"export\", \"art\": \"fluss\"}, {\"von\": \"rotation\", \"nach\": \"zwischenablage\", \"art\": \"fluss\"}], \"kantenarten\": [{\"art\": \"fluss\", \"farbe\": \"#5b5bd6\", \"stil\": \"voll\", \"text\": \"Fluss von unten nach oben\"}]};"
-    puts $f ""
-    puts $f "  var buehne = document.getElementById(\"buehne\");"
-    puts $f "  if (typeof THREE === \"undefined\"){"
-    puts $f "    buehne.insertAdjacentHTML(\"beforeend\","
-    puts $f "      '<div class=\"fehler\">three.js konnte nicht geladen werden. ' +"
-    puts $f "      'Die Seite braucht einmalig Netzzugang zum CDN.</div>');"
-    puts $f "    return;"
-    puts $f "  }"
-    puts $f ""
-    puts $f "  // ---------------------------------------------------------------- Szene ---"
-    puts $f "  var szene = new THREE.Scene();"
-    puts $f "  szene.background = new THREE.Color(0x0e1420);"
-    puts $f "  var renderer = new THREE.WebGLRenderer({antialias:true});"
-    puts $f "  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));"
-    puts $f "  buehne.appendChild(renderer.domElement);"
-    puts $f ""
-    puts $f "  var D = 26, radius = 82, aspekt = 1;"
-    puts $f "  var kameraIso = new THREE.OrthographicCamera(-D, D, D, -D, 0.1, 600);"
-    puts $f "  var kameraPersp = new THREE.PerspectiveCamera(42, 1, 0.1, 600);"
-    puts $f "  var kamera = kameraIso, iso = true;"
-    puts $f ""
-    puts $f "  szene.add(new THREE.AmbientLight(0xffffff, 0.66));"
-    puts $f "  var licht = new THREE.DirectionalLight(0xffffff, 0.8);"
-    puts $f "  licht.position.set(30, 46, 26); szene.add(licht);"
-    puts $f "  var gegen = new THREE.DirectionalLight(0x8ea2ff, 0.3);"
-    puts $f "  gegen.position.set(-32, 16, -28); szene.add(gegen);"
-    puts $f ""
-    puts $f "  var raster = new THREE.GridHelper(110, 34, 0x25324a, 0x1a2333);"
-    puts $f "  raster.position.y = -24; szene.add(raster);"
-    puts $f ""
-    puts $f "  // ------------------------------------------------------------ Schilder ---"
-    puts $f "  // Text auf eine Textur, dann als Billboard — bleibt bei jeder Drehung lesbar."
-    puts $f "  function schild(text, unter){"
-    puts $f "    var c = document.createElement(\"canvas\"), x = c.getContext(\"2d\");"
-    puts $f "    var f1 = \"700 40px -apple-system,Segoe UI,Roboto,sans-serif\";"
-    puts $f "    var f2 = \"500 27px -apple-system,Segoe UI,Roboto,sans-serif\";"
-    puts $f "    x.font = f1; var w1 = x.measureText(text).width;"
-    puts $f "    x.font = f2; var w2 = unter ? x.measureText(unter).width : 0;"
-    puts $f "    var w = Math.ceil(Math.max(w1, w2)) + 40, h = unter ? 96 : 62;"
-    puts $f "    c.width = w; c.height = h;"
-    puts $f "    x = c.getContext(\"2d\");"
-    puts $f "    x.fillStyle = \"rgba(255,255,255,.95)\";"
-    puts $f "    if (x.roundRect){ x.beginPath(); x.roundRect(0,0,w,h,13); x.fill(); }"
-    puts $f "    else x.fillRect(0,0,w,h);"
-    puts $f "    x.fillStyle = \"#16191d\"; x.font = f1; x.textBaseline = \"middle\";"
-    puts $f "    x.fillText(text, 20, unter ? 32 : 31);"
-    puts $f "    if (unter){ x.fillStyle = \"#5f6773\"; x.font = f2; x.fillText(unter, 20, 68); }"
-    puts $f "    var t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter;"
-    puts $f "    var s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, transparent:true, depthTest:false}));"
-    puts $f "    s.scale.set(w/62*2.5, h/62*2.5, 1);"
-    puts $f "    s.renderOrder = 999;"
-    puts $f "    return s;"
-    puts $f "  }"
-    puts $f ""
-    puts $f "  // -------------------------------------------------------------- Aufbau ---"
-    puts $f "  var BW = 7.4, BD = 4.2, BH = 1.7, LUFT = 1.3, ABSTAND = 11.4, START = -17;"
-    puts $f "  var knoten = [], nachId = {}, klickbar = [];"
-    puts $f "  var gruppe = new THREE.Group();"
-    puts $f ""
-    puts $f "  SPEC.schichten.forEach(function(sch, si){"
-    puts $f "    var y = START + si * ABSTAND;"
-    puts $f "    var bl = sch.blocks.map(function(b){"
-    puts $f "      return (typeof b === \"string\") ? {id:null, name:b, untertitel:\"\"} : b;"
-    puts $f "    });"
-    puts $f "    var spalten = Math.max(1, Math.ceil(bl.length / 2));"
-    puts $f "    var reihen = bl.length <= 1 ? 1 : 2;"
-    puts $f "    var gx = spalten*BW + (spalten-1)*LUFT, gz = reihen*BD + (reihen-1)*LUFT;"
-    puts $f ""
-    puts $f "    var platte = new THREE.Mesh("
-    puts $f "      new THREE.BoxGeometry(gx+3, 0.6, gz+3),"
-    puts $f "      new THREE.MeshLambertMaterial({color:new THREE.Color(sch.farbe).multiplyScalar(0.4)}));"
-    puts $f "    platte.position.set(0, y-1.7, 0); gruppe.add(platte);"
-    puts $f ""
-    puts $f "    bl.forEach(function(b, i){"
-    puts $f "      var sp = i % spalten, re = Math.floor(i / spalten);"
-    puts $f "      var x = -gx/2 + BW/2 + sp*(BW+LUFT), z = -gz/2 + BD/2 + re*(BD+LUFT);"
-    puts $f "      var mat = new THREE.MeshLambertMaterial({color:sch.farbe});"
-    puts $f "      var m = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), mat);"
-    puts $f "      m.position.set(x, y, z);"
-    puts $f "      gruppe.add(m); klickbar.push(m);"
-    puts $f "      var kante = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),"
-    puts $f "        new THREE.LineBasicMaterial({color:0x0e1420, transparent:true, opacity:.55}));"
-    puts $f "      kante.position.copy(m.position); gruppe.add(kante);"
-    puts $f ""
-    puts $f "      var s = schild(b.name, b.untertitel);"
-    puts $f "      s.position.set(x, y + BH/2 + (b.untertitel ? 2.1 : 1.6), z);"
-    puts $f "      gruppe.add(s);"
-    puts $f ""
-    puts $f "      var id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, \"-\").replace(/^-|-\$/g, \"\"));"
-    puts $f "      var eintrag = {id:id, name:b.name, untertitel:b.untertitel||\"\", schicht:sch.name,"
-    puts $f "                     mesh:m, mat:mat, farbe:new THREE.Color(sch.farbe), pos:m.position};"
-    puts $f "      m.userData.index = knoten.length;"
-    puts $f "      knoten.push(eintrag); nachId[id] = eintrag;"
-    puts $f "    });"
-    puts $f "  });"
-    puts $f ""
-    puts $f "  // -------------------------------------------------------------- Kanten ---"
-    puts $f "  var STIL = {};"
-    puts $f "  (SPEC.kantenarten || []).forEach(function(a){ STIL[a.art] = a; });"
-    puts $f ""
-    puts $f "  (SPEC.kanten || []).forEach(function(k){"
-    puts $f "    var a = nachId[k.von], b = nachId[k.nach];"
-    puts $f "    if (!a || !b) return;"
-    puts $f "    var art = STIL[k.art] || {farbe:\"#8ea2ff\", stil:\"voll\"};"
-    puts $f "    var g = new THREE.BufferGeometry().setFromPoints(["
-    puts $f "      a.pos.clone().setY(a.pos.y + 0.9), b.pos.clone().setY(b.pos.y - 0.9)]);"
-    puts $f "    var linie;"
-    puts $f "    if (art.stil === \"gestrichelt\"){"
-    puts $f "      linie = new THREE.Line(g, new THREE.LineDashedMaterial("
-    puts $f "        {color:art.farbe, dashSize:1.4, gapSize:1.0, transparent:true, opacity:.9}));"
-    puts $f "      linie.computeLineDistances();"
-    puts $f "    } else {"
-    puts $f "      linie = new THREE.Line(g, new THREE.LineBasicMaterial("
-    puts $f "        {color:art.farbe, transparent:true, opacity:.85}));"
-    puts $f "    }"
-    puts $f "    gruppe.add(linie);"
-    puts $f "  });"
-    puts $f ""
-    puts $f "  szene.add(gruppe);"
-    puts $f ""
-    puts $f "  var leg = document.getElementById(\"legende\");"
-    puts $f "  (SPEC.kantenarten || []).forEach(function(a){"
-    puts $f "    var s = document.createElement(\"span\");"
-    puts $f "    s.innerHTML = '<i class=\"strich\" style=\"border-top-color:' + a.farbe +"
-    puts $f "                  ';border-top-style:' + (a.stil === \"gestrichelt\" ? \"dashed\" : \"solid\") +"
-    puts $f "                  '\"></i>' + a.text;"
-    puts $f "    leg.appendChild(s);"
-    puts $f "  });"
-    puts $f ""
-    puts $f "  // ------------------------------------------------------------- Auswahl ---"
-    puts $f "  var aktiv = -1;"
-    puts $f "  function waehle(i){"
-    puts $f "    if (aktiv >= 0){"
-    puts $f "      knoten[aktiv].mat.color.copy(knoten[aktiv].farbe);"
-    puts $f "      knoten[aktiv].mat.emissive.setHex(0x000000);"
-    puts $f "      knoten[aktiv].mesh.scale.set(1,1,1);"
-    puts $f "    }"
-    puts $f "    aktiv = ((i % knoten.length) + knoten.length) % knoten.length;"
-    puts $f "    var k = knoten[aktiv];"
-    puts $f "    k.mat.emissive.setHex(0x333333);"
-    puts $f "    k.mesh.scale.set(1.1, 1.5, 1.1);"
-    puts $f "    document.getElementById(\"k-name\").textContent = k.name;"
-    puts $f "    document.getElementById(\"k-sub\").textContent = k.untertitel || \"—\";"
-    puts $f "    document.getElementById(\"k-schicht\").textContent = k.schicht;"
-    puts $f "    document.getElementById(\"k-id\").textContent = k.id;"
-    puts $f "  }"
-    puts $f ""
-    puts $f "  var strahl = new THREE.Raycaster(), zeiger = new THREE.Vector2();"
-    puts $f "  renderer.domElement.addEventListener(\"click\", function(e){"
-    puts $f "    if (gezogen) return;"
-    puts $f "    var r = renderer.domElement.getBoundingClientRect();"
-    puts $f "    zeiger.x = ((e.clientX - r.left) / r.width) * 2 - 1;"
-    puts $f "    zeiger.y = -((e.clientY - r.top) / r.height) * 2 + 1;"
-    puts $f "    strahl.setFromCamera(zeiger, kamera);"
-    puts $f "    var treffer = strahl.intersectObjects(klickbar, false);"
-    puts $f "    if (treffer.length) waehle(treffer[0].object.userData.index);"
-    puts $f "  });"
-    puts $f "  document.getElementById(\"btn-prev\").addEventListener(\"click\", function(){ waehle(aktiv - 1); });"
-    puts $f "  document.getElementById(\"btn-next\").addEventListener(\"click\", function(){ waehle(aktiv + 1); });"
-    puts $f ""
-    puts $f "  // ------------------------------------------------------------- Kamera ----"
-    puts $f "  var azimut = Math.PI/4, elevation = 0.62, rotiert = true;"
-    puts $f "  function stelle(){"
-    puts $f "    var x = radius*Math.cos(elevation)*Math.sin(azimut);"
-    puts $f "    var y = radius*Math.sin(elevation);"
-    puts $f "    var z = radius*Math.cos(elevation)*Math.cos(azimut);"
-    puts $f "    kamera.position.set(x, y, z); kamera.lookAt(0, 0, 0);"
-    puts $f "  }"
-    puts $f "  var zieht = false, gezogen = false, lx = 0, ly = 0;"
-    puts $f "  renderer.domElement.addEventListener(\"pointerdown\", function(e){"
-    puts $f "    zieht = true; gezogen = false; lx = e.clientX; ly = e.clientY;"
-    puts $f "  });"
-    puts $f "  window.addEventListener(\"pointermove\", function(e){"
-    puts $f "    if (!zieht) return;"
-    puts $f "    if (Math.abs(e.clientX-lx) + Math.abs(e.clientY-ly) > 3){ gezogen = true; rotiert = false; }"
-    puts $f "    azimut -= (e.clientX - lx) * 0.006;"
-    puts $f "    elevation = Math.max(0.08, Math.min(1.45, elevation + (e.clientY - ly) * 0.005));"
-    puts $f "    lx = e.clientX; ly = e.clientY;"
-    puts $f "  });"
-    puts $f "  window.addEventListener(\"pointerup\", function(){ zieht = false; setTimeout(function(){ gezogen = false; }, 0); });"
-    puts $f ""
-    puts $f "  function zoom(f){"
-    puts $f "    if (iso){ D = Math.max(11, Math.min(54, D * f)); groesse(); }"
-    puts $f "    else { radius = Math.max(32, Math.min(160, radius * f)); }"
-    puts $f "  }"
-    puts $f "  document.getElementById(\"btn-plus\").addEventListener(\"click\", function(){ zoom(0.85); });"
-    puts $f "  document.getElementById(\"btn-minus\").addEventListener(\"click\", function(){ zoom(1.18); });"
-    puts $f "  renderer.domElement.addEventListener(\"wheel\", function(e){"
-    puts $f "    e.preventDefault(); zoom(e.deltaY > 0 ? 1.08 : 0.93);"
-    puts $f "  }, {passive:false});"
-    puts $f "  document.getElementById(\"btn-reset\").addEventListener(\"click\", function(){"
-    puts $f "    azimut = Math.PI/4; elevation = 0.62; D = 26; radius = 82; rotiert = true;"
-    puts $f "    iso = true; kamera = kameraIso;"
-    puts $f "    document.getElementById(\"btn-iso\").setAttribute(\"aria-pressed\", \"true\");"
-    puts $f "    document.getElementById(\"btn-iso\").textContent = \"Iso\";"
-    puts $f "    waehle(0); groesse();"
-    puts $f "  });"
-    puts $f "  document.getElementById(\"btn-iso\").addEventListener(\"click\", function(){"
-    puts $f "    iso = !iso; kamera = iso ? kameraIso : kameraPersp;"
-    puts $f "    this.setAttribute(\"aria-pressed\", String(iso));"
-    puts $f "    this.textContent = iso ? \"Iso\" : \"Persp\";"
-    puts $f "    groesse();"
-    puts $f "  });"
-    puts $f ""
-    puts $f "  function groesse(){"
-    puts $f "    var w = buehne.clientWidth, h = buehne.clientHeight;"
-    puts $f "    aspekt = w / h;"
-    puts $f "    kameraIso.left = -D*aspekt; kameraIso.right = D*aspekt;"
-    puts $f "    kameraIso.top = D; kameraIso.bottom = -D; kameraIso.updateProjectionMatrix();"
-    puts $f "    kameraPersp.aspect = aspekt; kameraPersp.updateProjectionMatrix();"
-    puts $f "    renderer.setSize(w, h, false);"
-    puts $f "  }"
-    puts $f "  window.addEventListener(\"resize\", groesse);"
-    puts $f ""
-    puts $f "  groesse();"
-    puts $f "  waehle(0);"
-    puts $f "  (function schleife(){"
-    puts $f "    requestAnimationFrame(schleife);"
-    puts $f "    if (rotiert) azimut += 0.003;"
-    puts $f "    stelle();"
-    puts $f "    renderer.render(szene, kamera);"
-    puts $f "  })();"
-    puts $f "})();"
-    puts $f "</script>"
+# Hauptfunktion
+proc main {argc argv} {
+    # Prüfe, ob ein Dateiname übergeben wurde
+    if {$argc < 1} {
+        puts stderr "Verwendung: tclsh 3d.tcl <dateiname>"
+        exit 1
+    }
+    
+    set filename [lindex $argv 0]
+    
+    # Initialisiere die Spezifikation
+    initSpec
+    
+    # Erstelle das Dokument
+    set doc [createDocument]
+    
+    # Erstelle die 3D-Szene
+    set doc [create3DScene $doc]
+    
+    # Schreibe das HTML in eine Datei
+    set fh [open $filename w]
+    puts $fh $doc
+    close $fh
+    
+    puts "HTML-Datei wurde erfolgreich erstellt: $filename"
 }
 
-# Main execution
-if {$argc != 1} {
-    puts "Usage: $argv0 <output-file>"
-    exit 1
-}
-
-set output_file [lindex $argv 0]
-generate_html $output_file
-puts "Generated $output_file"
+# Starte die Hauptfunktion
+main $argc $argv

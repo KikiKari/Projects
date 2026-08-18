@@ -1,26 +1,30 @@
-#!/usr/bin/env bash
-# 1781743218784.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784_260531.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
+
+# 1781743218784.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.html — portiert nach tcl
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Bash 5 script to generate the Secret Vault Public HTML file
-# Usage: ./this_script.sh output_file.html
+# Tcl 8.6 script to generate the Secret Vault Public HTML file
+# Usage: tclsh this_script.tcl output_file.html
 
-if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 output_file.html" >&2
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 output_file.html"
     exit 1
 fi
 
-output_file="$1"
+outputFile="$1"
 
 # Write DOCTYPE and main script tag
-cat > "$output_file" << 'EOF'
+cat > "$outputFile" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
@@ -36,7 +40,7 @@ cat > "$output_file" << 'EOF'
 EOF
 
 # Write HTML start and head section
-cat >> "$output_file" << 'EOF'
+cat >> "$outputFile" << 'EOF'
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -73,13 +77,12 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 .hide{display:none;}
 .foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:18px;line-height:1.5;}
 a{color:var(--accent);}
-}
 </style>
 </head>
 EOF
 
 # Write body content
-cat >> "$output_file" << 'EOF'
+cat >> "$outputFile" << 'EOF'
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
@@ -125,8 +128,9 @@ cat >> "$output_file" << 'EOF'
 EOF
 
 # JavaScript section
-cat >> "$output_file" << 'EOF'
+cat >> "$outputFile" << 'EOF'
 <script>
+
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
@@ -139,7 +143,7 @@ const T = {
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
  hEdit:{de:"Inhalt",en:"Content"},
  newProv:{de:"Neuer Anbieter (Name)",en:"New provider (name)"},
- addProv:{de:"+ Anbieter",en:"+ Provider"},
+ addProv:{de:" + Anbieter",en:"+ Provider"},
  hSave:{de:"Speichern / Export",en:"Save / Export"},
  enc:{de:"Verschlüsseln",en:"Encrypt"},
  dl:{de:"Als .svpb herunterladen",en:"Download as .svpb"},
@@ -194,7 +198,7 @@ async function decryptB64(b64,pw){
   const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:raw.slice(21,33)},key,raw.slice(33));
   return JSON.parse(dec.decode(pt));
 }
-function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 function renderEditor(){
   document.getElementById("editor").classList.remove("hide");
@@ -237,14 +241,10 @@ encBtn.onclick=async()=>{
 };
 dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value],{type:"text/plain"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download="vault.svpb"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} };
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
-}
-</script>
-EOF
 
-# Close HTML
-cat >> "$output_file" << 'EOF'
+</script>
 </body>
 </html>
 EOF
 
-echo "HTML file generated: $output_file"
+echo "HTML file generated: $outputFile"

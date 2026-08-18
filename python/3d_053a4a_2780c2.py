@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-# 3d_053a4a.tcl — portiert nach python
+# 3d_053a4a_2780c2.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a_2780c2.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 3d_053a4a.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# 3d.html — portiert nach python
+# 3d.html — portiert nach JavaScript
 # Quelle: html, Projects@python-hardener:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Python 3.12 script to generate 3d.html
-# Usage: python3 this_script.py > 3d.html
+# Node.js script to generate 3d.html
+# Usage: node this_script.js > 3d.html
 
 def generate_html():
     html = []
@@ -27,7 +31,7 @@ def generate_html():
     
     # CSS styles
     html.append('<style>')
-    html.append('''
+    html.append("""
   :root{
     --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;
     --ac:#b45309; --buehne:#0e1420; --buehne-line:#1d2739;
@@ -73,7 +77,7 @@ def generate_html():
   .fehler{padding:40px;text-align:center;color:var(--muted)}
   a{color:var(--ac)}
 }
-''')
+    """)
     html.append('</style>')
     html.append('</head>')
     
@@ -118,8 +122,7 @@ def generate_html():
     
     # Inline script
     html.append('<script>')
-    html.append('''
-(function(){
+    html.append("""(function(){
   "use strict";
   var SPEC = {"schichten": [{"name": "Eingaben", "farbe": "#5f6773", "blocks": [{"id": "job-runner-py", "name": "job_runner.py", "untertitel": "Cronjob"}, {"id": "report-db-py", "name": "report_db.py", "untertitel": "SQL"}]}, {"name": "Laeufe", "farbe": "#2481cc", "blocks": [{"id": "with-skill", "name": "with_skill", "untertitel": "mit Skill"}, {"id": "without-skill", "name": "without_skill", "untertitel": "Gegenprobe"}]}, {"name": "Pruefung", "farbe": "#6d5bd0", "blocks": [{"id": "ast-assertions", "name": "AST-Assertions", "untertitel": "Syntaxbaum"}, {"id": "not-contains", "name": "not_contains", "untertitel": "Textregel"}, {"id": "grading", "name": "Grading", "untertitel": "je Behauptung"}]}, {"name": "Ergebnis", "farbe": "#b45309", "blocks": [{"id": "benchmark-json", "name": "benchmark.json", "untertitel": "pass_rate"}, {"id": "timing-json", "name": "timing.json", "untertitel": "Laufzeit"}, {"id": "eval-review-html", "name": "eval-review.html", "untertitel": "Gegenueberstellung"}]}], "kanten": [{"von": "job-runner-py", "nach": "with-skill", "art": "fluss"}, {"von": "report-db-py", "nach": "without-skill", "art": "fluss"}, {"von": "with-skill", "nach": "ast-assertions", "art": "fluss"}, {"von": "without-skill", "nach": "not-contains", "art": "fluss"}, {"von": "ast-assertions", "nach": "benchmark-json", "art": "fluss"}, {"von": "not-contains", "nach": "timing-json", "art": "fluss"}, {"von": "grading", "nach": "eval-review-html", "art": "fluss"}], "kantenarten": [{"art": "fluss", "farbe": "#b45309", "stil": "voll", "text": "Fluss von unten nach oben"}]};
 
@@ -345,14 +348,15 @@ def generate_html():
     renderer.render(szene, kamera);
   })();
 })();
-''')
+}
+    """)
     html.append('</script>')
     html.append('</body>')
     html.append('</html>')
     
     # Join all lines with newlines
-    return '\n'.join(html)
+    return "\n".join(html)
 
 # Main execution
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(generate_html())

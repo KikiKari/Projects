@@ -1,17 +1,21 @@
-#!/usr/bin/tclsh
-# 1781743218784.pl — portiert nach tcl
+#!/usr/bin/env tclsh8.6
+# 1781743218784_ca3884.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_ca3884.ps1
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.html — portiert nach tcl
+# 1781743218784.html — portiert nach perl5
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-if {$argc != 1} {
+# Get output file from command line argument
+if {$argc == 0} {
     puts stderr "Usage: [info script] <output_file>"
     exit 1
 }
-
 set output_file [lindex $argv 0]
 
 # HTML content with embedded JSON and JavaScript
@@ -223,11 +227,17 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Write HTML content to the specified file
-if {[catch {open $output_file w} fh]} {
-    puts stderr "Could not open file '$output_file' for writing: $fh"
+if {[catch {set fh [open $output_file w]} error]} {
+    puts stderr "Could not open file '$output_file' for writing: $error"
     exit 1
 }
-puts -nonewline $fh $html_content
-close $fh
-
+if {[catch {puts -nonewline $fh $html_content} error]} {
+    puts stderr "Could not write to file '$output_file': $error"
+    close $fh
+    exit 1
+}
+if {[catch {close $fh} error]} {
+    puts stderr "Could not close file '$output_file': $error"
+    exit 1
+}
 puts "HTML file generated: $output_file"

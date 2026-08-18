@@ -1,16 +1,20 @@
 #!/usr/bin/env pwsh
-# 3d_053a4a.tcl — portiert nach powershell
+# 3d_053a4a_2780c2.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a_2780c2.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 3d_053a4a.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# 3d.html — portiert nach PowerShell 7
+# 3d.html — portiert nach JavaScript
 # Quelle: html, Projects@python-hardener:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# PowerShell 7 script to generate 3d.html
+# PowerShell script to generate 3d.html
 # Usage: pwsh this_script.ps1 > 3d.html
 
-function generate_html {
+function Generate-Html {
     $html = @()
     
     # DOCTYPE and html tag
@@ -355,4 +359,4 @@ function generate_html {
 }
 
 # Main execution
-Write-Output (generate_html)
+Write-Output (Generate-Html)

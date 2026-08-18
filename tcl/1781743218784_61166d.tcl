@@ -1,14 +1,21 @@
 #!/usr/bin/env tclsh8.6
-# 1781743218784.sh — portiert nach tcl
+# 1781743218784_61166d.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_61166d.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach JavaScript
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # Secret-Vault Public HTML Generator
 # Erzeugt die vollständige HTML-Datei mit allen Inhalten
 
-proc generate_html {} {
-    return {
-<!DOCTYPE html>
+proc generateHtml {} {
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -212,33 +219,41 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 }
 
 # Hauptprogramm
-proc main {argv} {
-    if {[llength $argv] == 0} {
-        puts stderr "Verwendung: [info script] <ausgabedatei>"
+proc main {} {
+    global argv
+    
+    if {[llength $argv] != 1} {
+        puts stderr "Verwendung: tclsh script.tcl <ausgabedatei>"
         exit 1
     }
     
-    set output_file [lindex $argv 0]
+    set outputFile [lindex $argv 0]
     
-    if {[catch {set fd [open $output_file w]} error]} {
+    if {$outputFile eq ""} {
+        puts stderr "Verwendung: tclsh script.tcl <ausgabedatei>"
+        exit 1
+    }
+    
+    if [catch {
+        set htmlContent [generateHtml]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
+        close $fh
+        
+        if {[file exists $outputFile]} {
+            puts "HTML-Datei erfolgreich erstellt: $outputFile"
+        } else {
+            puts stderr "Fehler beim Erstellen der HTML-Datei"
+            exit 1
+        }
+    } error] {
         puts stderr "Fehler beim Erstellen der HTML-Datei: $error"
-        exit 1
-    }
-    
-    puts -nonewline $fd [generate_html]
-    close $fd
-    
-    if {[file exists $output_file]} {
-        puts "HTML-Datei erfolgreich erstellt: $output_file"
-    } else {
-        puts stderr "Fehler beim Erstellen der HTML-Datei"
         exit 1
     }
 }
 
-main $argv
+main

@@ -1,12 +1,16 @@
 #!/usr/bin/env tclsh
 # 1781743218784.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
+# Parameter verarbeiten
+if {$argc != 1} {
+    puts stderr "Usage: tclsh script.tcl <OutputPath>"
+    exit 1
+}
+set outputPath [lindex $argv 0]
 
-proc generateHTML {} {
-    set html {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -176,4 +180,43 @@ function renderEditor(){
     let rows="";
     Object.keys(P[name]).forEach(k=>{ rows+=`<div class="kv"><span class="k">${esc(k)}</span><input data-p="${esc(name)}" data-k="${esc(k)}" value="${esc(P[name][k])}"><button class="btn sm" data-del="${esc(name)}|${esc(k)}">${tr("del")}</button></div>`; });
     d.innerHTML=`<h3>${esc(name)} <button class="btn sm" data-delp="${esc(name)}">${tr("del")}</button></h3>${rows}
-      <div class="row" style="margin-top:6
+      <div class="row" style="margin-top:6px"><input class="nf" data-np="${esc(name)}" placeholder="${tr("newField")}" style="max-width:180px"><input class="nv" data-np="${esc(name)}" placeholder="${tr("newValue")}" style="max-width:260px"><button class="btn sm" data-addf="${esc(name)}">${tr("addField")}</button></div>`;
+    root.appendChild(d);
+  });
+  root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
+  root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
+  root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+}
+
+document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
+openBtn.onclick=async()=>{
+  const m=document.getElementById("openMsg"); m.className="msg"; m.textContent="";
+  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
+  if(!blob.value.trim()){ m.className="msg err"; m.textContent=tr("noInput"); return; }
+  try{ VAULT=await decryptB64(blob.value,pass.value); if(!VAULT.providers)VAULT.providers={}; renderEditor(); m.className="msg ok"; m.textContent=tr("opened"); }
+  catch(err){ m.className="msg err"; m.textContent=tr("bad"); }
+};
+newBtn.onclick=()=>{
+  const m=document.getElementById("openMsg");
+  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
+  VAULT={meta:{created:new Date().toISOString().slice(0,10),format:"SVPB1"},providers:{}}; renderEditor();
+  m.className="msg ok"; m.textContent=tr("created");
+};
+addProvBtn.onclick=()=>{ if(!VAULT){ return; } const n=newProv.value.trim(); if(n){ VAULT.providers[n]=VAULT.providers[n]||{}; newProv.value=""; renderEditor(); } };
+encBtn.onclick=async()=>{
+  const m=document.getElementById("saveMsg"); m.className="msg";
+  if(!VAULT){ m.className="msg err"; m.textContent=tr("needOpen"); return; }
+  if(!pass.value){ m.className="msg err"; m.textContent=tr("needPass"); return; }
+  result.value=await encryptObj(VAULT,pass.value); m.className="msg ok"; m.textContent=tr("encrypted");
+};
+dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value],{type:"text/plain"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download="vault.svpb"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} };
+expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
+</script>
+</body>
+</html>}
+
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+set fh [open $outputPath w]
+puts -nonewline $fh $htmlContent
+close $fh

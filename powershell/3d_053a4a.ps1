@@ -1,10 +1,16 @@
 #!/usr/bin/env pwsh
 # 3d_053a4a.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/3d_053a4a.js
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-function GenerateHTML {
-    $html = @"
+# Parameter: Ausgabedatei
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$Ausgabedatei
+)
+
+# HTML-Dokument erzeugen
+$HtmlContent = @"
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -328,27 +334,7 @@ function GenerateHTML {
 </html>
 "@
 
-    return $html
-}
+# Schreibe die HTML-Datei
+Set-Content -Path $Ausgabedatei -Value $HtmlContent -Encoding UTF8
 
-function Main {
-    $args = $args
-    
-    if ($args.Count -ne 1) {
-        Write-Error "Usage: pwsh 3d.ps1 <output-file>"
-        exit 1
-    }
-    
-    $outputFile = $args[0]
-    
-    try {
-        $htmlContent = GenerateHTML
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Output "HTML file generated successfully: $outputFile"
-    } catch {
-        Write-Error "Error generating HTML file: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
-Main @args
+Write-Host "HTML-Datei wurde erfolgreich erstellt: $Ausgabedatei"

@@ -1,11 +1,15 @@
 #!/bin/bash
-# 3d_053a4a.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 3d_053a4a_2780c2.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/3d_053a4a_2780c2.js
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 3d.html — portiert nach bash
+# 3d_053a4a.tcl — portiert nach bash
+# Quelle: tcl, Projects@abstractions:tcl/3d_053a4a.tcl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 3d.html — portiert nach Bash
 # Quelle: html, Projects@python-hardener:public/3d.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
