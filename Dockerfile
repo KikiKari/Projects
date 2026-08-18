@@ -17,6 +17,7 @@ COPY . /app
 # schon der Logger-Aufbau, und mit restart: unless-stopped laeuft der
 # Container in eine Neustartschleife. Also anlegen und uebereignen.
 RUN apk add --no-cache git \
+ && sed -i 's/\r$//' /app/abstractions/*.sh \
  && adduser -D -H -u 10001 lauf \
  && mkdir -p /home/openclaw/.openclaw/workspace/logs \
  && chown -R lauf:lauf /app /home/openclaw
