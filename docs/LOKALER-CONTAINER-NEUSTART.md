@@ -9,27 +9,41 @@ Die folgenden Befehle betreffen nur den Compose-Service `app` im Projekt
 - Git ist installiert.
 - Der Branch `abstractions` ist lokal ausgecheckt.
 
-## Einmalig klonen
+## Kompletter kopierbarer PowerShell-Block
+
+Der Block kann direkt in einer neu geoeffneten PowerShell ausgefuehrt werden. Das
+aktuelle PowerShell-Verzeichnis ist dabei egal. Das Repository wird fest unter
+`%USERPROFILE%\Projects-abstractions` verwendet und bei Bedarf zuerst geklont.
 
 ```powershell
-git clone --branch abstractions --single-branch https://github.com/KikiKari/Projects.git Projects-abstractions
-Set-Location Projects-abstractions
-```
+$AbstractionsDir = Join-Path $env:USERPROFILE 'Projects-abstractions'
+$ComposeFile = Join-Path $AbstractionsDir 'compose.yaml'
 
-## Vorhandene Arbeitskopie aktualisieren
+if (-not (Test-Path -LiteralPath $AbstractionsDir)) {
+    git clone --branch abstractions --single-branch `
+        https://github.com/KikiKari/Projects.git $AbstractionsDir
+    if ($LASTEXITCODE -ne 0) { throw 'Klonen des Repositorys fehlgeschlagen' }
+}
 
-Nur in einer sauberen Arbeitskopie ausfuehren:
+if (-not (Test-Path -LiteralPath (Join-Path $AbstractionsDir '.git'))) {
+    throw "Kein Git-Repository unter $AbstractionsDir"
+}
 
-```powershell
-git switch abstractions
-git pull --ff-only origin abstractions
-```
+git -C $AbstractionsDir switch abstractions
+if ($LASTEXITCODE -ne 0) { throw 'Wechsel auf Branch abstractions fehlgeschlagen' }
+git -C $AbstractionsDir pull --ff-only origin abstractions
+if ($LASTEXITCODE -ne 0) { throw 'Aktualisierung des Branches fehlgeschlagen' }
 
-## Nur diesen Container korrigiert neu erstellen
+docker compose --project-directory $AbstractionsDir -f $ComposeFile `
+    build --no-cache app
+if ($LASTEXITCODE -ne 0) { throw 'Docker-Build fehlgeschlagen' }
+docker compose --project-directory $AbstractionsDir -f $ComposeFile `
+    up -d --no-deps --force-recreate app
+if ($LASTEXITCODE -ne 0) { throw 'Container-Neustart fehlgeschlagen' }
 
-```powershell
-docker compose build --no-cache app
-docker compose up -d --no-deps --force-recreate app
+docker compose --project-directory $AbstractionsDir -f $ComposeFile ps app
+docker compose --project-directory $AbstractionsDir -f $ComposeFile `
+    logs --tail 50 app
 ```
 
 `--no-deps` verhindert, dass andere Services gestartet werden. `--force-recreate`
@@ -38,10 +52,7 @@ ersetzt nur den Container `abstractions-manager`; das benannte Volume
 
 ## Ergebnis pruefen
 
-```powershell
-docker compose ps app
-docker compose logs --tail 50 app
-```
+Die Status- und Log-Befehle sind bereits am Ende des kopierbaren Blocks enthalten.
 
 Im Log sollen unter anderem diese Meldungen erscheinen:
 
@@ -61,8 +72,11 @@ PermissionError: /home/openclaw
 ## Nur diesen Container anhalten oder erneut starten
 
 ```powershell
-docker compose stop app
-docker compose restart app
+$AbstractionsDir = Join-Path $env:USERPROFILE 'Projects-abstractions'
+$ComposeFile = Join-Path $AbstractionsDir 'compose.yaml'
+
+docker compose --project-directory $AbstractionsDir -f $ComposeFile stop app
+docker compose --project-directory $AbstractionsDir -f $ComposeFile restart app
 ```
 
 Kein `docker compose down` verwenden, wenn die anderen Ressourcen des Compose-Projekts
