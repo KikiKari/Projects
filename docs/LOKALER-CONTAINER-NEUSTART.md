@@ -7,7 +7,7 @@ Die folgenden Befehle betreffen nur den Compose-Service `app` im Projekt
 
 - Docker Desktop laeuft.
 - Git ist installiert.
-- Der Branch `abstractions` ist lokal ausgecheckt.
+- Internetzugang zu GitHub ist vorhanden.
 
 ## Kompletter kopierbarer PowerShell-Block
 
