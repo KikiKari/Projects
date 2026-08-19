@@ -1,22 +1,21 @@
-#!/usr/bin/env tclsh
-# sidepanel.css — portiert nach tcl
+#!/usr/bin/perl
+# sidepanel.css — portiert nach perl5
 # Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.css
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.css
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/sidepanel.css
 # Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
-# sidepanel.tcl - Tcl script to generate CSS content and write it to a file
-# This script generates the CSS content dynamically and writes it to a specified file.
+use strict;
+use warnings;
 
-proc writeCSS {filename} {
-    set cssContent [generateCSS]
-    set fileHandle [open $filename "w"]
-    puts $fileHandle $cssContent
-    close $fileHandle
-}
+# Get output file path from command line argument
+my $output_file = $ARGV[0] or die "Usage: $0 <output_file>\n";
 
-proc generateCSS {} {
-    return {
+# Open file for writing
+open my $fh, '>', $output_file or die "Could not open '$output_file' for writing: $!";
+
+# Write the CSS content
+print $fh <<'CSS_END';
 :root {
   color-scheme: light dark;
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
@@ -146,15 +145,9 @@ input[type="url"], input[type="text"], input[type="password"], input[type="numbe
 .notice { margin: 0 3px 8px; color: var(--bad); }
 @media (min-width: 430px) { .speech-settings { grid-template-columns: 1fr 1fr; } .speech-settings label:first-child { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
-    }
-}
+CSS_END
 
-# Main execution
-if {$argc != 1} {
-    puts "Usage: $argv0 <output_file>"
-    exit 1
-}
+# Close the file handle
+close $fh;
 
-set outputFile [lindex $argv 0]
-writeCSS $outputFile
-puts "CSS content written to $outputFile"
+print "CSS file written to: $output_file\n";

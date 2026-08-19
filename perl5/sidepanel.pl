@@ -1,23 +1,23 @@
 #!/usr/bin/perl
 # sidepanel.css — portiert nach perl5
-# Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion:release/0.7.1/tiktok-live-companion-extension-0.7.1/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.1/tiktok-live-companion-extension-0.7.1/sidepanel.css
+# Quelle: css, Projects@TikTok-Live-Companion:release/0.7.0/tiktok-live-companion-extension-0.7.0/sidepanel.css
+# auch in: Projects@TikTok-Live-Companion:release/0.6.0/tiktok-live-companion-extension-0.6.0/sidepanel.css
+# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.0/tiktok-live-companion-extension-0.7.0/sidepanel.css
+# auch in: Projects@TikTok-Live-Companion-Android:release/0.6.0/tiktok-live-companion-extension-0.6.0/sidepanel.css
 # auch in: 2 weiteren Fundstellen
-# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-# Get output filename from command line argument
+# Get output file from command line argument
 my $output_file = $ARGV[0] or die "Usage: $0 <output_file>\n";
 
 # Open file for writing
-open my $fh, '>', $output_file or die "Cannot open $output_file: $!";
+open my $fh, '>', $output_file or die "Cannot open file '$output_file': $!\n";
 
-# Print the CSS content
-print $fh <<'EOF';
+# Write the CSS content
+print $fh <<'CSS_END';
 :root {
   color-scheme: light dark;
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
@@ -64,8 +64,6 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .warn .status-value { color: var(--warn); }
 .bad .status-value { color: var(--bad); }
 .count { min-width: 25px; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 15%, Canvas); color: var(--accent); text-align: center; font-size: 11px; font-weight: 800; }
-.count-button { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); cursor: pointer; }
-.count-button:hover, .count-button:focus-visible { background: color-mix(in srgb, var(--accent) 25%, Canvas); }
 .live-indicator { padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 15%, Canvas); color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .live-indicator.active { background: color-mix(in srgb, var(--good) 16%, Canvas); color: var(--good); }
 .stats-grid .status-value { font-size: 16px; font-variant-numeric: tabular-nums; }
@@ -82,14 +80,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 .settings-grid { display: grid; gap: 7px; margin-top: 10px; }
 .settings-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
-.settings-grid label[hidden] { display: none; }
 input[type="url"], input[type="password"], select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .top-chatters { display: grid; gap: 6px; margin-top: 8px; }
 .top-chatters.empty { color: var(--muted); font-size: 12px; }
-.top-chatters-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 7px; }
-.top-chatters-actions[hidden] { display: none; }
-.top-chatter-link { padding: 0; color: var(--accent); background: transparent; border: 0; border-radius: 0; font-weight: 700; }
-.top-chatter-link:hover { text-decoration: underline; }
 .chatter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 7px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; background: Canvas; }
 .chatter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 800; }
 .chatter-metrics { color: var(--muted); font-size: 10px; white-space: nowrap; }
@@ -100,17 +93,13 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .song-result a { margin-top: 4px; color: var(--accent); overflow-wrap: anywhere; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; padding: 14px; background: color-mix(in srgb, CanvasText 42%, transparent); overflow: auto; }
 .modal { width: min(520px, 100%); max-height: calc(100vh - 28px); margin: 0 auto; overflow: auto; background: Canvas; }
-.audience-list, .chat-history-list { display: grid; gap: 7px; margin-top: 9px; }
-.chat-history-row { padding: 8px 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
-.chat-history-meta { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; }
+.audience-list { display: grid; gap: 7px; margin-top: 9px; }
 .audience-row { display: grid; gap: 6px; padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
 .audience-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .audience-row select { width: auto; max-width: 170px; }
 .audience-metrics { color: var(--muted); font-size: 10px; line-height: 1.45; }
 .option-row { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .option-row input { margin: 1px 0 0; accent-color: var(--accent); }
-.auto-chat-refresh { align-items: center; }
-.auto-chat-refresh input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .audio-note { margin: 1px 0 0; }
 .profile-info { display: grid; gap: 8px; margin-top: 11px; }
 .profile-heading { margin: 0; font-size: 14px; font-weight: 800; }
@@ -133,12 +122,14 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .inline-status, .notice { min-height: 17px; margin: 9px 0 0; color: var(--muted); font-size: 11px; }
 .action-status { line-height: 1.4; }
 .reset-note { margin: 7px 0 0; }
+.quality-details { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.quality-active { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
 .notice { margin: 0 3px 8px; color: var(--bad); }
 @media (min-width: 430px) { .speech-settings { grid-template-columns: 1fr 1fr; } .speech-settings label:first-child { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
-EOF
+CSS_END
 
-# Close the file
+# Close file handle
 close $fh;
 
-print "CSS file generated: $output_file\n";
+print "CSS file written to $output_file\n";

@@ -1,0 +1,283 @@
+#!/bin/bash
+# sidepanel.html — portiert nach shell
+# Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.html
+# auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.html
+# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/sidepanel.html
+# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+
+set -euo pipefail
+
+# Funktion zur Generierung des HTML-Dokuments
+generate_html() {
+cat << 'EOF'
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TikTok LIVE Companion</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <p id="page-title" class="muted">Kein TikTok-Tab ausgewählt</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="chat-heading">
+      <div class="section-title">
+        <h2 id="chat-heading">Chatzeilen</h2>
+        <div class="title-actions">
+          <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
+          <button id="chat-count" class="count count-button" type="button" aria-haspopup="dialog" title="Gesammelte Chatzeilen öffnen">0</button>
+          <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Refresh</button>
+          <button id="toggle-speech" class="secondary compact" aria-pressed="false">Vorlesen</button>
+          <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
+        </div>
+      </div>
+      <div id="chat-list" class="chat-list empty" role="log" aria-live="polite" aria-relevant="additions" aria-label="Die letzten fünf bereinigten Chatnachrichten">Noch keine Chatnachrichten erkannt.</div>
+      <p id="speech-status" role="status" class="inline-status">Vorlesen ist ausgeschaltet.</p>
+      <div class="control-label"><label for="speech-volume">Vorleselautstärke</label><output id="speech-volume-output" for="speech-volume">100%</output></div>
+      <input id="speech-volume" type="range" min="0" max="100" step="5" value="50">
+      <div class="button-row">
+        <button id="service-action" class="secondary">Sprachdienst</button>
+        <button id="sherpa-action" class="secondary">Sherpa</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Sprach- und Chat-Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
+      </div>
+      <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
+      <div id="service-setup" class="inline-status" hidden>
+        <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
+      </div>
+      <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
+      <label class="option-row"><input id="keep-speech-active" type="checkbox"> Permanent aktiv</label>
+    </section>
+
+    <section aria-labelledby="top-chatters-heading">
+      <div class="section-title">
+        <h2 id="top-chatters-heading">Top-Chatter</h2>
+        <button id="open-audience" class="secondary compact">Zuschauer*innen</button>
+      </div>
+      <p id="team-tag-status" class="inline-status">Teamkürzel: noch nicht erkannt.</p>
+      <div id="top-chatters" class="top-chatters empty">Noch keine Personen im Chat beobachtet.</div>
+      <div id="top-chatters-actions" class="top-chatters-actions" hidden>
+        <button id="top-chatters-reset" class="top-chatter-link" type="button" hidden>Reset</button>
+        <button id="top-chatters-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
+    </section>
+
+    <section id="page-info-section" aria-labelledby="page-info-heading">
+      <div class="section-title">
+        <h2 id="page-info-heading">Seiteninformationen</h2>
+        <div class="title-actions">
+          <span id="page-info-source" class="live-indicator">Metadaten</span>
+          <button id="refresh-page-info" class="secondary compact">Refresh</button>
+          <button id="force-page-info" class="secondary compact danger-outline">Force</button>
+        </div>
+      </div>
+      <div id="profile-info" class="profile-info" hidden></div>
+      <div id="summary-info" class="summary-info"></div>
+    </section>
+
+    <section aria-labelledby="stats-heading">
+      <div class="section-title">
+        <h2 id="stats-heading">LIVE-Informationen</h2>
+        <span id="stats-live" class="live-indicator">warte</span>
+      </div>
+      <div id="live-stats" class="status-grid stats-grid"></div>
+      <p id="stats-status" class="inline-status"></p>
+    </section>
+
+    <section aria-labelledby="hook-heading">
+      <div class="section-title">
+        <h2 id="hook-heading">WebSocket-Hook</h2>
+        <span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span>
+      </div>
+      <div class="button-row">
+        <button id="enable-hook" class="primary">Hook setzen</button>
+        <button id="disable-hook" class="secondary">Hook deaktivieren</button>
+        <button id="reset-tab" class="secondary danger-outline">Refresh</button>
+        <button id="open-embed-live" class="secondary">Embed</button>
+        <button id="open-normal-live" class="secondary">Normal</button>
+        <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
+      </div>
+      <p id="hook-status" class="inline-status"></p>
+      <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
+      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Auto-Reconnect <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Auto-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+    </section>
+
+    <section id="recommendations-section" aria-labelledby="recommendations-heading">
+      <div class="section-title">
+        <h2 id="recommendations-heading">LIVE-Empfehlungen</h2>
+        <span id="recommendation-status" class="live-indicator">bereit</span>
+      </div>
+      <div class="recommendation-controls">
+        <label><span>Anzahl</span><input id="recommendation-limit" type="number" min="1" max="50" step="1" value="20" inputmode="numeric"></label>
+        <label><span>Sortierung</span><select id="recommendation-sort"><option value="tiktok">TikTok-Reihenfolge</option><option value="viewers">Zuschauer*innen</option></select></label>
+      </div>
+      <div class="button-row">
+        <button id="scan-recommendations" class="primary">Empfehlungen scannen</button>
+        <button id="cancel-recommendations" class="secondary" hidden>Abbrechen</button>
+      </div>
+      <p id="recommendation-progress" class="inline-status" aria-live="polite">Noch kein Scan gestartet.</p>
+      <div id="recommendation-list" class="recommendation-list empty">Noch keine Empfehlungen erfasst.</div>
+      <div id="recommendation-actions" class="top-chatters-actions" hidden>
+        <button id="recommendation-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="caption-heading">
+      <div class="section-title">
+        <h2 id="caption-heading">Untertitel</h2>
+        <button id="scan" class="secondary">Seite prüfen</button>
+      </div>
+      <div id="caption-status" class="status-grid"></div>
+      <button id="enable-captions" class="primary">Untertitel aktivieren</button>
+      <p id="caption-action-status" role="status" class="inline-status action-status"></p>
+    </section>
+
+    <section aria-labelledby="player-heading">
+      <div class="section-title">
+        <h2 id="player-heading">Playersteuerung</h2>
+        <span id="player-time" class="player-time">–</span>
+      </div>
+      <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
+        <button id="player-play" class="secondary compact">Pause</button>
+        <button id="player-replay" class="secondary compact">Neu laden</button>
+        <button id="player-mute" class="secondary compact">Stumm</button>
+        <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
+        <button id="player-fullscreen" class="secondary compact">Vollbild</button>
+        <button id="player-report" class="secondary compact danger-outline">Melden öffnen</button>
+      </div>
+      <div class="audio-controls">
+        <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
+        <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
+        <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
+        <label class="option-row"><input id="limiter-enabled" type="checkbox"> Pegelschutz aktivieren</label>
+        <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
+        <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
+      </div>
+      <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
+      <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
+    </section>
+
+    <section aria-labelledby="song-heading">
+      <div class="section-title">
+        <h2 id="song-heading">Songerkennung</h2>
+        <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
+      </div>
+      <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
+      <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
+      <p id="song-status" class="inline-status"></p>
+      <div id="song-result" class="song-result" hidden></div>
+    </section>
+
+    <section aria-labelledby="links-heading">
+      <div class="section-title">
+        <h2 id="links-heading">VLC-Links</h2>
+        <span id="media-count" class="count">0</span>
+      </div>
+      <div id="media-list" class="list empty">Noch keine FLV-/HLS-Links erkannt.</div>
+    </section>
+
+    <section aria-labelledby="log-heading">
+      <div class="section-title">
+        <h2 id="log-heading">Caption-Protokoll</h2>
+        <span id="caption-count" class="count">0</span>
+      </div>
+      <div class="button-row">
+        <button id="export-log" class="secondary">JSON-L-Export</button>
+        <button id="export-caption-raw" class="secondary">RAW-JSON-Export</button>
+        <button id="clear" class="ghost">Anzeige leeren</button>
+      </div>
+      <div id="caption-list" class="list empty">Noch keine CaptionMessages empfangen.</div>
+    </section>
+
+    <section aria-labelledby="debug-heading">
+      <div class="section-title">
+        <h2 id="debug-heading">Debugmodus</h2>
+        <span id="debug-count" class="count">0</span>
+      </div>
+      <label class="option-row"><input id="debug-enabled" type="checkbox"> Diagnoseereignisse für diesen Tab protokollieren</label>
+      <div class="button-row">
+        <button id="export-debug" class="secondary">Debug exportieren</button>
+        <button id="clear-debug" class="ghost">Debug leeren</button>
+      </div>
+      <p class="muted small"></p>
+    </section>
+
+    <div id="audience-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="audience-heading">
+        <div class="section-title">
+          <h2 id="audience-heading">Im Chat beobachtete Personen</h2>
+          <button id="close-audience" class="secondary compact" aria-label="Übersicht schließen">Schließen</button>
+        </div>
+        <p id="audience-limit" class="inline-status"></p>
+        <div id="audience-list" class="audience-list"></div>
+      </section>
+    </div>
+
+    <div id="speech-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="speech-settings-heading">
+        <div class="section-title">
+          <h2 id="speech-settings-heading">Sprach- und Chat-Einstellungen</h2>
+          <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
+        </div>
+        <div class="settings-grid speech-integration-settings">
+          <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
+          <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
+          <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
+          <label id="pairing-code-setting"><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
+          <label><span>Universal API-Key für Untertitel</span><input id="universal-caption-api-key" type="password" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
+        <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
+        <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
+      </section>
+    </div>
+
+    <div id="chat-history-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="chat-history-heading">
+        <div class="section-title">
+          <h2 id="chat-history-heading">Gesammelte Chatzeilen</h2>
+          <button id="close-chat-history" class="secondary compact" aria-label="Chatzeilen schließen">Schließen</button>
+        </div>
+        <p id="chat-history-limit" class="inline-status"></p>
+        <div id="chat-history-list" class="chat-history-list"></div>
+      </section>
+    </div>
+
+    <div id="recommendation-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="recommendation-modal-heading">
+        <div class="section-title">
+          <h2 id="recommendation-modal-heading">Gescannte LIVE-Empfehlungen</h2>
+          <button id="close-recommendations" class="secondary compact" aria-label="Empfehlungen schließen">Schließen</button>
+        </div>
+        <div id="recommendation-modal-list" class="recommendation-list"></div>
+      </section>
+    </div>
+
+    <p id="notice" role="alert" class="notice"></p>
+  </main>
+
+  <script src="content-core.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
+EOF
+}
+
+# Hauptprogramm
+main() {
+    local output_file="${1:-}"
+
+    if [[ -z "$output_file" ]]; then
+        # Wenn kein Parameter angegeben, Ausgabe auf stdout
+        generate_html
+    else
+        # Wenn Parameter angegeben, in Datei schreiben
+        generate_html > "$output_file"
+    fi
+}
+
+# Skript aufrufen
+main "$@"

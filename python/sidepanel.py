@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 # sidepanel.css — portiert nach python
 # Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion:release/0.7.1/tiktok-live-companion-extension-0.7.1/sidepanel.css
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.1/tiktok-live-companion-extension-0.7.1/sidepanel.css
-# auch in: 2 weiteren Fundstellen
-# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/sidepanel.css
+# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import argparse
 
 def generate_css():
     """Generate the complete CSS content as a string."""
-    css_content = """\
-:root {
+    return """:root {
   color-scheme: light dark;
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
   --accent: #fe2c55;
@@ -42,6 +38,7 @@ section { min-width: 0; padding: 14px; background: var(--surface); border: 1px s
 button { border: 0; border-radius: 9px; padding: 9px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 .compact { padding: 7px 9px; }
+.settings-button { min-width: 34px; font-size: 17px; line-height: 1; }
 .primary { color: white; background: var(--accent); }
 .primary:hover { background: var(--accent-dark); }
 .secondary { color: CanvasText; background: color-mix(in srgb, CanvasText 9%, Canvas); border: 1px solid var(--border); }
@@ -78,7 +75,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .settings-grid { display: grid; gap: 7px; margin-top: 10px; }
 .settings-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
 .settings-grid label[hidden] { display: none; }
-input[type="url"], input[type="password"], select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
+input[type="url"], input[type="text"], input[type="password"], input[type="number"], select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .top-chatters { display: grid; gap: 6px; margin-top: 8px; }
 .top-chatters.empty { color: var(--muted); font-size: 12px; }
 .top-chatters-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 7px; }
@@ -95,7 +92,7 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .song-result a { margin-top: 4px; color: var(--accent); overflow-wrap: anywhere; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 100; padding: 14px; background: color-mix(in srgb, CanvasText 42%, transparent); overflow: auto; }
 .modal { width: min(520px, 100%); max-height: calc(100vh - 28px); margin: 0 auto; overflow: auto; background: Canvas; }
-.audience-list, .chat-history-list { display: grid; gap: 7px; margin-top: 9px; }
+.audience-list, .chat-history-list, .recommendation-list { display: grid; gap: 7px; margin-top: 9px; }
 .chat-history-row { padding: 8px 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .chat-history-meta { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; }
 .audience-row { display: grid; gap: 6px; padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
@@ -106,6 +103,7 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .option-row input { margin: 1px 0 0; accent-color: var(--accent); }
 .auto-chat-refresh { align-items: center; }
 .auto-chat-refresh input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
+.quick-recover-setting input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .audio-note { margin: 1px 0 0; }
 .profile-info { display: grid; gap: 8px; margin-top: 11px; }
 .profile-heading { margin: 0; font-size: 14px; font-weight: 800; }
@@ -116,6 +114,15 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 .profile-stat span { margin-top: 2px; color: var(--muted); font-size: 9px; text-transform: uppercase; }
 .summary-info { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.45; }
 .summary-text { margin: 6px 0 0; white-space: pre-wrap; }
+.recommendation-controls { display: grid; grid-template-columns: minmax(70px, .7fr) minmax(150px, 1.3fr); gap: 8px; margin-top: 10px; }
+.recommendation-controls label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.recommendation-list.empty { display: block; color: var(--muted); font-size: 12px; }
+.recommendation-row { padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; }
+.recommendation-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.recommendation-name { min-width: 0; margin: 0; font-size: 11px; font-weight: 800; overflow-wrap: anywhere; }
+.recommendation-viewers { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.recommendation-description { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.recommendation-link { display: inline-block; margin-top: 6px; color: var(--accent); font-size: 11px; font-weight: 700; }
 .list { display: grid; gap: 8px; margin-top: 11px; max-height: 300px; overflow: auto; }
 .list.empty { display: block; color: var(--muted); font-size: 12px; }
 .item { padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; }
@@ -132,7 +139,6 @@ input[type="url"], input[type="password"], select { width: 100%; min-width: 0; p
 @media (min-width: 430px) { .speech-settings { grid-template-columns: 1fr 1fr; } .speech-settings label:first-child { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 """
-    return css_content
 
 def write_css_to_file(filename):
     """Write the generated CSS to a file."""
@@ -141,12 +147,14 @@ def write_css_to_file(filename):
         f.write(css_content)
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate sidepanel.css file')
-    parser.add_argument('output_file', help='Output CSS file path')
-    args = parser.parse_args()
+    """Main function to handle command line arguments and write CSS to file."""
+    if len(sys.argv) != 2:
+        print("Usage: python sidepanel.py <output_filename>")
+        sys.exit(1)
     
-    write_css_to_file(args.output_file)
-    print(f"CSS file generated: {args.output_file}")
+    output_filename = sys.argv[1]
+    write_css_to_file(output_filename)
+    print(f"CSS file '{output_filename}' has been generated.")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
