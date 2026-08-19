@@ -1,13 +1,16 @@
-#!/usr/bin/perl
-# 1781743218784.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+#!/usr/bin/env pwsh
+# 1781743218784.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
 # Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
-use strict;
-use warnings;
+# Parameter verarbeiten
+if ($args.Count -ne 1) {
+    Write-Error "Usage: powershell script.ps1 <OutputPath>"
+    exit 1
+}
+$outputPath = $args[0]
 
-sub generateHTML {
-    my $html = <<'EOF';
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -213,32 +216,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+'@
 
-    return $html;
-}
-
-sub main {
-    my @args = @ARGV;
-    
-    if (@args != 1) {
-        print STDERR "Usage: perl script.pl <output-file>\n";
-        exit 1;
-    }
-    
-    my $outputFile = $args[0];
-    
-    eval {
-        my $htmlContent = generateHTML();
-        open(my $fh, '>', $outputFile) or die "Could not open file '$outputFile' $!";
-        print $fh $htmlContent;
-        close $fh;
-        print "HTML file generated: $outputFile\n";
-    };
-    if ($@) {
-        print STDERR "Error generating HTML file: $@\n";
-        exit 1;
-    }
-}
-
-main();
+$htmlContent | Out-File -FilePath $outputPath -Encoding UTF8

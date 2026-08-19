@@ -1,15 +1,18 @@
 #!/usr/bin/env pwsh
 # 1781743218784.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
+# 1781743218784.js — portiert nach JavaScript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-$htmlContent = @'
+function Generate-HTML {
+    $html = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -215,7 +218,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
+    
+    return $html
+}
 
-# Schreibe den HTML-Inhalt in die angegebene Ausgabedatei
-$htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8
+function Main {
+    $args = $args
+    
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: powershell script.ps1 <output-file>"
+        exit 1
+    }
+    
+    $outputFile = $args[0]
+    
+    try {
+        $htmlContent = Generate-HTML
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+Main @args
