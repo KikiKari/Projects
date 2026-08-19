@@ -1,186 +1,195 @@
 #!/usr/bin/env node
 // package_artifacts.py — portiert nach javascript
 // Quelle: python, Projects@TikTok-Live-Companion:plugin-source/scripts/package_artifacts.py
-// Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+// auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/package_artifacts.py
+// auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/package_artifacts.py
+// Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
-import { createHash } from 'node:crypto';
-import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, readdir, readFile, stat, writeFile, rm, copyFile } from 'node:fs/promises';
-import { join, relative, dirname, basename, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline';
-import { constants } from 'node:zlib';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
-import archiver from 'archiver';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const yargs = require('yargs');
+const archiver = require('archiver');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const ROOT = join(__dirname, '..', '..');
-const PROJECT_ROOT = join(ROOT, '..');
+const ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(ROOT, '..');
 const EXCLUDED_PARTS = new Set(['__pycache__', '.gradle', '.kotlin', 'build', 'DerivedData', 'xcuserdata']);
 
-function shouldExcludePath(pathParts, ext) {
-    return EXCLUDED_PARTS.has(pathParts[0]) || 
-           EXCLUDED_PARTS.has(pathParts[pathParts.length - 1]) ||
-           ext === '.pyc' || ext === '.aar';
+function shouldExclude(filePath, sourceDir) {
+    const relativePath = path.relative(sourceDir, filePath);
+    const parts = relativePath.split(path.sep);
+    
+    // Check if any part is in excluded set
+    if (parts.some(part => EXCLUDED_PARTS.has(part))) {
+        return true;
+    }
+    
+    // Check file extensions
+    const ext = path.extname(filePath);
+    if (ext === '.pyc' || ext === '.aar') {
+        return true;
+    }
+    
+    return false;
 }
 
-async function addTree(archive, source, prefix = '') {
-    const files = await getAllFiles(source);
+function addTree(archive, source, prefix = '') {
+    const files = getAllFiles(source);
     
-    for (const file of files) {
-        const relativePath = relative(source, file);
-        const pathParts = relativePath.split(/[\/\\]/);
-        const ext = extname(file).toLowerCase();
-        
-        if (shouldExcludePath(pathParts, ext)) {
+    files.sort(); // Sort for consistent ordering
+    
+    for (const filePath of files) {
+        if (shouldExclude(filePath, source)) {
             continue;
         }
         
-        const archivePath = prefix ? join(prefix, relativePath).replace(/\\/g, '/') : relativePath.replace(/\\/g, '/');
-        const data = await readFile(file);
+        const relative = path.relative(source, filePath);
+        const archivePath = path.posix.join(prefix, relative.split(path.sep).join('/'));
+        
+        const stat = fs.statSync(filePath);
+        const data = fs.readFileSync(filePath);
         
         archive.append(data, {
             name: archivePath,
-            date: new Date('1980-01-01T00:00:00Z')
+            date: new Date('1980-01-01T00:00:00.000Z'),
+            mode: 0o100644
         });
     }
 }
 
-async function getAllFiles(dir) {
-    const dirents = await readdir(dir, { withFileTypes: true });
-    const files = await Promise.all(dirents.map(async (dirent) => {
-        const res = join(dir, dirent.name);
-        return dirent.isDirectory() ? getAllFiles(res) : res;
-    }));
-    return files.flat().filter(file => !EXCLUDED_PARTS.has(basename(file)));
+function getAllFiles(dir) {
+    let results = [];
+    const list = fs.readdirSync(dir);
+    
+    list.forEach(file => {
+        file = path.resolve(dir, file);
+        const stat = fs.statSync(file);
+        if (stat && stat.isDirectory()) {
+            results = results.concat(getAllFiles(file));
+        } else {
+            results.push(file);
+        }
+    });
+    
+    return results;
 }
 
-async function fileExists(path) {
-    try {
-        const stats = await stat(path);
-        return stats.isFile();
-    } catch {
-        return false;
-    }
-}
-
-async function dirExists(path) {
-    try {
-        const stats = await stat(path);
-        return stats.isDirectory();
-    } catch {
-        return false;
-    }
-}
-
-async function copyDir(src, dest) {
-    await mkdir(dest, { recursive: true });
-    const entries = await readdir(src, { withFileTypes: true });
+function copyDir(src, dest) {
+    fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
     
     for (const entry of entries) {
-        const srcPath = join(src, entry.name);
-        const destPath = join(dest, entry.name);
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
         
         if (entry.isDirectory()) {
-            await copyDir(srcPath, destPath);
+            copyDir(srcPath, destPath);
         } else {
-            await copyFile(srcPath, destPath);
+            fs.copyFileSync(srcPath, destPath);
         }
     }
 }
 
+function rimraf(dir) {
+    if (!fs.existsSync(dir)) return;
+    
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            rimraf(fullPath);
+        } else {
+            fs.unlinkSync(fullPath);
+        }
+    }
+    
+    fs.rmdirSync(dir);
+}
+
+function readJsonFile(filePath) {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function writeJsonFile(filePath, data) {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+}
+
 async function createZip(outputPath, callback) {
-    const output = createWriteStream(outputPath);
-    const archive = archiver('zip', {
-        zlib: { level: 9 }
-    });
-    
-    archive.pipe(output);
-    
-    await callback(archive);
-    
-    archive.finalize();
-    
     return new Promise((resolve, reject) => {
-        output.on('close', resolve);
-        output.on('error', reject);
+        const output = fs.createWriteStream(outputPath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 }
+        });
+        
+        output.on('close', () => resolve());
+        archive.on('error', err => reject(err));
+        
+        archive.pipe(output);
+        callback(archive);
+        archive.finalize();
     });
 }
 
-async function calculateSHA256(filePath) {
-    const hash = createHash('sha256');
-    const stream = createReadStream(filePath);
-    
-    return new Promise((resolve, reject) => {
-        stream.on('data', (data) => hash.update(data));
-        stream.on('end', () => resolve(hash.digest('hex')));
-        stream.on('error', reject);
-    });
-}
+async function main() {
+    const argv = yargs
+        .usage('Usage: $0 [options]')
+        .option('output-dir', {
+            describe: 'Output directory for packaged artifacts',
+            type: 'string',
+            demandOption: true
+        })
+        .option('android-apk', {
+            describe: 'Optional verified mockDebug or shazamDebug APK',
+            type: 'string'
+        })
+        .option('android-source', {
+            describe: 'Verified Android source root',
+            type: 'string',
+            default: path.join(PROJECT_ROOT, 'mobile', 'android')
+        })
+        .option('ios-source', {
+            describe: 'Verified iOS source root',
+            type: 'string',
+            default: path.join(PROJECT_ROOT, 'mobile', 'ios')
+        })
+        .help()
+        .argv;
 
-const argv = yargs(hideBin(process.argv))
-    .description('Package TikTok LIVE Companion artifacts.')
-    .option('output-dir', {
-        alias: 'o',
-        type: 'string',
-        demandOption: true,
-        describe: 'Output directory'
-    })
-    .option('android-apk', {
-        type: 'string',
-        describe: 'Optional verified mockDebug or shazamDebug APK'
-    })
-    .option('android-source', {
-        type: 'string',
-        default: join(PROJECT_ROOT, 'mobile', 'android'),
-        describe: 'Verified Android source root'
-    })
-    .option('ios-source', {
-        type: 'string',
-        default: join(PROJECT_ROOT, 'mobile', 'ios'),
-        describe: 'Verified iOS source root'
-    })
-    .coerce('output-dir', (arg) => arg)
-    .coerce('android-apk', (arg) => arg)
-    .coerce('android-source', (arg) => arg)
-    .coerce('ios-source', (arg) => arg)
-    .help()
-    .argv;
+    const outputDir = path.resolve(argv['output-dir']);
+    fs.mkdirSync(outputDir, { recursive: true });
 
-(async () => {
-    const outputDir = argv['output-dir'];
-    await mkdir(outputDir, { recursive: true });
-    
-    const manifestPath = join(ROOT, 'browser-extension', 'manifest.json');
-    const manifestContent = await readFile(manifestPath, 'utf8');
-    const manifest = JSON.parse(manifestContent);
+    const manifest = readJsonFile(path.join(ROOT, 'browser-extension', 'manifest.json'));
     const version = manifest.version;
     
-    const extensionZip = join(outputDir, `tiktok-live-companion-extension-${version}.zip`);
-    const pluginZip = join(outputDir, `tiktok-live-companion-plugin-${version}.zip`);
-    const serviceZip = join(outputDir, `tiktok-live-companion-service-${version}.zip`);
-    const iosSourceZip = join(outputDir, `tiktok-live-companion-ios-${version}-source.zip`);
-    const androidSourceZip = join(outputDir, `tiktok-live-companion-android-${version}-source.zip`);
-    const androidApk = join(outputDir, `tiktok-live-companion-android-${version}.apk`);
-    const extensionDir = join(outputDir, `tiktok-live-companion-extension-${version}`);
-    const checksumFile = join(outputDir, `tiktok-live-companion-${version}-SHA256.txt`);
-    
-    if (dirname(extensionDir) !== outputDir) {
+    const extensionZip = path.join(outputDir, `tiktok-live-companion-extension-${version}.zip`);
+    const pluginZip = path.join(outputDir, `tiktok-live-companion-plugin-${version}.zip`);
+    const serviceZip = path.join(outputDir, `tiktok-live-companion-service-${version}.zip`);
+    const iosSourceZip = path.join(outputDir, `tiktok-live-companion-ios-${version}-source.zip`);
+    const androidSourceZip = path.join(outputDir, `tiktok-live-companion-android-${version}-source.zip`);
+    const androidApk = path.join(outputDir, `tiktok-live-companion-android-${version}.apk`);
+    const extensionDir = path.join(outputDir, `tiktok-live-companion-extension-${version}`);
+    const checksumFile = path.join(outputDir, `tiktok-live-companion-${version}-SHA256.txt`);
+
+    const resolvedExtensionDir = path.resolve(extensionDir);
+    if (path.dirname(resolvedExtensionDir) !== outputDir) {
         throw new Error('Refusing to package outside the requested output directory');
     }
     
-    const extensionDirExists = await dirExists(extensionDir);
-    if (extensionDirExists) {
-        await rm(extensionDir, { recursive: true });
+    if (fs.existsSync(extensionDir)) {
+        rimraf(extensionDir);
     }
     
-    await copyDir(join(ROOT, 'browser-extension'), extensionDir);
-    await copyDir(join(ROOT, 'companion-service'), join(extensionDir, 'companion-service'));
+    copyDir(path.join(ROOT, 'browser-extension'), extensionDir);
+    copyDir(path.join(ROOT, 'companion-service'), path.join(extensionDir, 'companion-service'));
     
-    const packageJson = {
+    fs.writeFileSync(
+        path.join(extensionDir, 'Sprachdienst-reparieren.cmd'),
+        '@echo off\r\ncall "%~dp0companion-service\\Sprachdienst-reparieren.cmd"\r\n',
+        'utf8'
+    );
+    
+    writeJsonFile(path.join(extensionDir, 'package.json'), {
         name: 'tiktok-live-companion-extension-package',
         private: true,
         version: version,
@@ -189,80 +198,75 @@ const argv = yargs(hideBin(process.argv))
             start: 'npm --prefix companion-service start',
             test: 'npm --prefix companion-service test'
         }
-    };
-    
-    await writeFile(
-        join(extensionDir, 'package.json'),
-        JSON.stringify(packageJson, null, 2) + '\n',
-        'utf8'
-    );
-    
-    await createZip(extensionZip, async (archive) => {
-        await addTree(archive, extensionDir);
     });
-    
-    await createZip(pluginZip, async (archive) => {
-        await addTree(archive, ROOT, 'tiktok-live-companion');
+
+    await createZip(extensionZip, archive => {
+        addTree(archive, extensionDir);
     });
-    
-    await createZip(serviceZip, async (archive) => {
-        await addTree(archive, join(ROOT, 'companion-service'));
+
+    await createZip(pluginZip, archive => {
+        addTree(archive, ROOT, 'tiktok-live-companion');
     });
+
+    await createZip(serviceZip, archive => {
+        addTree(archive, path.join(ROOT, 'companion-service'));
+    });
+
+    const iosSource = path.resolve(argv['ios-source']);
+    const androidSource = path.resolve(argv['android-source']);
     
-    const iosSource = argv['ios-source'];
-    const androidSource = argv['android-source'];
-    
-    if (!(await dirExists(iosSource)) || !(await dirExists(androidSource))) {
+    if (!fs.existsSync(iosSource) || !fs.statSync(iosSource).isDirectory() ||
+        !fs.existsSync(androidSource) || !fs.statSync(androidSource).isDirectory()) {
         throw new Error('--ios-source and --android-source must point to existing source directories');
     }
-    
-    await createZip(iosSourceZip, async (archive) => {
-        await addTree(archive, iosSource, 'TikTokLiveCompanion-iOS');
+
+    await createZip(iosSourceZip, archive => {
+        addTree(archive, iosSource, 'TikTokLiveCompanion-iOS');
     });
-    
-    await createZip(androidSourceZip, async (archive) => {
-        await addTree(archive, androidSource, 'TikTokLiveCompanion-Android');
+
+    await createZip(androidSourceZip, archive => {
+        addTree(archive, androidSource, 'TikTokLiveCompanion-Android');
     });
-    
+
     if (argv['android-apk']) {
-        const sourceApk = argv['android-apk'];
-        if (!(await fileExists(sourceApk)) || extname(sourceApk).toLowerCase() !== '.apk') {
+        const sourceApk = path.resolve(argv['android-apk']);
+        if (!fs.existsSync(sourceApk) || path.extname(sourceApk).toLowerCase() !== '.apk') {
             throw new Error('--android-apk must point to an existing APK');
         }
-        await copyFile(sourceApk, androidApk);
+        
+        if (path.resolve(sourceApk) !== path.resolve(androidApk)) {
+            fs.copyFileSync(sourceApk, androidApk);
+        }
     }
-    
-    const artifacts = [
-        extensionZip,
-        pluginZip,
-        serviceZip,
-        iosSourceZip,
-        androidSourceZip
-    ];
-    
-    if (await fileExists(androidApk)) {
+
+    const artifacts = [extensionZip, pluginZip, serviceZip, iosSourceZip, androidSourceZip];
+    if (fs.existsSync(androidApk)) {
         artifacts.push(androidApk);
     }
     
     const checksums = [];
     for (const artifact of artifacts) {
-        const digest = await calculateSHA256(artifact);
-        checksums.push(`${digest}  ${basename(artifact)}`);
+        const data = fs.readFileSync(artifact);
+        const hash = crypto.createHash('sha256').update(data).digest('hex');
+        checksums.push(`${hash}  ${path.basename(artifact)}`);
     }
     
-    await writeFile(checksumFile, checksums.join('\n') + '\n', 'utf8');
-    
-    const result = {
-        extension_dir: extensionDir,
-        extension_zip: extensionZip,
-        plugin_zip: pluginZip,
-        service_zip: serviceZip,
-        ios_source_zip: iosSourceZip,
-        android_source_zip: androidSourceZip,
-        android_apk: (await fileExists(androidApk)) ? androidApk : null,
-        checksum_file: checksumFile,
+    fs.writeFileSync(checksumFile, checksums.join('\n') + '\n', 'utf8');
+
+    console.log(JSON.stringify({
+        extension_dir: resolvedExtensionDir,
+        extension_zip: path.resolve(extensionZip),
+        plugin_zip: path.resolve(pluginZip),
+        service_zip: path.resolve(serviceZip),
+        ios_source_zip: path.resolve(iosSourceZip),
+        android_source_zip: path.resolve(androidSourceZip),
+        android_apk: fs.existsSync(androidApk) ? path.resolve(androidApk) : null,
+        checksum_file: path.resolve(checksumFile),
         version: version
-    };
-    
-    console.log(JSON.stringify(result, null, 2));
-})();
+    }, null, 2));
+}
+
+main().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
