@@ -1,45 +1,45 @@
 #!/usr/bin/env pwsh
 # spawn_agent.py — portiert nach powershell
-# Quelle: python, OpenClaw@gateway1:skills/sub-agents-utils/scripts/spawn_agent.py
-# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+# Quelle: python, OpenClaw@gateway2:skills/sub-agents-utils/scripts/spawn_agent.py
+# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
 
 <#
 .SYNOPSIS
 Sub-Agent spawner - Einfache CLI für sessions_spawn
 
 .DESCRIPTION
-Dieses Skript hilft beim Erstellen und Anzeigen von Konfigurationen zum Spawnen von Sub-Agents.
-Es unterstützt verschiedene Ausgabeformate wie Tool-Aufrufe, Slash Commands oder reines JSON.
+Dieses Skript hilft beim Erstellen von Konfigurationen zum Starten von Sub-Agents.
+Es generiert entweder ein Tool-Kommando, einen Slash-Befehl oder eine JSON-Konfiguration.
 
 .PARAMETER Task
-Die Aufgabenbeschreibung für den zu spawnenden Agenten (erforderlich).
+Die Aufgabenbeschreibung (erforderlich)
 
 .PARAMETER Label
-Ein optionaler Label für den Agenten.
+Ein optionaler Label für den Agenten
 
 .PARAMETER Model
-Das zu verwendende KI-Modell. Muss einer der verfügbaren Modelle entsprechen.
+Das zu verwendende KI-Modell
 
 .PARAMETER Thinking
-Das Denkniveau des Agenten (low, medium, high).
+Das Denkniveau (low, medium, high)
 
 .PARAMETER Timeout
-Timeout in Sekunden (Standard: 900).
+Timeout in Sekunden (Standard: 900)
 
 .PARAMETER Thread
-Aktiviert Thread-Binding.
+Aktiviert Thread-Binding
 
 .PARAMETER Mode
-Der Ausführungsmodus (run oder session). Standard ist run.
+Der Ausführungsmodus (run oder session, Standard: run)
 
 .PARAMETER Output
-Das Ausgabeformat (tool, slash, json). Standard ist tool.
+Das Ausgabeformat (tool, slash, json, Standard: tool)
 
 .EXAMPLE
 .\spawn_agent.ps1 -Task "Analyze logs"
 
 .EXAMPLE
-.\spawn_agent.ps1 -Task "Code review" -Model "openai/gpt-5.6-sol" -Timeout 1800
+.\spawn_agent.ps1 -Task "Code review" -Model "openrouter/anthropic/claude-haiku-4.5" -Timeout 1800
 
 .EXAMPLE
 .\spawn_agent.ps1 -Task "Batch process" -Label "batch-worker" -Thread
@@ -52,11 +52,8 @@ param(
     [string]$Label,
     
     [ValidateScript({
-        $models = Get-Models
-        if ($_ -and $_ -notin $models) {
-            throw "Modell '$_' ist nicht verfügbar. Verfügbare Modelle: $($models -join ', ')"
-        }
-        return $true
+        $validModels = @("openrouter/anthropic/claude-haiku-4.5", "openrouter/google/gemini-pro", "openai/gpt-4")
+        if ($validModels -contains $_) { return $true } else { throw "Ungültiges Modell: $_" }
     })]
     [string]$Model,
     
@@ -74,148 +71,142 @@ param(
     [string]$Output = "tool"
 )
 
-function Get-Models {
-    $configPath = $env:OPENCLAW_CONFIG ?? "/home/openclaw/.openclaw/openclaw.json"
-    
-    try {
-        $configContent = Get-Content -Path $configPath -Raw -Encoding UTF8
-        $config = $configContent | ConvertFrom-Json
-        
-        $modelConfig = $config.agents.defaults.model
-        $candidates = @($modelConfig.primary) + @($modelConfig.fallbacks)
-        
-        $models = @()
-        foreach ($candidate in $candidates) {
-            if ($candidate -is [string] -and $candidate -and -not $candidate.StartsWith("anthropic/")) {
-                $models += $candidate
-            }
-        }
-        
-        # Entferne Duplikate unter Beibehaltung der Reihenfolge
-        $uniqueModels = @()
-        foreach ($m in $models) {
-            if ($m -notin $uniqueModels) {
-                $uniqueModels += $m
-            }
-        }
-        
-        if ($uniqueModels.Count -eq 0) {
-            throw "Keine allgemein verfügbaren Modelle in $configPath"
-        }
-        
-        return $uniqueModels
-    }
-    catch {
-        Write-Error "Modellkonfiguration kann nicht geladen werden: $configPath`: $_"
-        exit 1
-    }
-}
+# Workspace-Pfad definieren
+$WORKSPACE = "/home/openclaw/.openclaw/workspace"
 
-$MODELS = Get-Models
-
-class SubAgentSpawner {
-    static [hashtable] GetSpawnConfig([string]$Task, [string]$Label, [string]$Model, [string]$Thinking, [int]$Timeout, [bool]$Thread, [string]$Mode) {
-        $config = @{
-            task = $Task
-        }
-        
-        if ($Label) {
-            $config["label"] = $Label
-        }
-        
-        if ($Model -and $Model -in $script:MODELS) {
-            $config["model"] = $Model
-        }
-        
-        if ($Thinking) {
-            $config["thinking"] = $Thinking
-        }
-        
-        if ($Timeout) {
-            $config["runTimeoutSeconds"] = $Timeout
-        }
-        
-        if ($Thread) {
-            $config["thread"] = $true
-            if ($Mode -eq "run") {
-                $config["mode"] = "session" # thread requires session mode
-            }
-        }
-        else {
-            $config["mode"] = $Mode
-        }
-        
-        return $config
-    }
-    
-    static [void] PrintSpawnCommand([hashtable]$Config) {
-        Write-Host ""
-        Write-Host "🛠️  Tool-Aufruf:"
-        Write-Host ("=" * 50)
-        Write-Host "sessions_spawn("
-        foreach ($key in $Config.Keys) {
-            $value = $Config[$key]
-            if ($value -is [string]) {
-                Write-Host "    $key=`"$value`""
-            }
-            else {
-                Write-Host "    $key=$value"
-            }
-        }
-        Write-Host ")"
-        Write-Host ("=" * 50)
-    }
-    
-    static [void] PrintSlashCommand([hashtable]$Config) {
-        $task = $Config["task"] ?? ""
-        $label = $Config["label"] ?? "agent"
-        $model = $Config["model"] ?? ""
-        
-        $cmd = "/subagents spawn $label `"$task`""
-        if ($model) {
-            $cmd += " --model $model"
-        }
-        if ($Config["thinking"]) {
-            $cmd += " --thinking $($Config['thinking'])"
-        }
-        
-        Write-Host ""
-        Write-Host "💬 Slash Command:"
-        Write-Host ("=" * 50)
-        Write-Host $cmd
-        Write-Host ("=" * 50)
-    }
-}
-
-try {
-    $spawner = [SubAgentSpawner]::new()
-    $config = [SubAgentSpawner]::GetSpawnConfig($Task, $Label, $Model, $Thinking, $Timeout, $Thread.IsPresent, $Mode)
-    
-    Write-Host "✅ Sub-Agent Konfiguration:"
-    $configJson = $config | ConvertTo-Json -Depth 10
-    Write-Host $configJson
-    
-    switch ($Output) {
-        "tool" {
-            [SubAgentSpawner]::PrintSpawnCommand($config)
-        }
-        "slash" {
-            [SubAgentSpawner]::PrintSlashCommand($config)
-        }
-        "json" {
-            Write-Host ""
-            Write-Host "📄 JSON:"
-            Write-Host $configJson
-            
-            # Speichere als Datei
-            $fileName = "subagent_$($config['label'] ?? 'spawn').json"
-            $outputFile = Join-Path "/tmp" $fileName
-            $config | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding UTF8
-            Write-Host "💾 Gespeichert: $outputFile"
-        }
-    }
-}
-catch {
-    Write-Error $_.Exception.Message
+# Prüfen ob das Modul existiert
+if (-not (Test-Path "$WORKSPACE/openclaw_models.ps1")) {
+    Write-Error "Modellkonfiguration kann nicht geladen werden: openclaw_models.ps1 nicht gefunden"
     exit 1
+}
+
+# Modul laden
+try {
+    . "$WORKSPACE/openclaw_models.ps1"
+    $MODELS = configured_models
+} catch {
+    Write-Error "Modellkonfiguration kann nicht geladen werden: $_"
+    exit 1
+}
+
+# Validierung des Models
+if ($Model -and $MODELS -notcontains $Model) {
+    Write-Error "Ungültiges Modell: $Model"
+    exit 1
+}
+
+function Get-SpawnConfig {
+    param(
+        [string]$Task,
+        [string]$Label,
+        [string]$Model,
+        [string]$Thinking,
+        [int]$Timeout,
+        [bool]$Thread,
+        [string]$Mode
+    )
+    
+    $config = @{
+        task = $Task
+    }
+    
+    if ($Label) {
+        $config.label = $Label
+    }
+    
+    if ($Model -and $MODELS -contains $Model) {
+        $config.model = $Model
+    }
+    
+    if ($Thinking) {
+        $config.thinking = $Thinking
+    }
+    
+    if ($Timeout) {
+        $config.runTimeoutSeconds = $Timeout
+    }
+    
+    if ($Thread) {
+        $config.thread = $true
+        if ($Mode -eq "run") {
+            $config.mode = "session"  # thread erfordert session mode
+        }
+    } else {
+        $config.mode = $Mode
+    }
+    
+    return $config
+}
+
+function Print-SpawnCommand {
+    param([hashtable]$Config)
+    
+    Write-Host ""
+    Write-Host "🛠️  Tool-Aufruf:"
+    Write-Host ("=" * 50)
+    Write-Host "sessions_spawn("
+    
+    foreach ($key in $Config.Keys) {
+        $value = $Config[$key]
+        if ($value -is [string]) {
+            Write-Host "    $key=`"$value`""
+        } else {
+            Write-Host "    $key=$value"
+        }
+    }
+    
+    Write-Host ")"
+    Write-Host ("=" * 50)
+}
+
+function Print-SlashCommand {
+    param([hashtable]$Config)
+    
+    $task = if ($Config.ContainsKey("task")) { $Config["task"] } else { "" }
+    $label = if ($Config.ContainsKey("label")) { $Config["label"] } else { "agent" }
+    $model = if ($Config.ContainsKey("model")) { $Config["model"] } else { "" }
+    
+    $cmd = "/subagents spawn $label `"$task`""
+    
+    if ($model) {
+        $cmd += " --model $model"
+    }
+    
+    if ($Config.ContainsKey("thinking")) {
+        $cmd += " --thinking $($Config['thinking'])"
+    }
+    
+    Write-Host ""
+    Write-Host "💬 Slash Command:"
+    Write-Host ("=" * 50)
+    Write-Host $cmd
+    Write-Host ("=" * 50)
+}
+
+# Hauptausführung
+$config = Get-SpawnConfig -Task $Task -Label $Label -Model $Model -Thinking $Thinking -Timeout $Timeout -Thread $Thread.IsPresent -Mode $Mode
+
+Write-Host "✅ Sub-Agent Konfiguration:"
+$configJson = $config | ConvertTo-Json -Depth 10
+Write-Host $configJson
+
+switch ($Output) {
+    "tool" {
+        Print-SpawnCommand -Config $config
+    }
+    "slash" {
+        Print-SlashCommand -Config $config
+    }
+    "json" {
+        Write-Host ""
+        Write-Host "📄 JSON:"
+        Write-Host $configJson
+        
+        # Speichern als Datei
+        $fileName = if ($config.ContainsKey("label")) { "subagent_$($config['label']).json" } else { "subagent_spawn.json" }
+        $outputFile = Join-Path "/tmp" $fileName
+        
+        $config | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+        Write-Host "💾 Gespeichert: $outputFile"
+    }
 }
