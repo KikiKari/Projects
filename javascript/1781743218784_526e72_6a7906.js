@@ -1,6 +1,10 @@
 #!/usr/bin/env node
-// 1781743218784_526e72.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_526e72.tcl
+// 1781743218784_526e72_6a7906.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72_6a7906.pl
+// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_526e72_6a7906.pl — portiert nach JavaScript
+// Quelle: perl, Projects@abstractions:perl/1781743218784_526e72_6a7906.pl
 // Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784.ps1 — portiert nach tcl
@@ -12,13 +16,14 @@
 // Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 if (process.argv.length !== 3) {
-    console.error(`Usage: ${process.argv[1]} <OutputPath>`);
+    console.error("Usage: " + process.argv[1] + " <OutputPath>");
     process.exit(1);
 }
 
 const OutputPath = process.argv[2];
 
-const htmlContent = `<!DOCTYPE html>
+const htmlContent = `\
+<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,7 +227,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
+</html>\
 `;
 
-require('fs').writeFileSync(OutputPath, htmlContent, 'utf-8');
+const fs = require('fs');
+try {
+    fs.writeFileSync(OutputPath, htmlContent, 'utf8');
+} catch (err) {
+    console.error("Could not open file '" + OutputPath + "' " + err.message);
+    process.exit(1);
+}

@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 # 1781743218784.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
-def generate_html():
-    html = '''<!DOCTYPE html>
+# Parameter verarbeiten
+if len(sys.argv) != 2:
+    print("Usage: python script.py <OutputPath>", file=sys.stderr)
+    sys.exit(1)
+output_path = sys.argv[1]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -213,25 +218,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-    return html
-
-def main():
-    args = sys.argv[1:]
-    
-    if len(args) != 1:
-        print("Usage: python3 script.py <output-file>", file=sys.stderr)
-        sys.exit(1)
-    
-    output_file = args[0]
-    
-    try:
-        html_content = generate_html()
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        print(f"HTML file generated: {output_file}")
-    except Exception as error:
-        print(f"Error generating HTML file: {error}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+with open(output_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)

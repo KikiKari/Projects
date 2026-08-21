@@ -1,25 +1,29 @@
 #!/usr/bin/env node
 // 1781743218784_526e72.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
-// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.ps1 — portiert nach perl5
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.html — portiert nach powershell
-// Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
+const path = require('path');
 
-const outputPath = process.argv[2];
-if (!outputPath) {
-    console.error(`Usage: ${process.argv[1]} <output_path>\n`);
-    process.exit(1);
-}
+function main() {
+    const args = process.argv.slice(2);
+    let outputPath = null;
 
-const htmlContent = `<!DOCTYPE html>
+    // Parse command line arguments
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--OutputPath' && i + 1 < args.length) {
+            outputPath = args[i + 1];
+            i++; // Skip next argument
+        }
+    }
+
+    if (!outputPath) {
+        console.error("Missing required argument: OutputPath");
+        process.exit(1);
+    }
+
+    const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -226,9 +230,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 `;
 
-try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (err) {
-    console.error(`Could not open file '${outputPath}': ${err.message}`);
-    process.exit(1);
+    try {
+        fs.writeFileSync(outputPath, htmlContent, 'utf8');
+    } catch (err) {
+        console.error(`Error writing file: ${err.message}`);
+        process.exit(1);
+    }
+}
+
+if (require.main === module) {
+    main();
 }

@@ -1,5 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_526e72.pl — portiert nach tcl
+# 1781743218784_526e72.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_526e72.pl — portiert nach javascript
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
@@ -7,14 +11,17 @@
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784.html — portiert nach powershell
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
 if {$argc != 1} {
     puts stderr "Usage: [info script] <output_path>"
     exit 1
 }
 
-set output_path [lindex $argv 0]
-
-set html_content {<!DOCTYPE html>
+set outputPath [lindex $argv 0]
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -221,10 +228,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {set fh [open $output_path w]} error]} {
-    puts stderr "Could not open file '$output_path': $error"
+if {[catch {set fh [open $outputPath w]} err]} {
+    puts stderr "Could not open file '$outputPath': $err"
     exit 1
 }
 
-puts -nonewline $fh $html_content
+puts -nonewline $fh $htmlContent
 close $fh

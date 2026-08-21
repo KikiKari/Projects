@@ -1,10 +1,17 @@
-#!/usr/bin/env perl
-# 1781743218784_526e72.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_526e72.tcl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_526e72_6a7906.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72_6a7906.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode_utf8);
+use File::Slurp qw(write_file);
+
+# 1781743218784_526e72.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_526e72.tcl
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.ps1 — portiert nach tcl
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
@@ -21,7 +28,7 @@ if (@ARGV != 1) {
 
 my $OutputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+my $htmlContent = <<'HTML_CONTENT';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -227,8 +234,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML_CONTENT
 
-open my $f, '>:encoding(UTF-8)', $OutputPath or die "Could not open file '$OutputPath' $!";
-print $f $htmlContent;
-close $f;
+write_file($OutputPath, decode_utf8($htmlContent));

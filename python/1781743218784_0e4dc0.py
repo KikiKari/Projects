@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-# 1781743218784.sh — portiert nach python
+# 1781743218784_0e4dc0.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach perl5
 # Quelle: shell, Projects@abstractions:shell/1781743218784.sh
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+
+# 1781743218784.html — portiert nach Perl
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 def generateHTML():
     return '''<!DOCTYPE html>
@@ -213,19 +221,21 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-def main():
-    args = sys.argv[1:]
-    
+def main(args):
     if len(args) != 1:
-        print('Usage: python3 script.py <output-file>', file=sys.stderr)
+        print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
     
     outputFile = args[0]
     
     # Generate HTML content and write to file
-    with open(outputFile, 'w', encoding='utf-8') as f:
-        f.write(generateHTML())
-    print(f"HTML file generated: {outputFile}")
+    try:
+        with open(outputFile, 'w', encoding='utf-8') as fh:
+            fh.write(generateHTML())
+        print(f"HTML file generated: {outputFile}")
+    except Exception as e:
+        print(f"Could not open file '{outputFile}' {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

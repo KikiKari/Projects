@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_526e72.tcl — portiert nach powershell
+# 1781743218784_526e72_6a7906.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72_6a7906.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_526e72.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_526e72.tcl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
@@ -11,12 +15,10 @@
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-if ($args.Count -ne 1) {
-    Write-Error "Usage: $($MyInvocation.MyCommand.Name) <OutputPath>"
-    exit 1
-}
-
-$OutputPath = $args[0]
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
 $htmlContent = @'
 <!DOCTYPE html>

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_526e72.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_526e72.tcl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_526e72_6a7906.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72_6a7906.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
-def main():
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <OutputPath>", file=sys.stderr)
-        sys.exit(1)
+# Usage check
+if len(sys.argv) != 2:
+    print(f"Usage: {sys.argv[0]} <OutputPath>", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
+output_path = sys.argv[1]
 
-    html_content = '''<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -220,8 +220,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
-if __name__ == "__main__":
-    main()
+with open(output_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)

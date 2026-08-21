@@ -1,20 +1,26 @@
 #!/usr/bin/env node
-// 1781743218784_260531.py — portiert nach javascript
+// 1781743218784_260531_8b95ef.ps1 — portiert nach javascript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_260531_8b95ef.ps1
+// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_260531.py — portiert nach powershell
 // Quelle: python, Projects@abstractions:python/1781743218784_260531.py
 // Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
+// 1781743218784.tcl — portiert nach python
+// Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+// Portiert nach JavaScript (Node.js) 20
+
+if (process.argv.length !== 3) {
+    console.log("Usage: node script.js output_file.html");
+    process.exit(1);
+}
+
 const fs = require('fs');
-const path = require('path');
+const outputFile = process.argv[2];
 
-function main() {
-    if (process.argv.length !== 3) {
-        console.log("Usage: " + process.argv[1] + " output_file.html");
-        process.exit(1);
-    }
-
-    const outputFile = process.argv[2];
-
-    const content = `<!DOCTYPE html>
+const content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -158,7 +164,7 @@ async function deriveKey(pw,salt){
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
   const key=await deriveKey(pw,salt);
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(obj,null,2)));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(obj,null,2))));
   const magic=enc.encode("SVPB1"); const out=new Uint8Array(5+16+12+ct.length);
   out.set(magic,0); out.set(salt,5); out.set(iv,21); out.set(ct,33); return u8b64(out);
 }
@@ -216,8 +222,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 `;
 
-    fs.writeFileSync(outputFile, content, 'utf8');
-    console.log("HTML file generated: " + outputFile);
-}
-
-main();
+fs.writeFileSync(outputFile, content, 'utf8');
+console.log(`HTML file generated: ${outputFile}`);

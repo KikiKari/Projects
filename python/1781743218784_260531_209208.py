@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
-# 1781743218784_260531.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531.pl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_209208.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_260531_209208.ps1
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import json
+import base64
+import hashlib
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.backends import default_backend
+import os
 
-# 1781743218784.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python script.py output_file.html")
+        sys.exit(1)
 
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: tclsh this_script.tcl output_file.html
+    output_file = sys.argv[1]
 
-if len(sys.argv) != 2:
-    print("Usage: tclsh [info script] output_file.html")
-    sys.exit(1)
-
-output_file = sys.argv[1]
-
-try:
-    fp = open(output_file, 'w')
-except Exception as e:
-    print(f"Could not open file '{output_file}' {e}")
-    sys.exit(1)
-
-# Write DOCTYPE and main script tag
-fp.write('''<!DOCTYPE html>
+    try:
+        with open(output_file, 'w', encoding='utf-8') as fp:
+            # Write DOCTYPE and main script tag
+            fp.write('''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -37,8 +35,8 @@ fp.write('''<!DOCTYPE html>
 </script>
 ''')
 
-# Write HTML start and head section
-fp.write('''<html lang="de">
+            # Write HTML start and head section
+            fp.write('''<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -78,8 +76,8 @@ a{color:var(--accent);}
 </head>
 ''')
 
-# Write body content
-fp.write('''<body>
+            # Write body content
+            fp.write('''<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -123,8 +121,8 @@ fp.write('''<body>
 </div>
 ''')
 
-# JavaScript section
-fp.write('''<script>
+            # JavaScript section
+            fp.write('''<script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
@@ -239,10 +237,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 ''')
 
-fp.write('''</body>
-</html>
-''')
+            fp.write('''</body>
+</html>''')
 
-fp.close()
+    except Exception as e:
+        print(f"Could not open file '{output_file}' {e}")
+        sys.exit(1)
 
-print(f"HTML file generated: {output_file}")
+    print(f"HTML file generated: {output_file}")
+
+if __name__ == "__main__":
+    main()

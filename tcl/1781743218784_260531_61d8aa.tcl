@@ -1,19 +1,13 @@
 #!/usr/bin/env tclsh
-# 1781743218784_260531.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_61d8aa.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531_61d8aa.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.html — portiert nach tcl
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: ./this_script.tcl output_file.html
-
+# Check command line arguments
 if {$argc != 1} {
     puts stderr "Usage: [info script] output_file.html"
     exit 1
@@ -21,9 +15,11 @@ if {$argc != 1} {
 
 set output_file [lindex $argv 0]
 
+# Open output file for writing
+set fh [open $output_file w]
+
 # Write DOCTYPE and main script tag
-set f [open $output_file w]
-puts $f {<!DOCTYPE html>
+puts $fh {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
 {
@@ -37,7 +33,7 @@ puts $f {<!DOCTYPE html>
 </script>}
 
 # Write HTML start and head section
-puts $f {<html lang="de">
+puts $fh {<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -78,7 +74,7 @@ a{color:var(--accent);}
 </head>}
 
 # Write body content
-puts $f {<body>
+puts $fh {<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -122,7 +118,7 @@ puts $f {<body>
 </div>}
 
 # JavaScript section
-puts $f {<script>
+puts $fh {<script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
@@ -237,8 +233,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>}
 
 # Close HTML
-puts $f {</body>
+puts $fh {</body>
 </html>}
-close $f
 
+# Close file handle and print success message
+close $fh
 puts "HTML file generated: $output_file"

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# 1781743218784_260531.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_61d8aa.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531_61d8aa.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
 # 1781743218784.html — portiert nach tcl
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
@@ -20,8 +20,9 @@ if len(sys.argv) != 2:
 output_file = sys.argv[1]
 
 # Write DOCTYPE and main script tag
-with open(output_file, 'w') as f:
-    f.write('''<!DOCTYPE html>
+try:
+    with open(output_file, 'w', encoding='utf-8') as fh:
+        fh.write('''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
 {
@@ -35,9 +36,8 @@ with open(output_file, 'w') as f:
 </script>
 ''')
 
-# Write HTML start and head section
-with open(output_file, 'a') as f:
-    f.write('''<html lang="de">
+        # Write HTML start and head section
+        fh.write('''<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -78,9 +78,8 @@ a{color:var(--accent);}
 </head>
 ''')
 
-# Write body content
-with open(output_file, 'a') as f:
-    f.write('''<body>
+        # Write body content
+        fh.write('''<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -124,9 +123,8 @@ with open(output_file, 'a') as f:
 </div>
 ''')
 
-# JavaScript section
-with open(output_file, 'a') as f:
-    f.write('''<script>
+        # JavaScript section
+        fh.write('''<script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
@@ -241,10 +239,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 ''')
 
-# Close HTML
-with open(output_file, 'a') as f:
-    f.write('''</body>
+        # Close HTML
+        fh.write('''</body>
 </html>
 ''')
 
-print("HTML file generated: {}".format(output_file))
+    print("HTML file generated: {}".format(output_file))
+
+except IOError as e:
+    print("Could not open file '{}': {}".format(output_file, str(e)), file=sys.stderr)
+    sys.exit(1)

@@ -1,11 +1,15 @@
 #!/bin/bash
-# 1781743218784_526e72.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_526e72.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.ps1 — portiert nach bash
+# 1781743218784_526e72.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.ps1 — portiert nach perl5
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
@@ -13,14 +17,13 @@ set -euo pipefail
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
-if [[ $# -ne 1 ]]; then
+outputPath="${1:-}"
+if [[ -z "$outputPath" ]]; then
     echo "Usage: $0 <output_path>" >&2
     exit 1
 fi
 
-output_path="$1"
-
-cat > "$output_path" << 'HTML_END'
+cat > "$outputPath" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -226,4 +229,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
+
+if [[ ! -f "$outputPath" ]]; then
+    echo "Could not open file '$outputPath'" >&2
+    exit 1
+fi

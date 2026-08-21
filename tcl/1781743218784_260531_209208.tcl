@@ -1,23 +1,34 @@
-#!/usr/bin/env tclsh
-# 1781743218784_260531.pl — portiert nach tcl
+#!/usr/bin/env tclsh8.6
+# 1781743218784_260531_209208.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_260531_209208.ps1
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_260531.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531.pl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.tcl — portiert nach tcl
-# Quelle: perl, Projects@abstractions:perl/1781743218784.pl
+# 1781743218784.tcl — portiert nach perl5
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach tcl
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # Tcl 8.6 script to generate the Secret Vault Public HTML file
 # Usage: tclsh this_script.tcl output_file.html
 
 if {$argc != 1} {
-    puts "Usage: tclsh \[info script\] output_file.html"
+    puts "Usage: tclsh [info script] output_file.html"
     exit 1
 }
 
 set output_file [lindex $argv 0]
 
-set fp [open $output_file w]
+if {[catch {set fp [open $output_file w]} error]} {
+    puts stderr "Could not open file '$output_file' $error"
+    exit 1
+}
 
 # Write DOCTYPE and main script tag
 puts $fp {<!DOCTYPE html>
@@ -29,7 +40,8 @@ puts $fp {<!DOCTYPE html>
   "mcpTools": [],
   "mcpServerNames": []
 }
-</script>}
+</script>
+}
 
 # Write HTML start and head section
 puts $fp {<html lang="de">
@@ -69,7 +81,8 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 .foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:18px;line-height:1.5;}
 a{color:var(--accent);}
 </style>
-</head>}
+</head>
+}
 
 # Write body content
 puts $fp {<body>
@@ -113,7 +126,8 @@ puts $fp {<body>
   </div>
 
   <div class="foot" id="foot"></div>
-</div>}
+</div>
+}
 
 # JavaScript section
 puts $fp {<script>
@@ -228,10 +242,12 @@ encBtn.onclick=async()=>{
 dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value],{type:"text/plain"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download="vault.svpb"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){} };
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 }
-</script>}
+</script>
+}
 
 puts $fp {</body>
-</html>}
+</html>
+}
 
 close $fp
 

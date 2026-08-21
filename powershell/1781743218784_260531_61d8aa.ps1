@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
-# 1781743218784_260531.sh — portiert nach powershell
+# 1781743218784_260531_61d8aa.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531_61d8aa.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_260531.sh — portiert nach perl5
 # Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.html — portiert nach tcl
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
@@ -22,7 +22,7 @@ if ($args.Count -ne 1) {
 $outputFile = $args[0]
 
 # Write DOCTYPE and main script tag
-@"
+$htmlContent = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
@@ -35,10 +35,10 @@ $outputFile = $args[0]
 }
 
 </script>
-"@ | Out-File -FilePath $outputFile -Encoding UTF8
+"@
 
 # Write HTML start and head section
-@"
+$htmlContent += @"
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -78,10 +78,10 @@ a{color:var(--accent);}
 }
 </style>
 </head>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
 # Write body content
-@"
+$htmlContent += @"
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
@@ -124,10 +124,10 @@ a{color:var(--accent);}
 
   <div class="foot" id="foot"></div>
 </div>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
 # JavaScript section
-@"
+$htmlContent += @"
 <script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
@@ -241,12 +241,18 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 }
 </script>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
 # Close HTML
-@"
+$htmlContent += @"
 </body>
 </html>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
-Write-Host "HTML file generated: $outputFile"
+try {
+    $htmlContent | Out-File -FilePath $outputFile -Encoding utf8
+    Write-Output "HTML file generated: $outputFile"
+} catch {
+    Write-Error "Could not write file '$outputFile': $_"
+    exit 1
+}

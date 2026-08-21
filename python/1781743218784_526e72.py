@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-# 1781743218784_526e72.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_526e72.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
-# 1781743218784.html — portiert nach powershell
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+def main():
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <output_path>", file=sys.stderr)
+        sys.exit(1)
 
-if len(sys.argv) != 2:
-    print(f"Usage: {sys.argv[0]} <output_path>")
-    sys.exit(1)
-
-output_path = sys.argv[1]
-
-html_content = '''<!DOCTYPE html>
+    output_path = sys.argv[1]
+    
+    html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,7 +216,15 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
-with open(output_path, 'w', encoding='utf-8') as fh:
-    fh.write(html_content)
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+    except Exception as e:
+        print(f"Could not open file '{output_path}': {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

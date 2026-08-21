@@ -1,27 +1,21 @@
 #!/usr/bin/env pwsh
-# 1781743218784_260531.py — portiert nach powershell
+# 1781743218784_260531_8b95ef.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_8b95ef.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_260531.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_260531.py
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach PowerShell 7
-
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputFile
-)
-
 function Main {
     if ($args.Count -ne 1) {
-        Write-Host "Usage: $($MyInvocation.MyCommand.Name) output_file.html"
+        Write-Output "Usage: $($MyInvocation.MyCommand.Name) output_file.html"
         exit 1
     }
 
     $outputFile = $args[0]
 
-    $content = @"
+    $content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -166,7 +160,7 @@ async function deriveKey(pw,salt){
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
   const key=await deriveKey(pw,salt);
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(obj,null,2))));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(obj,null,2)));
   const magic=enc.encode("SVPB1"); const out=new Uint8Array(5+16+12+ct.length);
   out.set(magic,0); out.set(salt,5); out.set(iv,21); out.set(ct,33); return u8b64(out);
 }
@@ -222,10 +216,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
+'@
 
     Set-Content -Path $outputFile -Value $content -Encoding UTF8
-    Write-Host "HTML file generated: $outputFile"
+    Write-Output "HTML file generated: $outputFile"
 }
 
 Main @args

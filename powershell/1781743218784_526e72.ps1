@@ -1,20 +1,24 @@
 #!/usr/bin/env pwsh
-# 1781743218784_526e72.pl — portiert nach powershell
+# 1781743218784_526e72.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_526e72.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_526e72.pl — portiert nach javascript
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.ps1 — portiert nach PowerShell 7
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_526e72.pl
+# 1781743218784.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784.ps1
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach powershell
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$OutputPath
 )
-
-# 1781743218784.html — portiert nach powershell
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 $htmlContent = @'
 <!DOCTYPE html>
@@ -225,8 +229,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    [System.IO.File]::WriteAllText($OutputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $OutputPath -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error "Could not write to file '$OutputPath': $_"
+    Write-Error "Could not open file '$OutputPath': $($_.Exception.Message)"
     exit 1
 }

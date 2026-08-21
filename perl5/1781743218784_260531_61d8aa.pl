@@ -1,10 +1,21 @@
 #!/usr/bin/env perl
-# 1781743218784_260531.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_61d8aa.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_260531_61d8aa.ps1
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode_utf8 encode_utf8);
+use File::Basename;
+
+# 1781743218784_260531.sh — portiert nach powershell
+# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.tcl — portiert nach shell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.html — portiert nach tcl
 # Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
@@ -14,14 +25,15 @@ use warnings;
 # Usage: ./this_script.sh output_file.html
 
 if (@ARGV != 1) {
-    print STDERR "Usage: $0 output_file.html\n";
+    print STDERR "Usage: " . basename($0) . " output_file.html\n";
     exit 1;
 }
 
-my $output_file = $ARGV[0];
+my $outputFile = $ARGV[0];
+
+open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile' $!";
 
 # Write DOCTYPE and main script tag
-open(my $fh, '>', $output_file) or die "Could not open file '$output_file' $!";
 print $fh <<'EOF';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -250,4 +262,5 @@ print $fh <<'EOF';
 EOF
 
 close $fh;
-print "HTML file generated: $output_file\n";
+
+print "HTML file generated: $outputFile\n";

@@ -1,9 +1,13 @@
-#!/bin/bash
-# 1781743218784_260531.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531.pl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_260531_209208.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_260531_209208.ps1
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
+
+# 1781743218784_260531.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531.pl
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.tcl — portiert nach perl5
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
@@ -17,14 +21,14 @@ set -euo pipefail
 # Usage: tclsh this_script.tcl output_file.html
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 output_file.html"
+    echo "Usage: tclsh [info script] output_file.html"
     exit 1
 fi
 
 output_file="$1"
 
-# Write DOCTYPE and main script tag
-cat > "$output_file" <<'EOF'
+{
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -37,8 +41,7 @@ cat > "$output_file" <<'EOF'
 </script>
 EOF
 
-# Write HTML start and head section
-cat >> "$output_file" <<'EOF'
+    cat << 'EOF'
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -79,8 +82,7 @@ a{color:var(--accent);}
 </head>
 EOF
 
-# Write body content
-cat >> "$output_file" <<'EOF'
+    cat << 'EOF'
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
@@ -125,8 +127,7 @@ cat >> "$output_file" <<'EOF'
 </div>
 EOF
 
-# JavaScript section
-cat >> "$output_file" <<'EOF'
+    cat << 'EOF'
 <script>
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
@@ -242,9 +243,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 EOF
 
-cat >> "$output_file" <<'EOF'
-</body>
-</html>
-EOF
+    echo '</body>'
+    echo '</html>'
+} > "$output_file"
 
 echo "HTML file generated: $output_file"

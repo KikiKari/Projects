@@ -1,21 +1,19 @@
 #!/bin/bash
-# 1781743218784_260531.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_260531.py
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_8b95ef.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_8b95ef.js
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.tcl — portiert nach bash
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-if [ $# -ne 1 ]; then
+# Prüfe Anzahl Argumente
+if [[ $# -ne 1 ]]; then
     echo "Usage: $0 output_file.html"
     exit 1
 fi
 
 output_file="$1"
 
+# Schreibe HTML-Inhalt in Datei
 cat > "$output_file" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -219,4 +217,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 EOF
 
-echo "HTML file generated: ${output_file}"
+echo "HTML file generated: $output_file"
