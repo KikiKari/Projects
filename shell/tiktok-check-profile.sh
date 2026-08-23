@@ -1,239 +1,271 @@
 #!/usr/bin/env bash
 # tiktok-check-profile.js — portiert nach shell
-# Quelle: javascript, OpenClaw@gateway1:skills/tiktok-live/scripts/tiktok-check-profile.js
-# Erzeugt: 2026-08-22 durch ABSTRACTIONS_MANAGER.py
+# Quelle: javascript, OpenClaw@gateway2:skills/tiktok-live/scripts/tiktok-check-profile.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# TikTok Live Status Checker
-# Prüft ausschließlich profilgebundene Live-Indikatoren.
-# Der allgemeine TikTok-Navigationspunkt "LIVE" ist kein Statussignal.
-# Unterstützt @handle-Normalisierung und optionalen Node-Lastschutz
-# via TIKTOK_MAX_LOAD_PER_CPU (Exit-Code 75 bei NODE_BUSY).
+# Basic TikTok LIVE profile checker.
+#
+# Scopes every signal to the requested account and ignores unrelated sidebar
+# LIVE labels. This profile-only checker does not classify restricted LIVE;
+# use the enhanced checker or dispatcher for that distinction.
+#
+# Exit 0 = account-specific LIVE, 1 = offline, 2 = dependency/technical
+# failure, 75 = overloaded before Playwright startup.
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly TEMP_DIR="${TMPDIR:-/tmp}"
-readonly TEMP_HTML="${TEMP_DIR}/tiktok_profile.html"
-readonly TEMP_SCREENSHOT="${TEMP_DIR}/tiktok_screenshot.png"
+readonly COMMON_FILE="${SCRIPT_FILE%/*}/tiktok-common.sh"
 
-# Farbcodes für Debug-Ausgaben
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m' # No Color
+if [[ ! -f "$COMMON_FILE" ]]; then
+    echo "Error: Common functions file not found at $COMMON_FILE" >&2
+    exit 2
+fi
 
-# Standard-User-Agent
-readonly USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+source "$COMMON_FILE"
 
-# Funktion zur Ausgabe von Fehlermeldungen
-error() {
-    echo >&2 "ERROR: $*"
+# Check arguments
+if [[ $# -ne 1 ]]; then
+    echo 'Usage: tiktok-check-profile.sh <username>' >&2
+    exit 64
+fi
+
+username="$1"
+normalize_username "$username" || {
+    echo "Invalid username format: $username" >&2
+    exit 64
 }
 
-# Funktion zur Ausgabe von Debug-Meldungen
-debug() {
-    [[ ${DEBUG:-} == "1" ]] && echo >&2 "DEBUG: $*" || true
+enforce_load_limit "playwright_basic"
+
+# Check dependencies
+if ! command -v chromium >/dev/null 2>&1; then
+    jq -n --arg msg "Chromium not found in PATH" '{
+        error: true,
+        status: "dependency_missing",
+        method: "playwright_basic",
+        message: $msg,
+        timestamp: (now | todateiso8601)
+    }' >&2
+    exit 2
+fi
+
+if ! command -v playwright >/dev/null 2>&1; then
+    jq -n --arg msg "Playwright CLI not found in PATH" '{
+        error: true,
+        status: "dependency_missing",
+        method: "playwright_basic",
+        message: $msg,
+        timestamp: (now | todateiso8601)
+    }' >&2
+    exit 2
+fi
+
+# Create temporary directory for session files
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+# Generate script content
+cat >"$TMPDIR/script.js" <<'EOF'
+const { chromium } = require('playwright');
+const fs = require('fs');
+
+async function checkLiveStatus(username) {
+    try {
+        fs.accessSync(chromium.executablePath(), fs.constants.X_OK);
+    } catch (error) {
+        console.error(JSON.stringify({
+            error: true,
+            status: 'dependency_missing',
+            method: 'playwright_basic',
+            message: `Playwright Chromium unavailable: ${error.message}`,
+            timestamp: new Date().toISOString()
+        }));
+        process.exit(2);
+    }
+    
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1920, height: 1080 }
+    });
+    const page = await context.newPage();
+    
+    try {
+        // Navigate to profile
+        await page.goto(`https://www.tiktok.com/@${username}`, { 
+            waitUntil: 'domcontentloaded',
+            timeout: 30000 
+        });
+        
+        // Wait for initial page build
+        await page.waitForTimeout(2000);
+        
+        // Close GDPR banner - try multiple variants
+        // Variant 1: "Verstanden" button (German)
+        const verstandenButton = await page.$('button:has-text("Verstanden"), [data-e2e="cookie-banner-accept"], button:has-text("Accept")');
+        if (verstandenButton) {
+            await verstandenButton.click().catch(() => {});
+            await page.waitForTimeout(1000);
+        }
+        
+        // Variant 2: Other cookie buttons
+        const cookieSelectors = [
+            'button:has-text("Akzeptieren")',
+            'button:has-text("Alle akzeptieren")',
+            'button:has-text("Allow all")',
+            'button:has-text("Accept all")',
+            'button.TUXButton:has-text("Accept")',
+            '[data-testid="cookie-policy-banner-accept"]'
+        ];
+        
+        for (const selector of cookieSelectors) {
+            const btn = await page.$(selector);
+            if (btn) {
+                await btn.click().catch(() => {});
+                await page.waitForTimeout(500);
+                break;
+            }
+        }
+        
+        // Wait for complete loading ("Erneute Veröffentlichungen" tab)
+        // This tab appears only when the page is fully loaded
+        await page.waitForTimeout(3000);
+        
+        // Additionally wait for network idle for API calls
+        try {
+            await page.waitForLoadState('networkidle', { timeout: 5000 });
+        } catch (e) {
+            // Ignore - page should still be sufficiently loaded
+        }
+        
+        // Wait again for TikTok's live status check
+        await page.waitForTimeout(2000);
+        
+        // Screenshot for debugging (optional, only if DEBUG=1)
+        if (process.env.DEBUG === '1') {
+            await page.screenshot({ path: `/tmp/tiktok-${username}.png` });
+        }
+        
+        // Account-scoped LIVE indicators only. Sidebar/recommendation labels
+        // are outside the exact /@username/live link and never count.
+        // Method 1: live icon inside the exact account link
+        const liveLink = page.locator('[href="/@' + username + '/live"]').first();
+        const hasLiveLink = await liveLink.isVisible().catch(() => false);
+        const liveIconVisible = hasLiveLink &&
+            await liveLink.locator(
+                '[data-e2e="live-icon"], [class*="LiveBadge"], [class*="live-indicator"]'
+            ).first().isVisible().catch(() => false);
+        
+        // Method 2: exact LIVE text/badge inside the account link
+        const liveBadge = hasLiveLink
+            ? liveLink.locator('text=/^LIVE$/i').first()
+            : page.locator('body > __never_match__');
+        const liveBadgeVisible = await liveBadge.isVisible().catch(() => false);
+        
+        // Method 3: Live frame on profile header/avatar
+        const profileSelectors = [
+            '[data-e2e="user-page"] img[data-e2e="avatar"]',
+            '[data-e2e="user-page"] div[data-e2e="profile-avatar"] img',
+            'main header img[data-e2e="avatar"]',
+            'main header [class*="avatar"] img'
+        ];
+        
+        let hasLiveBorder = false;
+        for (const selector of profileSelectors) {
+            const profileImg = await page.$(selector);
+            if (profileImg) {
+                const styles = await profileImg.evaluate(el => {
+                    const computed = window.getComputedStyle(el);
+                    const parent = el.parentElement;
+                    const parentComputed = parent ? window.getComputedStyle(parent) : null;
+                    return {
+                        borderColor: computed.borderColor,
+                        borderStyle: computed.borderStyle,
+                        borderWidth: computed.borderWidth,
+                        outlineColor: computed.outlineColor,
+                        boxShadow: computed.boxShadow,
+                        parentBorderColor: parentComputed ? parentComputed.borderColor : null,
+                        parentBorderStyle: parentComputed ? parentComputed.borderStyle : null,
+                        parentBorderWidth: parentComputed ? parentComputed.borderWidth : null
+                    };
+                });
+                
+                // Check for red/live-colored borders
+                const redIndicators = [
+                    styles.borderColor,
+                    styles.outlineColor,
+                    styles.parentBorderColor
+                ];
+                
+                for (const color of redIndicators) {
+                    if (color && (color.includes('255') || color.includes('red') || color.includes('rgb(254') || color.includes('fe2c55') || color.includes('#fe2c'))) {
+                        hasLiveBorder = true;
+                        break;
+                    }
+                }
+                
+                // Box-shadow for live indicator (TikTok often uses glow effects)
+                if (styles.boxShadow && (styles.boxShadow.includes('255') || styles.boxShadow.includes('254'))) {
+                    hasLiveBorder = true;
+                }
+                
+                if (hasLiveBorder) break;
+            }
+        }
+        
+        // Method 4: exact account LIVE link
+        // Method 5: live indicator inside that account link
+        const liveIndicatorVisible = hasLiveLink &&
+            await liveLink.locator(
+                '[class*="live-indicator"], div[class*="LiveBadge"]'
+            ).first().isVisible().catch(() => false);
+        
+        const isLive =
+            hasLiveLink ||
+            hasLiveBorder ||
+            liveIconVisible ||
+            liveIndicatorVisible ||
+            liveBadgeVisible;
+        
+        console.log(JSON.stringify({
+            username,
+            isLive,
+            timestamp: new Date().toISOString(),
+            indicators: {
+                liveIcon: liveIconVisible,
+                liveBadge: liveBadgeVisible,
+                liveBorder: hasLiveBorder,
+                liveLink: hasLiveLink,
+                liveIndicator: liveIndicatorVisible
+            }
+        }, null, 2));
+        
+        return isLive;
+        
+    } catch (error) {
+        console.error(JSON.stringify({
+            error: true,
+            status: 'technical_error',
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        }));
+        return null;
+    } finally {
+        await browser.close();
+    }
 }
 
-# Funktion zur Berechnung der Systemlast pro CPU-Kern
-get_normalized_load() {
-    local load_avg
-    load_avg=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
-    local cpu_count
-    cpu_count=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
-    echo "scale=2; ${load_avg}/${cpu_count}" | bc -l
-}
-
-# Lastschutz-Funktion
-reject_busy_node() {
-    local limit="${TIKTOK_MAX_LOAD_PER_CPU:-}"
-    if [[ -z "${limit}" ]] || ! [[ "${limit}" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-        debug "Lastschutz deaktiviert (kein gültiger Grenzwert)"
-        return 0
-    fi
-
-    local normalized_load
-    normalized_load=$(get_normalized_load)
-    debug "Aktuelle normierte Last: ${normalized_load}, Limit: ${limit}"
-
-    if (( $(echo "${normalized_load} > ${limit}" | bc -l) )); then
-        error "NODE_BUSY normalizedLoad=${normalized_load} limit=${limit}"
-        exit 75
-    fi
-}
-
-# Funktion zum Herunterladen der Profilseite
-fetch_profile_page() {
-    local username="$1"
-    local url="https://www.tiktok.com/@${username}"
-
-    debug "Lade Profilseite: ${url}"
-
-    # Verwende curl mit Browser-ähnlichem User-Agent
-    if ! curl -s -L \
-        --compressed \
-        -H "User-Agent: ${USER_AGENT}" \
-        -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" \
-        -H "Accept-Language: en-US,en;q=0.5" \
-        -H "Accept-Encoding: gzip, deflate, br" \
-        -H "Connection: keep-alive" \
-        -H "Upgrade-Insecure-Requests: 1" \
-        --max-time 30 \
-        --connect-timeout 10 \
-        "${url}" >"${TEMP_HTML}"; then
-        error "Fehler beim Abrufen der Profilseite"
-        return 1
-    fi
-
-    debug "Profilseite erfolgreich heruntergeladen"
-    return 0
-}
-
-# Funktion zum Entfernen von Cookie-Bannern (simuliert)
-remove_cookie_banners() {
-    # In einer echten Implementierung würden wir hier JavaScript ausführen,
-    # aber da wir nur HTML parsen, simulieren wir das Schließen.
-    debug "Entferne Cookie-Banner (Simulation)"
-    # Da wir kein echtes DOM haben, ignorieren wir dies vorerst
-    # In einer realen Umgebung würde man z.B. mit pup oder jq arbeiten
-    sleep 1
-}
-
-# Funktion zur Extraktion relevanter Informationen aus dem HTML
-extract_live_indicators() {
-    local html_file="$1"
-    local username="$2"
-
-    # Lese die HTML-Datei
-    local html_content
-    html_content=$(<"${html_file}")
-
-    # Indikatoren initialisieren
-    local live_icon_visible=false
-    local live_badge_visible=false
-    local has_live_border=false
-    local has_live_link=false
-    local live_indicator_visible=false
-
-    # Methode 1: Suche nach data-e2e="live-icon"
-    if grep -qi 'data-e2e="live-icon"' <<<"${html_content}"; then
-        live_icon_visible=true
-    fi
-
-    # Methode 2: Suche nach LIVE Text/Badge im Profilbereich
-    if grep -qiE '(LIVE|LIVE NOW)' <<<"${html_content}"; then
-        # Prüfen ob es im Kontext des Profils ist
-        if grep -qiE 'profile.*LIVE|LIVE.*profile' <<<"${html_content}" ||
-           grep -qiE 'header.*LIVE|LIVE.*header' <<<"${html_content}"; then
-            live_badge_visible=true
-        fi
-    fi
-
-    # Methode 3: Suchen nach rotem Rahmen oder Live-Indikatoren
-    if grep -qiE 'border.*red|red.*border|fe2c55|#ff0000|rgb\(255|rgb\(254' <<<"${html_content}"; then
-        has_live_border=true
-    fi
-
-    # Methode 4: Suchen nach Live-Links
-    if grep -qi "/@${username}/live" <<<"${html_content}"; then
-        has_live_link=true
-    fi
-
-    # Methode 5: Suchen nach Live-Indikatoren wie pulsierende Punkte
-    if grep -qiE 'live-indicator|LiveBadge' <<<"${html_content}"; then
-        live_indicator_visible=true
-    fi
-
-    # Zusammenfassung
-    local is_live=false
-    if [[ "${live_icon_visible}" == true ]] ||
-       [[ "${live_badge_visible}" == true ]] ||
-       [[ "${has_live_border}" == true ]] ||
-       [[ "${has_live_link}" == true ]] ||
-       [[ "${live_indicator_visible}" == true ]]; then
-        is_live=true
-    fi
-
-    # JSON-Ausgabe erstellen
-    cat <<EOF
-{
-  "username": "${username}",
-  "isLive": ${is_live},
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "indicators": {
-    "liveIcon": ${live_icon_visible},
-    "liveBadge": ${live_badge_visible},
-    "liveBorder": ${has_live_border},
-    "liveLink": ${has_live_link},
-    "liveIndicator": ${live_indicator_visible}
-  }
-}
+checkLiveStatus(process.argv[2]).then(isLive => process.exit(isLive === null ? 2 : (isLive ? 0 : 1)));
 EOF
 
-    # Rückgabewert setzen
-    if [[ "${is_live}" == true ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# Run the Node.js script with provided username
+node "$TMPDIR/script.js" "$username"
+exit_code=$?
 
-# Hauptfunktion
-main() {
-    local raw_username="$1"
-
-    # Parameterprüfung
-    if [[ -z "${raw_username}" ]]; then
-        error "Verwendung: $0 <username>"
-        exit 1
-    fi
-
-    # Normalisiere Username (@ entfernen)
-    local username
-    username="${raw_username#@}"
-
-    if [[ -z "${username}" ]]; then
-        error "Username darf nicht leer sein"
-        exit 1
-    fi
-
-    debug "Überprüfe TikTok-Profil: @${username}"
-
-    # Lastschutz prüfen
-    reject_busy_node
-
-    # Temporäre Dateien bereinigen
-    trap 'rm -f "${TEMP_HTML}" "${TEMP_SCREENSHOT}"' EXIT
-
-    # Profilseite abrufen
-    if ! fetch_profile_page "${username}"; then
-        cat <<EOF
-{
-  "error": true,
-  "message": "Fehler beim Abrufen der Profilseite",
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-EOF
-        exit 1
-    fi
-
-    # Cookie-Banner entfernen (simuliert)
-    remove_cookie_banners
-
-    # Wartezeit für vollständiges Laden
-    sleep 3
-
-    # Screenshot speichern wenn DEBUG=1
-    if [[ ${DEBUG:-} == "1" ]]; then
-        debug "Speichere Screenshot zu Debug-Zwecken"
-        # In einer echten Implementierung würde man hier einen Screenshot machen
-        # Da wir nur HTML haben, kopieren wir die HTML-Datei
-        cp "${TEMP_HTML}" "${TEMP_SCREENSHOT}" 2>/dev/null || true
-    fi
-
-    # Live-Indikatoren extrahieren und ausgeben
-    extract_live_indicators "${TEMP_HTML}" "${username}"
-}
-
-# Skript starten
-main "$@"
+# Map exit codes as per original specification
+case $exit_code in
+    0|1|2|75) exit $exit_code ;;
+    *) exit 2 ;;  # Default to technical error for any other code
+esac
