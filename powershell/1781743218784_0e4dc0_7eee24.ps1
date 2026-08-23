@@ -1,14 +1,14 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e4dc0.py — portiert nach powershell
+# 1781743218784_0e4dc0_7eee24.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
 # Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-function generateHTML {
-    return @'
+function GenerateHTML {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -214,10 +214,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
-function main {
+function Main {
     $args = $args
     
     if ($args.Count -ne 1) {
@@ -228,9 +228,9 @@ function main {
     $outputFile = $args[0]
     
     # Generate HTML content and write to file
-    $htmlContent = generateHTML
+    $htmlContent = GenerateHTML
     Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
     Write-Host "HTML file generated: $outputFile"
 }
 
-main @args
+Main

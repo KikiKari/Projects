@@ -1,12 +1,15 @@
 #!/usr/bin/perl
-# 1781743218784_0e4dc0.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_7eee24.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode encode);
+use File::Slurp qw(write_file);
 
-sub generateHTML {
+sub generate_html {
     return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -224,13 +227,12 @@ sub main {
         exit 1;
     }
     
-    my $outputFile = $args[0];
+    my $output_file = $args[0];
     
     # Generate HTML content and write to file
-    open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
-    print $fh generateHTML();
-    close($fh);
-    print "HTML file generated: $outputFile\n";
+    my $html_content = generate_html();
+    write_file($output_file, {binmode => ':utf8'}, $html_content);
+    print "HTML file generated: $output_file\n";
 }
 
-main() unless caller;
+main();

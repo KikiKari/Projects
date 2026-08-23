@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0.tcl — portiert nach javascript
+// 1781743218784_0e4dc0_8f5e03.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_8f5e03.pl
+// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e4dc0.tcl — portiert nach perl5
 // Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0.tcl
 // Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784.js — portiert von tcl nach JavaScript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+// 1781743218784.sh — portiert nach tcl
+// Quelle: shell, Projects@abstractions:shell/1781743218784.sh
 // Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784.html -- ported to Tcl
@@ -224,7 +228,7 @@ function main(args) {
         console.error("Usage: node script.js <output-file>");
         process.exit(1);
     }
-    
+
     const outputFile = args[0];
     
     // Generate HTML content and write to file

@@ -1,17 +1,21 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e4dc0.tcl — portiert nach powershell
+# 1781743218784_0e4dc0_8f5e03.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_8f5e03.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0.tcl
 # Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# 1781743218784.js — portiert von tcl nach JavaScript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.html -- ported to Tcl
 # Source: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
 # Generated: 2026-08-08 by ABSTRACTIONS_MANAGER.py
 
-function generateHTML {
+function Get-HtmlContent {
     return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -227,14 +231,14 @@ function Main {
     )
     
     if ($Args.Count -ne 1) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        Write-Error "Usage: powershell script.ps1 <output-file>"
         exit 1
     }
     
     $outputFile = $Args[0]
     
     # Generate HTML content and write to file
-    $htmlContent = generateHTML
+    $htmlContent = Get-HtmlContent
     Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
     Write-Host "HTML file generated: $outputFile"
 }

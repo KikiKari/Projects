@@ -1,13 +1,10 @@
 #!/usr/bin/perl
-# 1781743218784.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_231ad7.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_231ad7.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use JSON;
-use File::Slurp qw(write_file);
 
 sub generate_html {
     my $html = <<'HTML_END';
@@ -233,7 +230,9 @@ sub main {
     
     eval {
         my $html_content = generate_html();
-        write_file($output_file, {binmode => ':utf8'}, $html_content);
+        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
+        print $fh $html_content;
+        close $fh;
         print "HTML file generated: $output_file\n";
     };
     if ($@) {
@@ -242,4 +241,4 @@ sub main {
     }
 }
 
-main() unless caller;
+main();

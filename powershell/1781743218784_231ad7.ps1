@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_231ad7.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_231ad7.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 function Generate-Html {
     $html = @"
@@ -227,13 +227,12 @@ function Main {
     
     try {
         $htmlContent = Generate-Html
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding Utf8
-        Write-Output "HTML file generated: $outputFile"
-    }
-    catch {
-        Write-Error "Error generating HTML file: $_"
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }
 
-Main @args
+Main

@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
-# 1781743218784_0e4dc0.tcl — portiert nach python
+# 1781743218784_0e4dc0_8f5e03.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_8f5e03.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0.tcl
 # Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784.js — portiert von tcl nach JavaScript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html -- ported to Tcl
+# Source: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Generated: 2026-08-08 by ABSTRACTIONS_MANAGER.py
+
 import sys
 
-def generateHTML():
+def generate_html():
     return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -214,15 +226,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 def main(args):
     if len(args) != 1:
-        print("Usage: python3 script.py <output-file>", file=sys.stderr)
+        print("Usage: python3 script.py <output-file>")
         sys.exit(1)
     
-    outputFile = args[0]
+    output_file = args[0]
     
     # Generate HTML content and write to file
-    with open(outputFile, 'w') as fh:
-        fh.write(generateHTML())
-    print(f"HTML file generated: {outputFile}")
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(generate_html())
+    print(f"HTML file generated: {output_file}")
 
 if __name__ == "__main__":
     main(sys.argv[1:])

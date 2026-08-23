@@ -1,20 +1,21 @@
 #!/bin/bash
-# 1781743218784_0e4dc0.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0.tcl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_8f5e03.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_8f5e03.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+# Prüfe Argumente
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+fi
 
-# 1781743218784.html -- ported to Tcl
-# Source: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Generated: 2026-08-08 by ABSTRACTIONS_MANAGER.py
+output_file="$1"
 
-generateHTML() {
-    cat << 'EOF'
+# Generiere HTML-Inhalt
+generate_html() {
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,17 +224,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-main() {
-    if [ $# -ne 1 ]; then
-        echo "Usage: $0 <output-file>" >&2
-        exit 1
-    fi
-    
-    local outputFile="$1"
-    
-    # Generate HTML content and write to file
-    generateHTML > "$outputFile"
-    echo "HTML file generated: $outputFile"
-}
+# Schreibe HTML-Inhalt in Ausgabedatei
+generate_html > "$output_file"
 
-main "$@"
+echo "HTML file generated: $output_file"

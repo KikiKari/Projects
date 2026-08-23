@@ -1,19 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0.ps1
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.sh — portiert nach powershell
-// Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.html — portiert nach PowerShell
-// Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0e4dc0_ca4aa5.py — portiert nach javascript
+// Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0_ca4aa5.py
+// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
-function generateHTML() {
+function generateHtml() {
   return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,7 +210,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 }
 
 function main(args) {
@@ -226,12 +219,12 @@ function main(args) {
     console.error('Usage: node script.js <output-file>');
     process.exit(1);
   }
-  
+
   const outputFile = args[0];
-  
+
   // Generate HTML content and write to file
-  const htmlContent = generateHTML();
-  fs.writeFileSync(outputFile, htmlContent, 'utf8');
+  const htmlContent = generateHtml();
+  fs.writeFileSync(outputFile, htmlContent, 'utf-8');
   console.log(`HTML file generated: ${outputFile}`);
 }
 

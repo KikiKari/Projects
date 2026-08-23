@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-# 1781743218784_260531.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_1efcad.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_1efcad.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
+import json
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: {} output_file.html".format(sys.argv[0]))
-        sys.exit(1)
+# Check command line arguments
+if len(sys.argv) != 2:
+    print("Usage: python3 script.py output_file.html", file=sys.stderr)
+    sys.exit(1)
 
-    output_file = sys.argv[1]
+output_file = sys.argv[1]
 
-    # Write DOCTYPE and main script tag
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write('''<!DOCTYPE html>
+# Write DOCTYPE and main script tag
+header = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
 {
@@ -27,10 +26,10 @@ def main():
 }
 
 </script>
-''')
+'''
 
-        # Write HTML start and head section
-        f.write('''<html lang="de">
+# Write HTML start and head section
+head = '''<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -68,10 +67,10 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 a{color:var(--accent);}
 </style>
 </head>
-''')
+'''
 
-        # Write body content
-        f.write('''<body>
+# Write body content
+body = '''<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -113,10 +112,10 @@ a{color:var(--accent);}
 
   <div class="foot" id="foot"></div>
 </div>
-''')
+'''
 
-        # JavaScript section
-        f.write('''<script>
+# JavaScript section
+script = '''<script>
 
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
@@ -232,9 +231,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-''')
+'''
 
-    print("HTML file generated: {}".format(output_file))
+# Write all parts to the output file
+with open(output_file, 'w', encoding='utf-8') as f:
+    f.write(header + head + body + script)
 
-if __name__ == "__main__":
-    main()
+print(f'HTML file generated: {output_file}')

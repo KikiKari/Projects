@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0.py — portiert nach javascript
+// 1781743218784_0e4dc0_7eee24.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
+// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e4dc0.py — portiert nach perl5
 // Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
 // Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
@@ -211,15 +215,14 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 }
 
 function main() {
     const args = process.argv.slice(2);
     
     if (args.length !== 1) {
-        console.error('Usage: node script.js <output-file>');
+        console.error("Usage: node script.js <output-file>");
         process.exit(1);
     }
     
@@ -227,8 +230,10 @@ function main() {
     
     // Generate HTML content and write to file
     const htmlContent = generateHTML();
-    fs.writeFileSync(outputFile, htmlContent, 'utf-8');
+    fs.writeFileSync(outputFile, htmlContent, 'utf8');
     console.log(`HTML file generated: ${outputFile}`);
 }
 
-main();
+if (require.main === module) {
+    main();
+}

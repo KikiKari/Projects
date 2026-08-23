@@ -1,9 +1,15 @@
 #!/usr/bin/env tclsh
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_231ad7.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_231ad7.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-proc generate_html {} {
+# Tcl 8.6 port of the JavaScript script that generates an HTML file
+# This script creates a self-contained HTML file with encryption capabilities
+
+package require Tcl 8.6
+
+# Function to generate the HTML content
+proc generateHtml {} {
     set html {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -213,27 +219,28 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
     return $html
 }
 
-proc main {args} {
-    if {[llength $args] != 1} {
+# Main procedure
+proc main {argv} {
+    # Check command line arguments
+    if {[llength $argv] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set output_file [lindex $args 0]
+    set outputFile [lindex $argv 0]
     
+    # Generate HTML content and write to file
     if {[catch {
-        set html_content [generate_html]
-        set f [open $output_file w]
-        fconfigure $f -encoding utf-8
-        puts -nonewline $f $html_content
-        close $f
-        puts "HTML file generated: $output_file"
+        set htmlContent [generateHtml]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
+        close $fh
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts stderr "Error generating HTML file: $error"
         exit 1
     }
 }
 
-if {!$tcl_interactive} {
-    main {*}$argv
-}
+# Call main with command line arguments
+main $argv

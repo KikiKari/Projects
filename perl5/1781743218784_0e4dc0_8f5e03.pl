@@ -1,20 +1,15 @@
-#!/usr/bin/env perl
-# 1781743218784_0e4dc0.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0.tcl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e4dc0_8f5e03.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_8f5e03.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Slurp;
 
-# 1781743218784.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html -- ported to Tcl
-# Source: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Generated: 2026-08-08 by ABSTRACTIONS_MANAGER.py
-
-sub generateHTML {
+sub generate_html {
     return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -232,13 +227,11 @@ sub main {
         exit 1;
     }
     
-    my $outputFile = $args[0];
+    my $output_file = $args[0];
     
     # Generate HTML content and write to file
-    open(my $fh, '>', $outputFile) or die "Could not open file '$outputFile': $!";
-    print $fh generateHTML();
-    close($fh);
-    print "HTML file generated: $outputFile\n";
+    write_file($output_file, generate_html());
+    print "HTML file generated: $output_file\n";
 }
 
 main(@ARGV);

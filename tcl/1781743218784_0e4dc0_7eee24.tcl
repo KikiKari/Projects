@@ -1,7 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_7eee24.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+package require Tcl 8.6
 
 proc generateHTML {} {
     return {<!DOCTYPE html>
@@ -84,7 +86,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -212,22 +214,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 }
 
-proc main {args} {
-    if {[llength $args] != 1} {
+proc main {} {
+    global argv
+    
+    if {[llength $argv] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set outputFile [lindex $args 0]
+    set outputFile [lindex $argv 0]
     
     # Generate HTML content and write to file
-    set f [open $outputFile w]
-    fconfigure $f -encoding utf-8
-    puts -nonewline $f [generateHTML]
-    close $f
+    set htmlContent [generateHTML]
+    set fh [open $outputFile w]
+    puts -nonewline $fh $htmlContent
+    close $fh
     puts "HTML file generated: $outputFile"
 }
 
-if {[info script] eq $argv0} {
-    main {*}$argv
-}
+main

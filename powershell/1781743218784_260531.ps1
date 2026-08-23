@@ -1,31 +1,17 @@
 #!/usr/bin/env pwsh
-# 1781743218784_260531.js — portiert nach powershell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531.js
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_260531.py
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_260531.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531.pl
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: tclsh this_script.tcl output_file.html
-
+# Prüfe die Anzahl der Argumente
 if ($args.Count -ne 1) {
-    Write-Host "Usage: $($MyInvocation.MyCommand.Name) output_file.html"
+    Write-Host "Usage: pwsh this_script.ps1 output_file.html"
     exit 1
 }
 
 $outputFile = $args[0]
 
-$content = @"
+$content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -193,15 +179,15 @@ function renderEditor(){
   Object.keys(P).forEach(name=>{
     const d=document.createElement("div"); d.className="prov";
     let rows="";
-    Object.keys(P[name]).forEach(k=>{ rows+=`<div class="kv"><span class="k">\${esc(k)}</span><input data-p="\${esc(name)}" data-k="\${esc(k)}" value="\${esc(P[name][k])}"><button class="btn sm" data-del="\${esc(name)}|\${esc(k)}">\${tr("del")}</button></div>`; });
-    d.innerHTML=`<h3>\${esc(name)} <button class="btn sm" data-delp="\${esc(name)}">\${tr("del")}</button></h3>\${rows}
-      <div class="row" style="margin-top:6px"><input class="nf" data-np="\${esc(name)}" placeholder="\${tr("newField")}" style="max-width:180px"><input class="nv" data-np="\${esc(name)}" placeholder="\${tr("newValue")}" style="max-width:260px"><button class="btn sm" data-addf="\${esc(name)}">\${tr("addField")}</button></div>`;
+    Object.keys(P[name]).forEach(k=>{ rows+=`<div class="kv"><span class="k">${esc(k)}</span><input data-p="${esc(name)}" data-k="${esc(k)}" value="${esc(P[name][k])}"><button class="btn sm" data-del="${esc(name)}|${esc(k)}">${tr("del")}</button></div>`; });
+    d.innerHTML=`<h3>${esc(name)} <button class="btn sm" data-delp="${esc(name)}">${tr("del")}</button></h3>${rows}
+      <div class="row" style="margin-top:6px"><input class="nf" data-np="${esc(name)}" placeholder="${tr("newField")}" style="max-width:180px"><input class="nv" data-np="${esc(name)}" placeholder="${tr("newValue")}" style="max-width:260px"><button class="btn sm" data-addf="${esc(name)}">${tr("addField")}</button></div>`;
     root.appendChild(d);
   });
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="\${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="\${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -231,8 +217,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
+'@
 
-Set-Content -Path $outputFile -Value $content -Encoding UTF8
+# Schreibe den Inhalt in die Ausgabedatei
+$content | Out-File -FilePath $outputFile -Encoding UTF8
 
 Write-Host "HTML file generated: $outputFile"

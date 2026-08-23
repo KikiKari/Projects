@@ -1,36 +1,21 @@
 #!/usr/bin/perl
-# 1781743218784_260531.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_1efcad.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_1efcad.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-# 1781743218784_260531.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531.js
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: tclsh this_script.tcl output_file.html
-
+# Check command line arguments
 if (@ARGV != 1) {
-    print "Usage: $0 output_file.html\n";
+    print STDERR "Usage: perl script.pl output_file.html\n";
     exit 1;
 }
 
 my $outputFile = $ARGV[0];
 
 # Write DOCTYPE and main script tag
-open(my $fh, '>', $outputFile) or die "Could not open file '$outputFile' $!";
-print $fh <<'EOF';
+my $header = <<'EOF';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
@@ -46,7 +31,7 @@ print $fh <<'EOF';
 EOF
 
 # Write HTML start and head section
-print $fh <<'EOF';
+my $head = <<'EOF';
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -88,7 +73,7 @@ a{color:var(--accent);}
 EOF
 
 # Write body content
-print $fh <<'EOF';
+my $body = <<'EOF';
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
@@ -134,7 +119,7 @@ print $fh <<'EOF';
 EOF
 
 # JavaScript section
-print $fh <<'EOF';
+my $script = <<'EOF';
 <script>
 
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
@@ -253,5 +238,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 EOF
 
+# Write all parts to the output file
+open(my $fh, '>', $outputFile) or die "Could not open file '$outputFile': $!";
+print $fh $header . $head . $body . $script;
 close $fh;
+
 print "HTML file generated: $outputFile\n";

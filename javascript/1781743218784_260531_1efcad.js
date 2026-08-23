@@ -1,21 +1,18 @@
 #!/usr/bin/env node
-// 1781743218784_260531.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_260531_1efcad.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_260531_1efcad.pl
+// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
-// Check command line arguments
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js output_file.html");
+    console.log(`Usage: ${process.argv[1]} output_file.html`);
     process.exit(1);
 }
 
 const outputFile = process.argv[2];
 
-// Write DOCTYPE and main script tag
-const header = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
 {
@@ -27,10 +24,7 @@ const header = `<!DOCTYPE html>
 }
 
 </script>
-`;
-
-// Write HTML start and head section
-const head = `<html lang="de">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -68,10 +62,7 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 a{color:var(--accent);}
 </style>
 </head>
-`;
-
-// Write body content
-const body = `<body>
+<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -113,10 +104,7 @@ const body = `<body>
 
   <div class="foot" id="foot"></div>
 </div>
-`;
-
-// JavaScript section
-const script = `<script>
+<script>
 
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
@@ -231,10 +219,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 </script>
 </body>
-</html>
-`;
+</html>`;
 
-// Write all parts to the output file
-fs.writeFileSync(outputFile, header + head + body + script);
-
+fs.writeFileSync(outputFile, htmlContent);
 console.log(`HTML file generated: ${outputFile}`);

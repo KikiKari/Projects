@@ -1,32 +1,22 @@
 #!/usr/bin/env pwsh
-# 1781743218784_260531.sh — portiert nach powershell
+# 1781743218784_260531_1efcad.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_1efcad.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_260531.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
 # Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_260531.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531.js
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784.tcl
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html — portiert nach tcl
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
-
-# Tcl 8.6 script to generate the Secret Vault Public HTML file
-# Usage: tclsh this_script.tcl output_file.html
-
+# Check command line arguments
 if ($args.Count -ne 1) {
-    Write-Host "Usage: $($MyInvocation.MyCommand.Name) output_file.html"
+    Write-Error "Usage: pwsh script.ps1 output_file.html"
     exit 1
 }
 
 $outputFile = $args[0]
 
 # Write DOCTYPE and main script tag
-@"
+$header = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
@@ -39,10 +29,10 @@ $outputFile = $args[0]
 }
 
 </script>
-"@ | Set-Content -Path $outputFile -Encoding UTF8
+"@
 
 # Write HTML start and head section
-@"
+$head = @"
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -81,10 +71,10 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 a{color:var(--accent);}
 </style>
 </head>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
 # Write body content
-@"
+$body = @"
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
@@ -127,10 +117,10 @@ a{color:var(--accent);}
 
   <div class="foot" id="foot"></div>
 </div>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
 
 # JavaScript section
-@"
+$script = @"
 <script>
 
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
@@ -247,6 +237,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@ | Add-Content -Path $outputFile -Encoding UTF8
+"@
+
+# Write all parts to the output file
+$content = $header + $head + $body + $script
+Set-Content -Path $outputFile -Value $content -Encoding UTF8
 
 Write-Host "HTML file generated: $outputFile"

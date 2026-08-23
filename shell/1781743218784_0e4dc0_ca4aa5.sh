@@ -1,13 +1,21 @@
-#!/bin/bash
-# 1781743218784_0e4dc0.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0.ps1
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_0e4dc0_ca4aa5.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_ca4aa5.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.sh — portiert nach bash
+# 1781743218784_0e4dc0.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0.ps1
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach powershell
 # Quelle: shell, Projects@abstractions:shell/1781743218784.sh
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach PowerShell
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 generateHTML() {
   cat <<'EOF'
@@ -220,12 +228,14 @@ EOF
 }
 
 main() {
-  if [[ $# -ne 1 ]]; then
+  local args=("$@")
+  
+  if [[ ${#args[@]} -ne 1 ]]; then
     echo 'Usage: bash script.sh <output-file>' >&2
     exit 1
   fi
   
-  local outputFile="$1"
+  local outputFile="${args[0]}"
   
   # Generate HTML content and write to file
   generateHTML > "$outputFile"

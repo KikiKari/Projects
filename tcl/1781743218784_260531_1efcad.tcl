@@ -1,25 +1,18 @@
 #!/usr/bin/env tclsh
-# 1781743218784_260531.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_260531_1efcad.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_260531_1efcad.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_260531.tcl — portiert nach Tcl 8.6
-# Quelle: shell, Projects@abstractions:shell/1781743218784_260531.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# Prüfe Kommandozeilenargumente
+# Check command line arguments
 if {$argc != 1} {
-    puts "Usage: [info script] output_file.html"
+    puts stderr "Usage: tclsh script.tcl output_file.html"
     exit 1
 }
 
 set outputFile [lindex $argv 0]
 
-# Öffne Ausgabedatei
-set fd [open $outputFile w]
-
-# Schreibe DOCTYPE und Metadaten
-puts $fd {<!DOCTYPE html>
+# Write DOCTYPE and main script tag
+set header {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 
 {
@@ -30,10 +23,11 @@ puts $fd {<!DOCTYPE html>
   "mcpServerNames": []
 }
 
-</script>}
+</script>
+}
 
-# Schreibe HTML-Kopf und Styles
-puts $fd {<html lang="de">
+# Write HTML start and head section
+set head {<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -70,10 +64,11 @@ textarea{min-height:90px;white-space:pre;overflow:auto;}
 .foot{color:var(--faint);font-size:11.5px;text-align:center;margin-top:18px;line-height:1.5;}
 a{color:var(--accent);}
 </style>
-</head>}
+</head>
+}
 
-# Schreibe Body-Inhalt
-puts $fd {<body>
+# Write body content
+set body {<body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
   <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
@@ -114,10 +109,11 @@ puts $fd {<body>
   </div>
 
   <div class="foot" id="foot"></div>
-</div>}
+</div>
+}
 
-# Schreibe JavaScript-Code
-puts $fd {<script>
+# JavaScript section
+set script {<script>
 
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
@@ -232,8 +228,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 </script>
 </body>
-</html>}
+</html>
+}
 
-# Schließe Datei und gib Erfolgsmeldung aus
-close $fd
+# Write all parts to the output file
+set fh [open $outputFile w]
+puts -nonewline $fh $header
+puts -nonewline $fh $head
+puts -nonewline $fh $body
+puts -nonewline $fh $script
+close $fh
+
 puts "HTML file generated: $outputFile"
