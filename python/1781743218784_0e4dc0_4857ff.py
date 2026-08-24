@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-# 1781743218784_0e4dc0.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0e4dc0.pl — portiert nach Python 3.12
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_4857ff.ps1
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-
+import argparse
 
 def generate_html():
     return '''<!DOCTYPE html>
@@ -215,26 +211,21 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-
-def main(args):
-    if len(args) != 1:
-        print("Usage: python3 script.py <output-file>", file=sys.stderr)
-        sys.exit(1)
-
-    output_file = args[0]
-
+def main():
+    parser = argparse.ArgumentParser(description='Generate HTML file for Secret-Vault Public')
+    parser.add_argument('output_file', help='Output HTML file path')
+    
+    args = parser.parse_args()
+    
     # Generate HTML content and write to file
-    try:
-        with open(output_file, 'w', encoding='utf-8') as fh:
-            fh.write(generate_html())
-        print(f"HTML file generated: {output_file}")
-    except Exception as e:
-        print(f"Could not write to file '{output_file}': {e}", file=sys.stderr)
-        sys.exit(1)
-
+    html_content = generate_html()
+    
+    with open(args.output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    print(f"HTML file generated: {args.output_file}")
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

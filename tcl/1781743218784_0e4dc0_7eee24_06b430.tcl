@@ -1,12 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0_7eee24.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0e4dc0.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach Tcl 8.6
+# 1781743218784_0e4dc0_7eee24_06b430.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24_06b430.ps1
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
     return {<!DOCTYPE html>
@@ -216,9 +211,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 }
 
-proc main {} {
-    global argv
-    
+proc main {argv} {
     if {[llength $argv] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
@@ -227,13 +220,13 @@ proc main {} {
     set outputFile [lindex $argv 0]
     
     # Generate HTML content and write to file
+    set htmlContent [generateHTML]
     set fh [open $outputFile w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh [generateHTML]
+    puts -nonewline $fh $htmlContent
     close $fh
     puts "HTML file generated: $outputFile"
 }
 
-if {!$tcl_interactive} {
-    main
+if {$::argv0 eq [info script]} {
+    main $::argv
 }

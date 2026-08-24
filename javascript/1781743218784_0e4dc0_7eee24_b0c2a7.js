@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0_7eee24.tcl — portiert nach javascript
+// 1781743218784_0e4dc0_7eee24_b0c2a7.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24_b0c2a7.pl
+// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e4dc0_7eee24.tcl — portiert nach perl5
 // Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0_7eee24.tcl
 // Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_0e4dc0.py — portiert nach JavaScript
-// Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
@@ -214,8 +214,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 }
 
 function main(args) {

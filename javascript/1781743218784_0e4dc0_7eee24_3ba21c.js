@@ -1,17 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0_7eee24.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24.ps1
-// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_0e4dc0.py — portiert nach powershell
-// Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.sh — portiert nach python
-// Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
+// 1781743218784_0e4dc0_7eee24_3ba21c.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24_3ba21c.pl
+// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 function generateHTML() {
     return `<!DOCTYPE html>
@@ -226,12 +216,12 @@ function main(args) {
         console.error("Usage: node script.js <output-file>");
         process.exit(1);
     }
-    
+
     const outputFile = args[0];
     
     // Generate HTML content and write to file
     const htmlContent = generateHTML();
-    fs.writeFileSync(outputFile, htmlContent, 'utf8');
+    require('fs').writeFileSync(outputFile, htmlContent, 'utf8');
     console.log(`HTML file generated: ${outputFile}`);
 }
 

@@ -1,10 +1,19 @@
 #!/usr/bin/env tclsh
 # 1781743218784.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-proc generateHTML {} {
-    set html {<!DOCTYPE html>
+# Prüfe die Anzahl der Argumente
+if {$argc != 1} {
+    puts stderr "Usage: tclsh script.tcl <OutputPath>"
+    exit 1
+}
+
+# Hole den Ausgabepfad aus den Argumenten
+set outputPath [lindex $argv 0]
+
+# HTML-Inhalt definieren
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -208,31 +217,9 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
-    return $html
-}
+</html>}
 
-proc main {} {
-    global argv
-    
-    if {[llength $argv] != 1} {
-        puts stderr "Usage: tclsh script.tcl <output-file>"
-        exit 1
-    }
-    
-    set outputFile [lindex $argv 0]
-    
-    if {[catch {
-        set htmlContent [generateHTML]
-        set fh [open $outputFile w]
-        puts -nonewline $fh $htmlContent
-        close $fh
-        puts "HTML file generated: $outputFile"
-    } error]} {
-        puts stderr "Error generating HTML file: $error"
-        exit 1
-    }
-}
-
-main
+# Schreibe den HTML-Inhalt in die angegebene Datei
+set fd [open $outputPath w]
+puts -nonewline $fd $htmlContent
+close $fd

@@ -1,10 +1,16 @@
 #!/usr/bin/env pwsh
 # 1781743218784.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-function GenerateHTML {
-    $html = @"
+# Parameter verarbeiten
+if ($args.Count -ne 1) {
+    Write-Error "Usage: pwsh script.ps1 <OutputPath>"
+    exit 1
+}
+$outputPath = $args[0]
+
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -210,28 +216,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
-    return $html
-}
+'@
 
-function Main {
-    $args = $args
-    
-    if ($args.Count -ne 1) {
-        Write-Error "Usage: powershell script.ps1 <output-file>"
-        exit 1
-    }
-    
-    $outputFile = $args[0]
-    
-    try {
-        $htmlContent = GenerateHTML
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Output "HTML file generated: $outputFile"
-    } catch {
-        Write-Error "Error generating HTML file: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
-Main
+Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8

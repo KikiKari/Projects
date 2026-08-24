@@ -1,21 +1,16 @@
-#!/bin/bash
-# 1781743218784_0e4dc0_7eee24.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_0e4dc0_7eee24_06b430.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24_06b430.ps1
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Anzahl der Argumente
-if [[ $# -ne 1 ]]; then
-    echo "Usage: bash script.sh <output-file>" >&2
-    exit 1
-fi
+# 1781743218784_0e4dc0_7eee24.sh — portiert nach bash
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24_06b430.ps1
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-output_file="$1"
-
-# Funktion zur Generierung des HTML-Inhalts
-generate_html() {
-    cat <<'HTML_END'
+generateHTML() {
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,9 +216,20 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
 }
 
-# Generiere HTML-Inhalt und schreibe in Datei
-generate_html > "$output_file"
-echo "HTML file generated: $output_file"
+Main() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: bash script.sh <output-file>" >&2
+        exit 1
+    fi
+    
+    local outputFile="$1"
+    
+    # Generate HTML content and write to file
+    generateHTML > "$outputFile"
+    echo "HTML file generated: $outputFile"
+}
+
+Main "$@"

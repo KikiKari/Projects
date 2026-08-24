@@ -1,14 +1,18 @@
 #!/usr/bin/perl
-# 1781743218784_0e4dc0_7eee24.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0_7eee24.tcl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_7eee24_b0c2a7.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24_b0c2a7.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
 
 sub generateHTML {
-    return <<'HTML_END';
-<!DOCTYPE html>
+    return q(<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -213,11 +217,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+);
 }
 
 sub main {
     my @args = @_;
+    
     if (@args != 1) {
         print STDERR "Usage: perl script.pl <output-file>\n";
         exit 1;
@@ -226,12 +231,11 @@ sub main {
     my $outputFile = $args[0];
     
     # Generate HTML content and write to file
+    my $htmlContent = generateHTML();
     open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
-    print $fh generateHTML();
+    print $fh $htmlContent;
     close($fh);
     print "HTML file generated: $outputFile\n";
 }
 
-if (defined $0 && $0 eq __FILE__) {
-    main(@ARGV);
-}
+main(@ARGV) if __FILE__ eq $0;

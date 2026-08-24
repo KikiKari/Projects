@@ -1,7 +1,7 @@
-#!/usr/bin/env perl
-# 1781743218784_0e4dc0_7eee24.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24.ps1
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e4dc0_7eee24_3ba21c.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24_3ba21c.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;

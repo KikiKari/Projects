@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0e4dc0.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
     return {<!DOCTYPE html>
@@ -220,12 +220,9 @@ proc main {args} {
     set outputFile [lindex $args 0]
     
     # Generate HTML content and write to file
-    if {[catch {set fh [open $outputFile w]} error]} {
-        puts stderr "Could not open file '$outputFile': $error"
-        exit 1
-    }
-    
-    puts -nonewline $fh [generateHTML]
+    set htmlContent [generateHTML]
+    set fh [open $outputFile w]
+    puts -nonewline $fh $htmlContent
     close $fh
     puts "HTML file generated: $outputFile"
 }

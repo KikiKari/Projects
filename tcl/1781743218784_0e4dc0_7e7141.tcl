@@ -1,5 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0.sh — portiert nach tcl
+# 1781743218784_0e4dc0_7e7141.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7e7141.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
 # Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
@@ -12,8 +16,7 @@
 # Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
-    return {
-<!DOCTYPE html>
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,8 +220,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-    }
+</html>}
 }
 
 proc main {args} {
@@ -226,21 +228,15 @@ proc main {args} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
-    
+
     set outputFile [lindex $args 0]
     
     # Generate HTML content and write to file
     set htmlContent [generateHTML]
     set fh [open $outputFile w]
-    puts -nonewline $fh [string trim $htmlContent]
+    puts -nonewline $fh $htmlContent
     close $fh
     puts "HTML file generated: $outputFile"
 }
 
-# Check if arguments were provided via command line
-if {$argc >= 1} {
-    main {*}$argv
-} else {
-    # For interactive use, you can call main with desired arguments
-    # Example: main "output.html"
-}
+main {*}$argv

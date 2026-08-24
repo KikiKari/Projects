@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0e4dc0_7eee24.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 package require Tcl 8.6
 
@@ -86,7 +86,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -210,8 +210,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 }
 
 proc main {} {
@@ -232,4 +231,6 @@ proc main {} {
     puts "HTML file generated: $outputFile"
 }
 
-main
+if {[info script] eq $argv0} {
+    main
+}

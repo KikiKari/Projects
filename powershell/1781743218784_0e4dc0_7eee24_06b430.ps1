@@ -1,11 +1,15 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e4dc0_7eee24.pl — portiert nach powershell
+# 1781743218784_0e4dc0_7eee24_06b430.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0_7eee24_06b430.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0_7eee24.pl — portiert nach python
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
 # Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e4dc0.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0.py — portiert nach python3.12
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.pl
 
 function generateHTML {
     return @'
@@ -218,9 +222,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function Main {
-    param(
-        [string[]]$args
-    )
+    $args = $args
     
     if ($args.Count -ne 1) {
         Write-Error "Usage: powershell script.ps1 <output-file>"
@@ -230,11 +232,14 @@ function Main {
     $outputFile = $args[0]
     
     # Generate HTML content and write to file
-    $htmlContent = generateHTML
-    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-    Write-Host "HTML file generated: $outputFile"
+    try {
+        generateHTML | Out-File -FilePath $outputFile -Encoding utf8
+        Write-Output "HTML file generated: $outputFile"
+    }
+    catch {
+        Write-Error "Could not open file '$outputFile': $_"
+        exit 1
+    }
 }
 
-if (-not $MyInvocation.ScriptName) {
-    Main -args $args
-}
+Main @args

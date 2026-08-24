@@ -1,13 +1,20 @@
-#!/usr/bin/env bash
-# 1781743218784_0e4dc0_7eee24.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0_7eee24.tcl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784_0e4dc0_7eee24_b0c2a7.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24_b0c2a7.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Function to generate HTML content
-generateHTML() {
-cat << 'EOF'
+# 1781743218784_0e4dc0_7eee24.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0_7eee24.tcl
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.py — portiert nach JavaScript
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+generate_html() {
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,13 +229,11 @@ main() {
         exit 1
     fi
     
-    local outputFile="$1"
+    local output_file="$1"
     
     # Generate HTML content and write to file
-    generateHTML > "$outputFile"
-    echo "HTML file generated: $outputFile"
+    generate_html > "$output_file"
+    echo "HTML file generated: $output_file"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+main "$@"

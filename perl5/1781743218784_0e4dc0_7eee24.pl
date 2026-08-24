@@ -1,13 +1,16 @@
 #!/usr/bin/perl
 # 1781743218784_0e4dc0_7eee24.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(decode encode);
+use Encode qw(encode decode);
 use File::Slurp qw(write_file);
+
+binmode(STDOUT, ':encoding(UTF-8)');
+binmode(STDERR, ':encoding(UTF-8)');
 
 sub generate_html {
     return <<'HTML_END';
@@ -235,4 +238,4 @@ sub main {
     print "HTML file generated: $output_file\n";
 }
 
-main();
+main() unless caller;

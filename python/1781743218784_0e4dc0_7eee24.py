@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 # 1781743218784_0e4dc0_7eee24.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0_7eee24.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
 # Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-import sys
-import json
+# 1781743218784_0e4dc0.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-def generate_html():
+import sys
+
+def generateHTML():
     return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -211,23 +218,22 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 def main():
     args = sys.argv[1:]
     
     if len(args) != 1:
-        print('Usage: python3 script.py <output-file>', file=sys.stderr)
+        print("Usage: python3 script.py <output-file>")
         sys.exit(1)
     
     output_file = args[0]
     
     # Generate HTML content and write to file
-    html_content = generate_html()
+    html_content = generateHTML()
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print(f'HTML file generated: {output_file}')
+    print(f"HTML file generated: {output_file}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

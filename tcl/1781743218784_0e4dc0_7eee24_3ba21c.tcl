@@ -1,7 +1,19 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0_7eee24.ps1 — portiert nach tcl
+# 1781743218784_0e4dc0_7eee24_3ba21c.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24_3ba21c.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0_7eee24.ps1 -- portiert nach javascript
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24.ps1
 # Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.py -- portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh -- portiert nach python
+# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
     return {<!DOCTYPE html>
@@ -211,13 +223,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 }
 
-proc main {argv} {
-    if {[llength $argv] != 1} {
+proc main {args} {
+    if {[llength $args] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set outputFile [lindex $argv 0]
+    set outputFile [lindex $args 0]
     
     # Generate HTML content and write to file
     set htmlContent [generateHTML]
@@ -227,4 +239,4 @@ proc main {argv} {
     puts "HTML file generated: $outputFile"
 }
 
-main $argv
+main {*}$argv

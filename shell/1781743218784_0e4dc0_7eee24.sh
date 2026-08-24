@@ -1,11 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 1781743218784_0e4dc0_7eee24.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_0e4dc0.py — portiert nach javascript
+# 1781743218784_0e4dc0_7eee24.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.py — portiert nach perl5
 # Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
 # Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
@@ -155,7 +159,7 @@ function u8b64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromC
 function b64u8(b64){ const s=atob(b64.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
 async function deriveKey(pw,salt){
   const km=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2",salt: new Uint8Array(salt),iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
@@ -220,18 +224,20 @@ EOF
 }
 
 main() {
-    local args_count=$#
+    local args=("$@")
     
-    if [[ $args_count -ne 1 ]]; then
-        echo 'Usage: bash script.sh <output-file>' >&2
+    if [[ ${#args[@]} -ne 1 ]]; then
+        echo "Usage: $0 <output-file>" >&2
         exit 1
     fi
     
-    local output_file="$1"
+    local output_file="${args[0]}"
     
     # Generate HTML content and write to file
     generate_html > "$output_file"
     echo "HTML file generated: $output_file"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

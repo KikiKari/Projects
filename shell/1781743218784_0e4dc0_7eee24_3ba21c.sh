@@ -1,12 +1,24 @@
 #!/bin/bash
-# 1781743218784_0e4dc0_7eee24.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24.ps1
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_7eee24_3ba21c.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7eee24_3ba21c.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
+# 1781743218784_0e4dc0_7eee24.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24.ps1
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach python
+# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
 generateHTML() {
-    cat << 'EOF'
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -216,14 +228,12 @@ EOF
 }
 
 main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
-        echo "Usage: bash script.sh <output-file>" >&2
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: $0 <output-file>" >&2
         exit 1
     fi
     
-    local outputFile="${args[0]}"
+    local outputFile="$1"
     
     # Generate HTML content and write to file
     generateHTML > "$outputFile"

@@ -1,27 +1,10 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e4dc0.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_7e7141.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_7e7141.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-<#
-.SYNOPSIS
-    Generates an HTML file containing a secret vault application.
-.DESCRIPTION
-    This script generates an HTML file that contains a client-side secret vault application.
-    The application allows users to encrypt and decrypt secrets using AES-256-GCM and PBKDF2.
-.PARAMETER OutputFile
-    The path to the output HTML file.
-.EXAMPLE
-    .\script.ps1 -OutputFile "vault.html"
-#>
-
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputFile
-)
-
-function Generate-Html {
-    return @'
+function generateHTML {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -227,10 +210,25 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
-# Generate HTML content and write to file
-$htmlContent = Generate-Html
-$htmlContent | Out-File -FilePath $OutputFile -Encoding UTF8
-Write-Host "HTML file generated: $OutputFile"
+function Main {
+    param(
+        [string[]]$Args
+    )
+    
+    if ($Args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        exit 1
+    }
+
+    $outputFile = $Args[0]
+    
+    # Generate HTML content and write to file
+    $htmlContent = generateHTML
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+    Write-Host "HTML file generated: $outputFile"
+}
+
+Main -Args $args

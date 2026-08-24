@@ -1,10 +1,10 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0e4dc0.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 function GenerateHTML {
-  return @"
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -85,7 +85,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -214,25 +214,21 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function Main {
-  param(
-    [string[]]$Args
-  )
-  
-  if ($Args.Count -ne 1) {
-    Write-Error "Usage: pwsh script.ps1 <output-file>"
-    exit 1
-  }
-  
-  $outputFile = $Args[0]
-  
-  # Generate HTML content and write to file
-  try {
-    GenerateHTML | Out-File -FilePath $outputFile -Encoding UTF8
-    Write-Output "HTML file generated: $outputFile"
-  } catch {
-    Write-Error "Could not open file '$outputFile' $($_.Exception.Message)"
-    exit 1
-  }
+    param(
+        [string[]]$Args
+    )
+    
+    if ($Args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        exit 1
+    }
+    
+    $outputFile = $Args[0]
+    
+    # Generate HTML content and write to file
+    $htmlContent = GenerateHTML
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+    Write-Host "HTML file generated: $outputFile"
 }
 
 Main -Args $args

@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-# 1781743218784_0e4dc0_7eee24.pl — portiert nach python
+# 1781743218784_0e4dc0_7eee24_06b430.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_7eee24_06b430.ps1
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0_7eee24.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_7eee24.pl
 # Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e4dc0.py — portiert nach python3.12
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.pl
+# 1781743218784_0e4dc0.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0.py
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
-def generateHTML():
+
+def generate_html():
     return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,23 +222,20 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-def main():
-    args = sys.argv[1:]
-    
+
+def main(args):
     if len(args) != 1:
         print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
     
-    outputFile = args[0]
+    output_file = args[0]
     
     # Generate HTML content and write to file
-    try:
-        with open(outputFile, 'w', encoding='utf-8') as fh:
-            fh.write(generateHTML())
-        print(f"HTML file generated: {outputFile}")
-    except Exception as e:
-        print(f"Could not open file '{outputFile}': {e}", file=sys.stderr)
-        sys.exit(1)
+    html_content = generate_html()
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    print(f"HTML file generated: {output_file}")
+
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
