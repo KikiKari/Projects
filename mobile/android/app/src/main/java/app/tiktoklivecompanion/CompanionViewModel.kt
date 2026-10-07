@@ -14,6 +14,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 data class CompanionUiState(
+    val hookReconnectEnabled: Boolean = false,
+    val hookReconnectDelaySeconds: Int = 3,
+    val hookRecovery: Map<String, Any?> = emptyMap(),
+    val playerRecovery: Map<String, Any?> = emptyMap(),
+    val captionSources: Map<String, Any?> = emptyMap(),
+    val embedMode: Boolean = false,
+    val embedPhase: String = "idle",
+    val embedAttempt: Int = 0,
     val tab: CompanionTab = CompanionTab.SONG,
     val source: RecognitionSource = RecognitionSource.MICROPHONE,
     val recognitionStatus: String = "Bereit für manuelle Erkennung",
@@ -49,7 +57,7 @@ data class CompanionUiState(
     val debugEnabled: Boolean = false,
     val debugEvents: List<String> = emptyList(),
     val streamName: String = "",
-    val autoReconnectEnabled: Boolean = true,
+    val autoReconnectEnabled: Boolean = false,
     val autoReconnectDelaySeconds: Int = 3,
     val gameModeEnabled: Boolean = true,
     val auddToken: String = "",
@@ -74,6 +82,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     var backgroundPlaybackChanged: ((Boolean) -> Unit)? = null
     var currentWebUrl: String = "https://www.tiktok.com/live"
         private set
+    private var currentDocument: String? = null
+    private val retiredDocuments = mutableSetOf<String>()
+    private var embedJob: Job? = null
+    private var embedStartedAt = 0L
+    private var embedId = ""
+    private var captionExpiry: Job? = null
     private var speechSequence = 0L
     private var forceWatchdog: Job? = null
     private val recentSpeech = LinkedHashMap<String, Long>()
@@ -102,8 +116,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.ttsLanguage.collectLatest { value -> mutable.update { it.copy(ttsLanguage = value) } } }
             viewModelScope.launch { stored.ttsSpeakNames.collectLatest { value -> mutable.update { it.copy(ttsSpeakNames = value) } } }
             viewModelScope.launch { stored.ttsShortenNames.collectLatest { value -> mutable.update { it.copy(ttsShortenNames = value) } } }
-            viewModelScope.launch { stored.autoReconnect.collectLatest { value -> mutable.update { it.copy(autoReconnectEnabled = value) } } }
-            viewModelScope.launch { stored.autoReconnectDelay.collectLatest { value -> mutable.update { it.copy(autoReconnectDelaySeconds = value) } } }
+            viewModelScope.launch { stored.autoReconnect.collectLatest { value -> mutable.update { it.copy(autoReconnectEnabled = value) }; pushRecovery() } }
+            viewModelScope.launch { stored.autoReconnectDelay.collectLatest { value -> mutable.update { it.copy(autoReconnectDelaySeconds = value) }; pushRecovery() } }
+            viewModelScope.launch { stored.hookEnabled.collectLatest { value -> mutable.update { it.copy(hookReconnectEnabled = value) }; pushRecovery() } }
+            viewModelScope.launch { stored.hookDelay.collectLatest { value -> mutable.update { it.copy(hookReconnectDelaySeconds = value) }; pushRecovery() } }
             viewModelScope.launch { stored.auddToken.collectLatest { value -> mutable.update { it.copy(auddToken = value) } } }
             viewModelScope.launch { stored.pairingCode.collectLatest { value -> mutable.update { it.copy(pairingCode = value) } } }
             viewModelScope.launch { stored.universalCaptionApiKey.collectLatest { value -> mutable.update { it.copy(universalCaptionApiKey = value) } } }
@@ -129,27 +145,21 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "components" to mapOf(
                 "layout" to mapOf("liveInformationBeforePageInformation" to true),
                 "vlcReplacement" to mapOf("placement" to "main-video-frame", "installed" to vlcInstalled, "active" to (current.vlcReplacementUrl != null), "candidateCount" to current.mediaUrls.size),
-                "speechAndChatSettings" to mapOf("settingsDialogAvailable" to true, "auddTokenConfigured" to current.auddToken.isNotBlank(), "pairingConfigured" to current.pairingCode.isNotBlank(), "universalCaptionApiKeyConfigured" to current.universalCaptionApiKey.isNotBlank(), "speakNames" to current.ttsSpeakNames, "shortenNames" to current.ttsShortenNames, "gameModeEnabled" to current.gameModeEnabled, "language" to current.ttsLanguage.name, "voice" to current.ttsVoice),
-                "captions" to mapOf("rawBridgeStreamCaptured" to true, "available" to current.captionsAvailable, "eventCount" to current.captionRecords.size, "jsonLinesExportAvailable" to true, "rawJsonExportAvailable" to true),
+                "speechAndChatSettings" to mapOf("settingsDialogAvailable" to true, "auddTokenConfigured" to current.auddToken.isNotBlank(), "pairingConfigured" to current.pairingCode.isNotBlank(), "universalCaptionApiKeyConfigured" to current.universalCaptionApiKey.isNotBlank(), "speakNames" to current.ttsSpeakNames, "shortenNames" to current.ttsShortenNames, "gameModeEnabled" to current.gameModeEnabled, "language" to current.ttsLanguage.name, "voiceConfigured" to current.ttsVoice.isNotBlank()),
+                "captions" to mapOf("rawBridgeStreamCaptured" to false, "available" to current.captionsAvailable, "eventCount" to current.captionRecords.size, "jsonLinesExportAvailable" to true, "rawJsonExportAvailable" to true),
                 "songRecognition" to mapOf("path" to "android-native-audd-microphone-or-webview", "source" to current.source.label),
                 "topChatters" to mapOf("observedCount" to current.participants.size, "mutedCount" to current.mutedAuthors.size, "resetAvailable" to true),
                 "recommendations" to mapOf("available" to true, "status" to current.recommendationStatus, "requested" to current.recommendationLimit, "scanned" to current.recommendationScanned, "found" to current.recommendationItems.size),
+                "hookReconnect" to mapOf("enabled" to current.hookReconnectEnabled, "delaySeconds" to current.hookReconnectDelaySeconds),
                 "autoReconnect" to mapOf("enabled" to current.autoReconnectEnabled, "delaySeconds" to current.autoReconnectDelaySeconds)
             ),
-            "raw" to mapOf(
-                "connected" to current.connected,
-                "hookAvailable" to current.hookAvailable,
-                "captionsAvailable" to current.captionsAvailable,
-                "pageInformation" to current.pageInfo,
-                "liveInformation" to current.liveValues,
-                "chat" to current.chats,
-                "participants" to current.participants.mapValues { mapOf("messages" to it.value.messages, "words" to it.value.words) },
-                "mutedAuthors" to current.mutedAuthors.toList(),
-                "mediaUrls" to current.mediaUrls.map { mapOf("url" to it.url, "kind" to it.kind) },
-                "bridgeEvents" to JSONArray(current.debugEvents),
-                "captionProtocol" to JSONArray(current.captionRecords.map { JSONObject(it.rawJson) }),
-                "recommendations" to JSONArray(current.recommendationItems.map { JSONObject(mapOf("handle" to it.handle, "displayName" to it.displayName, "title" to it.title, "viewerCount" to it.viewerCount, "viewerLabel" to it.viewerLabel, "url" to it.url, "position" to it.position)) })
-            )
+            "schemaVersion" to "tiktok-live-companion-diagnostic-v3",
+            "snapshotId" to java.util.UUID.randomUUID().toString(),
+            "hookRecovery" to JSONObject(RecoveryDiagnostics.hook(current.hookRecovery)),
+            "playerRecovery" to JSONObject(RecoveryDiagnostics.project(current.playerRecovery)),
+            "captionSources" to JSONObject(RecoveryDiagnostics.project(current.captionSources)),
+            "embedStartup" to mapOf("id" to embedId, "phase" to current.embedPhase, "attempt" to current.embedAttempt),
+            "bridgeEvents" to JSONArray(current.debugEvents.map { JSONObject(it) })
         )).toString(2)
     }
     fun setGameMode(enabled: Boolean) { mutable.update { it.copy(gameModeEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setGameMode(enabled) } } }
@@ -167,6 +177,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val next = if (mutable.value.vlcReplacementUrl != null) null else bestMediaUrl(mutable.value.mediaUrls)?.url
         if (next == null && mutable.value.vlcReplacementUrl == null) { reportError("Keine Media-URL verfügbar"); return }
         mutable.update { it.copy(vlcReplacementUrl = next, videoExpanded = false) }
+        sendCommand?.invoke("set-vlc-active", mapOf("active" to (next != null)))
     }
     fun bestVlcMediaUrl(): String? = bestMediaUrl(mutable.value.mediaUrls)?.url
     fun expandVideo() {
@@ -194,9 +205,14 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         recovery?.let { currentWebUrl = it; loadUrl?.invoke(it) }
     }
     fun noteNavigation(url: String) {
+        currentDocument?.let { retiredDocuments.add(it) }
+        currentDocument = null
+        captionExpiry?.cancel()
+        mutable.update { it.copy(captionsAvailable = false, captionSources = emptyMap(), hookRecovery = emptyMap(), playerRecovery = emptyMap()) }
         if (url.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?"))) currentWebUrl = url
     }
     fun openStream() {
+        embedJob?.cancel(); mutable.update { it.copy(embedMode = false, embedPhase = "idle", embedAttempt = 0) }
         val url = StreamNameNormalizer.liveUrl(mutable.value.streamName)
         if (url == null) { reportError("Ungültiger Streamname · erlaubt sind Buchstaben, Ziffern, Punkt und Unterstrich"); return }
         mutable.update { it.copy(connected = false, hookAvailable = false, captionsAvailable = false, chats = emptyList(), chatEntries = emptyList(), speechQueue = emptyList(), liveValues = emptyMap(), liveNumbers = emptyMap(), participants = emptyMap(), pageInfo = emptyMap(), audibleStartRequested = true, playerMuted = null, audibleStartBlocked = false, mediaUrls = emptyList(), vlcReplacementUrl = null, captionRecords = emptyList(), recommendationStatus = "idle", recommendationScanned = 0, recommendationItems = emptyList()) }
@@ -236,6 +252,45 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.setLimiterThreshold(threshold) }
         }
         pushLimiter()
+    }
+    private fun pushRecovery() {
+        val s = mutable.value
+        sendCommand?.invoke("set-hook-reconnect", mapOf("enabled" to s.hookReconnectEnabled, "delaySeconds" to s.hookReconnectDelaySeconds))
+        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to s.autoReconnectEnabled, "delaySeconds" to s.autoReconnectDelaySeconds))
+        sendCommand?.invoke("set-vlc-active", mapOf("active" to (s.vlcReplacementUrl != null)))
+    }
+    fun setHookReconnect(enabled: Boolean) {
+        mutable.update { it.copy(hookReconnectEnabled = enabled) }; pushRecovery()
+        preferences?.let { viewModelScope.launch { it.setHookEnabled(enabled) } }
+    }
+    fun setHookReconnectDelay(seconds: Int) {
+        val safe = seconds.coerceIn(1, 59)
+        mutable.update { it.copy(hookReconnectDelaySeconds = safe) }; pushRecovery()
+        preferences?.let { viewModelScope.launch { it.setHookDelay(safe) } }
+    }
+    fun openEmbed() {
+        if (mutable.value.embedMode && mutable.value.embedPhase in setOf("loading", "retry-wait", "playing", "awaiting-gesture")) return
+        val live = StreamNameNormalizer.liveUrl(mutable.value.streamName) ?: currentWebUrl
+        val handle = Regex("/@([^/]+)/live").find(live)?.groupValues?.get(1) ?: return
+        embedJob?.cancel(); embedStartedAt = System.currentTimeMillis(); embedId = java.util.UUID.randomUUID().toString()
+        mutable.update { it.copy(embedMode = true, embedPhase = "loading", embedAttempt = 0, vlcReplacementUrl = null) }
+        startEmbedAttempt("https://www.tiktok.com/embed/live/@$handle")
+    }
+    private fun startEmbedAttempt(url: String) {
+        if (!mutable.value.embedMode || mutable.value.embedAttempt >= 3 || System.currentTimeMillis() - embedStartedAt >= 90_000) {
+            mutable.update { it.copy(embedPhase = "failed") }; return
+        }
+        mutable.update { it.copy(embedAttempt = it.embedAttempt + 1, embedPhase = "loading") }
+        noteNavigation(url); loadUrl?.invoke(url)
+        embedJob = viewModelScope.launch {
+            delay(30_000)
+            if (mutable.value.embedMode && mutable.value.embedPhase == "loading") startEmbedAttempt(url)
+        }
+    }
+    fun openNormal() {
+        if (!mutable.value.embedMode) return
+        embedJob?.cancel(); mutable.update { it.copy(embedMode = false, embedPhase = "cancelled") }
+        noteNavigation(currentWebUrl); loadUrl?.invoke(currentWebUrl)
     }
     fun setAutoReconnect(enabled: Boolean) {
         mutable.update { it.copy(autoReconnectEnabled = enabled) }
@@ -295,13 +350,39 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     fun handle(envelope: BridgeEnvelope) {
+        val doc = envelope.payload["documentId"] as? String
+        if (envelope.payload["frameKind"] != "sub" && doc != null) {
+            if (doc in retiredDocuments) return
+            if (currentDocument == null) currentDocument = doc
+            if (doc != currentDocument) return
+        }
         mutable.update {
-            val rawEvent = JSONObject(mapOf("timestamp" to envelope.timestamp, "type" to envelope.type, "streamId" to envelope.streamId, "sequence" to envelope.sequence, "payload" to JSONObject(envelope.payload))).toString()
-            val events = if (it.debugEnabled) it.debugEvents + rawEvent else it.debugEvents
+            val events = if (it.debugEnabled) (it.debugEvents + RecoveryDiagnostics.event(envelope)).takeLast(2000) else it.debugEvents
             it.copy(connected = true, debugEvents = events)
         }
         when (envelope.type) {
+            "recovery-ready" -> pushRecovery()
+            "hook-status" -> mutable.update { it.copy(hookAvailable = envelope.payload["installed"] == true) }
+            "hook-recovery" -> mutable.update { it.copy(hookRecovery = RecoveryDiagnostics.hook(envelope.payload)) }
+            "player-recovery" -> {
+                mutable.update { it.copy(playerRecovery = RecoveryDiagnostics.project(envelope.payload)) }
+                if (mutable.value.embedMode && envelope.payload["phase"] == "awaiting-gesture") {
+                    embedJob?.cancel(); mutable.update { it.copy(embedPhase = "awaiting-gesture") }
+                }
+            }
+            "caption-state" -> {
+                val safe = RecoveryDiagnostics.project(envelope.payload)
+                mutable.update { it.copy(captionSources = safe, captionsAvailable = listOf("websocket", "dom", "playerText").any { key -> safe[key] == true }) }
+            }
+            "embed-blocked" -> if (mutable.value.embedMode) {
+                embedJob?.cancel()
+                mutable.update { it.copy(embedPhase = if (envelope.payload["reason"] == "ended") "ended" else "login-required") }
+            }
+            "player-observation" -> if (mutable.value.embedMode && mutable.value.embedPhase in setOf("loading", "awaiting-gesture") && envelope.payload["playing"] == true) {
+                embedJob?.cancel(); mutable.update { it.copy(embedPhase = "playing") }
+            }
             "bridge-ready" -> {
+                pushRecovery()
                 pushLimiter()
                 sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to mutable.value.autoReconnectDelaySeconds))
                 sendCommand?.invoke("set-player-expanded", mapOf("expanded" to mutable.value.videoExpanded))
@@ -332,7 +413,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                     put("Video vorhanden", if (envelope.payload["videoPresent"] as? Boolean == true) "ja" else "nein")
                     put("Untertitel-Steuerung", if (envelope.payload["captionsControlPresent"] as? Boolean == true) "ja" else "nein")
                 }
-                mutable.update { it.copy(captionsAvailable = envelope.payload["captionsControlPresent"] as? Boolean ?: false, pageInfo = info) }
+                mutable.update { it.copy(captionSources = it.captionSources + ("menuAvailable" to (envelope.payload["captionsControlPresent"] == true)), pageInfo = info) }
             }
             "chat" -> {
                 val author = envelope.payload["nickname"] as? String ?: ""
@@ -356,8 +437,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val first = contents?.firstOrNull() as? Map<*, *>
                 val language = (first?.get("lang") ?: envelope.payload["language"] ?: "").toString().take(24)
                 val value = (first?.get("text") ?: envelope.payload["text"] ?: "").toString().take(4_000)
-                val raw = JSONObject(mapOf("timestamp" to envelope.timestamp, "streamId" to envelope.streamId, "sentenceId" to (envelope.payload["sentenceId"] ?: ""), "definite" to (envelope.payload["definite"] ?: false), "language" to language, "text" to value, "payload" to JSONObject(envelope.payload))).toString()
-                mutable.update { it.copy(captionRecords = it.captionRecords + CaptionRecord(envelope.timestamp, (envelope.payload["sentenceId"] ?: "").toString().take(64), envelope.payload["definite"] as? Boolean ?: false, language, value, raw)) }
+                val raw = JSONObject(mapOf("timestamp" to envelope.timestamp, "streamId" to envelope.streamId, "sentenceId" to (envelope.payload["sentenceId"] ?: ""), "definite" to (envelope.payload["definite"] ?: false), "language" to language, "text" to value, "source" to ((envelope.payload["source"] as? String)?.takeIf { it in setOf("websocket", "dom", "playerText") } ?: "websocket"))).toString()
+                mutable.update { it.copy(captionsAvailable = true, captionRecords = (it.captionRecords + CaptionRecord(envelope.timestamp, (envelope.payload["sentenceId"] ?: "").toString().take(64), envelope.payload["definite"] as? Boolean ?: false, language, value, raw)).takeLast(2000)) }
+                captionExpiry?.cancel()
+                captionExpiry = viewModelScope.launch { delay(15_000); mutable.update { it.copy(captionsAvailable = false) } }
             }
             "recommendation-scan-progress" -> {
                 val items = (envelope.payload["items"] as? List<*>)?.mapNotNull { raw ->
@@ -396,21 +479,26 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             }
             "force-start" -> mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = (envelope.payload["url"] as? String) ?: it.forceRecoveryUrl) }
             "quick-recover" -> mutable.update { it.copy(liveValues = it.liveValues + ("Auto-Reconnect" to "aktiv")) }
-            "player-state" -> mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
+            "player-state" -> {
+                mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
+                if (mutable.value.embedMode && envelope.payload["reason"] == "autoplay-blocked") {
+                    embedJob?.cancel(); mutable.update { it.copy(embedPhase = "awaiting-gesture") }
+                }
+            }
             "media-url" -> {
                 val safe = BridgeValidator.safeHttpsUrl(envelope.payload["url"] as? String)?.toString() ?: return
                 if (!isVlcMediaUrl(safe)) return
                 val kind = (envelope.payload["kind"] as? String)?.take(24) ?: "media"
                 mutable.update { current ->
                     val next = (current.mediaUrls.filterNot { it.url == safe } + StreamMediaUrl(safe, kind)).takeLast(12)
-                    current.copy(mediaUrls = next, vlcReplacementUrl = if (current.vlcReplacementUrl != null) bestMediaUrl(next)?.url else null)
+                    current.copy(mediaUrls = next, vlcReplacementUrl = current.vlcReplacementUrl)
                 }
             }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
     }
 
-    override fun onCleared() { forceWatchdog?.cancel(); recognizer.cancel(); super.onCleared() }
+    override fun onCleared() { embedJob?.cancel(); captionExpiry?.cancel(); forceWatchdog?.cancel(); recognizer.cancel(); super.onCleared() }
 
     private fun isVlcMediaUrl(value: String): Boolean = try {
         val uri = java.net.URI(value)

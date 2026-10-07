@@ -2,6 +2,30 @@ import AVFoundation
 import Foundation
 
 @MainActor final class CompanionState: ObservableObject {
+    @Published var hookReconnectEnabled = false {
+        didSet { defaults.set(hookReconnectEnabled, forKey: "hookReconnectEnabled"); pushHookRecovery() }
+    }
+    @Published var hookReconnectDelaySeconds = 3 {
+        didSet {
+            let safe = max(1, min(59, hookReconnectDelaySeconds))
+            if safe != hookReconnectDelaySeconds { hookReconnectDelaySeconds = safe; return }
+            defaults.set(safe, forKey: "hookReconnectDelaySeconds"); pushHookRecovery()
+        }
+    }
+    @Published var hookRecovery: [String: Any] = [:]
+    @Published var playerRecovery: [String: Any] = [:]
+    @Published var captionSources: [String: Any] = [:]
+    @Published var embedMode = false
+    @Published var embedPhase = "idle"
+    @Published var embedAttempt = 0
+    var loadURL: ((URL) -> Void)?
+    private var normalURL = URL(string: "https://www.tiktok.com/live")!
+    private var currentDocument: String?
+    private var retiredDocuments: Set<String> = []
+    private var embedTask: Task<Void, Never>?
+    private var captionTask: Task<Void, Never>?
+    private var embedStartedAt = Date()
+    private var embedId = UUID().uuidString
     @Published var selectedTab: CompanionTab = .song
     @Published var recognitionSource: RecognitionSource {
         didSet { defaults.set(recognitionSource.rawValue, forKey: Self.sourceKey) }
@@ -71,6 +95,8 @@ import Foundation
         self.mutedAuthors = Set(defaults.stringArray(forKey: Self.mutedAuthorsKey) ?? [])
         self.autoReconnectEnabled = defaults.object(forKey: Self.autoReconnectKey) as? Bool ?? true
         self.autoReconnectDelaySeconds = max(1, min(59, defaults.object(forKey: Self.autoReconnectDelayKey) as? Int ?? 3))
+        self.hookReconnectEnabled = defaults.bool(forKey: "hookReconnectEnabled")
+        self.hookReconnectDelaySeconds = max(1, min(59, defaults.object(forKey: "hookReconnectDelaySeconds") as? Int ?? 3))
         self.auddToken = defaults.string(forKey: Self.auddTokenKey) ?? ""
         self.pairingCode = defaults.string(forKey: Self.pairingCodeKey) ?? ""
         self.universalCaptionApiKey = defaults.string(forKey: Self.universalApiKey) ?? ""
@@ -99,9 +125,35 @@ import Foundation
     }
 
     func handle(_ envelope: BridgeEnvelope) {
+        if envelope.payload["frameKind"]?.stringValue != "sub", let doc = envelope.payload["documentId"]?.stringValue {
+            guard !retiredDocuments.contains(doc) else { return }
+            if currentDocument == nil { currentDocument = doc }
+            guard currentDocument == doc else { return }
+        }
         connected = true
-        if debugEnabled { debugEvents.append(envelope.rawObject) }
+        if debugEnabled {
+            debugEvents.append(["type": envelope.type, "sequence": envelope.sequence, "timestamp": ISO8601DateFormatter().date(from: envelope.timestamp) != nil ? envelope.timestamp as Any : NSNull(), "payload": RecoveryProjection.project(envelope.payload)])
+            debugEvents = Array(debugEvents.suffix(2000))
+        }
         switch envelope.type {
+        case "bridge-ready", "recovery-ready":
+            pushHookRecovery()
+            sendCommand?("set-auto-reconnect", ["enabled": autoReconnectEnabled, "delaySeconds": autoReconnectDelaySeconds])
+            sendCommand?("set-vlc-active", ["active": vlcReplacementURL != nil])
+        case "hook-status": hookAvailable = envelope.payload["installed"]?.boolValue == true
+        case "hook-recovery": hookRecovery = RecoveryProjection.project(envelope.payload)
+        case "player-recovery":
+            playerRecovery = RecoveryProjection.project(envelope.payload)
+            if embedMode, envelope.payload["phase"]?.stringValue == "awaiting-gesture" { embedTask?.cancel(); embedPhase = "awaiting-gesture" }
+        case "caption-state":
+            captionSources = RecoveryProjection.project(envelope.payload)
+            captionsAvailable = ["websocket", "dom", "playerText"].contains { envelope.payload[$0]?.boolValue == true }
+        case "embed-blocked":
+            if embedMode { embedTask?.cancel(); embedPhase = envelope.payload["reason"]?.stringValue == "ended" ? "ended" : "login-required" }
+        case "player-observation":
+            if embedMode, ["loading", "awaiting-gesture"].contains(embedPhase), envelope.payload["playing"]?.boolValue == true { embedTask?.cancel(); embedPhase = "playing" }
+        case "player-state":
+            if embedMode, envelope.payload["reason"]?.stringValue == "autoplay-blocked" { embedTask?.cancel(); embedPhase = "awaiting-gesture" }
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
@@ -111,7 +163,7 @@ import Foundation
                 recognizer.cancel()
             }
         case "inspection":
-            captionsAvailable = envelope.payload["captionsControlPresent"]?.boolValue == true
+            captionSources["menuAvailable"] = envelope.payload["captionsControlPresent"]?.boolValue == true
             pageInformation = envelope.payload.reduce(into: [:]) { result, entry in
                 if let value = entry.value.stringValue { result[entry.key] = value }
                 else if let value = entry.value.numberValue { result[entry.key] = String(Int(value)) }
@@ -134,7 +186,13 @@ import Foundation
             let first = contents?.first?.objectValue
             let language = first?["lang"]?.stringValue ?? envelope.payload["language"]?.stringValue ?? ""
             let text = first?["text"]?.stringValue ?? envelope.payload["text"]?.stringValue ?? ""
-            captionRecords.append(CaptionRecord(timestamp: envelope.timestamp, sentenceId: envelope.payload["sentenceId"]?.stringValue ?? "", definite: envelope.payload["definite"]?.boolValue == true, language: language, text: text, raw: envelope.rawObject))
+            captionRecords.append(CaptionRecord(timestamp: envelope.timestamp, sentenceId: envelope.payload["sentenceId"]?.stringValue ?? "", definite: envelope.payload["definite"]?.boolValue == true, language: language, text: text, raw: ["timestamp": envelope.timestamp, "sentenceId": envelope.payload["sentenceId"]?.stringValue ?? "", "language": language, "text": text, "definite": envelope.payload["definite"]?.boolValue == true]))
+            captionRecords = Array(captionRecords.suffix(2000))
+            captionsAvailable = true; captionTask?.cancel()
+            captionTask = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
+                guard !Task.isCancelled else { return }; self?.captionsAvailable = false
+            }
         case "recommendation-scan-progress":
             recommendationStatus = envelope.payload["status"]?.stringValue ?? "running"
             recommendationScanned = Int(envelope.payload["scanned"]?.numberValue ?? 0)
@@ -157,7 +215,7 @@ import Foundation
                 return MobileMediaLink(url: url, type: type, label: object["label"]?.stringValue ?? type)
             } ?? []
             mediaLinks = nextLinks
-            if vlcReplacementURL != nil { vlcReplacementURL = bestVlcMediaURL(in: nextLinks) }
+            // Preserve the selected VLC source across new candidate observations.
         case "media-url":
             guard let rawURL = envelope.payload["url"]?.stringValue,
                   let url = URL(string: rawURL), url.scheme == "https" else { return }
@@ -235,12 +293,46 @@ import Foundation
     }
 
     func toggleVlcReplacement() {
-        if vlcReplacementURL != nil { vlcReplacementURL = nil; return }
+        if vlcReplacementURL != nil { vlcReplacementURL = nil; sendCommand?("set-vlc-active", ["active": false]); return }
         guard let url = bestVlcMediaURL(in: mediaLinks) else { lastError = "Keine Media-URL verfügbar"; return }
         vlcReplacementURL = url
+        sendCommand?("set-vlc-active", ["active": true])
     }
 
     func bestVlcMediaURL() -> URL? { bestVlcMediaURL(in: mediaLinks) }
+
+    private func pushHookRecovery() {
+        sendCommand?("set-hook-reconnect", ["enabled": hookReconnectEnabled, "delaySeconds": hookReconnectDelaySeconds])
+    }
+    func noteNavigation(_ url: URL) {
+        if let doc = currentDocument { retiredDocuments.insert(doc) }
+        currentDocument = nil; captionTask?.cancel(); captionsAvailable = false
+        captionSources = [:]; hookRecovery = [:]; playerRecovery = [:]
+        if url.host == "www.tiktok.com", url.path.range(of: "^/@[^/]+/live/?$", options: .regularExpression) != nil { normalURL = url }
+    }
+    func openEmbed() {
+        if embedMode, ["loading", "retry-wait", "playing", "awaiting-gesture"].contains(embedPhase) { return }
+        let parts = normalURL.path.split(separator: "/")
+        guard let first = parts.first, first.hasPrefix("@"), parts.last == "live",
+              let url = URL(string: "https://www.tiktok.com/embed/live/\(first)") else { return }
+        embedTask?.cancel(); embedStartedAt = Date(); embedId = UUID().uuidString
+        embedMode = true; embedAttempt = 0; vlcReplacementURL = nil
+        startEmbedAttempt(url)
+    }
+    private func startEmbedAttempt(_ url: URL) {
+        guard embedMode, embedAttempt < 3, Date().timeIntervalSince(embedStartedAt) < 90 else { embedPhase = "failed"; return }
+        embedAttempt += 1; embedPhase = "loading"; noteNavigation(url); loadURL?(url)
+        embedTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            guard !Task.isCancelled, let self, self.embedMode, self.embedPhase == "loading" else { return }
+            self.startEmbedAttempt(url)
+        }
+    }
+    func openNormal() {
+        guard embedMode else { return }
+        embedTask?.cancel(); embedMode = false; embedPhase = "cancelled"
+        noteNavigation(normalURL); loadURL?(normalURL)
+    }
 
     func clearDebugEvents() { debugEvents.removeAll() }
 
@@ -252,28 +344,21 @@ import Foundation
             "components": [
                 "layout": ["liveInformationBeforePageInformation": true],
                 "vlcReplacement": ["placement": "main-video-frame", "installed": vlcInstalled, "active": vlcReplacementURL != nil, "candidateCount": mediaLinks.count],
-                "speechAndChatSettings": ["settingsDialogAvailable": true, "auddTokenConfigured": !auddToken.isEmpty, "pairingConfigured": !pairingCode.isEmpty, "universalCaptionApiKeyConfigured": !universalCaptionApiKey.isEmpty, "speakNames": speakNames, "shortenNames": shortenNames, "gameModeEnabled": gameModeEnabled, "language": speechLanguage, "voice": speechVoice],
-                "captions": ["rawBridgeStreamCaptured": true, "available": captionsAvailable, "eventCount": captionRecords.count, "jsonLinesExportAvailable": true, "rawJsonExportAvailable": true],
+                "speechAndChatSettings": ["settingsDialogAvailable": true, "auddTokenConfigured": !auddToken.isEmpty, "pairingConfigured": !pairingCode.isEmpty, "universalCaptionApiKeyConfigured": !universalCaptionApiKey.isEmpty, "speakNames": speakNames, "shortenNames": shortenNames, "gameModeEnabled": gameModeEnabled, "language": ["Auto", "Deutsch", "Englisch"].contains(speechLanguage) ? speechLanguage : "Auto", "voiceConfigured": !speechVoice.isEmpty],
+                "captions": ["rawBridgeStreamCaptured": false, "available": captionsAvailable, "eventCount": captionRecords.count, "jsonLinesExportAvailable": true, "rawJsonExportAvailable": true],
                 "songRecognition": ["path": "ios-native-shazamkit", "source": recognitionSource.rawValue],
                 "topChatters": ["observedCount": participants.count, "mutedCount": mutedAuthors.count, "resetAvailable": true],
                 "recommendations": ["available": true, "status": recommendationStatus, "requested": recommendationLimit, "scanned": recommendationScanned, "found": recommendationItems.count],
+                "hookReconnect": ["enabled": hookReconnectEnabled, "delaySeconds": hookReconnectDelaySeconds],
                 "autoReconnect": ["enabled": autoReconnectEnabled, "delaySeconds": autoReconnectDelaySeconds]
             ],
-            "raw": [
-                "connected": connected,
-                "hookAvailable": hookAvailable,
-                "captionsAvailable": captionsAvailable,
-                "liveInformation": liveValues,
-                "pageInformation": pageInformation,
-                "chat": chatLines,
-                "mutedAuthors": Array(mutedAuthors).sorted(),
-                "mediaUrls": mediaLinks.map { ["url": $0.url.absoluteString, "type": $0.type, "label": $0.label] },
-                "bridgeEvents": debugEvents,
-                "captionProtocol": captionRecords.map(\.raw),
-                "recommendations": recommendationItems.map { item -> [String: Any] in
-                    ["handle": item.handle, "displayName": item.displayName, "title": item.title, "viewerCount": item.viewerCount.map { $0 as Any } ?? NSNull(), "viewerLabel": item.viewerLabel, "url": item.url.absoluteString, "position": item.position]
-                }
-            ]
+            "schemaVersion": "tiktok-live-companion-diagnostic-v3",
+            "snapshotId": UUID().uuidString,
+            "hookRecovery": RecoveryProjection.missingMeasurements.merging(hookRecovery) { _, new in new },
+            "playerRecovery": playerRecovery,
+            "captionSources": captionSources,
+            "embedStartup": ["id": embedId, "phase": embedPhase, "attempt": embedAttempt],
+            "bridgeEvents": debugEvents
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) else { return "{}" }
         return String(data: data, encoding: .utf8) ?? "{}"
@@ -282,5 +367,24 @@ import Foundation
     private func bestVlcMediaURL(in links: [MobileMediaLink]) -> URL? {
         links.first(where: { $0.url.absoluteString.localizedCaseInsensitiveContains(".m3u8") })?.url
             ?? links.first(where: { !$0.url.absoluteString.localizedCaseInsensitiveContains("only_audio=1") })?.url
+    }
+}
+
+private enum RecoveryProjection {
+    static let ids: Set<String> = ["id", "documentId", "hookDocumentId", "socketId", "hookAttemptId"]
+    static let numbers: Set<String> = ["attempt", "detectedAtMs", "scheduledAtMs", "startedAtMs", "configuredDelayMs", "effectiveDelayMs", "socketOpenAtMs", "firstFrameAtMs", "firstDecodedAtMs", "completedAtMs", "endedAtMs", "actualWaitMs", "scheduleOverrunMs", "disconnectToDecodedMs", "connectToDecodedMs", "elapsedMs", "closeCode", "activityTtlMs", "mediaProgressAtMs", "currentTime"]
+    static let flags: Set<String> = ["enabled", "connected", "installed", "playing", "paused", "ended", "userPaused", "vlcActive", "wasClean", "metadataPresent", "menuAvailable", "websocket", "dom", "playerText"]
+    static let words: Set<String> = ["disabled", "waiting", "unavailable", "scheduled", "connecting", "native", "socket-open", "first-frame", "first-decoded-message", "connected", "failed", "cancelled", "socket-close", "stream-changed", "configuration-changed", "native-takeover", "native-connected", "qualified-data", "timeout", "connect-error", "policy-rejected", "protocol-unverified", "protocol-error", "send-error", "document-ended", "socket-created", "socket-error", "hook-reconnect", "normal", "embed", "tiktok", "extension", "chat", "caption", "live", "gift", "playing", "awaiting-gesture", "media-progress", "player-changed", "user-paused", "vlc-changed", "loading", "login-required", "ended", "retry-wait", "player-stall", "stalled", "error", "waiting"]
+    static let missingMeasurements: [String: Any] = Dictionary(uniqueKeysWithValues: ["socketOpenAtMs", "firstFrameAtMs", "firstDecodedAtMs", "completedAtMs", "disconnectToDecodedMs", "connectToDecodedMs"].map { ($0, NSNull() as Any) })
+    static func project(_ values: [String: JSONValue]) -> [String: Any] {
+        var result: [String: Any] = [:]
+        for (key, value) in values {
+            if ids.contains(key) { result[key] = value.stringValue.flatMap { UUID(uuidString: $0) }.map { $0.uuidString as Any } ?? NSNull() }
+            else if numbers.contains(key) { result[key] = value.numberValue.flatMap { $0.isFinite ? $0 : nil }.map { $0 as Any } ?? NSNull() }
+            else if flags.contains(key) { result[key] = value.boolValue.map { $0 as Any } ?? NSNull() }
+            else if ["phase", "reason", "stage", "controller", "mode", "owner", "kind"].contains(key) { result[key] = value.stringValue.flatMap { words.contains($0) ? $0 : nil }.map { $0 as Any } ?? NSNull() }
+            else if key == "atUtc" { result[key] = value.stringValue.flatMap { ISO8601DateFormatter().date(from: $0) != nil ? $0 : nil }.map { $0 as Any } ?? NSNull() }
+        }
+        return result
     }
 }

@@ -28,6 +28,12 @@ class CompanionPreferences(private val context: Context) {
     private val ttsShortenNamesKey = booleanPreferencesKey("tts_shorten_names")
     private val autoReconnectKey = booleanPreferencesKey("auto_reconnect")
     private val autoReconnectDelayKey = intPreferencesKey("auto_reconnect_delay_seconds")
+    private val hookEnabledKey = booleanPreferencesKey("hook_reconnect_enabled")
+    private val hookDelayKey = intPreferencesKey("hook_reconnect_delay_seconds")
+    val hookEnabled: Flow<Boolean> = context.companionDataStore.data.map { it[hookEnabledKey] ?: false }
+    val hookDelay: Flow<Int> = context.companionDataStore.data.map { (it[hookDelayKey] ?: 3).coerceIn(1, 59) }
+    suspend fun setHookEnabled(value: Boolean) { context.companionDataStore.edit { it[hookEnabledKey] = value } }
+    suspend fun setHookDelay(value: Int) { context.companionDataStore.edit { it[hookDelayKey] = value.coerceIn(1, 59) } }
     private val auddTokenKey = stringPreferencesKey("audd_token")
     private val pairingCodeKey = stringPreferencesKey("pairing_code")
     private val universalApiKey = stringPreferencesKey("universal_caption_api_key")

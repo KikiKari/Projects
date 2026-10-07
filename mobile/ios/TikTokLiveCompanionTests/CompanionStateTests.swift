@@ -52,7 +52,7 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(commands.last?.0, "set-limiter")
     }
 
-    func testDebugLogIsOptInAndKeepsCompleteRawPayload() {
+    func testDebugLogIsOptInAndExcludesRawPayload() {
         let state = CompanionState(recognizer: FakeRecognizer(), defaults: UserDefaults(suiteName: #function)!)
         let envelope = BridgeEnvelope(version: 1, type: "caption", streamId: "live-1", sequence: 7, timestamp: "2026-08-13T12:00:00Z", payload: ["text": .string("vollständiger RAW-Text")])
         state.handle(envelope)
@@ -60,7 +60,7 @@ private final class FakeRecognizer: RecognitionService {
         state.debugEnabled = true
         state.handle(envelope)
         XCTAssertEqual(state.debugEvents.count, 1)
-        XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("vollständiger RAW-Text"))
+        XCTAssertFalse(state.debugReport(vlcInstalled: false).contains("vollständiger RAW-Text"))
         XCTAssertTrue(state.debugReport(vlcInstalled: false).contains("ios-native-shazamkit"))
     }
 
@@ -81,4 +81,90 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(restored.auddToken, "audd")
         XCTAssertEqual(restored.autoReconnectDelaySeconds, 59)
     }
+    private func recoveryState(_ suite: String) -> CompanionState {
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        return CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+    }
+    private func event(_ type: String, _ payload: [String: JSONValue]) -> BridgeEnvelope {
+        BridgeEnvelope(version: 1, type: type, streamId: "live", sequence: 1, timestamp: "2026-10-07T12:00:00Z", payload: payload)
+    }
+    func testHookAndPlayerRecoveryHaveIndependentSettings() {
+        let state = recoveryState(#function)
+        state.autoReconnectDelaySeconds = 8
+        state.hookReconnectEnabled = true
+        state.hookReconnectDelaySeconds = 3
+        let restored = CompanionState(recognizer: FakeRecognizer(), defaults: UserDefaults(suiteName: #function)!)
+        XCTAssertTrue(restored.hookReconnectEnabled)
+        XCTAssertEqual(restored.hookReconnectDelaySeconds, 3)
+        XCTAssertEqual(restored.autoReconnectDelaySeconds, 8)
+    }
+    func testFiveHookFailuresDoNotNavigateOrRebuildPlayer() {
+        let state = recoveryState(#function)
+        var loads = 0
+        var commands: [String] = []
+        state.loadURL = { _ in loads += 1 }
+        state.sendCommand = { name, _ in commands.append(name) }
+        for attempt in 1...5 {
+            state.handle(event("hook-recovery", ["phase": .string("failed"), "attempt": .number(Double(attempt))]))
+        }
+        XCTAssertEqual(loads, 0)
+        XCTAssertTrue(commands.isEmpty)
+        XCTAssertEqual(state.hookRecovery["attempt"] as? Double, 5)
+    }
+    func testDiagnosisExcludesCaptionAndCredentialsButExplicitCaptionExportKeepsText() {
+        let state = recoveryState(#function)
+        state.debugEnabled = true
+        state.handle(event("caption", ["text": .string("private-caption"), "token": .string("private-token")]))
+        state.handle(event("hook-recovery", ["phase": .string("failed"), "url": .string("https://secret.invalid/signed")]))
+        let report = state.debugReport(vlcInstalled: false)
+        XCTAssertFalse(report.contains("private-caption"))
+        XCTAssertFalse(report.contains("private-token"))
+        XCTAssertFalse(report.contains("secret.invalid"))
+        XCTAssertTrue(report.contains("firstDecodedAtMs"))
+        XCTAssertTrue(state.captionJSONLines().contains("private-caption"))
+    }
+    func testRetiredDocumentCannotReplaceCurrentRecoveryState() {
+        let state = recoveryState(#function)
+        let old = UUID().uuidString
+        state.handle(event("hook-recovery", ["documentId": .string(old), "phase": .string("failed")]))
+        state.noteNavigation(URL(string: "https://www.tiktok.com/@test/live")!)
+        state.handle(event("hook-recovery", ["documentId": .string(UUID().uuidString), "phase": .string("connected")]))
+        state.handle(event("hook-recovery", ["documentId": .string(old), "phase": .string("failed")]))
+        XCTAssertEqual(state.hookRecovery["phase"] as? String, "connected")
+    }
+    func testEmbedCoalescesClicksAndRequiresObservedPlayback() {
+        let state = recoveryState(#function)
+        var loads = 0
+        state.loadURL = { _ in loads += 1 }
+        state.noteNavigation(URL(string: "https://www.tiktok.com/@test/live")!)
+        state.openEmbed(); state.openEmbed(); state.openEmbed()
+        XCTAssertEqual(loads, 1)
+        XCTAssertEqual(state.embedAttempt, 1)
+        XCTAssertEqual(state.embedPhase, "loading")
+        state.handle(event("player-observation", ["playing": .bool(true)]))
+        XCTAssertEqual(state.embedPhase, "playing")
+        state.openNormal()
+        XCTAssertEqual(loads, 2)
+    }
+    func testEmbedLoginAndGestureBlockAutomaticRetries() {
+        let state = recoveryState(#function)
+        state.noteNavigation(URL(string: "https://www.tiktok.com/@test/live")!)
+        state.openEmbed()
+        state.handle(event("embed-blocked", ["reason": .string("login-required")]))
+        XCTAssertEqual(state.embedPhase, "login-required")
+        state.openNormal(); state.openEmbed()
+        state.handle(event("player-recovery", ["phase": .string("awaiting-gesture")]))
+        XCTAssertEqual(state.embedPhase, "awaiting-gesture")
+        state.openNormal()
+    }
+    func testCaptionMenuDoesNotOverrideActivity() {
+        let state = recoveryState(#function)
+        state.handle(event("caption-state", ["websocket": .bool(true), "metadataPresent": .bool(true)]))
+        state.handle(event("inspection", ["captionsControlPresent": .bool(false)]))
+        XCTAssertTrue(state.captionsAvailable)
+        XCTAssertEqual(state.captionSources["metadataPresent"] as? Bool, true)
+        XCTAssertEqual(state.captionSources["menuAvailable"] as? Bool, false)
+    }
+
 }

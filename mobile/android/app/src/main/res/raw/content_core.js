@@ -125,7 +125,7 @@
     }
     const support = value.support_lang || value.supportLang || value.support_language || [];
     return {
-      present: true,
+      present: value.present !== false,
       open: value.open ?? value.is_open ?? value.enabled ?? null,
       supportLang: Array.isArray(support) ? support.map(String) : [],
       location: value.location ?? null,
@@ -160,6 +160,49 @@
       .replace(/[^\p{L}\p{N}]+/gu, " ")
       .trim()
       .replace(/\s+/g, " ");
+  }
+
+  // Availability is an observation, not proof that a caption stream is still
+  // alive. Keep metadata, menu and received text on independent clocks.
+  const CAPTION_ACTIVITY_TTL_MS = 15_000;
+  function captionSource(caption) {
+    if (caption?.method === "WebcastCaptionMessage") return "websocket";
+    if (caption?.source === "playerText") return "playerText";
+    if (caption?.method === "DomCaption" || caption?.source === "dom") return "dom";
+    return null;
+  }
+
+  function captionSourceSnapshot(value, now = Date.now()) {
+    const result = { metadata: { ...normalizeCaptionInfo(null), ...value?.metadata }, menu: { ...value?.menu } };
+    for (const key of ["dom", "websocket", "playerText"]) {
+      const previous = value?.[key] || {};
+      const age = now - Date.parse(previous.lastObservedAtUtc);
+      result[key] = { ...previous, active: Number.isFinite(age) && age >= 0 && age <= CAPTION_ACTIVITY_TTL_MS };
+    }
+    return result;
+  }
+
+  function observeCaptionSource(value, caption, now = Date.now()) {
+    const result = captionSourceSnapshot(value, now);
+    const key = captionSource(caption);
+    if (!key || !captionText(caption)) return result;
+    result[key] = { ...result[key], active: true, lastObservedAtUtc: new Date(now).toISOString(),
+      supportLang: [...new Set((caption.contents || []).map((item) => item.lang).filter(Boolean))] };
+    return result;
+  }
+
+  function summarizeCaptionSources(value, now = Date.now()) {
+    const sources = captionSourceSnapshot(value, now);
+    const active = ["websocket", "dom", "playerText"].filter((key) => sources[key].active);
+    const metadata = sources.metadata;
+    return { ...metadata, present: Boolean(metadata.present || active.length), observed: active.length > 0,
+      // A WebSocket caption does not prove that TikTok's visible menu is on.
+      open: sources.dom.active || sources.playerText.active ? true : metadata.open,
+      source: active.length > 1 ? "multiple" : active[0] || (metadata.present ? "metadata" : null),
+      activeSources: active, activityTtlMs: CAPTION_ACTIVITY_TTL_MS,
+      supportLang: [...new Set([...(metadata.present ? metadata.supportLang || [] : []),
+        ...active.flatMap((key) => sources[key].supportLang || [])])],
+      lastObservedAtUtc: active.map((key) => sources[key].lastObservedAtUtc).sort().at(-1) || null };
   }
 
   function captionText(caption) {
@@ -384,6 +427,74 @@
     return `${author} ${isQuestion ? "fragt" : "sagt"}${body ? ` ${body}` : ""}`.trim();
   }
 
+  function liveHandleFromUrl(value) {
+    try {
+      const path = decodeURIComponent(new URL(String(value || "")).pathname);
+      return (path.match(/^\/@([^/]+)\/live\/?$/i)?.[1] || path.match(/^\/embed\/live\/@?([^/?#]+)\/?$/i)?.[1] || "").toLocaleLowerCase();
+    }
+    catch (_) { return ""; }
+  }
+
+  function parseCompactCount(value) {
+    const raw = String(value ?? "").trim().replace(/\s+/g, "");
+    if (!raw) return null;
+    const match = raw.match(/^([0-9]+(?:[.,][0-9]+)?)([KMB])?$/i);
+    if (!match) return null;
+    const suffix = String(match[2] || "").toLocaleUpperCase();
+    if (!suffix) {
+      const digits = raw.replace(/[.,]/g, "");
+      const parsed = Number(digits);
+      return Number.isSafeInteger(parsed) ? parsed : null;
+    }
+    const base = Number(match[1].replace(",", "."));
+    const multiplier = suffix === "K" ? 1_000 : suffix === "M" ? 1_000_000 : 1_000_000_000;
+    const parsed = Math.round(base * multiplier);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  }
+
+  function dedupeRecommendations(items = []) {
+    const byHandle = new Map();
+    for (const raw of items) {
+      const handle = String(raw?.handle || "").replace(/^@/, "").trim().toLocaleLowerCase();
+      if (!handle) continue;
+      const position = Math.max(1, Math.round(Number(raw.position) || byHandle.size + 1));
+      const item = {
+        handle,
+        displayName: String(raw.displayName || "").trim(),
+        title: String(raw.title || "").trim(),
+        viewerCount: raw.viewerCount != null && Number.isSafeInteger(Number(raw.viewerCount)) ? Number(raw.viewerCount) : null,
+        viewerLabel: String(raw.viewerLabel || "").trim(),
+        url: String(raw.url || "").trim(),
+        position
+      };
+      const existing = byHandle.get(handle);
+      if (!existing) {
+        byHandle.set(handle, item);
+        continue;
+      }
+      byHandle.set(handle, {
+        ...existing,
+        displayName: existing.displayName || item.displayName,
+        title: existing.title || item.title,
+        viewerCount: item.viewerCount ?? existing.viewerCount,
+        viewerLabel: item.viewerLabel || existing.viewerLabel,
+        url: existing.url || item.url,
+        position: Math.min(existing.position, item.position)
+      });
+    }
+    return [...byHandle.values()].sort((left, right) => left.position - right.position);
+  }
+
+  function sortRecommendations(items = [], mode = "tiktok") {
+    const result = dedupeRecommendations(items);
+    if (mode !== "viewers") return result;
+    return result.sort((left, right) => {
+      const leftCount = Number.isSafeInteger(left.viewerCount) ? left.viewerCount : -1;
+      const rightCount = Number.isSafeInteger(right.viewerCount) ? right.viewerCount : -1;
+      return rightCount - leftCount || left.position - right.position;
+    });
+  }
+
   function gameModeSpeechKey(value) {
     return sanitizeChatText(value)
       .toLocaleLowerCase()
@@ -605,7 +716,78 @@
     };
   }
 
+  // Bounded startup recovery, independent of the hook/quick-recovery timer.
+  // Persist this small state across page reloads and service-worker restarts.
+  function newEmbedSession(id, handle, now) {
+    return { id, handle, phase: "loading", attempt: 1, startedAtMs: now,
+      attemptStartedAtMs: now, nextAttemptAtMs: null, documentId: null,
+      excludedDocumentId: null, reason: null, completedAtMs: null };
+  }
+
+  function classifyEmbedObservation({ text = "", playing = false, paused = false, readyState = 0, ended = false, mediaError = false } = {}) {
+    if (playing && !ended && readyState >= 2) return "playing";
+    const message = String(text).toLowerCase();
+    if (/log in to|sign in to|melde dich an|anmelden, um/.test(message)) return "login-required";
+    if (ended || /live has ended|live ist beendet|livestream beendet/.test(message)) return "ended";
+    if (/server error|serverfehler|something is wrong on our end/.test(message)) return "server-error";
+    if (/live is unavailable|cannot be played in the embed player|live ist nicht verfügbar/.test(message)) return "unavailable";
+    if (mediaError) return "media-error";
+    if (paused && readyState >= 2) return "awaiting-gesture";
+    return "waiting";
+  }
+
+  function advanceEmbedSession(session, observation, now) {
+    if (!session || ["playing", "failed", "cancelled"].includes(session.phase)) return { session, action: "none" };
+    const states = ["playing", "waiting", "server-error", "unavailable", "media-error", "awaiting-gesture", "login-required", "ended"];
+    if (!states.includes(observation?.status) || !observation.documentId ||
+        !Number.isFinite(observation.documentStartedAtMs) || observation.documentStartedAtMs < session.attemptStartedAtMs ||
+        observation.documentId === session.excludedDocumentId ||
+        (session.documentId && observation.documentId !== session.documentId)) return { session, action: "none" };
+    const next = { ...session, documentId: observation.documentId };
+    if (observation.status === "playing") {
+      return { session: { ...next, phase: "playing", nextAttemptAtMs: null, reason: null, completedAtMs: now }, action: "none" };
+    }
+    if (["login-required", "ended"].includes(observation.status)) {
+      return { session: { ...next, phase: "failed", reason: observation.status, nextAttemptAtMs: null, completedAtMs: now }, action: "none" };
+    }
+    if (observation.status === "awaiting-gesture") {
+      return { session: { ...next, phase: "awaiting-gesture", reason: "awaiting-gesture", nextAttemptAtMs: null }, action: "none" };
+    }
+    const failure = ["server-error", "unavailable", "media-error"].includes(observation.status)
+      ? observation.status : now - session.attemptStartedAtMs >= 15000 ? "timeout" : null;
+    if (!failure) return { session: { ...next, phase: "loading", reason: null, nextAttemptAtMs: null }, action: "none" };
+    if (session.attempt >= 3 || now - session.startedAtMs >= 90000) {
+      return { session: { ...next, phase: "failed", reason: failure, nextAttemptAtMs: null, completedAtMs: now }, action: "none" };
+    }
+    const due = session.nextAttemptAtMs ?? now + 2000 * session.attempt;
+    if (now < due) return { session: { ...next, phase: "retry-wait", reason: failure, nextAttemptAtMs: due }, action: "none" };
+    return { session: { ...next, phase: "loading", attempt: session.attempt + 1,
+      attemptStartedAtMs: now, nextAttemptAtMs: null, excludedDocumentId: observation.documentId,
+      documentId: null, reason: failure }, action: "reload" };
+  }
+
   return {
+    mediaRecoveryReason(video, { userPaused = false, graceElapsed = true } = {}) {
+      if (!video || userPaused) return "";
+      if (video.error) return "video-error";
+      if (video.ended) return "video-ended";
+      if (!graceElapsed) return "";
+      if (video.paused) return "video-paused";
+      if (video.readyState < 2) return "video-not-ready";
+      return "";
+    },
+    observeRecoveryMedia(attempt, observation, now) {
+      if (!attempt || attempt.completedAtMs != null || attempt.endedAtMs != null || attempt.outcome === "reload-failed" ||
+          observation?.playing !== true || !observation.documentId || observation.documentId === attempt.documentId ||
+          !Number.isFinite(observation.documentStartedAtMs) || observation.documentStartedAtMs < attempt.startedAtMs ||
+          observation.documentStartedAtMs > now) return attempt;
+      return { ...attempt, completedAtMs: now, playbackDocumentId: observation.documentId,
+        outcome: "video-progress-confirmed", reloadToVideoMs: Math.max(0, now - attempt.startedAtMs),
+        interruptionToVideoMs: Number.isFinite(attempt.detectedAtMs) ? Math.max(0, now - attempt.detectedAtMs) : null };
+    },
+    newEmbedSession,
+    classifyEmbedObservation,
+    advanceEmbedSession,
     CDN_SUFFIXES,
     normalizeEscapedText,
     isAllowedCdnHostname,
@@ -615,6 +797,10 @@
     extractStreamVariants,
     normalizeCaptionInfo,
     mergeObservedCaptionInfo,
+    captionSource,
+    captionSourceSnapshot,
+    observeCaptionSource,
+    summarizeCaptionSources,
     normalizeCaptionText,
     captionText,
     captionsOverlap,
@@ -629,6 +815,10 @@
     contentHasToken,
     accumulateTeamEvidence,
     streamIdentityChanged,
+    liveHandleFromUrl,
+    parseCompactCount,
+    dedupeRecommendations,
+    sortRecommendations,
     sameParticipant,
     sortParticipants,
     mergeParticipantRecord,

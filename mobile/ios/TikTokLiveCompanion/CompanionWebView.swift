@@ -10,7 +10,7 @@ struct CompanionWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let controller = WKUserContentController()
-        for resource in ["content-core", "proto-main", "webview-bridge"] {
+        for resource in ["content-core", "proto-main", "hook-recovery", "export-privacy", "mobile-recovery", "recovery-hook", "webview-bridge"] {
             if let path = Bundle.main.path(forResource: resource, ofType: "js"), let script = try? String(contentsOfFile: path) {
                 controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false))
             }
@@ -44,6 +44,7 @@ struct CompanionWebView: UIViewRepresentable {
                   let quoted = String(data: commandData, encoding: .utf8) else { return }
             view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command(\(quoted), \(json))")
         }
+        state.loadURL = { [weak view] target in view?.load(URLRequest(url: target)) }
         view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
         return view
     }
@@ -56,13 +57,16 @@ struct CompanionWebView: UIViewRepresentable {
         init(state: CompanionState) { self.state = state }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard message.frameInfo.isMainFrame,
-                  message.frameInfo.securityOrigin.protocol == "https",
+            guard message.frameInfo.securityOrigin.protocol == "https",
                   message.frameInfo.securityOrigin.host == "www.tiktok.com",
                   JSONSerialization.isValidJSONObject(message.body),
                   let data = try? JSONSerialization.data(withJSONObject: message.body),
-                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: true) else { return }
+                  let envelope = try? BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: message.frameInfo.isMainFrame) else { return }
             Task { @MainActor in state.handle(envelope) }
+        }
+
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            if let url = webView.url { state.noteNavigation(url) }
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

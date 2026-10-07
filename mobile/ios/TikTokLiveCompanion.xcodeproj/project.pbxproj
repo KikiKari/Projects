@@ -26,6 +26,10 @@
 		A20000000000000000000003 /* MobileUIStructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* MobileUIStructureTests.swift */; };
 		A30000000000000000000001 /* BackgroundAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000001 /* BackgroundAudioController.swift */; };
 		A40000000000000000000001 /* VlcVideoSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000001 /* VlcVideoSurface.swift */; };
+		A50000000000000000000001 /* hook-recovery.js in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000001; };
+		A50000000000000000000002 /* export-privacy.js in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000002; };
+		A50000000000000000000003 /* mobile-recovery.js in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003; };
+		A50000000000000000000004 /* recovery-hook.js in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000004; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +61,10 @@
 		B20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileUIStructureTests.swift; sourceTree = "<group>"; };
 		B30000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundAudioController.swift; sourceTree = "<group>"; };
 		B40000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VlcVideoSurface.swift; sourceTree = "<group>"; };
+		B50000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "hook-recovery.js"; sourceTree = "<group>"; };
+		B50000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "export-privacy.js"; sourceTree = "<group>"; };
+		B50000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "mobile-recovery.js"; sourceTree = "<group>"; };
+		B50000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "recovery-hook.js"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,7 +75,7 @@
 /* Begin PBXGroup section */
 		G10000000000000000000001 = {isa = PBXGroup; children = (G10000000000000000000002, G10000000000000000000003, G10000000000000000000004, G10000000000000000000005, G10000000000000000000006); sourceTree = "<group>"; };
 		G10000000000000000000002 = {isa = PBXGroup; path = TikTokLiveCompanion; sourceTree = "<group>"; children = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000004, B10000000000000000000005, B10000000000000000000006, B10000000000000000000007, B20000000000000000000001, B30000000000000000000001, B40000000000000000000001, B10000000000000000000010, B10000000000000000000011); };
-		G10000000000000000000003 = {isa = PBXGroup; path = Resources; sourceTree = "<group>"; children = (B10000000000000000000008, B10000000000000000000009, B1000000000000000000000A); };
+		G10000000000000000000003 = {isa = PBXGroup; path = Resources; sourceTree = "<group>"; children = (B50000000000000000000001, B10000000000000000000008, B10000000000000000000009, B1000000000000000000000A); };
 		G10000000000000000000004 = {isa = PBXGroup; path = TikTokLiveCompanionTests; sourceTree = "<group>"; children = (B1000000000000000000000B, B1000000000000000000000C, B20000000000000000000002, B20000000000000000000003); };
 		G10000000000000000000005 = {isa = PBXGroup; name = Frameworks; sourceTree = "<group>"; children = (B1000000000000000000000D, B1000000000000000000000E, B1000000000000000000000F); };
 		G10000000000000000000006 = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (B10000000000000000000012, B10000000000000000000013); };
@@ -83,7 +91,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		R10000000000000000000001 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000008, A10000000000000000000009, A1000000000000000000000A); runOnlyForDeploymentPostprocessing = 0; };
+		R10000000000000000000001 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A50000000000000000000001, A10000000000000000000008, A10000000000000000000009, A1000000000000000000000A); runOnlyForDeploymentPostprocessing = 0; };
 		R10000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 

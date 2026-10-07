@@ -43,14 +43,14 @@ class FollowupMediaTest {
         assertTrue(started)
     }
 
-    @Test fun debugLogIsOptInKeepsCompletePayloadWithoutLimit() {
+    @Test fun debugLogIsOptInAndExcludesPayloadContent() {
         val model = CompanionViewModel(FollowupFakeEngine())
         model.handle(envelope("chat", mapOf("content" to "secret")))
         assertTrue(model.state.value.debugEvents.isEmpty())
         model.setDebugEnabled(true)
         repeat(205) { model.handle(envelope("command-result", mapOf("data" to "secret-$it"))) }
         assertEquals(205, model.state.value.debugEvents.size)
-        assertTrue(model.state.value.debugEvents.first().contains("secret-0"))
+        assertFalse(model.state.value.debugEvents.first().contains("secret-0"))
         assertTrue(model.debugReport(false).contains("bridgeEvents"))
     }
 

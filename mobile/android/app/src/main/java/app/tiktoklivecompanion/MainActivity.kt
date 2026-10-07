@@ -247,6 +247,7 @@ class MainActivity : ComponentActivity() {
 }
 @Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel) {
     val context = LocalContext.current
+    var hookDelay by remember(state.hookReconnectDelaySeconds) { mutableStateOf(state.hookReconnectDelaySeconds.toString()) }
     var reconnectDelay by remember(state.autoReconnectDelaySeconds) { mutableStateOf(state.autoReconnectDelaySeconds.toString()) }
     var pendingCaptionExport by remember { mutableStateOf("") }
     val exportCaption = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -254,13 +255,18 @@ class MainActivity : ComponentActivity() {
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Mehr", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Auto-Reconnect", Modifier.weight(1f)); OutlinedTextField(reconnectDelay, { value -> reconnectDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setAutoReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); Switch(state.autoReconnectEnabled, model::setAutoReconnect) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Player-Recovery", Modifier.weight(1f)); OutlinedTextField(reconnectDelay, { value -> reconnectDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setAutoReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); Switch(state.autoReconnectEnabled, model::setAutoReconnect) }
+        Text("Player: ${state.playerRecovery["phase"] ?: "bereit"}", style = MaterialTheme.typography.bodySmall)
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Hook-Reconnect", Modifier.weight(1f)); OutlinedTextField(hookDelay, { value -> hookDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setHookReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); Switch(state.hookReconnectEnabled, model::setHookReconnect) }
+        Text("Hook: ${state.hookRecovery["phase"] ?: "disabled"} · ${state.hookRecovery["reason"] ?: ""}", style = MaterialTheme.typography.bodySmall)
+        Row { OutlinedButton(onClick = model::openNormal) { Text("Normal") }; OutlinedButton(onClick = model::openEmbed) { Text("Embed") } }
+        Text("Embed: ${state.embedPhase} · Versuch ${state.embedAttempt}/3", style = MaterialTheme.typography.bodySmall)
         listOf("inspect" to "Seite prüfen", "captions" to "Untertitel aktivieren", "refresh" to "Refresh", "open-report" to "Melden öffnen").forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { Text(label) } }
         OutlinedButton(onClick = model::startForce, enabled = !state.forceInProgress, modifier = Modifier.fillMaxWidth()) { Text(if (state.forceInProgress) "Force läuft …" else "Force") }
         state.forceRecoveryUrl?.let { OutlinedButton(onClick = { model.recoverForce() }, modifier = Modifier.fillMaxWidth()) { Text("Manuell zum LIVE-Stream zurück") } }
         Text("Debugmodus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Validierte Diagnoseereignisse protokollieren", Modifier.weight(1f)); Switch(state.debugEnabled, model::setDebugEnabled) }
-        Text("${state.debugEvents.size} vollständige Rohereignisse", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text("${state.debugEvents.size} bereinigte Diagnoseereignisse", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.debugEvents.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; val vlcInstalled = runCatching { context.packageManager.getPackageInfo("org.videolan.vlc", 0) }.isSuccess; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", model.debugReport(vlcInstalled))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
