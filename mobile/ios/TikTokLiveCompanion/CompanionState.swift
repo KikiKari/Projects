@@ -132,7 +132,7 @@ import Foundation
         }
         connected = true
         if debugEnabled {
-            debugEvents.append(["type": envelope.type, "sequence": envelope.sequence, "timestamp": ISO8601DateFormatter().date(from: envelope.timestamp) != nil ? envelope.timestamp as Any : NSNull(), "payload": RecoveryProjection.project(envelope.payload)])
+            debugEvents.append(["type": envelope.type, "sequence": envelope.sequence, "timestamp": RecoveryProjection.validTimestamp(envelope.timestamp) ? envelope.timestamp as Any : NSNull(), "payload": RecoveryProjection.project(envelope.payload)])
             debugEvents = Array(debugEvents.suffix(2000))
         }
         switch envelope.type {
@@ -376,6 +376,11 @@ private enum RecoveryProjection {
     static let flags: Set<String> = ["enabled", "connected", "installed", "playing", "paused", "ended", "userPaused", "vlcActive", "wasClean", "metadataPresent", "menuAvailable", "websocket", "dom", "playerText"]
     static let words: Set<String> = ["disabled", "waiting", "unavailable", "scheduled", "connecting", "native", "socket-open", "first-frame", "first-decoded-message", "connected", "failed", "cancelled", "socket-close", "stream-changed", "configuration-changed", "native-takeover", "native-connected", "qualified-data", "timeout", "connect-error", "policy-rejected", "protocol-unverified", "protocol-error", "send-error", "document-ended", "socket-created", "socket-error", "hook-reconnect", "normal", "embed", "tiktok", "extension", "chat", "caption", "live", "gift", "playing", "awaiting-gesture", "media-progress", "player-changed", "user-paused", "vlc-changed", "loading", "login-required", "ended", "retry-wait", "player-stall", "stalled", "error", "waiting"]
     static let missingMeasurements: [String: Any] = Dictionary(uniqueKeysWithValues: ["socketOpenAtMs", "firstFrameAtMs", "firstDecodedAtMs", "completedAtMs", "disconnectToDecodedMs", "connectToDecodedMs"].map { ($0, NSNull() as Any) })
+    static func validTimestamp(_ value: String) -> Bool {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: value) != nil || ISO8601DateFormatter().date(from: value) != nil
+    }
     static func project(_ values: [String: JSONValue]) -> [String: Any] {
         var result: [String: Any] = [:]
         for (key, value) in values {
@@ -383,7 +388,7 @@ private enum RecoveryProjection {
             else if numbers.contains(key) { result[key] = value.numberValue.flatMap { $0.isFinite ? $0 : nil }.map { $0 as Any } ?? NSNull() }
             else if flags.contains(key) { result[key] = value.boolValue.map { $0 as Any } ?? NSNull() }
             else if ["phase", "reason", "stage", "controller", "mode", "owner", "kind"].contains(key) { result[key] = value.stringValue.flatMap { words.contains($0) ? $0 : nil }.map { $0 as Any } ?? NSNull() }
-            else if key == "atUtc" { result[key] = value.stringValue.flatMap { ISO8601DateFormatter().date(from: $0) != nil ? $0 : nil }.map { $0 as Any } ?? NSNull() }
+            else if key == "atUtc" { result[key] = value.stringValue.flatMap { validTimestamp($0) ? $0 : nil }.map { $0 as Any } ?? NSNull() }
         }
         return result
     }

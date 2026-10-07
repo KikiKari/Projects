@@ -167,4 +167,16 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(state.captionSources["menuAvailable"] as? Bool, false)
     }
 
+    func testFractionalSocketTimestampsArePreservedWithoutFreeText() throws {
+        let state = recoveryState(#function)
+        state.debugEnabled = true
+        let stamp = "2026-10-07T12:00:00.123Z"
+        state.handle(BridgeEnvelope(version: 1, type: "socket-telemetry", streamId: "live", sequence: 1, timestamp: stamp, payload: ["atUtc": .string(stamp), "stage": .string("socket-open")]))
+        let data = state.debugReport(vlcInstalled: false).data(using: .utf8)!
+        let report = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let events = report["bridgeEvents"] as! [[String: Any]]
+        XCTAssertEqual(events[0]["timestamp"] as? String, stamp)
+        XCTAssertEqual((events[0]["payload"] as! [String: Any])["atUtc"] as? String, stamp)
+    }
+
 }
