@@ -2,6 +2,11 @@
   "use strict";
 
   const core = globalThis.TLC_CONTENT_CORE;
+  const embedDocumentId = crypto.randomUUID();
+  const embedDocumentStartedAtMs = Date.now();
+  let embedObservationPending = false;
+  let embedLastVideo = null;
+  let embedLastTime = null;
   const SHOW_CAPTIONS = /(untertitel\s+anzeigen|show\s+captions|turn\s+on\s+captions)/i;
   const HIDE_CAPTIONS = /(untertitel\s+ausblenden|hide\s+captions|turn\s+off\s+captions)/i;
   const SETTINGS = /(einstellungen|settings|player settings|optionen)/i;
@@ -41,6 +46,9 @@
   let tabRuntimeStarted = false;
   let quickRecoverFailures = 0;
   let quickRecoverReasonSince = 0;
+  let quickRecoverAttemptId = null;
+  let userPausedVideo = null;
+  let nativePauseIntent = null;
   let lastQuickRecoverReason = "";
   let quickRecoverPending = false;
   let fullscreenWasActive = false;
@@ -814,7 +822,9 @@
   }
 
   function primaryVideo() {
-    return [...document.querySelectorAll("video")].sort((a, b) => {
+    const replacement = document.querySelector("#tlc-media-fallback video");
+    if ((activeMediaFallbackItem || mediaFallbackRunning) && replacement) return replacement;
+    return [...document.querySelectorAll("video")].filter(video => !video.closest("#tlc-media-fallback")).sort((a, b) => {
       const ar = a.getBoundingClientRect();
       const br = b.getBoundingClientRect();
       return (br.width * br.height) - (ar.width * ar.height);
@@ -991,7 +1001,8 @@
   }
 
   function dismissTimedLiveInterruption() {
-    if (!isLivePage() || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return;
+    if (userPausedVideo && userPausedVideo === primaryVideo()) return;
+    if (!isLivePage() || /^\/embed\/live\//i.test(location.pathname) || Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return;
     const dialogs = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"]')].filter(isVisible);
     const interruption = dialogs.find((dialog) => /(?:bei tiktok anmelden|log in to tiktok|sign in to tiktok|vollständige[sn]? erlebnis|full experience|continue watching|keep watching|watch more|weiter ansehen|weiterschauen|weiter schauen|app öffnen|open app|in app ansehen|view in app)/i.test(visibleText(dialog)));
     if (!interruption) return;
@@ -1017,22 +1028,47 @@
     return "";
   }
 
+  let recoveryVideoSample = null;
   function quickRecoverReason() {
     if (!quickRecoverEnabled || !tabActive || !isLivePage() || mediaFallbackRunning || document.getElementById("tlc-media-fallback")) return "";
     const video = primaryVideo();
+    const sampleNow = Date.now();
+    const mediaTime = Number(video?.currentTime);
+    const previous = recoveryVideoSample;
+    const progressedAt = video && previous?.video === video && Number.isFinite(mediaTime) && mediaTime > previous.time
+      ? sampleNow : previous?.video === video ? previous.progressedAt : null;
+    recoveryVideoSample = { video, time: mediaTime, progressedAt };
     if (video && !video.error && !video.ended && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       quickRecoverArmed = true;
     }
     if (!quickRecoverArmed) return "";
+    if (userPausedVideo && userPausedVideo === video) return "";
+    // A visible interruption is not a media failure while this same player
+    // demonstrably advances. Do not reload functioning media or dismiss UI here.
+    if (video && !video.paused && !video.ended && !video.error && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+      && progressedAt != null && sampleNow >= progressedAt && sampleNow - progressedAt <= 250) return "";
     const interruption = timedLiveInterruptionReason();
     if (interruption) return interruption;
-    if (!video) return "";
-    if (video.error) return "video-error";
-    if (video.ended) return "video-ended";
-    if (Date.now() - popupGuardStartedAt < POPUP_GUARD_GRACE_MS) return "";
-    if (video.paused) return "video-paused";
-    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return "video-not-ready";
-    return "";
+    return core.mediaRecoveryReason(video, { userPaused: video === userPausedVideo,
+      graceElapsed: Date.now() - popupGuardStartedAt >= POPUP_GUARD_GRACE_MS });
+  }
+
+  async function recoveryPreflight(requestedReason) {
+    const reason = quickRecoverReason();
+    const result = { documentId: embedDocumentId, shouldReload: Boolean(reason && reason === requestedReason) };
+    if (!result.shouldReload || reason !== "video-paused") return result;
+    const video = primaryVideo();
+    if (!video || video === userPausedVideo || video.error || video.ended) return result;
+    const initialTime = Number(video.currentTime);
+    try { Promise.resolve(video.play()).catch(() => {}); } catch (_) {}
+    // Bound even an unresolved play() promise. Never navigate or replace a
+    // player merely to attempt this first, non-destructive recovery stage.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (!tabActive || !quickRecoverEnabled || primaryVideo() !== video || video === userPausedVideo
+      || /^\/embed\/live\//i.test(location.pathname)) return { ...result, shouldReload: false };
+    const resumed = !video.paused && !video.ended && !video.error && Number.isFinite(initialTime)
+      && Number(video.currentTime) > initialTime;
+    return { ...result, shouldReload: !resumed, softRecovery: resumed ? "play-resumed" : "play-unconfirmed" };
   }
 
   async function tryQuickRecover(reason) {
@@ -1043,23 +1079,32 @@
     if (reason !== lastQuickRecoverReason) {
       lastQuickRecoverReason = reason;
       quickRecoverReasonSince = now;
+      quickRecoverAttemptId = crypto.randomUUID();
       quickRecoverFailures = 1;
       return;
     }
     if (now - quickRecoverReasonSince < quickRecoverConfirmMs) return;
     quickRecoverFailures = 0;
     quickRecoverPending = true;
-    chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason })
+    chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason, recoveryAttempt: {
+      id: quickRecoverAttemptId, documentId: embedDocumentId,
+      detectedAtMs: quickRecoverReasonSince, scheduledAtMs: quickRecoverReasonSince + quickRecoverConfirmMs,
+      requestedAtMs: now, configuredDelayMs: quickRecoverConfirmMs
+    } })
       .then((response) => { if (!response?.reloading) quickRecoverPending = false; })
       .catch(() => { quickRecoverPending = false; });
   }
 
   function monitorQuickRecover() {
     setInterval(() => {
+      // Embed startup has its own bounded controller. Never race it with the
+      // normal-mode quick-recovery reload loop.
+      if (/^\/embed\/live\//i.test(location.pathname)) return;
       const reason = quickRecoverReason();
       if (!reason) {
         quickRecoverFailures = 0;
         quickRecoverReasonSince = 0;
+        quickRecoverAttemptId = null;
         lastQuickRecoverReason = "";
         quickRecoverPending = false;
         return;
@@ -1079,6 +1124,33 @@
 
   function pushPlayerState(reason) {
     chrome.runtime.sendMessage({ type: "TLC_PLAYER_STATE_PUSH", reason, playerState: getPlayerState() }).catch(() => {});
+  }
+
+  async function observeEmbedStartup() {
+    if (!tabActive || chatSourceOnly || embedObservationPending || !isLivePage()) return;
+    embedObservationPending = true;
+    try {
+      const video = primaryVideo();
+      const advancing = video && video === embedLastVideo && Number(video.currentTime) > embedLastTime;
+      embedLastVideo = video;
+      embedLastTime = video ? Number(video.currentTime) : null;
+      if (!/^\/embed\/live\//i.test(location.pathname)) {
+        if (video && !video.paused && !video.ended && video.readyState >= 2 && advancing) {
+          await chrome.runtime.sendMessage({ type: "TLC_RECOVERY_MEDIA_OBSERVATION", observation: {
+            documentId: embedDocumentId, documentStartedAtMs: embedDocumentStartedAtMs, playing: true
+          } });
+        }
+        return;
+      }
+      // Text is classified locally only; never send page/chat/error text.
+      const status = core.classifyEmbedObservation({ text: document.body?.innerText || "",
+        playing: Boolean(video && !video.paused && advancing), paused: Boolean(video?.paused),
+        ended: Boolean(video?.ended), readyState: Number(video?.readyState || 0), mediaError: Boolean(video?.error) });
+      await chrome.runtime.sendMessage({ type: "TLC_EMBED_OBSERVATION", observation: {
+        documentId: embedDocumentId, documentStartedAtMs: embedDocumentStartedAtMs, status
+      } });
+    } catch { /* A later observation retries after worker/navigation startup. */ }
+    finally { embedObservationPending = false; }
   }
 
   function playerSurface() {
@@ -1129,6 +1201,8 @@
 
   function ensureMediaFallbackVideo() {
     let holder = document.getElementById("tlc-media-fallback");
+    // Never select our own video as the surface and append its ancestor to it.
+    if (holder?.isConnected) return holder.querySelector("video");
     if (!holder) {
       holder = document.createElement("div");
       holder.id = "tlc-media-fallback";
@@ -1231,6 +1305,45 @@
     return restored.ok;
   }
 
+  let releaseNativeAudio = null;
+  function suppressNativeAudio(fallbackVideo) {
+    const saved = new Map();
+    const surface = fallbackVideo.closest("#tlc-media-fallback")?.parentElement;
+    const pipeline = audioPipeline;
+    const gain = pipeline?.outputGain?.gain;
+    const previousGain = gain?.value;
+    let gainSuppressed = false;
+    function silence() {
+      // Only the replaced video surface belongs to this handover. In particular,
+      // leave TTS audio elements and videos elsewhere on the page untouched.
+      for (const media of surface?.querySelectorAll("video") || []) {
+        if (media === fallbackVideo || media.closest?.("#tlc-media-fallback")) continue;
+        if (!saved.has(media)) saved.set(media, { muted: media.muted, paused: media.paused });
+        if (!media.muted) media.muted = true;
+        if (!media.paused) media.pause();
+      }
+      if (gain && saved.has(pipeline.video)) {
+        gainSuppressed = true;
+        if (gain.value !== 0) gain.value = 0;
+      }
+    }
+    document.addEventListener("play", silence, true);
+    document.addEventListener("volumechange", silence, true);
+    const observer = new MutationObserver(silence);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    silence();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("play", silence, true);
+      document.removeEventListener("volumechange", silence, true);
+      for (const [media, state] of saved) {
+        media.muted = state.muted;
+        if (!state.paused) Promise.resolve(media.play()).catch(() => {});
+      }
+      if (gainSuppressed) gain.value = previousGain;
+    };
+  }
+
   async function playMediaFallback(media = []) {
     if (mediaFallbackRunning) {
       return { activated: false, action: "play-vlc-source", reason: "Ein Verbindungsversuch läuft bereits.", playerState: getPlayerState() };
@@ -1242,13 +1355,14 @@
     }
     const allCandidates = mediaFallbackCandidates(media);
     const candidates = allCandidates.filter((item) => !attemptedMediaFallbackUrls.has(mediaFallbackKey(item)));
-    const video = ensureMediaFallbackVideo();
     if (!candidates.length) {
       const reason = allCandidates.length ? "Alle erkannten Video-Links wurden bereits getestet." : "Keine Video-Links erkannt.";
       setMediaFallbackStatus(activeMediaFallbackItem ? `${reason} Die letzte funktionierende Quelle läuft weiter.` : reason);
       return { activated: Boolean(activeMediaFallbackItem), action: "play-vlc-source", reason, remaining: 0, playerState: getPlayerState() };
     }
+    const video = ensureMediaFallbackVideo();
     mediaFallbackRunning = true;
+    if (!releaseNativeAudio) releaseNativeAudio = suppressNativeAudio(video);
     setMediaFallbackStatus(`Prüfe ${candidates.length} noch nicht getestete Video-Link(s).`);
     const failures = [];
     try {
@@ -1275,6 +1389,7 @@
       const reason = `Kein ungetesteter Link konnte abgespielt werden. ${failures.slice(0, 3).join("; ")}`;
       if (activeMediaFallbackItem) {
         const restored = await restoreMediaFallback(video);
+        if (!restored) activeMediaFallbackItem = null;
         setMediaFallbackStatus(`${reason} ${restored ? "Die letzte funktionierende Quelle wurde wiederhergestellt." : "Die letzte funktionierende Quelle konnte nicht wiederhergestellt werden."}`);
       } else {
         setMediaFallbackStatus(reason);
@@ -1282,6 +1397,14 @@
       return { activated: Boolean(activeMediaFallbackItem), action: "play-vlc-source", reason, remaining: 0, playerState: getPlayerState() };
     } finally {
       mediaFallbackRunning = false;
+      if (!activeMediaFallbackItem) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        document.getElementById("tlc-media-fallback")?.remove();
+        releaseNativeAudio?.();
+        releaseNativeAudio = null;
+      }
     }
   }
 
@@ -1331,6 +1454,7 @@
     return {
       available: Boolean(video || toggleControl),
       videoAvailable: Boolean(video),
+      vlcReplacementActive: Boolean(activeMediaFallbackItem && video?.closest("#tlc-media-fallback")),
       controlAvailable: Boolean(toggleControl),
       playing: Boolean(video && !video.paused),
       muted: Boolean(video && (pipeline?.captureMode ? pipeline.userMuted || pipeline.userVolume === 0 : video.muted || video.volume === 0)),
@@ -1379,8 +1503,10 @@
         } else {
           const stalled = Boolean(video.ended || video.error || video.readyState < 2);
           if (!video.paused && !stalled) {
+            userPausedVideo = video;
             video.pause();
           } else {
+            userPausedVideo = null;
             let directError = null;
             try {
               if (video.ended && Number.isFinite(video.duration)) video.currentTime = Math.max(0, video.duration - 0.1);
@@ -1408,6 +1534,7 @@
           }
         }
       } else if (action === "replay") {
+        userPausedVideo = null;
         const replay = document.querySelector('[data-e2e="replay-icon"]');
         if (!replay) return { activated: false, action, reason: "TikToks Player-Neuladen wurde nicht gefunden.", playerState: getPlayerState() };
         replay.click();
@@ -1579,12 +1706,59 @@
     }).catch(() => {});
   }
 
+  document.addEventListener("click", (event) => {
+    if (!tabActive || !event.isTrusted || !(event.target instanceof Element)) return;
+    const video = primaryVideo();
+    const control = playerToggleControl();
+    if (!video || !control || !control.contains(event.target)) return;
+    // The click itself is not proof of a pause; wait for this video's pause
+    // event, within a short window, without changing playback ourselves.
+    nativePauseIntent = !video.paused && !video.ended && !video.error
+      ? { video, atMs: Date.now() } : null;
+  }, true);
+  document.addEventListener("pause", (event) => {
+    if (tabActive && nativePauseIntent?.video === event.target &&
+        Date.now() - nativePauseIntent.atMs >= 0 && Date.now() - nativePauseIntent.atMs <= 500) {
+      userPausedVideo = event.target;
+    }
+    nativePauseIntent = null;
+  }, true);
+  document.addEventListener("play", (event) => {
+    if (event.target === userPausedVideo) userPausedVideo = null;
+    nativePauseIntent = null;
+  }, true);
+
+  let hookConfigRevision = 0;
+  function applyHookReconnect(response) {
+    window.postMessage({ source: "tiktok-live-companion-control", type: "hook-reconnect-config",
+      enabled: Boolean(tabActive && response?.hookArmed && response?.hookReconnect?.enabled),
+      seconds: response?.hookReconnect?.seconds ?? 3 }, location.origin);
+  }
+  async function refreshHookReconnect() {
+    const revision = ++hookConfigRevision;
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "TLC_GET_TAB_ACTIVATION" });
+      if (revision === hookConfigRevision) applyHookReconnect(response);
+    } catch (_) { /* A worker wakeup is retried at the next readiness signal. */ }
+  }
+
   window.addEventListener("message", (event) => {
     if (!tabActive) return;
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data;
     if (!data || data.source !== "tiktok-live-companion" || data.version !== 1) return;
-    if (data.type === "caption") {
+    if (data.type === "hook-recovery-ready") {
+      refreshHookReconnect();
+    } else if (data.type === "hook-recovery") {
+      chrome.runtime.sendMessage({ type: "TLC_HOOK_RECOVERY", recovery: {
+        ...data.recovery, contentDocumentId: embedDocumentId,
+        contentDocumentStartedAtMs: embedDocumentStartedAtMs
+      } }).catch(() => {});
+    } else if (data.type === "socket-telemetry") {
+      chrome.runtime.sendMessage({ type: "TLC_DEBUG_EVENT", event: "socket-telemetry", detail: { socket: {
+        ...data.telemetry, contentDocumentId: embedDocumentId, contentDocumentStartedAtMs: embedDocumentStartedAtMs
+      } } }).catch(() => {});
+    } else if (data.type === "caption") {
       chrome.runtime.sendMessage({ type: "TLC_CAPTION", caption: data.caption }).catch(() => {});
     } else if (data.type === "live-event") {
       chrome.runtime.sendMessage({ type: "TLC_LIVE_EVENT", liveEvent: data.liveEvent }).catch(() => {});
@@ -1604,8 +1778,15 @@
       quickRecoverEnabled = Boolean(message.quickRecoverEnabled);
       quickRecoverConfirmMs = Math.max(1000, Math.min(59000, Math.round(Number(message.quickRecoverSeconds) || 3) * 1000));
       chatSourceOnly = Boolean(message.chatSourceOnly);
-      if (tabActive) startTabRuntime();
+      if (tabActive) { startTabRuntime(); refreshHookReconnect(); }
+      else { hookConfigRevision++; applyHookReconnect(null); }
       sendResponse({ enabled: tabActive });
+      return false;
+    }
+    if (message.type === "TLC_HOOK_RECONNECT_CONFIG") {
+      hookConfigRevision++;
+      applyHookReconnect({ hookArmed: message.armed, hookReconnect: message });
+      sendResponse({ ok: true });
       return false;
     }
     if (message.type === "TLC_QUICK_RECOVER_CONFIG") {
@@ -1656,6 +1837,10 @@
       setQuality(message.quality, message.sdkKey).then((result) => sendResponse(result)).catch((error) => sendResponse({ activated: false, error: String(error) }));
       return true;
     }
+    if (message.type === "TLC_RECOVERY_PREFLIGHT") {
+      recoveryPreflight(message.reason).then(sendResponse).catch(() => sendResponse({ documentId: embedDocumentId, shouldReload: false }));
+      return true;
+    }
     if (message.type === "TLC_GET_PLAYER_STATE") {
       sendResponse({ playerState: getPlayerState() });
       return false;
@@ -1701,6 +1886,8 @@
     scanDomCaptions();
     setInterval(dismissTimedLiveInterruption, QUICK_RECOVER_INTERVAL_MS);
     monitorQuickRecover();
+    setInterval(observeEmbedStartup, 1000);
+    observeEmbedStartup();
     for (const eventName of ["fullscreenchange", "visibilitychange", "focus", "pageshow"]) {
       window.addEventListener(eventName, () => pushFullscreenState(eventName));
     }
@@ -1726,8 +1913,14 @@
     }).catch(() => {});
   }
 
+  const initialHookConfigRevision = hookConfigRevision;
   chrome.runtime.sendMessage({ type: "TLC_GET_TAB_ACTIVATION" }).then((response) => {
+    if (initialHookConfigRevision !== hookConfigRevision) return;
     tabActive = Boolean(response?.enabled);
+    debugEnabled = Boolean(response?.debugEnabled);
+    quickRecoverEnabled = Boolean(response?.quickRecoverEnabled);
+    quickRecoverConfirmMs = Math.max(1000, Math.min(59000, Math.round(Number(response?.quickRecoverSeconds) || 3) * 1000));
+    applyHookReconnect(response);
     if (!tabActive) return;
     if (document.documentElement) startTabRuntime();
     else document.addEventListener("DOMContentLoaded", startTabRuntime, { once: true });

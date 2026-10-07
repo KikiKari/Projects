@@ -45,7 +45,7 @@
       method: "POST",
       headers: {
         "Authorization": `Bearer ${item.pairingCode}`,
-        "X-TLC-Client": "offscreen-0.8.0",
+        "X-TLC-Client": "offscreen-0.8.1",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ text: item.text, language: item.language || "auto", voiceName: item.voiceName || "" })

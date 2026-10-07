@@ -19,7 +19,7 @@ def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
         archive_path = (Path(prefix) / relative).as_posix()
         entry = zipfile.ZipInfo(archive_path, date_time=(1980, 1, 1, 0, 0, 0))
         entry.compress_type = zipfile.ZIP_DEFLATED
-        entry.external_attr = 0o100644 << 16
+        entry.external_attr = (0o100755 if path.name == "gradlew" else 0o100644) << 16
         archive.writestr(entry, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 

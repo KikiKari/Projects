@@ -1,6 +1,6 @@
 {
   "name": "tiktok-live-companion",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Build, install, and operate the local TikTok LIVE Companion browser extension with accessible chat, captions, player controls, diagnostics, LIVE statistics, stream qualities, and media links.",
   "author": {
     "name": "Local developer"

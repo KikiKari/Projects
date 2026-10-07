@@ -6,7 +6,7 @@
     "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "top-chatters-actions", "top-chatters-reset", "top-chatters-more", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
-    "caption-status", "hook-status", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "media-list", "media-count", "caption-list", "caption-count",
+    "caption-status", "hook-status", "embed-startup-status", "cancel-embed-startup", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "player-recovery-status", "hook-reconnect", "hook-reconnect-seconds", "hook-reconnect-status", "media-list", "media-count", "caption-list", "caption-count",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
     "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report", "player-vlc-frame",
     "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-strength", "limiter-strength-output", "multi-guest-status",
@@ -29,6 +29,7 @@
   ];
   const core = globalThis.TLC_CONTENT_CORE;
   let activeTabId = null;
+  let playerContextGeneration = 0;
   let activeIsTikTok = false;
   let previousTabId = null;
   let currentState = null;
@@ -197,7 +198,7 @@
   }
 
   function serviceHeaders(extra = {}) {
-    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.8.0", ...extra };
+    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.8.1", ...extra };
   }
 
   function speechText(item) {
@@ -404,7 +405,7 @@
     } catch (error) {
       const message = String(error?.message || error);
       elements["service-status"].textContent = message.includes("HTTP 404")
-        ? "Sherpa-Endpunkt fehlt: lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.0-Paket ausführen."
+        ? "Sherpa-Endpunkt fehlt: lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.1-Paket ausführen."
         : `Sherpa-Installation konnte nicht gestartet werden: ${message}`;
       return false;
     } finally {
@@ -636,8 +637,10 @@
   function renderStatuses(state) {
     clearChildren(elements["caption-status"]);
     const info = state.captionInfo || {};
-    const observedCaptions = Boolean(state.captions?.length || info.observed);
-    const sourceLabel = info.source === "dom" ? "Playertext" : observedCaptions ? "Datenstrom" : info.present ? "Seitenmetadaten" : "nicht gefunden";
+    const observedCaptions = Boolean(info.observed);
+    const labels = { dom: "DOM", websocket: "WebSocket", playerText: "Playertext" };
+    const sourceLabel = info.activeSources?.length ? info.activeSources.map((key) => labels[key] || key).join(" + ")
+      : info.present ? "Seitenmetadaten" : state.captions?.length ? "nur historisch" : "nicht gefunden";
     elements["caption-status"].append(
       statusCard("Untertitelquelle", sourceLabel, info.present || observedCaptions ? "good" : "bad"),
       statusCard("TikTok-Menü", state.menuCaptionActive ? "aktiv" : state.menuCaptionAvailable ? "verfügbar" : "nicht gefunden", state.menuCaptionActive ? "good" : state.menuCaptionAvailable ? "warn" : "bad"),
@@ -928,8 +931,45 @@
     if (!elements["recommendation-modal"].hidden) renderRecommendationModal(state);
   }
 
+  function renderEmbedStartup(session) {
+    const active = ["loading", "retry-wait", "awaiting-gesture"].includes(session?.phase);
+    const attempt = Math.max(1, Math.min(3, Number(session?.attempt) || 1));
+    const reasons = {
+      "login-required": "TikTok verlangt eine Anmeldung.", ended: "Der LIVE-Stream ist beendet.",
+      unavailable: "TikTok meldet den Embed-Stream als nicht verfügbar.",
+      "server-error": "TikTok meldet einen Serverfehler.", "media-error": "Der Player meldet einen Medienfehler.",
+      timeout: "Keine Wiedergabe bestätigt.", "navigation-error": "Die Seite konnte nicht neu geladen werden."
+    };
+    const labels = {
+      loading: `Embed startet – Versuch ${attempt}/3.`,
+      "retry-wait": `Embed: ${reasons[session?.reason] || "Start noch nicht möglich."} Nächster Versuch folgt automatisch (${attempt}/3).`,
+      "awaiting-gesture": "Embed wartet auf einen Klick auf Wiedergabe im TikTok-Player.",
+      playing: "Embed: Videowiedergabe bestätigt.",
+      failed: `Embed-Start beendet: ${reasons[session?.reason] || "Wiedergabe nicht bestätigt."} Kein weiterer automatischer Versuch.`,
+      cancelled: "Embed-Start abgebrochen. Keine weiteren automatischen Startversuche."
+    };
+    elements["embed-startup-status"].textContent = labels[session?.phase] || "";
+    elements["embed-startup-status"].hidden = !labels[session?.phase];
+    elements["cancel-embed-startup"].hidden = !active;
+  }
+
   function render(state) {
     currentState = state;
+    elements["quick-recover"].checked = Boolean(state.quickRecoverEnabled);
+    elements["quick-recover-seconds"].value = String(state.quickRecoverSeconds ?? 3);
+    elements["hook-reconnect"].checked = Boolean(state.hookReconnect?.enabled);
+    elements["hook-reconnect-seconds"].value = String(state.hookReconnect?.seconds ?? 3);
+    const phases = { disabled: "aus", waiting: "wartet", unavailable: "Protokoll noch nicht bestätigt",
+      scheduled: "Versuch geplant", connecting: "verbindet", native: "TikTok-Verbindung aktiv",
+      "socket-open": "Socket offen", "first-frame": "erster Frame empfangen",
+      "first-decoded-message": "Daten empfangen", connected: "wieder verbunden",
+      failed: "Versuch fehlgeschlagen", cancelled: "Versuch beendet" };
+    elements["hook-reconnect-status"].textContent = !state.hookReconnect?.enabled ? "Hook-Reconnect: aus"
+      : !state.hook?.armed ? "Hook-Reconnect: wartet auf aktivierten Hook"
+      : `Hook-Reconnect: ${phases[state.hookRecovery?.phase] || "wartet auf Verbindungsdaten"}`;
+    elements["player-recovery-status"].textContent = state.quickRecoverEnabled
+      ? `Player-Recovery: aktiv, ${state.quickRecoverSeconds} Sek. Bestätigungszeit${state.recovery?.attempt?.outcome ? ` (${state.recovery.attempt.outcome})` : ""}`
+      : "Player-Recovery: aus";
     const tabSpeechEnabled = Boolean(state.speech?.enabled);
     if (tabSpeechEnabled) {
       speechEnabled = true;
@@ -958,20 +998,22 @@
     renderRecommendations(state);
     renderMedia(state.media || []);
     renderCaptions(state.captions || []);
+    renderEmbedStartup(state.embedStartup);
     elements["debug-enabled"].checked = Boolean(state.debug?.enabled);
     elements["debug-count"].textContent = String(state.debug?.entries?.length || 0);
     const hook = state.hook || {};
-    setLed(elements["hook-led"], Boolean(hook.connected || hook.installed), "Hook aktiv", "Hook inaktiv");
+    setLed(elements["hook-led"], Boolean(hook.connected), "LIVE-Datenverbindung bestätigt", "Keine bestätigte LIVE-Datenverbindung");
     elements["hook-status"].textContent = hook.lastError
       ? `Fehler: ${hook.lastError}`
-      : hook.connected ? "Hook aktiv, WebSocket verbunden."
-      : hook.installed ? "Hook installiert; warte auf WebSocket."
+      : hook.connected ? "Hook aktiv; LIVE-Daten empfangen."
+      : hook.installed ? "Hook installiert; warte auf LIVE-Daten."
       : hook.armed ? "Hook wartet auf den nächsten TikTok-Ladevorgang."
       : "Hook ist nicht aktiviert.";
     elements["hook-autostart"].checked = Boolean(hook.armed);
   }
 
   async function refresh() {
+    playerContextGeneration++;
     const tab = await activeTab();
     const nextTabId = tab?.id ?? null;
     if (activeTabId != null && activeTabId !== nextTabId && speechEnabled && !keepSpeechActive) {
@@ -984,7 +1026,7 @@
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
-    for (const id of ["scan", "enable-captions", "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", ...PLAYER_BUTTONS]) {
+    for (const id of ["scan", "enable-captions", "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", "hook-reconnect", "hook-reconnect-seconds", "quick-recover", "quick-recover-seconds", ...PLAYER_BUTTONS]) {
       elements[id].disabled = !isTikTok;
     }
     elements["enable-hook"].disabled = false;
@@ -1059,7 +1101,7 @@
       elements["sherpa-action"].disabled = Boolean(health.sherpaConfigured);
       await loadSpeechVoices();
       if (!Object.prototype.hasOwnProperty.call(health, "canInstallSherpa")) {
-        elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.0-Paket ausführen.";
+        elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.1-Paket ausführen.";
         return health;
       }
       return health;
@@ -1074,9 +1116,12 @@
   }
 
   async function refreshPlayer() {
-    if (!Number.isInteger(activeTabId)) return;
+    if (!Number.isInteger(activeTabId) || !activeIsTikTok) return;
+    const requestedTabId = activeTabId;
+    const requestedGeneration = playerContextGeneration;
     try {
       const response = await send("TLC_GET_PLAYER_STATE");
+      if (requestedTabId !== activeTabId || requestedGeneration !== playerContextGeneration || !activeIsTikTok) return;
       if (response.response?.playerState) renderPlayer(response.response.playerState);
     } catch (_) { /* The content script may briefly be unavailable during reload. */ }
   }
@@ -1259,6 +1304,7 @@
     run("TLC_RESET_TAB", "LIVE-Tab wird neu geladen.");
   });
   elements["open-embed-live"].addEventListener("click", () => run("TLC_OPEN_EMBED_LIVE", "Embed-LIVE wird geöffnet."));
+  elements["cancel-embed-startup"].addEventListener("click", () => run("TLC_CANCEL_EMBED_STARTUP", "Embed-Start abgebrochen."));
   elements["open-normal-live"].addEventListener("click", () => run("TLC_OPEN_NORMAL_LIVE", "Normale LIVE-Seite wird geöffnet."));
   elements.clear.addEventListener("click", () => run("TLC_CLEAR"));
   elements["refresh-chat"].addEventListener("click", clearChatDisplay);
@@ -1404,6 +1450,21 @@
       elements["hook-autostart"].checked = !enabled;
     }
   });
+  async function changeHookReconnect() {
+    const requestTab = activeTabId;
+    const seconds = Math.max(1, Math.min(59, Math.round(Number(elements["hook-reconnect-seconds"].value) || 3)));
+    try {
+      const response = await send("TLC_SET_HOOK_RECONNECT", { enabled: elements["hook-reconnect"].checked, seconds });
+      if (requestTab === activeTabId) render(response.state);
+    } catch (error) {
+      if (requestTab === activeTabId) {
+        if (currentState) render(currentState);
+        elements.notice.textContent = String(error?.message || error);
+      }
+    }
+  }
+  elements["hook-reconnect"].addEventListener("change", changeHookReconnect);
+  elements["hook-reconnect-seconds"].addEventListener("change", changeHookReconnect);
   elements["quick-recover"].addEventListener("change", async () => {
     const enabled = elements["quick-recover"].checked;
     const seconds = Math.max(1, Math.min(59, Math.round(Number(elements["quick-recover-seconds"].value) || 3)));
@@ -1421,7 +1482,7 @@
     elements["quick-recover-seconds"].value = String(seconds);
     try {
       await send("TLC_SET_QUICK_RECOVER", { enabled: elements["quick-recover"].checked, seconds });
-      elements.notice.textContent = `Auto-Reconnect wartet dauerhaft ${seconds} Sekunde${seconds === 1 ? "" : "n"}.`;
+      elements.notice.textContent = `Player-Recovery bestätigt eine Unterbrechung für ${seconds} Sekunde${seconds === 1 ? "" : "n"}.`;
     } catch (error) {
       elements.notice.textContent = String(error?.message || error);
     }
@@ -1484,7 +1545,7 @@
     }
     try {
       const response = await fetch(`${serviceUrl}/v1/health`, {
-        headers: { "Authorization": `Bearer ${candidate}`, "X-TLC-Client": "sidepanel-0.8.0" }
+        headers: { "Authorization": `Bearer ${candidate}`, "X-TLC-Client": "sidepanel-0.8.1" }
       });
       if (!response.ok) throw new Error(response.status === 401 ? "Pairing-Code ungültig." : `Sprachdienst HTTP ${response.status}`);
       pairingCode = candidate;
@@ -1615,7 +1676,6 @@
   elements["player-fullscreen"].addEventListener("click", () => runPlayer("toggle-fullscreen", elements["player-fullscreen"]));
   elements["player-report"].addEventListener("click", () => runPlayer("open-report", elements["player-report"]));
   elements["player-vlc-frame"].addEventListener("click", async () => {
-    await installVlcIfNeeded();
     await runPlayer("play-vlc-source", elements["player-vlc-frame"]);
   });
   elements["player-volume"].addEventListener("input", () => {
@@ -1658,8 +1718,13 @@
     URL.revokeObjectURL(href);
     elements.notice.textContent = "Diagnoseprotokoll wurde exportiert.";
   });
-  elements["export-log"].addEventListener("click", () => {
-    const records = currentState?.captions || [];
+  elements["export-log"].addEventListener("click", async () => {
+    const response = await send("TLC_GET_CAPTION_JSONL_EXPORT");
+    if (!response.ok) {
+      elements.notice.textContent = "Das Caption-Protokoll konnte nicht exportiert werden.";
+      return;
+    }
+    const records = response.records || [];
     if (!records.length) {
       elements.notice.textContent = "Es sind keine CaptionMessages zum Exportieren vorhanden.";
       return;

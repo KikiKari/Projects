@@ -46,12 +46,12 @@ jobs:
       - name: Upload mock debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: TikTok-Live-Companion-Android-0.8.0-mock-debug
+          name: TikTok-Live-Companion-Android-0.8.1-mock-debug
           path: mobile/android/app/build/outputs/apk/mock/debug/*.apk
           if-no-files-found: error
 
       - name: Preserve Android structure-test gate
         if: steps.unit_tests.outcome != 'success'
         run: |
-          echo "The Android structure-test gate failed for the current 0.8.0 commit." >&2
+          echo "The Android structure-test gate failed for the current 0.8.1 commit." >&2
           exit 1

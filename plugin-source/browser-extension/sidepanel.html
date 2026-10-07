@@ -89,8 +89,13 @@
         <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
       </div>
       <p id="hook-status" class="inline-status"></p>
+      <p id="embed-startup-status" class="inline-status" role="status" aria-live="polite" hidden></p>
+      <button id="cancel-embed-startup" class="secondary" hidden>Embed-Start abbrechen</button>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
-      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Auto-Reconnect <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Auto-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+      <label class="option-row quick-recover-setting"><input id="hook-reconnect" type="checkbox"> Hook-Reconnect <input id="hook-reconnect-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Hook-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+      <p id="hook-reconnect-status" class="inline-status" role="status">Hook-Reconnect: aus</p>
+      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Player-Recovery <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Player-Recovery-Bestätigungszeit in Sekunden"><span>Sek.</span></label>
+      <p id="player-recovery-status" class="inline-status" role="status">Player-Recovery: aus</p>
     </section>
 
     <section id="recommendations-section" aria-labelledby="recommendations-heading">
