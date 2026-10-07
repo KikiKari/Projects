@@ -43,7 +43,7 @@ function intField(number, value) {
 }
 
 assert.strictEqual(manifest.manifest_version, 3);
-assert.strictEqual(manifest.version, "0.8.0");
+assert.strictEqual(manifest.version, "0.8.1");
 assert.ok(manifest.permissions.includes("sidePanel"));
 assert.ok(manifest.permissions.includes("webRequest"));
 assert.ok(manifest.permissions.includes("tabCapture"));
@@ -330,7 +330,7 @@ assert.ok(backgroundSource.includes('case "TLC_SET_QUICK_RECOVER"'));
 assert.ok(backgroundSource.includes('case "TLC_QUICK_RECOVER"'));
 assert.ok(backgroundSource.includes('case "TLC_PLAYER_STATE_PUSH"'));
 assert.ok(backgroundSource.includes('case "TLC_GET_DEBUG_REPORT"'));
-for (const debugComponent of ["vlcReplacement", "speechAndChatSettings", "rawJsonExportAvailable", "jsonLinesExportAvailable", "songRecognition", "topChatters", "autoReconnect"]) {
+for (const debugComponent of ["vlcReplacement", "speechAndChatSettings", "rawJsonExportAvailable", "jsonLinesExportAvailable", "songRecognition", "topChatters", "playerQuickRecovery"]) {
   assert.ok(backgroundSource.includes(debugComponent), `Debug component missing: ${debugComponent}`);
 }
 assert.ok(backgroundSource.includes('path: "browser-local-service-audd"'));
@@ -386,9 +386,11 @@ assert.ok(contentSource.includes("const QUICK_RECOVER_CONFIRM_MS = 3000;"));
 assert.ok(contentSource.includes("now - quickRecoverReasonSince < quickRecoverConfirmMs"));
 assert.ok(contentSource.includes("let quickRecoverConfirmMs = QUICK_RECOVER_CONFIRM_MS"));
 assert.ok(backgroundSource.includes("quickRecoverSeconds: 3"));
-assert.ok(backgroundSource.includes("setSettings({ quickRecoverSeconds: seconds })"));
+assert.ok(backgroundSource.includes("state.quickRecoverSeconds = seconds"));
+assert.ok(!backgroundSource.includes("setSettings({ quickRecoverSeconds: seconds })"));
 assert.ok(!backgroundSource.includes("const MAX_DEBUG"));
-assert.ok(backgroundSource.includes("raw: state"));
+assert.ok(!backgroundSource.includes("raw: state"));
+assert.ok(backgroundSource.includes("exportPrivacy.diagnosticReport("));
 assert.ok(backgroundSource.includes('`raw:${String(message?.type || "unknown")}`'));
 assert.ok(contentSource.includes("let quickRecoverPending = false"));
 assert.ok(contentSource.includes("if (quickRecoverPending) return"));
@@ -455,7 +457,7 @@ assert.ok(hookSource.includes("^\\/@([^/]+)\\/live"));
 assert.ok(hookSource.includes("^\\/embed\\/live"));
 assert.ok(protoMainSource.includes("else if (!root[protoKey])"));
 assert.ok(fs.existsSync(path.join(extension, "popup-guard.js")));
-assert.ok(backgroundSource.includes('"popup-guard.js", "proto-main.js", "hook.js"'));
+assert.ok(backgroundSource.includes('"popup-guard.js", "proto-main.js", "hook-recovery.js", "hook.js"'));
 
 const panelHtml = fs.readFileSync(path.join(extension, "sidepanel.html"), "utf8");
 assert.ok(panelHtml.includes('id="quick-recover-seconds"'));
@@ -571,7 +573,7 @@ assert.ok(!setupSource.includes('$serviceRoot ='));
 assert.ok(!setupSource.includes('call "$npmPath" run setup --'));
 assert.ok(!setupSource.includes('CMD-Installation fehlgeschlagen. PowerShell-Fallback'));
 assert.ok(setupSource.includes('cmd.exe /d /c'));
-assert.ok(!setupSource.includes('$runningService.version -eq "0.8.0"'));
+assert.ok(!setupSource.includes('$runningService.version -eq "0.8.1"'));
 assert.ok(setupSource.includes('Stop-Process -Id $listenerPid -Force'));
 assert.ok(setupSource.includes('$listenerProcess.Name -ne "node.exe"'));
 assert.ok(panelHtml.includes('id="sherpa-action" class="secondary">Sherpa</button>'));
@@ -645,8 +647,11 @@ assert.ok(backgroundSource.includes('sender.url !== chrome.runtime.getURL("offsc
 assert.ok(backgroundSource.includes("crypto.getRandomValues"));
 assert.ok(sidepanelSource.includes("chrome.tabs.remove(serviceTab.id)"));
 assert.ok(!backgroundSource.includes("reason: \"throttled\""));
-assert.ok(contentSource.includes('return "video-paused"'));
-assert.ok(contentSource.includes('return "video-not-ready"'));
+assert.ok(contentSource.includes('core.mediaRecoveryReason(video'));
+assert.strictEqual(core.mediaRecoveryReason({ paused: true, readyState: 4 }), "video-paused");
+assert.strictEqual(core.mediaRecoveryReason({ paused: false, readyState: 1 }), "video-not-ready");
+assert.strictEqual(core.mediaRecoveryReason({ paused: true, readyState: 4 }, { userPaused: true }), "");
+assert.ok(contentSource.includes('userPausedVideo = video;'));
 assert.ok(sidepanelSource.includes("Sherpa benötigt zuerst den automatisch gekoppelten Sprachdienst."));
 assert.ok(!sidepanelSource.includes('installSherpaVoices(false).catch(() => {})'));
 assert.ok(backgroundSource.includes("sponsoredContent"));
@@ -661,7 +666,12 @@ assert.ok(panelHtml.includes('id="recognize-song"'));
 assert.ok(panelHtml.includes('id="hook-autostart"'));
 assert.ok(panelHtml.includes("Permanent Hook"));
 assert.ok(panelHtml.includes('id="quick-recover"'));
-assert.ok(panelHtml.includes("Auto-Reconnect"));
+assert.ok(panelHtml.includes("Hook-Reconnect"));
+assert.ok(panelHtml.includes("Player-Recovery"));
+assert.ok(panelHtml.includes('id="hook-reconnect-seconds"'));
+assert.ok(!panelHtml.includes('id="quick-recover-help"'));
+assert.ok(!panelHtml.includes('id="caption-export-privacy"'));
+assert.ok(!panelHtml.includes('id="debug-export-privacy"'));
 assert.ok(contentSource.includes("RECOMMENDATION_SCAN_MAX_ROUNDS = 12"));
 assert.ok(contentSource.includes("RECOMMENDATION_SCAN_MAX_MS = 45000"));
 assert.ok(contentSource.includes('setTimeout(() => done(false, "timeout"), 15000)'));
@@ -682,7 +692,7 @@ assert.ok(panelHtml.includes("Pegelschutz aktivieren"));
 assert.ok(panelHtml.includes('id="player-vlc-frame"'));
 assert.ok(sidepanelSource.includes("/v1/vlc/status"));
 assert.ok(sidepanelSource.includes("/v1/vlc/install"));
-assert.ok(sidepanelSource.includes("await installVlcIfNeeded()"));
+assert.ok(!sidepanelSource.includes("await installVlcIfNeeded()"), "Internal VLC replacement must not wait for desktop installation");
 assert.ok(panelHtml.includes('id="debug-enabled"'));
 assert.ok(panelHtml.includes('id="export-debug"'));
 assert.ok(panelHtml.includes('>Hook setzen</button>'));
@@ -727,4 +737,7 @@ assert.ok(!panelHtml.includes("Letzte Chatzeilen"));
 assert.ok(!panelHtml.includes("Untertitelstatus"));
 assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 
-console.log(`PASS: manifest 0.8.0, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
+require("node:child_process").execFileSync(process.execPath, ["--test", path.join(__dirname, "test_background_runtime.cjs")], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_sidepanel_player_guard.cjs")], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_vlc_switch.cjs")], { stdio: "inherit" });
+console.log(`PASS: manifest 0.8.1, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

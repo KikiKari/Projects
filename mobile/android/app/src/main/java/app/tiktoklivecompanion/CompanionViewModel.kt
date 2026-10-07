@@ -124,7 +124,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val current = mutable.value
         return JSONObject(mapOf(
             "generatedAtUtc" to java.time.Instant.now().toString(),
-            "version" to "0.8.0",
+            "version" to "0.8.1",
             "platform" to "android",
             "components" to mapOf(
                 "layout" to mapOf("liveInformationBeforePageInformation" to true),

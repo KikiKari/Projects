@@ -576,5 +576,5 @@
     }, 500);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
-  emit("bridge-ready", { version: "0.8.0", origin: location.origin, documentStart: true, autoReconnectDelayMs });
+  emit("bridge-ready", { version: "0.8.1", origin: location.origin, documentStart: true, autoReconnectDelayMs });
 })(globalThis);

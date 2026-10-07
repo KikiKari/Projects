@@ -1,10 +1,37 @@
-importScripts("content-core.js");
+importScripts("content-core.js", "export-privacy.js");
 
 const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
 const SETTINGS_KEY = "tlc-settings";
 const SERVICE_INSTALL_KEY = "tlc-service-install";
 const quickRecoverInFlight = new Set();
+const tabEventTasks = new Map();
+const liveModeTasks = new Map();
+const liveModeGenerations = new Map();
+const pendingModeRequests = new Map();
+function enqueueLiveMode(tabId, mode, task) {
+  const previous = liveModeTasks.get(tabId);
+  if (previous?.mode === mode) return previous.promise;
+  // Keep navigation separate from observation queues: a page may publish state
+  // while a mode change awaits its response. Opposite mode clicks stay ordered.
+  const promise = (previous?.promise || Promise.resolve()).catch(() => {}).then(task);
+  const entry = { mode, promise };
+  liveModeTasks.set(tabId, entry);
+  const clear = () => { if (liveModeTasks.get(tabId) === entry) liveModeTasks.delete(tabId); };
+  promise.then(clear, clear);
+  return promise;
+}
+const SERIAL_TAB_EVENTS = new Set(["TLC_PAGE_STATE", "TLC_CAPTION", "TLC_MEDIA_FOUND", "TLC_CHAT_MESSAGE",
+  "TLC_RECOVERY_MEDIA_OBSERVATION", "TLC_QUICK_RECOVER", "TLC_SET_HOOK_RECONNECT", "TLC_SET_QUICK_RECOVER", "TLC_HOOK_RECOVERY",
+  "TLC_GIFT_MESSAGE", "TLC_LIVE_EVENT", "TLC_HOOK_STATUS", "TLC_PLAYER_STATE_PUSH", "TLC_DEBUG_EVENT"]);
+function enqueueTabEvent(tabId, task) {
+  const next = (tabEventTasks.get(tabId) || Promise.resolve()).then(task);
+  // A failed event must not poison the next event's queue.
+  const settled = next.catch(() => {});
+  tabEventTasks.set(tabId, settled);
+  settled.then(() => { if (tabEventTasks.get(tabId) === settled) tabEventTasks.delete(tabId); });
+  return next;
+}
 const PROFILE_PREFIX = "tlc-profile-";
 const STREAM_CACHE_PREFIX = "tlc-stream-";
 const MAX_MEDIA = 60;
@@ -13,6 +40,7 @@ const MAX_CHAT = 500;
 const MAX_EVENT_IDS = 500;
 const MAX_PARTICIPANTS = 5000;
 const core = globalThis.TLC_CONTENT_CORE;
+const exportPrivacy = globalThis.TLC_EXPORT_PRIVACY;
 let offscreenCreation = null;
 
 function stateKey(tabId) {
@@ -48,6 +76,7 @@ function emptyState() {
     browserSessionId: "",
     page: { url: "", title: "", scannedAtUtc: null },
     captionInfo: { present: false, open: null, supportLang: [], location: null, showType: null, observed: false, source: null },
+    captionSources: core.captionSourceSnapshot(),
     profileInfo: { ...core.EMPTY_PROFILE_INFO },
     aiSummaryInfo: { ...core.EMPTY_AI_SUMMARY_INFO },
     recommendationScan: emptyRecommendationScan(),
@@ -85,6 +114,9 @@ function emptyState() {
     recentGiftIds: [],
     quickRecoverEnabled: false,
     quickRecoverSeconds: 3,
+    recoveryConfigVersion: 1,
+    hookReconnect: { enabled: false, seconds: 3 },
+    hookRecovery: { phase: "disabled" },
     speech: { enabled: false, status: "Vorlesen ist ausgeschaltet.", lastSpokenKey: "", lastSpokenAtUtc: null, queueDepth: 0 },
     recovery: { lastQuickRecoverAtUtc: null, lastReason: "" },
     debug: { enabled: false, entries: [] }
@@ -94,11 +126,41 @@ function emptyState() {
 async function getState(tabId) {
   const stored = await chrome.storage.session.get(stateKey(tabId));
   const defaults = emptyState();
-  const state = stored[stateKey(tabId)];
-  if (!state) return defaults;
+  let state = stored[stateKey(tabId)];
+  // Older releases used the global delay at runtime but exported a stale tab
+  // value. Migrate from the formerly effective value once, then keep it local.
+  if (!state || state.recoveryConfigVersion !== 1) {
+    const settings = await getSettings();
+    const migrated = {
+      ...(state || defaults),
+      quickRecoverSeconds: normalizeRecoveryDelay(settings.quickRecoverSeconds),
+      recoveryConfigVersion: 1
+    };
+    if (Number.isInteger(tabId) && tabId >= 0) {
+      await chrome.storage.session.set({ [stateKey(tabId)]: migrated });
+    }
+    state = migrated;
+  }
+  const capturedAt = Date.now();
+  let captionSources = state.captionSources;
+  if (!captionSources) {
+    captionSources = core.captionSourceSnapshot();
+    if (!state.captionInfo?.observed) captionSources.metadata = core.normalizeCaptionInfo(state.captionInfo);
+    for (const caption of state.captions || []) {
+      const observedAt = Date.parse(caption.receivedAtUtc);
+      if (Number.isFinite(observedAt) && observedAt <= capturedAt) {
+        captionSources = core.observeCaptionSource(captionSources, caption, observedAt);
+      }
+    }
+  }
+  captionSources = core.captionSourceSnapshot(captionSources, capturedAt);
   return {
     ...defaults,
     ...state,
+    captionSources,
+    captionInfo: core.summarizeCaptionSources(captionSources, capturedAt),
+    captionSnapshot: { id: newBrowserSessionId(), capturedAtUtc: new Date(capturedAt).toISOString(),
+      protocolCount: (state.captions || []).length },
     hook: { ...defaults.hook, ...(state.hook || {}) },
     stream: { ...defaults.stream, ...(state.stream || {}), teamEvidence: state.stream?.teamEvidence || {} },
     liveStats: { ...defaults.liveStats, ...(state.liveStats || {}) },
@@ -112,6 +174,8 @@ async function getState(tabId) {
     streamMutes: state.streamMutes || [],
     recentGiftIds: state.recentGiftIds || [],
     quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+    quickRecoverSeconds: normalizeRecoveryDelay(state.quickRecoverSeconds),
+    hookReconnect: { enabled: Boolean(state.hookReconnect?.enabled), seconds: normalizeRecoveryDelay(state.hookReconnect?.seconds) },
     speech: { ...defaults.speech, ...(state.speech || {}) },
     recovery: { ...defaults.recovery, ...(state.recovery || {}) },
     captions: state.captions || [],
@@ -146,6 +210,11 @@ function profileMatchesHandle(profile, handle) {
 }
 
 function resetPageIdentityState(state, handle) {
+  state.captionSources = core.captionSourceSnapshot();
+  state.captionInfo = core.summarizeCaptionSources(state.captionSources);
+  state.menuCaptionAvailable = false;
+  state.menuCaptionActive = false;
+  state.captions = [];
   state.profileInfo = { ...core.EMPTY_PROFILE_INFO };
   state.aiSummaryInfo = { ...core.EMPTY_AI_SUMMARY_INFO };
   state.liveStats = { ...state.liveStats, followerCount: null };
@@ -218,24 +287,26 @@ async function cachedProfile(handle) {
 
 async function addDebug(tabId, event, detail = {}) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
+  if (event.startsWith("reconnect-") || event === "quick-recover") {
+    detail = { ...detail, controller: "player-quick-recovery" };
+  }
   const state = await getState(tabId);
   if (!state.debug?.enabled) return;
-  state.debug.entries = [...(state.debug.entries || []), { atUtc: new Date().toISOString(), event, detail }];
+  state.debug.entries = [...(state.debug.entries || []), exportPrivacy.debugEntry({ atUtc: new Date().toISOString(), event, detail })];
   await setState(tabId, state);
 }
 
 function redactUrl(raw) {
   try {
-    const url = new URL(raw);
-    for (const key of [...url.searchParams.keys()]) url.searchParams.set(key, "REDACTED");
-    return url.href;
+    return exportPrivacy.url(raw) || "ungültig";
   } catch (_) { return "ungültig"; }
 }
 
 async function setState(tabId, state) {
   await chrome.storage.session.set({ [stateKey(tabId)]: state });
   await cacheStreamSnapshot(state);
-  chrome.runtime.sendMessage({ type: "TLC_STATE_UPDATED", tabId, state }).catch(() => {});
+  const embedStartup = await getEmbedSession(tabId);
+  chrome.runtime.sendMessage({ type: "TLC_STATE_UPDATED", tabId, state: { ...state, embedStartup } }).catch(() => {});
   return state;
 }
 
@@ -275,6 +346,11 @@ async function setSettings(patch) {
   const settings = { ...(await getSettings()), ...patch };
   await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
   return settings;
+}
+
+function normalizeRecoveryDelay(value) {
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.max(1, Math.min(59, Math.round(seconds))) : 3;
 }
 
 function booleanValue(value) {
@@ -322,6 +398,7 @@ function buildCaptionRawExport(state, tabId, universalApiKeyConfigured = false) 
     version: chrome.runtime.getManifest().version,
     tabId,
     browserSessionId: state.browserSessionId || "",
+    captionSnapshot: state.captionSnapshot,
     stream: {
       handle: state.stream?.handle || pageHandle(state.page) || "",
       roomId: state.stream?.roomId || null,
@@ -331,6 +408,7 @@ function buildCaptionRawExport(state, tabId, universalApiKeyConfigured = false) 
     text,
     data: {
       captionInfo: state.captionInfo || null,
+      captionSources: state.captionSources,
       playerState: state.playerState || null
     },
     sources: [...sources],
@@ -480,41 +558,17 @@ async function addCaption(tabId, caption) {
   const state = await getState(tabId);
   const receivedAtUtc = caption.receivedAtUtc || new Date().toISOString();
   const timestamp = Date.parse(receivedAtUtc) || Date.now();
-  if (caption.source === "dom") {
-    const recentWebSocket = [...state.captions].reverse().find((item) => item.method === "WebcastCaptionMessage");
-    if (recentWebSocket
-      && Math.abs(timestamp - (Date.parse(recentWebSocket.receivedAtUtc || 0) || 0)) < 8_000
-      && core.captionsOverlap(caption, recentWebSocket)) return;
-    const last = state.captions.at(-1);
-    if (last?.source === "dom"
-      && timestamp - (Date.parse(last.receivedAtUtc || 0) || 0) < 2_500
-      && core.captionsOverlap(last, caption)) {
-      const replacement = core.captionText(caption).length >= core.captionText(last).length
-        ? { ...caption, receivedAtUtc }
-        : { ...last, receivedAtUtc };
-      state.captions[state.captions.length - 1] = replacement;
-      state.captionInfo = core.mergeObservedCaptionInfo(state.captionInfo, replacement);
-      await setState(tabId, state);
-      return;
-    }
-  }
   const entry = { ...caption, receivedAtUtc };
-  const key = entry.sentenceId || entry.sequenceId || (entry.contents || []).map((content) => `${content.lang || ""}:${content.text || ""}`).join("\n");
-  const duplicate = key && state.captions.slice(-20).some((item) => {
-    const itemKey = item.sentenceId || item.sequenceId || (item.contents || []).map((content) => `${content.lang || ""}:${content.text || ""}`).join("\n");
-    return itemKey === key;
-  });
-  if (duplicate) return;
-  if (entry.method === "WebcastCaptionMessage") {
-    state.captions = state.captions.filter((item) => !(
-      item.source === "dom"
-      && Math.abs(timestamp - (Date.parse(item.receivedAtUtc || 0) || 0)) < 8_000
-      && core.captionsOverlap(item, entry)
-    ));
-  }
-  state.captions.push(entry);
+  state.captionSources = core.observeCaptionSource(state.captionSources, entry);
+  state.captionInfo = core.summarizeCaptionSources(state.captionSources);
+  // Retain both observations even when their words overlap. Deduplicate only
+  // exact repeats within a source; final/revised text for the same ID survives.
+  const key = (item) => JSON.stringify([core.captionSource(item), item.sentenceId || null,
+    item.sequenceId || null, item.definite ?? null, item.contents || []]);
+  const duplicate = state.captions.slice(-20).some((item) => key(item) === key(entry)
+    && Math.abs(timestamp - Date.parse(item.receivedAtUtc)) < 2_500);
+  if (!duplicate) state.captions.push(entry);
   state.captions = state.captions.slice(-MAX_CAPTIONS);
-  state.captionInfo = core.mergeObservedCaptionInfo(state.captionInfo, entry);
   await setState(tabId, state);
 }
 
@@ -617,19 +671,30 @@ function participantAliases(participant, fallbackKey = "") {
 }
 
 function relayTargetTabId(state) {
-  const targetTabId = Number(state?.chatTargetTabId);
-  return Number.isInteger(targetTabId) && targetTabId >= 0 ? targetTabId : null;
+  const targetTabId = state?.chatTargetTabId;
+  return state?.chatSourceOnly && Number.isInteger(targetTabId) && targetTabId >= 0 ? targetTabId : null;
 }
 
 async function relayToEmbedTab(sourceTabId, state, type, payload) {
   const targetTabId = relayTargetTabId(state);
-  if (targetTabId == null || payload?.relayedFromTabId === sourceTabId) return;
-  const targetTab = await chrome.tabs.get(targetTabId).catch(() => null);
-  if (!targetTab?.url?.startsWith("https://www.tiktok.com/")) return;
-  const relayPayload = { ...payload, relayedFromTabId: sourceTabId };
-  if (type === "chat") await addChatMessage(targetTabId, relayPayload);
-  else if (type === "gift") await addGiftMessage(targetTabId, relayPayload);
-  else if (type === "live") await addLiveEvent(targetTabId, relayPayload);
+  if (targetTabId == null || targetTabId === sourceTabId || payload?.relayedFromTabId != null) return;
+  // Only a reciprocal, same-stream pair may cross tab boundaries. A stale
+  // source pointer must not route to a normal tab, tab zero, or a different LIVE.
+  const targetState = (await chrome.storage.session.get(stateKey(targetTabId)))[stateKey(targetTabId)];
+  if (targetState?.chatSourceTabId !== sourceTabId || targetState.chatSourceOnly) return;
+  await enqueueTabEvent(targetTabId, async () => {
+    const current = (await chrome.storage.session.get(stateKey(targetTabId)))[stateKey(targetTabId)];
+    if (current?.chatSourceTabId !== sourceTabId || current.chatSourceOnly) return;
+    const handle = state.stream?.handle;
+    if (!handle || normalizeHandle(current.stream?.handle) !== normalizeHandle(handle)) return;
+    const sourceTab = await chrome.tabs.get(sourceTabId).catch(() => null);
+    const targetTab = await chrome.tabs.get(targetTabId).catch(() => null);
+    if (!sameLiveUrl(sourceTab?.url, normalLiveUrl(handle)) || !sameLiveUrl(targetTab?.url, embedLiveUrl(handle))) return;
+    const relayPayload = { ...payload, relayedFromTabId: sourceTabId };
+    if (type === "chat") await addChatMessage(targetTabId, relayPayload);
+    else if (type === "gift") await addGiftMessage(targetTabId, relayPayload);
+    else if (type === "live") await addLiveEvent(targetTabId, relayPayload);
+  });
 }
 
 function updateParticipant(state, raw, author, patch = {}) {
@@ -673,6 +738,14 @@ function observeTeamTag(state, author, content) {
 }
 
 function resetStreamData(state, identity) {
+  const hadIdentity = Boolean(state.stream?.handle || state.stream?.roomId);
+  if (hadIdentity) {
+    state.captionSources = core.captionSourceSnapshot();
+    state.captionInfo = core.summarizeCaptionSources(state.captionSources);
+    state.captions = [];
+    state.menuCaptionAvailable = false;
+    state.menuCaptionActive = false;
+  }
   state.stream = {
     key: `${identity.handle || ""}|${identity.roomId || ""}`,
     handle: identity.handle || "",
@@ -837,7 +910,7 @@ async function injectTabRuntime(tabId) {
   if (!tab.url?.startsWith("https://www.tiktok.com/")) throw new Error("Der Tab ist kein TikTok-Tab.");
   const injection = {
     target: { tabId },
-    files: ["popup-guard.js", "proto-main.js", "hook.js"],
+    files: ["popup-guard.js", "proto-main.js", "hook-recovery.js", "hook.js"],
     world: "MAIN",
     injectImmediately: true
   };
@@ -943,6 +1016,91 @@ function normalLiveUrl(handle) {
   return `https://www.tiktok.com/@${encodeURIComponent(handle)}/live`;
 }
 
+async function getEmbedSession(tabId) {
+  const key = `tlc-embed-${tabId}`;
+  return (await chrome.storage.session.get(key))[key] || null;
+}
+
+async function restoreEmbedDeadlines() {
+  const stored = await chrome.storage.session.get(null);
+  for (const key of Object.keys(stored)) {
+    const match = /^tlc-embed-(\d+)$/.exec(key);
+    if (!match) continue;
+    const tabId = Number(match[1]);
+    await enqueueLiveMode(tabId, "restore-embed-deadline", async () => {
+      const session = await getEmbedSession(tabId);
+      if (!session || !["loading", "retry-wait"].includes(session.phase) || !Number.isFinite(session.startedAtMs)) return;
+      await chrome.alarms.create(`tlc-embed-deadline-${tabId}`, {
+        when: Math.max(Date.now() + 1, session.startedAtMs + 90000)
+      });
+    });
+  }
+}
+
+async function saveEmbedSession(tabId, session) {
+  await chrome.storage.session.set({ [`tlc-embed-${tabId}`]: session });
+  const alarmName = `tlc-embed-deadline-${tabId}`;
+  if (["loading", "retry-wait"].includes(session.phase)) {
+    await chrome.alarms.create(alarmName, { when: session.startedAtMs + 90000 });
+  } else {
+    await chrome.alarms.clear(alarmName);
+  }
+  const state = await getState(tabId);
+  chrome.runtime.sendMessage({ type: "TLC_STATE_UPDATED", tabId, state: { ...state, embedStartup: session } }).catch(() => {});
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  const match = /^tlc-embed-deadline-(\d+)$/.exec(alarm.name);
+  if (!match) return;
+  const tabId = Number(match[1]);
+  return enqueueLiveMode(tabId, "embed-deadline", async () => {
+    const session = await getEmbedSession(tabId);
+    if (!session || !["loading", "retry-wait"].includes(session.phase)) return;
+    if (Date.now() < session.startedAtMs + 90000) {
+      await chrome.alarms.create(alarm.name, { when: session.startedAtMs + 90000 });
+      return;
+    }
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!sameLiveUrl(tab?.url, embedLiveUrl(session.handle))) {
+      await cancelEmbedSession(tabId);
+      return;
+    }
+    const expired = { ...session, phase: "failed", reason: "timeout", nextAttemptAtMs: null, completedAtMs: Date.now() };
+    await saveEmbedSession(tabId, expired);
+    await addDebug(tabId, "embed-startup", { embedStartup: expired });
+  }).catch(() => {});
+});
+
+async function cancelEmbedSession(tabId) {
+  const session = await getEmbedSession(tabId);
+  if (session) await saveEmbedSession(tabId, { ...session, phase: "cancelled", nextAttemptAtMs: null, completedAtMs: Date.now() });
+}
+
+async function observeEmbedStartup(tabId, observation) {
+  const session = await getEmbedSession(tabId);
+  if (!session) return null;
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  if (!sameLiveUrl(tab?.url, embedLiveUrl(session.handle))) {
+    await cancelEmbedSession(tabId);
+    return getEmbedSession(tabId);
+  }
+  if (!/^[a-f0-9-]{36}$/i.test(String(observation?.documentId || "")) || observation.documentStartedAtMs > Date.now() + 1000) return session;
+  const result = core.advanceEmbedSession(session, observation, Date.now());
+  if (JSON.stringify(session) !== JSON.stringify(result.session)) {
+    await saveEmbedSession(tabId, result.session);
+    await addDebug(tabId, "embed-startup", { embedStartup: result.session });
+  }
+  if (result.action === "reload") {
+    try { await chrome.tabs.reload(tabId); }
+    catch {
+      result.session = { ...result.session, phase: "failed", reason: "navigation-error", completedAtMs: Date.now() };
+      await saveEmbedSession(tabId, result.session);
+      await addDebug(tabId, "embed-startup", { embedStartup: result.session });
+    }
+  }
+  return result.session;
+}
+
 async function armLiveTab(tabId, handle, patch = {}) {
   const state = await getState(tabId);
   state.enabled = true;
@@ -956,30 +1114,69 @@ async function armLiveTab(tabId, handle, patch = {}) {
 
 async function closeEmbedChatSource(tabId, state = null) {
   const current = state || await getState(tabId);
-  const sourceTabId = Number(current.chatSourceTabId);
-  if (!Number.isInteger(sourceTabId) || sourceTabId < 0) return;
-  const sourceState = await getState(sourceTabId);
+  const sourceTabId = current.chatSourceTabId;
+  if (!Number.isInteger(sourceTabId) || sourceTabId < 0 || sourceTabId === tabId) return;
+  // Ownership inspection must not initialize or migrate an unrelated tab.
+  const sourceState = (await chrome.storage.session.get(stateKey(sourceTabId)))[stateKey(sourceTabId)];
   current.chatSourceTabId = null;
   await setState(tabId, current).catch(() => {});
-  if (Number(sourceState.chatTargetTabId) === tabId) {
+  const sourceTab = await chrome.tabs.get(sourceTabId).catch(() => null);
+  if (sourceState?.chatTargetTabId === tabId && sourceState.chatSourceOnly &&
+      sameLiveUrl(sourceTab?.url, normalLiveUrl(sourceState.stream?.handle))) {
     await chrome.tabs.remove(sourceTabId).catch(() => {});
   }
+}
+
+function sameLiveUrl(actual, expected) {
+  try {
+    const a = new URL(actual);
+    const b = new URL(expected);
+    return a.origin === b.origin && a.pathname.replace(/\/$/, "") === b.pathname.replace(/\/$/, "");
+  } catch { return false; }
 }
 
 async function ensureEmbedChatSource(embedTabId, handle) {
   const embedState = await getState(embedTabId);
   const expectedUrl = normalLiveUrl(handle);
-  const existingId = Number(embedState.chatSourceTabId);
-  let sourceTab = Number.isInteger(existingId) && existingId >= 0
+  const existingId = embedState.chatSourceTabId;
+  let sourceTab = Number.isInteger(existingId) && existingId >= 0 && existingId !== embedTabId
     ? await chrome.tabs.get(existingId).catch(() => null)
     : null;
-  if (!sourceTab?.url?.startsWith(expectedUrl)) {
+  const sourceState = sourceTab
+    ? (await chrome.storage.session.get(stateKey(sourceTab.id)))[stateKey(sourceTab.id)] : null;
+  const reusable = sourceState?.chatSourceOnly && sourceState.chatTargetTabId === embedTabId &&
+    sameLiveUrl(sourceTab?.url, expectedUrl);
+  if (!reusable) {
+    await closeEmbedChatSource(embedTabId, embedState);
     sourceTab = await chrome.tabs.create({ url: expectedUrl, active: false, openerTabId: embedTabId });
   }
   await armLiveTab(sourceTab.id, handle, { chatTargetTabId: embedTabId, chatSourceOnly: true });
   await armLiveTab(embedTabId, handle, { chatSourceTabId: sourceTab.id, chatSourceOnly: false });
   await injectTabRuntime(sourceTab.id).catch(() => {});
-  return sourceTab;
+  return { sourceTab, created: !reusable };
+}
+
+async function cancelRecoveryForModeChange(tabId) {
+  await enqueueTabEvent(tabId, async () => {
+    const state = await getState(tabId);
+    const attempt = state.recovery?.attempt;
+    if (!attempt || attempt.completedAtMs != null || attempt.endedAtMs != null || attempt.outcome === "reload-failed") return;
+    state.recovery.attempt = { ...attempt, outcome: "cancelled", endedAtMs: Date.now() };
+    await setState(tabId, state);
+    await addDebug(tabId, "reconnect-cancelled", { recoveryAttempt: state.recovery.attempt });
+  });
+}
+
+async function boundedRecoveryPreflight(tabId, reason) {
+  let timeout;
+  try {
+    return await Promise.race([
+      chrome.tabs.sendMessage(tabId, { type: "TLC_RECOVERY_PREFLIGHT", reason }).catch(() => null),
+      new Promise((resolve) => { timeout = setTimeout(() => resolve(null), 2000); })
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function openEmbedLive(tabId) {
@@ -989,9 +1186,31 @@ async function openEmbedLive(tabId) {
   const urlHandle = pageHandle({ url: tab.url });
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
-  await ensureEmbedChatSource(tabId, handle);
-  await chrome.tabs.update(tabId, { url: embedLiveUrl(handle) });
-  return { activated: true, tabId, handle };
+  const startup = await getEmbedSession(tabId);
+  await cancelRecoveryForModeChange(tabId);
+  if (startup?.handle === handle && ["loading", "retry-wait", "awaiting-gesture"].includes(startup.phase) &&
+      sameLiveUrl(tab.url, embedLiveUrl(handle))) {
+    return { activated: false, phase: startup.phase, reloading: false, tabId, handle };
+  }
+  const pairing = await ensureEmbedChatSource(tabId, handle);
+  if (sameLiveUrl(tab.url, embedLiveUrl(handle))) {
+    const current = await chrome.tabs.sendMessage(tabId, { type: "TLC_GET_PLAYER_STATE" }).catch(() => null);
+    if (current?.playerState?.videoAvailable && current.playerState.playing) {
+      return { activated: true, phase: "playing", reloading: false, tabId, handle };
+    }
+  }
+  const session = core.newEmbedSession(newBrowserSessionId(), handle, Date.now());
+  await saveEmbedSession(tabId, session);
+  await addDebug(tabId, "embed-startup", { embedStartup: session });
+  try {
+    await chrome.tabs.update(tabId, { url: embedLiveUrl(handle) });
+  } catch (error) {
+    await saveEmbedSession(tabId, { ...session, phase: "failed", reason: "navigation-error", completedAtMs: Date.now() });
+    if (pairing.created) await closeEmbedChatSource(tabId);
+    throw error;
+  }
+  // Navigation acceptance is not evidence that TikTok's player is ready.
+  return { activated: false, phase: "loading", reloading: true, tabId, handle };
 }
 
 async function openNormalLive(tabId) {
@@ -1001,10 +1220,15 @@ async function openNormalLive(tabId) {
   const urlHandle = pageHandle({ url: tab.url });
   const handle = urlHandle || pageHandle(state.page) || state.stream?.handle || state.profileInfo?.uniqueId;
   if (!handle) throw new Error("Für diesen Tab wurde kein LIVE-Handle gefunden.");
-  await closeEmbedChatSource(tabId, state);
+  await cancelEmbedSession(tabId);
+  await cancelRecoveryForModeChange(tabId);
+  await closeEmbedChatSource(tabId);
   await armLiveTab(tabId, handle, { chatSourceTabId: null, chatTargetTabId: null, chatSourceOnly: false });
+  // The VLC replacement lives at the normal URL too. Navigation tears down
+  // its media elements and audio routing even when the URL is unchanged.
+  const reloading = true;
   await chrome.tabs.update(tabId, { url: normalLiveUrl(handle) });
-  return { activated: true, tabId, handle };
+  return { activated: false, phase: "loading", reloading, tabId, handle };
 }
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -1017,6 +1241,10 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
   removeLegacyGlobalHook().catch(() => {});
 });
+
+// Service-worker wakeups do not emit runtime.onStartup. Session storage survives
+// them, so restore each deadline without navigating or starting another attempt.
+restoreEmbedDeadlines().catch(() => {});
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab.url) return;
@@ -1055,7 +1283,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         enabled: true,
         debugEnabled: Boolean(state.debug?.enabled),
         quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
-        quickRecoverSeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3))),
+        quickRecoverSeconds: state.quickRecoverSeconds,
         chatSourceOnly: Boolean(state.chatSourceOnly)
       });
     }).catch(() => {});
@@ -1063,19 +1291,25 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  liveModeGenerations.delete(tabId);
+  pendingModeRequests.delete(tabId);
+  chrome.alarms.clear(`tlc-embed-deadline-${tabId}`).catch(() => {});
   sendOffscreen({ type: "TLC_OFFSCREEN_CANCEL", tabId }).catch(() => {});
   getState(tabId).then((state) => {
-    const sourceTabId = Number(state.chatSourceTabId);
-    if (Number.isInteger(sourceTabId) && sourceTabId >= 0) chrome.tabs.remove(sourceTabId).catch(() => {});
+    return closeEmbedChatSource(tabId, state);
   }).catch(() => {}).finally(() => {
     chrome.storage.session.remove(stateKey(tabId)).catch(() => {});
+    chrome.storage.session.remove(`tlc-embed-${tabId}`).catch(() => {});
   });
 });
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     if (details.tabId >= 0) {
-      getState(details.tabId).then((state) => state.enabled && addMedia(details.tabId, [details.url], "network")).catch(() => {});
+      enqueueTabEvent(details.tabId, async () => {
+        const state = await getState(details.tabId);
+        if (state.enabled) await addMedia(details.tabId, [details.url], "network");
+      }).catch(() => {});
     }
   },
   {
@@ -1092,7 +1326,24 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = message.tabId ?? sender.tab?.id;
-  (async () => {
+  const isModeRequest = ["TLC_OPEN_EMBED_LIVE", "TLC_OPEN_NORMAL_LIVE"].includes(message.type);
+  if (isModeRequest) {
+    liveModeGenerations.set(tabId, (liveModeGenerations.get(tabId) || 0) + 1);
+    pendingModeRequests.set(tabId, (pendingModeRequests.get(tabId) || 0) + 1);
+  }
+  const modeGeneration = liveModeGenerations.get(tabId) || 0;
+  const modePendingAtReceipt = (pendingModeRequests.get(tabId) || 0) > 0;
+  let modeRequestReleased = false;
+  const releaseModeRequest = () => {
+    if (!isModeRequest || modeRequestReleased) return;
+    modeRequestReleased = true;
+    const remaining = (pendingModeRequests.get(tabId) || 0) - 1;
+    if (remaining > 0) pendingModeRequests.set(tabId, remaining);
+    else pendingModeRequests.delete(tabId);
+  };
+  const respond = sendResponse;
+  sendResponse = (response) => { releaseModeRequest(); respond(response); };
+  const handleMessage = async () => {
     if (sender.tab && Number.isInteger(tabId) && message?.type !== "TLC_DEBUG_EVENT") {
       await addDebug(tabId, `raw:${String(message?.type || "unknown")}`, message || {});
     }
@@ -1106,15 +1357,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (state.profileInfo?.followerCount != null) state.liveStats.followerCount = state.profileInfo.followerCount;
           }
           mergeStreamSnapshot(state, await cachedStreamSnapshot(pageHandle(state.page) || state.stream?.handle));
+          state.embedStartup = await getEmbedSession(tabId);
           sendResponse({ ok: true, state });
         }
         break;
+      case "TLC_GET_CAPTION_JSONL_EXPORT":
       case "TLC_GET_CAPTION_RAW_EXPORT": {
         const state = await getState(tabId);
         const settings = await getSettings();
+        const secrets = [settings.pairingCode, settings.auddApiToken, settings.universalCaptionApiKey];
         sendResponse({
           ok: true,
-          report: buildCaptionRawExport(state, tabId, Boolean(settings.universalCaptionApiKey))
+          ...(message.type === "TLC_GET_CAPTION_JSONL_EXPORT"
+            ? { records: exportPrivacy.captions(state.captions, secrets) }
+            : { report: exportPrivacy.captionReport(buildCaptionRawExport(state, tabId, Boolean(settings.universalCaptionApiKey)), secrets) })
         });
         break;
       }
@@ -1129,7 +1385,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           enabled: true,
           debugEnabled: Boolean(state.debug?.enabled),
           quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
-          quickRecoverSeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3))),
+          quickRecoverSeconds: state.quickRecoverSeconds,
           chatSourceOnly: Boolean(state.chatSourceOnly)
         }).catch(() => {});
         sendResponse({ ok: true, state });
@@ -1137,7 +1393,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_GET_TAB_ACTIVATION": {
         const state = await getState(tabId);
-        sendResponse({ ok: true, enabled: Boolean(state.enabled) });
+        sendResponse({ ok: true, enabled: Boolean(state.enabled), hookReconnect: state.hookReconnect,
+          hookArmed: Boolean(state.hook.armed), quickRecoverEnabled: state.quickRecoverEnabled,
+          quickRecoverSeconds: state.quickRecoverSeconds, debugEnabled: Boolean(state.debug?.enabled) });
         break;
       }
       case "TLC_GET_SETTINGS": {
@@ -1148,6 +1406,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           hookEnabled: Boolean(state.hook?.armed),
           autoHook: Boolean(state.hook?.armed),
           quickRecoverEnabled: Boolean(state.quickRecoverEnabled),
+          quickRecoverSeconds: state.quickRecoverSeconds,
           speechEnabled: Boolean(state.speech?.enabled),
           debugEnabled: Boolean(state.debug?.enabled)
         } });
@@ -1230,9 +1489,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       case "TLC_SET_QUICK_RECOVER": {
         const state = await getState(tabId);
-        const seconds = Math.max(1, Math.min(59, Math.round(Number(message.seconds) || 3)));
+        const seconds = normalizeRecoveryDelay(message.seconds);
         state.quickRecoverEnabled = Boolean(message.enabled);
-        await setSettings({ quickRecoverSeconds: seconds });
+        state.quickRecoverSeconds = seconds;
+        state.recoveryConfigVersion = 1;
         await setState(tabId, state);
         if (Number.isInteger(tabId) && tabId >= 0) {
           await chrome.tabs.sendMessage(tabId, { type: "TLC_QUICK_RECOVER_CONFIG", enabled: state.quickRecoverEnabled, seconds }).catch(() => {});
@@ -1293,7 +1553,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         resetPageIdentityIfChanged(state, nextHandle);
         state.page = message.page || state.page;
         applyStreamIdentity(state, { handle: nextHandle || pageHandle(state.page) });
-        state.captionInfo = message.captionInfo || state.captionInfo;
+        const checkedAtUtc = new Date().toISOString();
+        if (message.captionInfo) state.captionSources.metadata = {
+          ...core.normalizeCaptionInfo(message.captionInfo), lastCheckedAtUtc: checkedAtUtc
+        };
+        state.captionSources.menu = { ...state.captionSources.menu, lastCheckedAtUtc: checkedAtUtc,
+          available: Boolean(message.menuCaptionAvailable) };
+        if (message.menuCaptionAvailable) Object.assign(state.captionSources.menu, {
+          active: Boolean(message.menuCaptionActive), lastObservedAtUtc: checkedAtUtc
+        });
+        state.captionInfo = core.summarizeCaptionSources(state.captionSources);
         if (profileMatchesHandle(message.profileInfo, nextHandle)) state.profileInfo = mergeProfile(state.profileInfo, message.profileInfo);
         await cacheProfile(state.profileInfo);
         const cached = await cachedProfile(nextHandle || pageHandle(state.page));
@@ -1302,8 +1571,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         state.liveStats = mergeLiveStats(state.liveStats, message.liveStats);
         mergeStreamSnapshot(state, await cachedStreamSnapshot(nextHandle || pageHandle(state.page) || state.stream?.handle));
         state.aiSummaryInfo = message.aiSummaryInfo || state.aiSummaryInfo;
-        state.menuCaptionAvailable = Boolean(state.menuCaptionAvailable || message.menuCaptionAvailable);
-        state.menuCaptionActive = Boolean(state.menuCaptionActive || message.menuCaptionActive);
+        state.menuCaptionAvailable = Boolean(message.menuCaptionAvailable);
+        state.menuCaptionActive = Boolean(message.menuCaptionAvailable && message.menuCaptionActive);
         await setState(tabId, state);
         await addMedia(tabId, message.media || [], "metadata");
         await addDebug(tabId, "page-state", { profile: state.profileInfo, summary: state.aiSummaryInfo, mediaCount: message.media?.length || 0 });
@@ -1428,13 +1697,48 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_OPEN_EMBED_LIVE": {
-        const response = await openEmbedLive(tabId);
-        sendResponse({ ok: true, response, reloading: true });
+        const response = await enqueueLiveMode(tabId, "embed", () => openEmbedLive(tabId));
+        sendResponse({ ok: true, response, reloading: response.reloading });
+        break;
+      }
+      case "TLC_SET_HOOK_RECONNECT": {
+        const state = await getState(tabId);
+        state.hookReconnect = { enabled: Boolean(message.enabled), seconds: normalizeRecoveryDelay(message.seconds) };
+        await setState(tabId, state);
+        await chrome.tabs.sendMessage(tabId, { type: "TLC_HOOK_RECONNECT_CONFIG", ...state.hookReconnect,
+          armed: Boolean(state.hook.armed) }).catch(() => {});
+        sendResponse({ ok: true, state });
+        break;
+      }
+      case "TLC_HOOK_RECOVERY": {
+        const state = await getState(tabId);
+        // Never persist arbitrary page strings or connection arguments.
+        const incoming = exportPrivacy.hookRecovery(message.recovery);
+        const previous = state.hookRecovery;
+        if (previous?.contentDocumentStartedAtMs &&
+            (!incoming.contentDocumentStartedAtMs || incoming.contentDocumentStartedAtMs < previous.contentDocumentStartedAtMs)) {
+          sendResponse({ ok: true, ignored: "stale-document" }); break;
+        }
+        state.hookRecovery = incoming;
+        await setState(tabId, state);
+        await addDebug(tabId, "hook-recovery", { controller: "hook-reconnect", hookRecovery: state.hookRecovery,
+          playerState: state.playerState });
+        sendResponse({ ok: true });
+        break;
+      }
+      case "TLC_EMBED_OBSERVATION": {
+        const session = await enqueueLiveMode(tabId, "embed-observation", () => observeEmbedStartup(tabId, message.observation));
+        sendResponse({ ok: true, phase: session?.phase || "idle" });
+        break;
+      }
+      case "TLC_CANCEL_EMBED_STARTUP": {
+        await enqueueLiveMode(tabId, "embed-cancel", () => cancelEmbedSession(tabId));
+        sendResponse({ ok: true });
         break;
       }
       case "TLC_OPEN_NORMAL_LIVE": {
-        const response = await openNormalLive(tabId);
-        sendResponse({ ok: true, response, reloading: true });
+        const response = await enqueueLiveMode(tabId, "normal", () => openNormalLive(tabId));
+        sendResponse({ ok: true, response, reloading: response.reloading });
         break;
       }
       case "TLC_SET_MUTE": {
@@ -1461,6 +1765,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const response = await chrome.tabs.sendMessage(tabId, { type: message.type });
         if (response?.playerState) await patchState(tabId, { playerState: normalizePlayerState(response.playerState) });
         sendResponse({ ok: true, response });
+        break;
+      }
+      case "TLC_RECOVERY_MEDIA_OBSERVATION": {
+        const state = await getState(tabId);
+        const attempt = state.recovery?.attempt;
+        const tab = await chrome.tabs.get(tabId).catch(() => null);
+        if (attempt && sameLiveUrl(tab?.url, normalLiveUrl(attempt.handle))) {
+          const next = core.observeRecoveryMedia(attempt, message.observation, Date.now());
+          if (next !== attempt) {
+            state.recovery.attempt = next;
+            await setState(tabId, state);
+            await addDebug(tabId, "reconnect-video-progress", { recoveryAttempt: next });
+          }
+        }
+        sendResponse({ ok: true });
         break;
       }
       case "TLC_PLAYER_STATE_PUSH": {
@@ -1512,6 +1831,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case "TLC_QUICK_RECOVER": {
+        if (modePendingAtReceipt || pendingModeRequests.has(tabId)) {
+          await addDebug(tabId, "reconnect-skipped", { reason: "stale-attempt" });
+          sendResponse({ ok: true, skipped: true, reason: "stale-attempt" });
+          break;
+        }
         if (quickRecoverInFlight.has(tabId)) {
           sendResponse({ ok: true, skipped: true, reason: "in-flight" });
           break;
@@ -1528,13 +1852,83 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ ok: true, skipped: true, reason: "not-tiktok" });
             break;
           }
+          if (/^\/embed\/live\//i.test(new URL(tab.url).pathname)) {
+            sendResponse({ ok: true, skipped: true, reason: "embed-startup-controlled" });
+            break;
+          }
+          const previousAttempt = state.recovery?.attempt;
+          if (message.recoveryAttempt?.id && (message.recoveryAttempt.id === previousAttempt?.id ||
+              (Number.isFinite(message.recoveryAttempt.requestedAtMs) &&
+               message.recoveryAttempt.requestedAtMs < previousAttempt?.startedAtMs))) {
+            sendResponse({ ok: true, skipped: true, reason: "stale-attempt" });
+            break;
+          }
+          const preflight = await boundedRecoveryPreflight(tabId, message.reason);
+          if (typeof preflight?.shouldReload !== "boolean") {
+            await addDebug(tabId, "reconnect-skipped", { reason: "preflight-unavailable" });
+            sendResponse({ ok: true, skipped: true, reason: "preflight-unavailable" });
+            break;
+          }
+          const softRecovery = ["play-resumed", "play-unconfirmed"].includes(preflight?.softRecovery) ? preflight.softRecovery : null;
+          const currentTab = await chrome.tabs.get(tabId).catch(() => null);
+          const changedDocument = message.recoveryAttempt?.documentId && preflight?.documentId &&
+            message.recoveryAttempt.documentId !== preflight.documentId;
+          const modeChanged = modeGeneration !== (liveModeGenerations.get(tabId) || 0);
+          if (modeChanged || !sameLiveUrl(currentTab?.url, tab.url) || changedDocument || preflight?.shouldReload === false) {
+            const reason = modeChanged || !sameLiveUrl(currentTab?.url, tab.url) || changedDocument ? "stale-attempt" : "recovered-before-reload";
+            if (softRecovery) await addDebug(tabId, "reconnect-soft-recovery", { reason: softRecovery });
+            await addDebug(tabId, "reconnect-skipped", { reason });
+            sendResponse({ ok: true, skipped: true, reason });
+            break;
+          }
           state.enabled = true;
           if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
           state.hook = { ...state.hook, armed: true, lastError: null };
           state.recovery = { lastQuickRecoverAtUtc: new Date().toISOString(), lastReason: String(message.reason || "").slice(0, 80) };
+          const now = Date.now();
+          const input = message.recoveryAttempt || {};
+          const validTiming = Number.isFinite(input.detectedAtMs) && Number.isFinite(input.scheduledAtMs) &&
+            Number.isFinite(input.requestedAtMs) && input.detectedAtMs <= input.scheduledAtMs &&
+            input.scheduledAtMs <= input.requestedAtMs && input.requestedAtMs <= now + 1000 &&
+            now - input.detectedAtMs <= 120000 && input.configuredDelayMs >= 1000 && input.configuredDelayMs <= 59000 &&
+            input.scheduledAtMs - input.detectedAtMs === input.configuredDelayMs;
+          const attempt = {
+            id: /^[a-f0-9-]{36}$/i.test(input.id || "") ? input.id : newBrowserSessionId(),
+            documentId: /^[a-f0-9-]{36}$/i.test(input.documentId || "") ? input.documentId : null,
+            detectedAtMs: validTiming ? input.detectedAtMs : null,
+            scheduledAtMs: validTiming ? input.scheduledAtMs : null,
+            requestedAtMs: validTiming ? input.requestedAtMs : null,
+            configuredDelayMs: validTiming ? input.configuredDelayMs : state.quickRecoverSeconds * 1000,
+            startedAtMs: now, actualWaitMs: validTiming ? Math.max(0, now - input.detectedAtMs) : null,
+            scheduleOverrunMs: validTiming ? Math.max(0, now - input.scheduledAtMs) : null,
+            mode: "normal", handle: core.liveHandleFromUrl(tab.url), trigger: state.recovery.lastReason, outcome: "started"
+          };
+          state.recovery.attempt = attempt;
           await setState(tabId, state);
+          if (softRecovery) await addDebug(tabId, "reconnect-soft-recovery", { reason: softRecovery });
+          if (previousAttempt && previousAttempt.completedAtMs == null && previousAttempt.endedAtMs == null && previousAttempt.outcome !== "reload-failed") {
+            await addDebug(tabId, "reconnect-superseded", { recoveryAttempt: { ...previousAttempt, outcome: "superseded", endedAtMs: now } });
+          }
+          await addDebug(tabId, "reconnect-attempt-started", { recoveryAttempt: attempt });
           await addDebug(tabId, "quick-recover", { reason: state.recovery.lastReason, url: redactUrl(tab.url || "") });
-          await chrome.tabs.reload(tabId);
+          try {
+            if (modeGeneration !== (liveModeGenerations.get(tabId) || 0)) {
+              const cancelled = await getState(tabId);
+              cancelled.recovery.attempt = { ...attempt, outcome: "cancelled", endedAtMs: Date.now() };
+              await setState(tabId, cancelled);
+              await addDebug(tabId, "reconnect-cancelled", { recoveryAttempt: cancelled.recovery.attempt });
+              sendResponse({ ok: true, skipped: true, reason: "stale-attempt" });
+              break;
+            }
+            await chrome.tabs.reload(tabId);
+            await addDebug(tabId, "reconnect-reload-requested", { recoveryAttempt: { ...attempt, outcome: "reload-requested" } });
+          } catch (error) {
+            const failedState = await getState(tabId);
+            failedState.recovery.attempt = { ...attempt, outcome: "reload-failed" };
+            await setState(tabId, failedState);
+            await addDebug(tabId, "reconnect-failed", { recoveryAttempt: { ...attempt, outcome: "reload-failed" } });
+            throw error;
+          }
           sendResponse({ ok: true, reloading: true });
         } finally {
           quickRecoverInFlight.delete(tabId);
@@ -1602,10 +1996,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, state });
         break;
       }
-      case "TLC_DEBUG_EVENT":
-        await addDebug(tabId, message.event || "content", message.detail || {});
+      case "TLC_DEBUG_EVENT": {
+        let detail = message.detail || {};
+        if (message.event === "socket-telemetry") {
+          // Correlation is assigned here, never trusted from a page message.
+          const socket = { ...detail.socket, recoveryAttemptId: null };
+          const state = await getState(tabId);
+          const attempt = state.recovery?.attempt;
+          const tab = await chrome.tabs.get(tabId).catch(() => null);
+          const now = Date.now();
+          if (attempt && attempt.endedAtMs == null && attempt.outcome !== "reload-failed" && socket.mode === "normal" &&
+              /^[a-f0-9-]{36}$/i.test(socket.contentDocumentId || "") &&
+              socket.contentDocumentId !== attempt.documentId &&
+              Number.isFinite(socket.contentDocumentStartedAtMs) &&
+              socket.contentDocumentStartedAtMs >= attempt.startedAtMs && socket.contentDocumentStartedAtMs <= now &&
+              now - attempt.startedAtMs <= 120000 &&
+              (!attempt.playbackDocumentId || attempt.playbackDocumentId === socket.contentDocumentId) &&
+              sameLiveUrl(tab?.url, normalLiveUrl(attempt.handle))) {
+            socket.recoveryAttemptId = attempt.id;
+          }
+          detail = { socket };
+        }
+        await addDebug(tabId, message.event || "content", detail);
         sendResponse({ ok: true });
         break;
+      }
       case "TLC_CLEAR_DEBUG": {
         const state = await getState(tabId);
         state.debug.entries = [];
@@ -1654,11 +2069,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const participants = Object.values(state.participants || {});
         const captionSources = [...new Set((state.captions || []).map((item) => String(item?.source || "")).filter(Boolean))].slice(0, 50);
         const captionLanguages = [...new Set((state.captions || []).map((item) => String(item?.language || item?.lang || "")).filter(Boolean))].slice(0, 50);
-        sendResponse({ ok: true, report: {
+        sendResponse({ ok: true, report: exportPrivacy.diagnosticReport({
           generatedAtUtc: new Date().toISOString(), version: chrome.runtime.getManifest().version,
-          browserSessionId: state.browserSessionId,
-          page: state.page, captionInfo: state.captionInfo, profileInfo: state.profileInfo,
-          aiSummaryInfo: state.aiSummaryInfo, hook: state.hook, liveStats: state.liveStats,
+          browserSessionId: state.browserSessionId, captionSnapshot: state.captionSnapshot,
+          page: state.page, captionInfo: state.captionInfo, captionSources: state.captionSources, profileInfo: state.profileInfo,
+          embedStartup: await getEmbedSession(tabId),
+          aiSummaryInfo: state.aiSummaryInfo, hook: state.hook, hookRecovery: state.hookRecovery, liveStats: state.liveStats,
           playerState: state.playerState, selectedQuality: state.selectedQuality,
           media: state.media.map((item) => ({ ...item, url: redactUrl(item.url) })),
           counts: { chat: state.chatMessages.length, captions: state.captions.length },
@@ -1704,19 +2120,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               mutedCount: (state.streamMutes || []).length,
               permanentMutedCount: (settings.permanentMutes || []).length
             },
-            autoReconnect: {
+            hookReconnect: {
+              enabled: state.hookReconnect.enabled, delaySeconds: state.hookReconnect.seconds,
+              controller: "hook-reconnect", delayMeaning: "attempt-start-delay", scope: "tab"
+            },
+            playerQuickRecovery: {
               enabled: Boolean(state.quickRecoverEnabled),
-              delaySeconds: Math.max(1, Math.min(59, Math.round(Number(settings.quickRecoverSeconds) || 3)))
+              delaySeconds: state.quickRecoverSeconds,
+              controller: "player-quick-recovery",
+              delayMeaning: "continuous-failure-confirmation",
+              scope: "tab"
             }
           },
-          raw: state,
           debug: state.debug
-        } });
+        }) });
         break;
       }
       default:
         sendResponse({ ok: false, error: "Unbekannte Nachricht" });
     }
-  })().catch((error) => sendResponse({ ok: false, error: String(error?.message || error), code: error?.code || "UNKNOWN" }));
+  };
+  // Serialize incoming observations so each read-modify-write sees the preceding
+  // caption/page update. Never hold this queue across commands awaiting content
+  // scripts: they can send observations before responding to the command.
+  const task = SERIAL_TAB_EVENTS.has(message.type)
+    ? enqueueTabEvent(tabId, handleMessage)
+    : (async () => { await tabEventTasks.get(tabId); return handleMessage(); })();
+  if (isModeRequest) {
+    task.then(releaseModeRequest, releaseModeRequest);
+  }
+  task.catch((error) => sendResponse({ ok: false, error: String(error?.message || error), code: error?.code || "UNKNOWN" }));
   return true;
 });
