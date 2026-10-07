@@ -19,7 +19,7 @@
     "scan-recommendations", "cancel-recommendation-scan"
   ]);
   let sequence = 0;
-  let streamId = "";
+  let streamId = location.pathname;
   let audioCapture = null;
   let audioGraph = null;
   const limiter = { enabled: false, threshold: -6 };
@@ -48,7 +48,7 @@
   }
 
   function emit(type, payload = {}) {
-    nativePost({ version: 1, type, streamId, sequence: ++sequence, timestamp: new Date().toISOString(), payload: { ...payload, frameOrigin: location.origin, frameKind: isTop ? "top" : "sub" } });
+    nativePost({ version: 1, type, streamId, sequence: ++sequence, timestamp: new Date().toISOString(), payload: { ...payload, ...(root.TLC_MOBILE_RECOVERY ? {documentId: root.TLC_MOBILE_RECOVERY.documentId} : {}), frameOrigin: location.origin, frameKind: isTop ? "top" : "sub" } });
   }
 
   function text(value, max = 2048) {
@@ -225,7 +225,7 @@
       (document.head || document.documentElement).appendChild(style);
     }
     emit("capability", { feature: "player-focus", available: true });
-    if (audibleStartRequested) void attemptAudibleStart();
+    if (audibleStartRequested && !root.TLC_MOBILE_RECOVERY) void attemptAudibleStart();
     collectMediaUrls();
     return true;
   }
@@ -246,6 +246,7 @@
   }
 
   async function quickRecover(reason = "player-stall") {
+    if (root.TLC_MOBILE_RECOVERY) return root.TLC_MOBILE_RECOVERY.recover(reason);
     if (!autoReconnectEnabled) return;
     const now = Date.now();
     if (now - lastQuickRecoverAt < QUICK_RECOVER_RELOAD_COOLDOWN_MS) return;
@@ -507,9 +508,11 @@
   }
 
   async function command(name, payload = {}) {
+    if (root.TLC_MOBILE_RECOVERY?.handles(name)) return root.TLC_MOBILE_RECOVERY.command(name, payload);
     if (!ALLOWED_COMMANDS.has(name)) return emit("bridge-error", { operation: "command", message: "Unknown command" });
     const video = primaryVideo();
     try {
+      root.TLC_MOBILE_RECOVERY?.command(name, payload);
       if (name === "inspect" || name === "hook-status") inspect();
       else if (name === "play") await video?.play();
       else if (name === "pause") video?.pause();
@@ -555,7 +558,7 @@
     }
   }
 
-  installWebSocketHook();
+  if (!root.TLC_MOBILE_RECOVERY) installWebSocketHook();
   if (!isTop) return; // Subframes liefern nur dekodierte WebSocket-Daten.
   root.TLC_MOBILE_BRIDGE = Object.freeze({ command, inspect });
   const startTopFrame = () => {

@@ -6,6 +6,7 @@ struct BridgeValidator {
     static let allowedOrigin = "https://www.tiktok.com"
     static let maximumBytes = 64 * 1024
     static let allowedTypes: Set<String> = [
+        "recovery-ready", "hook-status", "hook-recovery", "socket-telemetry", "caption-state", "player-recovery", "player-observation", "embed-blocked",
         "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift",
         "media-links", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete",
         "socket-open", "force-start", "force-return", "media-url", "player-state", "recommendation-scan-progress"

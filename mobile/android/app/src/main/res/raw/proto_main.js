@@ -1,10 +1,10 @@
 (function (root, factory) {
-  const api = factory();
+  const protoKey = Symbol.for("tiktok-live-companion.proto");
   if (typeof module === "object" && module.exports) {
-    module.exports = api;
-  } else {
-    Object.defineProperty(root, Symbol.for("tiktok-live-companion.proto"), {
-      value: Object.freeze(api),
+    module.exports = factory();
+  } else if (!root[protoKey]) {
+    Object.defineProperty(root, protoKey, {
+      value: Object.freeze(factory()),
       configurable: false,
       enumerable: false,
       writable: false
@@ -227,7 +227,7 @@
     return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
-  async function decodeWebSocketPayload(data) {
+  async function decodeWebSocketEnvelope(data) {
     let bytes;
     if (data instanceof Blob) bytes = new Uint8Array(await data.arrayBuffer());
     else bytes = toBytes(data);
@@ -240,12 +240,53 @@
     } else if (encoding.includes("gzip") || (payload[0] === 0x1f && payload[1] === 0x8b)) {
       payload = await gunzip(payload);
     }
-    return decodeFetchResult(payload);
+    const response = parseFields(payload);
+    return { records: decodeFetchResult(payload), transport: {
+      type: text(first(pushFields, 7, 2)), id: integer(first(pushFields, 2, 0)),
+      internalExt: text(first(response, 5, 2)), needAck: first(response, 9, 0) === 1n
+    } };
+  }
+
+  async function decodeWebSocketPayload(data) {
+    return (await decodeWebSocketEnvelope(data)).records;
+  }
+
+  // Only the observed transport dialect is used. No application frames are
+  // replayed. References are recorded in docs/recovery-protocol.md.
+  function encodeTransport(type, id, payload) {
+    const out = [];
+    const varint = (input) => {
+      let value = BigInt(input);
+      if (value < 0n || value > 0xffffffffffffffffn) throw new RangeError("Invalid transport id");
+      do { const byte = Number(value & 127n); value >>= 7n; out.push(byte | (value ? 128 : 0)); } while (value);
+    };
+    const bytes = (field, value) => {
+      const encoded = new TextEncoder().encode(value);
+      varint(field * 8 + 2); varint(encoded.length); out.push(...encoded);
+    };
+    if (id != null) { varint(16); varint(id); }
+    bytes(7, type);
+    if (payload != null) bytes(8, payload);
+    return new Uint8Array(out);
+  }
+
+  function inspectTransportControl(data) {
+    try {
+      const fields = parseFields(toBytes(data));
+      if ([...fields.keys()].some((key) => ![2, 7, 8].includes(key)) ||
+          [...fields.values()].some((values) => values.length !== 1)) return null;
+      const type = text(first(fields, 7, 2));
+      if (!["hb", "ack"].includes(type)) return null;
+      if (type === "hb" && (fields.has(2) || fields.has(8))) return null;
+      const id = integer(first(fields, 2, 0));
+      if (type === "ack" && (!id || BigInt(id) <= 0n)) return null;
+      return { type, id, payload: fields.has(8) ? text(first(fields, 8, 2)) : null };
+    } catch (_) { return null; }
   }
 
   return {
     toBytes, readVarint, parseFields, decodeCommonPayload, decodeCaptionPayload,
     decodeUserPayload, decodeChatPayload, decodeRoomUserPayload, decodeLikePayload, decodeSocialPayload, decodeGiftPayload,
-    decodeFetchResult, decodeWebSocketPayload
+    decodeFetchResult, decodeWebSocketPayload, decodeWebSocketEnvelope, encodeTransport, inspectTransportControl
   };
 });

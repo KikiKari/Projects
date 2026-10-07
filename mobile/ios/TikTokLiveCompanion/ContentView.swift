@@ -130,9 +130,14 @@ struct ContentView: View {
     private var moreView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Mehr").font(.headline)
-            HStack { Toggle("Auto-Reconnect", isOn: $state.autoReconnectEnabled); TextField("Sek.", value: $state.autoReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
+            HStack { Toggle("Player-Recovery", isOn: $state.autoReconnectEnabled); TextField("Sek.", value: $state.autoReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
+            Text("Player: \(state.playerRecovery["phase"] as? String ?? "bereit")").font(.footnote)
+            HStack { Toggle("Hook-Reconnect", isOn: $state.hookReconnectEnabled); TextField("Sek.", value: $state.hookReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
+            Text("Hook: \(state.hookRecovery["phase"] as? String ?? "disabled")").font(.footnote)
+            HStack { Button("Normal", action: state.openNormal); Button("Embed", action: state.openEmbed) }
+            Text("Embed: \(state.embedPhase) · Versuch \(state.embedAttempt)/3").font(.footnote)
             Toggle("Debugmodus", isOn: $state.debugEnabled)
-            Text("\(state.debugEvents.count) vollständige Rohereignisse").font(.footnote).foregroundStyle(.secondary)
+            Text("\(state.debugEvents.count) bereinigte Diagnoseereignisse").font(.footnote).foregroundStyle(.secondary)
             ForEach(Array(state.debugEvents.enumerated()), id: \.offset) { _, event in
                 Text(String(data: (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys])) ?? Data(), encoding: .utf8) ?? "{}")
                     .font(.caption2.monospaced())

@@ -63,7 +63,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
             if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) WebViewCompat.startSafeBrowsing(context) {}
-            val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
+            val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.hook_recovery, R.raw.export_privacy, R.raw.android_recovery, R.raw.recovery_hook, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
             if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(this, bridgeSource, setOf(BridgeValidator.ALLOWED_ORIGIN))
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
                 WebViewCompat.addWebMessageListener(this, "tlcBridge", setOf(BridgeValidator.ALLOWED_ORIGIN)) { _, message, sourceOrigin, isMainFrame, _ ->
