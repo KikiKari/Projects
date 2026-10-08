@@ -38,11 +38,37 @@ DSP-Tests: `node --test plugin-source/scripts/test_peak_limiter.cjs`.
 
 ## Offene Voraussetzungen
 
-- Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur muss erneut bestehen. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
+- Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur besteht auf dem Redmi (Nachweis unten), der korrigierte iOS-Lauf ist noch offen. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
 - Keine Abnahme mit installierter Erweiterung und realem Stream; keine Hörprüfung auf Pumpen/Verzerrung und keine A/V-Synchronitätsabnahme.
-- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der native Gerätetest ist wegen des gefundenen Formatfehlers noch nicht abgenommen. Die iOS-Simulator-Vertragstests bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
+- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der korrigierte native PCM-Gerätetest besteht; die vollständige Live-/Audio-Abnahme bleibt offen. Die iOS-Simulator-Vertragstests bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
 - Die AudioWorklet-Ladbarkeit unter der tatsächlichen TikTok-/WebView-Policy muss noch geprüft werden.
 - Die mobilen Branches sind noch nicht mit diesem Kandidaten synchronisiert.
 
 0PE-177 und das Release-Gate bleiben offen. 0PE-175/176 und die Veröffentlichung 0.8.2 sind noch nicht umgesetzt.
 Die bestehende Versionsnummer bleibt bis zum Release-Gate unverändert.
+
+## Redmi: korrigierter PCM-Test am 2026-10-08
+
+Kandidat `e5b3b2f519554cfbf46debbc3d12b317fc8da9fe`, vorhandene Debug-Signatur,
+Version weiterhin 0.8.1 / Build 9. Die manuell installierte Test-App konnte
+anschließend per ADB aktualisiert werden. Instrumentation auf Redmi Note 11S:
+`NativeVlcAudioTest.decodedPcmPassesThroughLimiterAndOutputStops`: OK (1 test).
+
+| Schutz | Eingang dBFS | Ausgang dBFS |
+|---|---:|---:|
+| aus | -1.731407 | -1.731407 |
+| 25 % | -1.731407 | -10.5 |
+| 75 % | -1.731407 | -23.5 |
+| 100 % | -1.731407 | -30.0 |
+
+Nachweis: bekannte PCM16-WAV-Datei durch VLC-Decoder, JNI, gemeinsamen Limiter
+und AudioTrack-Schreibpfad sowie Stop. Kein Nachweis der physischen
+Lautsprecherausgabe, Sprachqualität, Live-Streams oder A/V-Synchronität.
+Lokale Dateien: `.artifacts/0pe177-native-e5b3b2f/` im Projektarbeitsverzeichnis.
+
+SHA-256:
+- app.apk: `0c1d6b56255f5dda49dd51026ae86eb48ed58324af38ac97c29ab0dd23b3cfae`
+- test.apk: `7a26a8d51d1db1f24188df71592884dbf5bfaee2684fe36a12f552e8a70ffd1c`
+
+Der iOS-Lauf auf e5b3b2f scheiterte vor Testbeginn an einem ungültigen UTF-8-Byte
+in ContentView.swift. Korrektur: `5738cf8`; erneuter Simulatorlauf 37849630208.
