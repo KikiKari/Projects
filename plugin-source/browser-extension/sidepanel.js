@@ -703,6 +703,9 @@
     elements["player-status"].textContent = available
       ? `${playing ? "Wiedergabe läuft" : "Wiedergabe pausiert"} · ${muted ? "stumm" : "Ton aktiv"}${limiterEnabled ? ` · Pegelschutz ${limiterStrength}%` : ""}.`
       : "Warte auf den TikTok-Player.";
+    if (limiterEnabled && Number.isFinite(playerState.limiterInputPeakDbfs) && Number.isFinite(playerState.limiterOutputPeakDbfs)) {
+      elements["player-status"].textContent += ` Eingang ${playerState.limiterInputPeakDbfs.toFixed(1)} dBFS · Ausgang ${playerState.limiterOutputPeakDbfs.toFixed(1)} dBFS · Dämpfung ${Number(playerState.limiterReductionDb || 0).toFixed(1)} dB.`;
+    }
   }
 
   function audienceSelectActive() {
@@ -1688,7 +1691,7 @@
   });
   const applyLimiter = () => runPlayer("set-limiter", elements["limiter-enabled"], {
     enabled: elements["limiter-enabled"].checked,
-    thresholdDbfs: core.limiterStrengthToDbfs(Number(elements["limiter-strength"].value))
+    strength: Number(elements["limiter-strength"].value)
   });
   elements["limiter-enabled"].addEventListener("change", applyLimiter);
   elements["limiter-strength"].addEventListener("change", () => {

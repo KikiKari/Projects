@@ -67,6 +67,8 @@
     pipActive: bool, fullscreenActive: bool, volume: num, volumePercent: num,
     volumeGainDb: num, peakDbfs: num, limiterEnabled: bool, limiterStrength: num,
     limiterThresholdDbfs: num, limiterReductionDb: num, connectedStreams: num,
+    limiterInputPeakDbfs: num, limiterOutputPeakDbfs: num, limiterLookaheadMs: num,
+    limiterAudioPath: choice("web-audio"),
     multiGuest: bool, vlcReplacementActive: bool, updatedAtUtc: utc,
     elapsedText: (x) => typeof x === "string" && /^\d{1,4}:\d\d(?::\d\d)?$/.test(x) ? x : null
   });

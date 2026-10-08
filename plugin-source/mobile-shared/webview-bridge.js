@@ -22,7 +22,7 @@
   let streamId = location.pathname;
   let audioCapture = null;
   let audioGraph = null;
-  const limiter = { enabled: false, threshold: -6 };
+  const limiter = { enabled: false, strength: 30 };
   const chat = [];
   const seenLiveEventIds = new Set();
   const mediaUrls = new Map();
@@ -363,16 +363,18 @@
       const context = new AudioContext({ sampleRate: 48_000 });
       await context.resume();
       const source = context.createMediaElementSource(video);
-      const compressor = context.createDynamicsCompressor();
       const silentSink = context.createGain();
       silentSink.gain.value = 0;
       silentSink.connect(context.destination);
-      compressor.ratio.value = 20;
-      compressor.knee.value = 0;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.25;
-      audioGraph = { context, source, compressor, silentSink, video };
+      audioGraph = { context, source, peakLimiter: null, silentSink, video };
       rewireAudioGraph();
+      if (limiter.enabled) {
+        try { await attachPeakLimiter(audioGraph); rewireAudioGraph(); }
+        catch (error) {
+          limiter.enabled = false;
+          emit("capability", { feature: "limiter", available: false, enabled: false, reason: text(error?.message || error, 512) });
+        }
+      }
       return audioGraph;
     } catch (error) {
       emit("bridge-error", { operation: "audio-graph", message: text(error?.message || error, 512) });
@@ -382,26 +384,49 @@
 
   function rewireAudioGraph() {
     if (!audioGraph) return;
-    const { context, source, compressor, silentSink } = audioGraph;
+    const { context, source, peakLimiter, silentSink } = audioGraph;
     try { source.disconnect(); } catch (_) {}
-    try { compressor.disconnect(); } catch (_) {}
-    if (limiter.enabled) {
-      compressor.threshold.value = Math.max(-30, Math.min(-1, Number(limiter.threshold) || -6));
-      source.connect(compressor).connect(context.destination);
+    try { peakLimiter?.disconnect(); } catch (_) {}
+    if (limiter.enabled && peakLimiter) {
+      peakLimiter.setProtection({ enabled: true, strength: limiter.strength });
+      source.connect(peakLimiter).connect(context.destination);
     } else {
       source.connect(context.destination);
     }
     if (audioCapture) { source.connect(audioCapture.processor); audioCapture.processor.connect(silentSink); }
   }
 
+  async function attachPeakLimiter(graph) {
+    if (graph.peakLimiter) return;
+    graph.peakLimiter = await root.TLC_CONTENT_CORE.createPeakLimiterNode(graph.context);
+    graph.peakLimiter.port.onmessage = event => {
+      graph.peakLimiter.measurements = event.data;
+      if (graph === audioGraph && limiter.enabled) emit("limiter", {
+        ...event.data, enabled: true, strength: limiter.strength, audioPath: "web-audio"
+      });
+    };
+  }
+
   async function applyLimiter(payload) {
-    limiter.enabled = payload.enabled === true;
-    limiter.threshold = Number(payload.threshold);
-    if (!Number.isFinite(limiter.threshold)) limiter.threshold = -6;
-    const graph = limiter.enabled ? await ensureAudioGraph() : audioGraph;
-    if (limiter.enabled && !graph) return emit("capability", { feature: "limiter", available: false, reason: "Player or Web Audio unavailable" });
-    rewireAudioGraph();
-    emit("capability", { feature: "limiter", available: true, enabled: limiter.enabled, threshold: limiter.threshold });
+    const core = root.TLC_CONTENT_CORE;
+    limiter.strength = payload.strength == null
+      ? core.limiterDbfsToStrength(payload.threshold ?? -6)
+      : Math.max(0, Math.min(100, Number(payload.strength) || 0));
+    try {
+      const graph = payload.enabled === true ? await ensureAudioGraph() : audioGraph;
+      if (payload.enabled === true && !graph) throw new Error("Player or Web Audio unavailable");
+      if (payload.enabled === true && !graph.peakLimiter) {
+        await attachPeakLimiter(graph);
+      }
+      limiter.enabled = payload.enabled === true;
+      rewireAudioGraph();
+      emit("capability", { feature: "limiter", available: true, enabled: limiter.enabled,
+        strength: limiter.strength, threshold: core.limiterStrengthToDbfs(limiter.strength) });
+    } catch (error) {
+      limiter.enabled = false;
+      rewireAudioGraph();
+      emit("capability", { feature: "limiter", available: false, enabled: false, reason: text(error?.message || error, 512) });
+    }
   }
 
   async function stopAudioCapture(reason = "stopped") {

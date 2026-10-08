@@ -224,6 +224,103 @@
     return false;
   }
 
+  // Self-contained so the exact tested kernel can run on the audio rendering thread.
+  function createPeakLimiter(sampleRate) {
+    const delay = Math.max(1, Math.round(sampleRate * 0.005));
+    const size = delay + 1;
+    const peakValues = new Float32Array(size + 1);
+    const peakTimes = new Float64Array(size + 1);
+    let head = 0, tail = 0, clock = 0, gain = 1;
+    let channels = [];
+    const release = Math.exp(-1 / (sampleRate * 0.06));
+    const db = value => value > 0 ? Math.max(-100, 20 * Math.log10(value)) : -100;
+    return {
+      delaySamples: delay,
+      process(input, output, enabled, strength) {
+        const frames = output[0]?.length || 0;
+        const percent = Math.max(0, Math.min(100, Number(strength) || 0));
+        const ceiling = Math.pow(10, (-4 - percent * 0.26) / 20);
+        while (channels.length < output.length) channels.push(new Float32Array(size));
+        let inputPeak = 0, outputPeak = 0, minGain = 1;
+        for (let i = 0; i < frames; i++, clock++) {
+          let peak = 0;
+          for (let c = 0; c < output.length; c++) {
+            const value = input[c]?.[i] ?? 0;
+            const sample = Number.isFinite(value) ? value : 0;
+            channels[c][clock % size] = sample;
+            peak = Math.max(peak, Math.abs(sample));
+          }
+          inputPeak = Math.max(inputPeak, peak);
+          while (head !== tail && peakTimes[head] < clock - delay) head = (head + 1) % peakValues.length;
+          while (head !== tail) {
+            const previous = (tail + peakValues.length - 1) % peakValues.length;
+            if (peakValues[previous] > peak) break;
+            tail = previous;
+          }
+          peakValues[tail] = peak;
+          peakTimes[tail] = clock;
+          tail = (tail + 1) % peakValues.length;
+          const target = enabled ? Math.min(1, ceiling / Math.max(peakValues[head], 1e-12)) : 1;
+          gain = enabled ? Math.min(target, 1 - (1 - gain) * release) : 1;
+          minGain = Math.min(minGain, gain);
+          for (let c = 0; c < output.length; c++) {
+            const sample = clock >= delay ? channels[c][(clock - delay) % size] : 0;
+            const value = sample * gain;
+            output[c][i] = value;
+            outputPeak = Math.max(outputPeak, Math.abs(value));
+          }
+        }
+        return { inputPeakDbfs: db(inputPeak), outputPeakDbfs: db(outputPeak),
+          reductionDb: -db(minGain), lookaheadMs: delay * 1000 / sampleRate };
+      }
+    };
+  }
+
+  async function createPeakLimiterNode(context) {
+    if (!context.audioWorklet || typeof AudioWorkletNode !== "function") {
+      throw new Error("Pegelschutz benötigt AudioWorklet-Unterstützung.");
+    }
+    const source = `const createPeakLimiter = ${createPeakLimiter.toString()};
+      class TLCPeakLimiter extends AudioWorkletProcessor {
+        static get parameterDescriptors() {
+          return [
+            { name: 'enabled', defaultValue: 0, minValue: 0, maxValue: 1, automationRate: 'k-rate' },
+            { name: 'strength', defaultValue: 30, minValue: 0, maxValue: 100, automationRate: 'k-rate' }
+          ];
+        }
+        constructor() {
+          super(); this.kernel = createPeakLimiter(sampleRate);
+          this.enabled = false; this.strength = 30; this.frames = 0;
+          this.inputPeakDbfs = -100; this.outputPeakDbfs = -100; this.reductionDb = 0;
+        }
+        process(inputs, outputs, parameters) {
+          const report = this.kernel.process(inputs[0] || [], outputs[0], parameters.enabled[0] >= 0.5, parameters.strength[0]);
+          this.inputPeakDbfs = Math.max(this.inputPeakDbfs, report.inputPeakDbfs);
+          this.outputPeakDbfs = Math.max(this.outputPeakDbfs, report.outputPeakDbfs);
+          this.reductionDb = Math.max(this.reductionDb, report.reductionDb);
+          this.frames += outputs[0][0]?.length || 0;
+          if (this.frames >= sampleRate / 10) {
+            this.port.postMessage({ ...report, inputPeakDbfs: this.inputPeakDbfs,
+              outputPeakDbfs: this.outputPeakDbfs, reductionDb: this.reductionDb });
+            this.frames = 0; this.inputPeakDbfs = -100; this.outputPeakDbfs = -100; this.reductionDb = 0;
+          }
+          return true;
+        }
+      }
+      registerProcessor('tlc-peak-limiter', TLCPeakLimiter);`;
+    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    try { await context.audioWorklet.addModule(url); }
+    finally { URL.revokeObjectURL(url); }
+    const node = new AudioWorkletNode(context, "tlc-peak-limiter");
+    node.setProtection = ({ enabled, strength }) => {
+      node.parameters.get("enabled").setValueAtTime(enabled === true ? 1 : 0, context.currentTime);
+      node.parameters.get("strength").setValueAtTime(Math.max(0, Math.min(100, Number(strength) || 0)), context.currentTime);
+    };
+    node.measurements = null;
+    node.port.onmessage = event => { node.measurements = event.data; };
+    return node;
+  }
+
   function limiterStrengthToDbfs(value) {
     const strength = Math.max(0, Math.min(100, Number(value) || 0));
     return Math.round((-4 - (strength * 26 / 100)) * 100) / 100;
@@ -805,6 +902,8 @@
     captionText,
     captionsOverlap,
     limiterStrengthToDbfs,
+    createPeakLimiter,
+    createPeakLimiterNode,
     limiterDbfsToStrength,
     limiterMakeupCompensation,
     sanitizeChatText,

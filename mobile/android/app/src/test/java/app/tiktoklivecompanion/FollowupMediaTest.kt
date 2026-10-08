@@ -24,6 +24,20 @@ private class FollowupFakeEngine : RecognitionEngine {
 class FollowupMediaTest {
     private fun envelope(type: String, payload: Map<String, Any?>) = BridgeEnvelope(1, type, "", 1, "2026-07-22T12:00:00Z", payload)
 
+    @Test fun limiterUsesPercentageAndReportsUnavailableAudioHonestly() {
+        val model = CompanionViewModel(FollowupFakeEngine())
+        var command = ""
+        var payload = emptyMap<String, Any>()
+        model.sendCommand = { name, value -> command = name; payload = value }
+        model.setLimiter(true, 75)
+        assertEquals("set-limiter", command)
+        assertEquals(75, payload["strength"])
+        assertFalse(payload.containsKey("threshold"))
+        model.handle(envelope("capability", mapOf("feature" to "limiter", "available" to false)))
+        assertFalse(model.state.value.limiterEnabled)
+        assertTrue(model.state.value.error.orEmpty().contains("Pegelschutz"))
+    }
+
     @Test fun mediaUrlsRequireHttpsDeduplicateAndKeepTwelve() {
         val model = CompanionViewModel(FollowupFakeEngine())
         model.handle(envelope("media-url", mapOf("url" to "javascript:alert(1)", "kind" to "network")))

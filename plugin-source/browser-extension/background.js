@@ -1797,6 +1797,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             action: message.action,
             value: message.value,
             enabled: message.enabled,
+            strength: message.strength,
             thresholdDbfs: message.thresholdDbfs
           };
           if (message.action === "play-vlc-source") {
@@ -1814,7 +1815,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "set-limiter" && response?.activated) {
           await setSettings({
             limiterEnabled: Boolean(message.enabled),
-            limiterStrength: core.limiterDbfsToStrength(message.thresholdDbfs)
+            limiterStrength: message.strength == null ? core.limiterDbfsToStrength(message.thresholdDbfs)
+              : Math.max(0, Math.min(100, Number(message.strength) || 0))
           });
         }
         await addDebug(tabId, "player-action", { action: message.action, activated: response?.activated, reason: response?.reason || response?.error || null, playerState: response?.playerState || null });

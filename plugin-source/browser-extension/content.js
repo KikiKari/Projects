@@ -922,22 +922,14 @@
     };
   }
 
-  function wireAudioPipeline(video, context, source, captureMode = false, stream = null) {
-    const compressor = context.createDynamicsCompressor();
-    const makeup = context.createGain();
+  function wireAudioPipeline(video, context, source, limiter, captureMode = false, stream = null) {
     const outputGain = context.createGain();
     const analyser = context.createAnalyser();
     analyser.fftSize = 2048;
-    compressor.threshold.value = 0;
-    compressor.knee.value = 0;
-    compressor.ratio.value = 1;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.25;
-    makeup.gain.value = 1;
     outputGain.gain.value = captureMode && video.muted ? 0 : Number(video.volume || 1);
-    source.connect(compressor).connect(makeup).connect(analyser).connect(outputGain).connect(context.destination);
+    source.connect(limiter).connect(analyser).connect(outputGain).connect(context.destination);
     const pipeline = {
-      video, context, source, compressor, makeup, outputGain, analyser,
+      video, context, source, limiter, outputGain, analyser,
       captureMode, stream, enabled: false, thresholdDbfs: -6,
       userVolume: Number(video.volume || 1), userMuted: Boolean(video.muted)
     };
@@ -985,7 +977,8 @@
     if (!AudioContextClass) throw new Error("Die Web-Audio-API ist in diesem Browser nicht verfügbar.");
     let context = new AudioContextClass();
     try {
-      audioPipeline = wireAudioPipeline(video, context, context.createMediaElementSource(video));
+      const limiter = await core.createPeakLimiterNode(context);
+      audioPipeline = wireAudioPipeline(video, context, context.createMediaElementSource(video), limiter);
     } catch (sourceError) {
       await context.close().catch(() => {});
       const captureStream = video.captureStream || video.mozCaptureStream;
@@ -993,7 +986,8 @@
       const stream = captureStream.call(video);
       if (!stream?.getAudioTracks?.().length) throw sourceError;
       context = new AudioContextClass();
-      audioPipeline = wireAudioPipeline(video, context, context.createMediaStreamSource(stream), true, stream);
+      const limiter = await core.createPeakLimiterNode(context);
+      audioPipeline = wireAudioPipeline(video, context, context.createMediaStreamSource(stream), limiter, true, stream);
       debug("limiter-capture-fallback", { reason: String(sourceError?.message || sourceError).slice(0, 300) });
     }
     await resumeAudioContext(audioPipeline);
@@ -1415,10 +1409,7 @@
       const pipeline = audioPipeline;
       pipeline.enabled = false;
       pipeline.thresholdDbfs = threshold;
-      pipeline.compressor.threshold.value = 0;
-      pipeline.compressor.knee.value = 0;
-      pipeline.compressor.ratio.value = 1;
-      pipeline.makeup.gain.value = 1;
+      pipeline.limiter.setProtection({ enabled: false, strength: core.limiterDbfsToStrength(threshold) });
       if (pipeline.captureMode) {
         await destroyAudioPipeline(pipeline);
         audioPipeline = null;
@@ -1430,13 +1421,8 @@
       const pipeline = await ensureAudioPipeline(video);
       pipeline.enabled = Boolean(enabled);
       pipeline.thresholdDbfs = threshold;
-      pipeline.compressor.threshold.value = pipeline.enabled ? threshold : 0;
-      pipeline.compressor.knee.value = pipeline.enabled ? 0.5 : 0;
-      pipeline.compressor.ratio.value = pipeline.enabled ? 20 : 1;
-      pipeline.compressor.attack.value = pipeline.enabled ? 0.0015 : 0.003;
-      pipeline.compressor.release.value = pipeline.enabled ? 0.08 : 0.25;
-      pipeline.makeup.gain.value = pipeline.enabled ? core.limiterMakeupCompensation(threshold, 20) : 1;
-      debug("limiter", { mode: "compressor", enabled: pipeline.enabled, threshold });
+      pipeline.limiter.setProtection({ enabled: pipeline.enabled, strength: core.limiterDbfsToStrength(threshold) });
+      debug("limiter", { mode: "lookahead", enabled: pipeline.enabled, threshold });
       return pipeline;
     } catch (error) {
       fallbackLimiter = { video, enabled: false, thresholdDbfs: threshold, error: String(error?.message || error).slice(0, 300) };
@@ -1463,10 +1449,14 @@
       volumeGainDb: volumeGainDb(volume),
       peakDbfs: currentPeakDbfs(),
       limiterEnabled: Boolean(pipeline?.enabled),
-      limiterMode: pipeline?.enabled ? "Kompressor" : null,
+      limiterMode: pipeline?.enabled ? "Lookahead" : null,
       limiterStrength: core.limiterDbfsToStrength(pipeline ? pipeline.thresholdDbfs : -6),
       limiterThresholdDbfs: pipeline ? pipeline.thresholdDbfs : -6,
-      limiterReductionDb: pipeline ? Math.round(Number(pipeline.compressor.reduction || 0) * 10) / 10 : 0,
+      limiterReductionDb: pipeline?.limiter.measurements?.reductionDb ?? null,
+      limiterInputPeakDbfs: pipeline?.limiter.measurements?.inputPeakDbfs ?? null,
+      limiterOutputPeakDbfs: pipeline?.limiter.measurements?.outputPeakDbfs ?? null,
+      limiterLookaheadMs: pipeline?.limiter.measurements?.lookaheadMs ?? null,
+      limiterAudioPath: pipeline ? "web-audio" : null,
       limiterError: fallbackLimiter?.video === video ? fallbackLimiter.error : null,
       ...connected,
       elapsedText: elapsedText(),
@@ -1566,7 +1556,8 @@
         }
         video.dispatchEvent(new Event("volumechange", { bubbles: true }));
       } else if (action === "set-limiter") {
-        const limiter = await configureLimiter(video, payload.enabled, payload.thresholdDbfs);
+        const threshold = payload.strength == null ? payload.thresholdDbfs : core.limiterStrengthToDbfs(payload.strength);
+        const limiter = await configureLimiter(video, payload.enabled, threshold);
         if (payload.enabled && !limiter?.enabled) {
           return { activated: false, action, reason: limiter?.error || "Pegelschutz konnte nicht aktiviert werden.", playerState: getPlayerState() };
         }

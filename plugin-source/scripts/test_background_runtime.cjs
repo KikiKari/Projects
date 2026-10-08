@@ -131,6 +131,18 @@ function worker(seed = {}) {
     fireAlarm: (name) => listeners.alarm({ name }) };
 }
 
+test("0PE-177: percentage reaches content and persists only after successful activation", async () => {
+  const w = worker({ tabReply: async () => ({ activated: true }) });
+  await w.send("TLC_PLAYER_ACTION", 7, { action: "set-limiter", enabled: true, strength: 75 });
+  assert.equal(w.sent.at(-1).strength, 75);
+  assert.equal(w.local["tlc-settings"].limiterStrength, 75);
+  const rejected = worker({ local: w.local, tabReply: async () => ({ activated: false, reason: "AudioWorklet unavailable" }) });
+  await rejected.send("TLC_PLAYER_ACTION", 7, { action: "set-limiter", enabled: true, strength: 100 });
+  assert.equal(rejected.local["tlc-settings"].limiterStrength, 75);
+  await w.send("TLC_PLAYER_ACTION", 7, { action: "set-limiter", enabled: true, thresholdDbfs: -30 });
+  assert.equal(w.local["tlc-settings"].limiterStrength, 100);
+});
+
 test("0PE-170: worker wake restores active Embed deadlines without another navigation", async () => {
   const w = worker({ now: 5000, session: {
     "tlc-embed-7": { phase: "loading", startedAtMs: 1000 },

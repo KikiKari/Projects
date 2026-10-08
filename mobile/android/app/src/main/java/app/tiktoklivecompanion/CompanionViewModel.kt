@@ -110,7 +110,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.source.collectLatest { source -> mutable.update { it.copy(source = source) } } }
             viewModelScope.launch { stored.mutedAuthors.collectLatest { authors -> mutable.update { it.copy(mutedAuthors = authors) } } }
             viewModelScope.launch { stored.limiterEnabled.collectLatest { enabled -> mutable.update { it.copy(limiterEnabled = enabled) } } }
-            viewModelScope.launch { stored.limiterThreshold.collectLatest { threshold -> mutable.update { it.copy(limiterThreshold = threshold) } } }
+            viewModelScope.launch { stored.limiterThreshold.collectLatest { threshold -> mutable.update { it.copy(limiterThreshold = threshold, limiterStrength = thresholdToStrength(threshold)) } } }
             viewModelScope.launch { stored.ttsEnabled.collectLatest { value -> mutable.update { it.copy(ttsEnabled = value) } } }
             viewModelScope.launch { stored.ttsVolume.collectLatest { value -> mutable.update { it.copy(ttsVolume = value) } } }
             viewModelScope.launch { stored.ttsLanguage.collectLatest { value -> mutable.update { it.copy(ttsLanguage = value) } } }
@@ -341,7 +341,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
     private fun pushLimiter() {
         val current = mutable.value
-        sendCommand?.invoke("set-limiter", mapOf("enabled" to current.limiterEnabled, "threshold" to current.limiterThreshold))
+        sendCommand?.invoke("set-limiter", mapOf("enabled" to current.limiterEnabled, "strength" to current.limiterStrength))
     }
     fun recognize() {
         mutable.update { it.copy(result = null, error = null, recognitionStatus = "Erkennung läuft · maximal 12 Sekunden") }
@@ -395,7 +395,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
                 }
-                if (feature == "limiter" && !available) mutable.update { it.copy(error = "Pegelschutz nicht verfügbar · Player oder Web Audio fehlt") }
+                if (feature == "limiter") mutable.update { it.copy(
+                    limiterEnabled = available && envelope.payload["enabled"] == true,
+                    error = if (!available) "Pegelschutz nicht verfügbar · Player oder AudioWorklet fehlt" else it.error
+                ) }
             }
             "inspection" -> {
                 val info = buildMap {

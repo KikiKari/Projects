@@ -158,6 +158,10 @@ import Foundation
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
             if feature == "websocket-hook" { hookAvailable = available }
+            if feature == "limiter" {
+                limiterEnabled = available && envelope.payload["enabled"]?.boolValue == true
+                if !available { lastError = "Pegelschutz nicht verfügbar · Player oder AudioWorklet fehlt" }
+            }
             if feature == "webview-audio", !available, recognitionSource == .webview {
                 recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen"
                 recognizer.cancel()

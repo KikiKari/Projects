@@ -50,6 +50,12 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(state.limiterStrength, 90)
         XCTAssertEqual(commands.first?.0, "set-auto-reconnect")
         XCTAssertEqual(commands.last?.0, "set-limiter")
+        XCTAssertEqual(commands.last?.1["strength"] as? Int, 90)
+        XCTAssertNil(commands.last?.1["threshold"])
+        state.handle(BridgeEnvelope(version: 1, type: "capability", streamId: "live-1", sequence: 1,
+            timestamp: "2026-10-08T12:00:00Z", payload: ["feature": .string("limiter"), "available": .bool(false)]))
+        XCTAssertFalse(state.limiterEnabled)
+        XCTAssertTrue(state.lastError?.contains("Pegelschutz") == true)
     }
 
     func testDebugLogIsOptInAndExcludesRawPayload() {
