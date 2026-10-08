@@ -190,11 +190,7 @@ class MainActivity : ComponentActivity() {
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Trigger externer Sprachdienste filtern", Modifier.weight(1f)); Switch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Auto-Chat Refresh", Modifier.weight(1f)); Switch(state.autoChatRefreshEnabled, model::setAutoChatRefreshEnabled) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { model.setAutoChatRefreshMinutes(state.autoChatRefreshMinutes - 1) }) { Text("−") }
-                Text("${state.autoChatRefreshMinutes} min.")
-                TextButton(onClick = { model.setAutoChatRefreshMinutes(state.autoChatRefreshMinutes + 1) }) { Text("+") }
-            }
+            OutlinedTextField(state.autoChatRefreshMinutes.toString(), { value -> value.toIntOrNull()?.let(model::setAutoChatRefreshMinutes) }, label = { Text("Auto-Chat-Refresh in min.") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Game-Mode", Modifier.weight(1f)); Switch(state.gameModeEnabled, model::setGameMode) }
         }
     })

@@ -101,7 +101,7 @@ struct ContentView: View {
             Toggle("Chatnamen kürzen", isOn: $state.shortenNames)
             Toggle("Trigger externer Sprachdienste filtern", isOn: $state.filterExternalSpeechTriggers)
             Toggle("Auto-Chat Refresh", isOn: $state.autoChatRefreshEnabled)
-            Stepper("\(state.autoChatRefreshMinutes) min.", value: $state.autoChatRefreshMinutes, in: 1...60)
+            HStack { Text("Auto-Chat Refresh"); TextField("Minuten", value: $state.autoChatRefreshMinutes, format: .number).keyboardType(.numberPad).frame(width: 54); Text("min.") }
             Toggle("Game-Mode", isOn: $state.gameModeEnabled)
         }.navigationTitle("Sprach- und Chat Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
         .navigationViewStyle(.stack)
