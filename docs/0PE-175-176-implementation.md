@@ -41,8 +41,8 @@ Browser beendet auf Android/iOS den internen VLC-Player und kehrt zur WebView zu
   APK-Bau und abschließender Lauf für `df64fb3` bestanden (48/48).
 - iOS: 45 Simulator-Tests für `df64fb3` bestanden:
   https://github.com/KikiKari/Projects/actions/runs/37855704600.
-  Abschließende iOS-Textkorrektur `b0c5754` wird in
-  https://github.com/KikiKari/Projects/actions/runs/37856439444 geprüft.
+  Abschließende iOS-Textkorrektur `b0c5754`: ebenfalls 45/45 Simulator-Tests bestanden
+  https://github.com/KikiKari/Projects/actions/runs/37856439444.
 
 Die Prüfungen oben sind automatisierte Code-/Laufzeittests. Für diese Änderungen
 wird keine zusätzliche Live-Abnahme behauptet.
