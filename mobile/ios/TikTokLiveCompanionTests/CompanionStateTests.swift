@@ -1,7 +1,13 @@
 import XCTest
 import UIKit
 import MobileVLCKit
+import WebKit
 @testable import TikTokLiveCompanion
+
+private final class AudioWorkletProbe: NSObject, WKScriptMessageHandler {
+    var receive: ((Any) -> Void)?
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) { receive?(message.body) }
+}
 
 private final class FakeRecognizer: RecognitionService {
     var onResult: ((RecognitionResult) -> Void)?
@@ -108,6 +114,53 @@ private final class FakeRecognizer: RecognitionService {
         reports.removeAll()
         try await Task.sleep(nanoseconds: 300_000_000)
         XCTAssertTrue(reports.isEmpty, "No reports after native stop")
+    }
+    func testPackagedAudioWorkletInWKWebView() async throws {
+        let coreURL = try XCTUnwrap(Bundle.main.url(forResource: "content-core", withExtension: "js"))
+        let core = try String(contentsOf: coreURL, encoding: .utf8)
+        let finished = expectation(description: "WKWebView AudioWorklet rendered")
+        var response: [String: Any]?
+        let probe = AudioWorkletProbe()
+        probe.receive = { response = $0 as? [String: Any]; finished.fulfill() }
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController.add(probe, name: "audioProbe")
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        defer { webView.stopLoading(); configuration.userContentController.removeScriptMessageHandler(forName: "audioProbe") }
+        let script = """
+        (async () => {
+          try {
+            const rows = [];
+            for (const strength of [-1,25,75,100]) {
+              const ctx = new OfflineAudioContext(1,4800,48000);
+              const buffer = ctx.createBuffer(1,4800,48000);
+              buffer.getChannelData(0)[1000] = 0.95;
+              const source = ctx.createBufferSource(); source.buffer = buffer;
+              const limiter = await TLC_CONTENT_CORE.createPeakLimiterNode(ctx);
+              limiter.setProtection({enabled:strength >= 0,strength:Math.max(0,strength)});
+              source.connect(limiter).connect(ctx.destination); source.start();
+              const rendered = await ctx.startRendering();
+              const pcm = rendered.getChannelData(0);
+              let peak=0,index=-1;
+              for(let i=0;i<pcm.length;i++) if(Math.abs(pcm[i])>peak){peak=Math.abs(pcm[i]);index=i;}
+              rows.push({strength,db:20*Math.log10(peak),delay:index-1000});
+              limiter.port.close();
+            }
+            window.webkit.messageHandlers.audioProbe.postMessage({rows});
+          } catch(error) { window.webkit.messageHandlers.audioProbe.postMessage({error:String(error)}); }
+        })();
+        """
+        // Local document with the shipped resource; no live-site policy claim.
+        webView.loadHTMLString("<html><script>" + core + "</script><script>" + script + "</script></html>", baseURL: URL(string: "https://localhost/"))
+        await fulfillment(of: [finished], timeout: 20)
+        let result = try XCTUnwrap(response)
+        XCTAssertNil(result["error"], String(describing: result))
+        let rows = try XCTUnwrap(result["rows"] as? [[String: Any]])
+        XCTAssertEqual(rows.count, 4)
+        let expected = [20 * log10(0.95), -10.5, -23.5, -30.0]
+        for (index, row) in rows.enumerated() {
+            XCTAssertEqual(try XCTUnwrap(row["db"] as? Double), expected[index], accuracy: 0.05)
+            XCTAssertEqual(try XCTUnwrap(row["delay"] as? Int), 240)
+        }
     }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()
