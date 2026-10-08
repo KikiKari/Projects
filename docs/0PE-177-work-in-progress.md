@@ -39,7 +39,7 @@ DSP-Tests: `node --test plugin-source/scripts/test_peak_limiter.cjs`.
 ## Offene Voraussetzungen
 
 - Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur besteht auf dem Redmi (Nachweis unten), der korrigierte iOS-Lauf ist noch offen. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
-- Keine Abnahme mit installierter Erweiterung und realem Stream; keine Hörprüfung auf Pumpen/Verzerrung und keine A/V-Synchronitätsabnahme.
+- Edge-Live-Abnahme vom Auftraggeber am 2026-10-08 ausdrücklich ausgenommen: "Die Live-Abnahme in Edge überspringen, diese darf nicht weiter blockieren." Kein bestandener Live-Nachweis; diese Ausnahme blockiert die weitere Arbeit und das Release-Gate nicht. Hörprüfung auf Pumpen/Verzerrung und A/V-Synchronitätsabnahme bleiben gesondert offen.
 - Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der korrigierte native PCM-Gerätetest besteht; die vollständige Live-/Audio-Abnahme bleibt offen. Die iOS-Simulator-Vertragstests bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
 - Die AudioWorklet-Ladbarkeit unter der tatsächlichen TikTok-/WebView-Policy muss noch geprüft werden.
 - Die mobilen Branches sind noch nicht mit diesem Kandidaten synchronisiert.
