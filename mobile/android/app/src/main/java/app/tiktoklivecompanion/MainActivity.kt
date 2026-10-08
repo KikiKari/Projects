@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
                         CompanionTab.SONG -> SongTab(state, model) {
                             if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
                         }
-                        CompanionTab.CHAT -> ChatTab(state, model)
+                        CompanionTab.CHAT -> ChatTab(state, model, ttsReady)
                         CompanionTab.LIVE -> LiveTab(state, model)
                         CompanionTab.PLAYER -> PlayerTab(state, model)
                         CompanionTab.MORE -> MoreTab(state, model)
@@ -157,12 +157,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("Connection", state.hookAvailable); HorizontalDivider(); Capability("Titel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
 @Composable private fun Capability(label: String, available: Boolean) { Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label); Spacer(Modifier.weight(1f)); Icon(Icons.Default.Circle, null, tint = if (available) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp)) } }
-@Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel) {
+@Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel, ttsReady: Boolean) {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled) "On" else "Off") } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(enabled = ttsReady, onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled && ttsReady) "On" else "Off") } }
             Text("Lautstärke ${state.ttsVolume} %", style = MaterialTheme.typography.labelMedium)
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
             OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Sprach- und Chat Einstellungen") }

@@ -2,6 +2,7 @@
   "use strict";
   if (location.origin !== "https://www.tiktok.com" || root.TLC_MOBILE_RECOVERY) return;
   const documentId = crypto.randomUUID();
+  let connectionEnabled = true;
   let sequence = 0, path = location.pathname, timer = null, video = null;
   let enabled = false, seconds = 3, pausedByUser = false, vlc = false;
   let lastTime = null, progressAt = Date.now(), attempt = null;
@@ -10,6 +11,7 @@
   let metadataPresent = false, menuAvailable = false, lastCaption = "";
   const topFrame = root.top === root;
   function emit(type, payload) {
+    if (!connectionEnabled && ["chat", "caption", "live-stats", "gift", "socket-open"].includes(type)) return;
     const message = { version: 1, type, streamId: location.pathname, sequence: ++sequence,
       timestamp: new Date().toISOString(), payload: { ...payload, documentId,
         frameKind: topFrame ? "top" : "sub", frameOrigin: location.origin } };
@@ -68,6 +70,7 @@
     else if (d.type === "hook-recovery-ready") emit("recovery-ready", {});
   });
   function command(name, payload = {}) {
+    if (name === "set-connection") connectionEnabled = payload.enabled === true;
     if (name === "set-hook-reconnect") root.postMessage({source: "tiktok-live-companion-control", type: "hook-reconnect-config", enabled: payload.enabled === true, seconds: payload.delaySeconds}, location.origin);
     if (name === "set-auto-reconnect") { cancel("configuration-changed"); enabled = payload.enabled === true; seconds = Math.max(1,Math.min(59,Number(payload.delaySeconds)||3)); }
     if (name === "pause") { pausedByUser = true; cancel("user-paused"); }

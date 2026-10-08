@@ -20,6 +20,7 @@ import Foundation
     @Published var embedAttempt = 0
     var loadURL: ((URL) -> Void)?
     private var normalURL = URL(string: "https://www.tiktok.com/live")!
+    private var connectionPaused = false
     private var currentDocument: String?
     private var retiredDocuments: Set<String> = []
     private var embedTask: Task<Void, Never>?
@@ -145,6 +146,7 @@ import Foundation
     }
 
     func handle(_ envelope: BridgeEnvelope) {
+        if connectionPaused && ["chat", "caption", "live-stats", "gift", "socket-open"].contains(envelope.type) { return }
         if envelope.payload["frameKind"]?.stringValue != "sub", let doc = envelope.payload["documentId"]?.stringValue {
             guard !retiredDocuments.contains(doc) else { return }
             if currentDocument == nil { currentDocument = doc }
@@ -177,7 +179,7 @@ import Foundation
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
-            if feature == "connection" { connectionEnabled = available }
+            if feature == "connection" { connectionPaused = !available; connectionEnabled = available }
             if feature == "websocket-hook" { hookAvailable = available }
             if feature == "limiter" && vlcReplacementURL == nil {
                 limiterEnabled = available && envelope.payload["enabled"]?.boolValue == true

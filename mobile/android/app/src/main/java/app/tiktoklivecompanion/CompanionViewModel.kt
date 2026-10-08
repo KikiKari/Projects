@@ -87,6 +87,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     var backgroundPlaybackChanged: ((Boolean) -> Unit)? = null
     var currentWebUrl: String = "https://www.tiktok.com/live"
         private set
+    private var connectionPaused = false
     private var currentDocument: String? = null
     private val retiredDocuments = mutableSetOf<String>()
     private var embedJob: Job? = null
@@ -395,6 +396,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     fun handle(envelope: BridgeEnvelope) {
+        if (connectionPaused && envelope.type in setOf("chat", "caption", "live-stats", "gift", "socket-open")) return
         val doc = envelope.payload["documentId"] as? String
         if (envelope.payload["frameKind"] != "sub" && doc != null) {
             if (doc in retiredDocuments) return
@@ -436,7 +438,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false
-                if (feature == "connection") mutable.update { it.copy(connectionEnabled = available) }
+                if (feature == "connection") { connectionPaused = !available; mutable.update { it.copy(connectionEnabled = available) } }
                 if (feature == "websocket-hook") mutable.update { it.copy(hookAvailable = available || it.hookAvailable) }
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }

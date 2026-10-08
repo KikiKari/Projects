@@ -14,3 +14,16 @@ test('Android uses byte-identical browser controller and protocol parser',()=>{f
 
 test('iOS WebKit bridge receives correlated recovery observations',()=>{const s=setup(true);s.tick(1000);const e=s.events.find(x=>x.type==='player-observation');assert.ok(e);assert.equal(e.payload.frameKind,'top');assert.match(e.payload.documentId,/^[a-f0-9-]{36}$/);s.dispatch({type:'caption',caption:{text:'ios-caption'}});assert.equal(s.events.filter(x=>x.type==='caption').at(-1).payload.text,'ios-caption')});
 test('iOS and Android inject identical recovery implementations',()=>{const ios=path.resolve(__dirname,'../../mobile/ios/Resources');for(const [a,b] of [['android_recovery.js','mobile-recovery.js'],['hook_recovery.js','hook-recovery.js'],['recovery_hook.js','recovery-hook.js'],['export_privacy.js','export-privacy.js'],['proto_main.js','proto-main.js'],['content_core.js','content-core.js']])assert.deepEqual(fs.readFileSync(path.join(raw,a)),fs.readFileSync(path.join(ios,b)))});
+
+test('Connection off stops Companion chat delivery, on resumes without touching player',()=>{
+ for(const ios of [false,true]) {
+  const s=setup(ios);
+  s.api.command('set-connection',{enabled:false});
+  s.dispatch({type:'chat-message',chatMessage:{content:'hidden from Companion'}});
+  assert.equal(s.events.filter(e=>e.type==='chat').length,0);
+  s.api.command('set-connection',{enabled:true});
+  s.dispatch({type:'chat-message',chatMessage:{content:'visible'}});
+  assert.equal(s.events.filter(e=>e.type==='chat').length,1);
+  assert.equal(s.plays,0);
+ }
+});
