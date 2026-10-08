@@ -98,6 +98,20 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertFalse(state.limiterEnabled)
         XCTAssertTrue(state.lastError?.contains("Pegelschutz") == true)
     }
+    func testLimiterMigratesThresholdAndPersistsExactStrength() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defer { defaults.removePersistentDomain(forName: #function) }
+        defaults.set(-17, forKey: "limiterThreshold")
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertEqual(state.limiterStrength, 50)
+        for strength in [25, 75, 100] {
+            state.setLimiter(enabled: true, strength: strength)
+            let restored = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+            XCTAssertTrue(restored.limiterEnabled)
+            XCTAssertEqual(restored.limiterStrength, strength)
+        }
+    }
 
     func testDebugLogIsOptInAndExcludesRawPayload() {
         let state = CompanionState(recognizer: FakeRecognizer(), defaults: UserDefaults(suiteName: #function)!)

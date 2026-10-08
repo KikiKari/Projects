@@ -21,6 +21,7 @@ class CompanionPreferences(private val context: Context) {
     val mutedAuthors: Flow<Set<String>> = context.companionDataStore.data.map { values -> values[mutedAuthorsKey] ?: emptySet() }
     private val limiterEnabledKey = booleanPreferencesKey("limiter_enabled")
     private val limiterThresholdKey = intPreferencesKey("limiter_threshold")
+    private val limiterStrengthKey = intPreferencesKey("limiter_strength")
     private val ttsEnabledKey = booleanPreferencesKey("tts_enabled")
     private val ttsVolumeKey = intPreferencesKey("tts_volume_percent")
     private val ttsLanguageKey = stringPreferencesKey("tts_language")
@@ -41,6 +42,9 @@ class CompanionPreferences(private val context: Context) {
     private val ttsVoiceKey = stringPreferencesKey("tts_voice")
     val limiterEnabled: Flow<Boolean> = context.companionDataStore.data.map { values -> values[limiterEnabledKey] ?: false }
     val limiterThreshold: Flow<Int> = context.companionDataStore.data.map { values -> (values[limiterThresholdKey] ?: -6).coerceIn(-30, -1) }
+    val limiterStrength: Flow<Int> = context.companionDataStore.data.map { values ->
+        (values[limiterStrengthKey] ?: (((-(values[limiterThresholdKey] ?: -6) - 4) * 100) / 26)).coerceIn(0, 100)
+    }
     val ttsEnabled: Flow<Boolean> = context.companionDataStore.data.map { it[ttsEnabledKey] ?: false }
     val ttsVolume: Flow<Int> = context.companionDataStore.data.map { (it[ttsVolumeKey] ?: 100).coerceIn(0, 100) }
     val ttsLanguage: Flow<TtsLanguage> = context.companionDataStore.data.map { values -> runCatching { TtsLanguage.valueOf(values[ttsLanguageKey] ?: "AUTO") }.getOrDefault(TtsLanguage.AUTO) }
@@ -67,7 +71,19 @@ class CompanionPreferences(private val context: Context) {
     }
 
     suspend fun setLimiterThreshold(threshold: Int) {
-        context.companionDataStore.edit { values -> values[limiterThresholdKey] = threshold.coerceIn(-30, -1) }
+        context.companionDataStore.edit { values ->
+            val safe = threshold.coerceIn(-30, -1)
+            values[limiterThresholdKey] = safe
+            values[limiterStrengthKey] = (((-safe - 4) * 100) / 26).coerceIn(0, 100)
+        }
+    }
+    suspend fun setLimiter(enabled: Boolean, strength: Int) {
+        context.companionDataStore.edit { values ->
+            val safe = strength.coerceIn(0, 100)
+            values[limiterEnabledKey] = enabled
+            values[limiterStrengthKey] = safe
+            values[limiterThresholdKey] = -4 - safe * 26 / 100
+        }
     }
 
     suspend fun setTtsEnabled(enabled: Boolean) { context.companionDataStore.edit { it[ttsEnabledKey] = enabled } }

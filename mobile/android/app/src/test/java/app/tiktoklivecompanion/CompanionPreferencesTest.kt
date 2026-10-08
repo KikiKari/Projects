@@ -14,6 +14,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CompanionPreferencesTest {
+    @Test fun limiterStrengthSurvivesRecreationWithoutThresholdRounding() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = CompanionPreferences(context)
+        for (strength in listOf(25, 75, 100)) {
+            preferences.setLimiter(true, strength)
+            val restored = CompanionPreferences(context)
+            assertEquals(strength, restored.limiterStrength.first())
+            assertTrue(restored.limiterEnabled.first())
+        }
+        preferences.setLimiterThreshold(-17)
+        assertEquals(50, CompanionPreferences(context).limiterStrength.first())
+    }
     @Test fun storesRecognitionSourceAndDurableMutes() = runTest {
         val preferences = CompanionPreferences(ApplicationProvider.getApplicationContext<Context>())
         preferences.setSource(RecognitionSource.WEBVIEW)

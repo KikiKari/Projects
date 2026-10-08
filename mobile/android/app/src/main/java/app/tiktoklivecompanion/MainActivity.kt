@@ -241,8 +241,8 @@ class MainActivity : ComponentActivity() {
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.vlcReplacementUrl != null) Text(state.nativeLimiterStatus, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Digitalen Pegelschutz aktivieren", Modifier.weight(1f)); Switch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled) }
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Grenzwert"); Spacer(Modifier.weight(1f)); Text("${state.limiterThreshold} dBFS", fontWeight = FontWeight.Bold) }
-        Slider(value = state.limiterThreshold.toFloat(), onValueChange = { model.setLimiterThreshold(it.toInt()) }, valueRange = -30f..-1f, steps = 28, enabled = state.limiterEnabled)
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
+        Slider(value = state.limiterStrength.toFloat(), onValueChange = { model.setLimiter(state.limiterEnabled, it.toInt()) }, valueRange = 0f..100f, enabled = state.limiterEnabled)
         Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         Text("Media-/VLC-URLs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.mediaUrls.isEmpty()) Text("Noch keine direkte Media-URL erkannt. Sie erscheint, sobald TikTok den Player lädt.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)

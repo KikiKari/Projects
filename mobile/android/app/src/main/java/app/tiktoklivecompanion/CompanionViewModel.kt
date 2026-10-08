@@ -111,7 +111,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.source.collectLatest { source -> mutable.update { it.copy(source = source) } } }
             viewModelScope.launch { stored.mutedAuthors.collectLatest { authors -> mutable.update { it.copy(mutedAuthors = authors) } } }
             viewModelScope.launch { stored.limiterEnabled.collectLatest { enabled -> mutable.update { it.copy(limiterEnabled = enabled) } } }
-            viewModelScope.launch { stored.limiterThreshold.collectLatest { threshold -> mutable.update { it.copy(limiterThreshold = threshold, limiterStrength = thresholdToStrength(threshold)) } } }
+            viewModelScope.launch { stored.limiterThreshold.collectLatest { threshold -> mutable.update { it.copy(limiterThreshold = threshold) } } }
+            viewModelScope.launch { stored.limiterStrength.collectLatest { strength -> mutable.update { it.copy(limiterStrength = strength) } } }
             viewModelScope.launch { stored.ttsEnabled.collectLatest { value -> mutable.update { it.copy(ttsEnabled = value) } } }
             viewModelScope.launch { stored.ttsVolume.collectLatest { value -> mutable.update { it.copy(ttsVolume = value) } } }
             viewModelScope.launch { stored.ttsLanguage.collectLatest { value -> mutable.update { it.copy(ttsLanguage = value) } } }
@@ -259,8 +260,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val threshold = strengthToThreshold(safeStrength)
         mutable.update { it.copy(limiterEnabled = enabled, limiterStrength = safeStrength, limiterThreshold = threshold) }
         preferences?.let { stored ->
-            viewModelScope.launch { stored.setLimiterEnabled(enabled) }
-            viewModelScope.launch { stored.setLimiterThreshold(threshold) }
+            viewModelScope.launch { stored.setLimiter(enabled, safeStrength) }
         }
         pushLimiter()
     }

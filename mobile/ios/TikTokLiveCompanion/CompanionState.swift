@@ -92,6 +92,9 @@ import Foundation
     init(recognizer: RecognitionService = ShazamRecognitionService(), defaults: UserDefaults = .standard) {
         self.recognizer = recognizer
         self.defaults = defaults
+        self.limiterEnabled = defaults.bool(forKey: "limiterEnabled")
+        let oldThreshold = defaults.object(forKey: "limiterThreshold") as? Double
+        self.limiterStrength = max(0, min(100, defaults.object(forKey: "limiterStrength") as? Int ?? oldThreshold.map { Int((-$0 - 4) * 100 / 26) } ?? 30))
         self.recognitionSource = defaults.string(forKey: Self.sourceKey).flatMap(RecognitionSource.init(rawValue:)) ?? .microphone
         self.mutedAuthors = Set(defaults.stringArray(forKey: Self.mutedAuthorsKey) ?? [])
         self.autoReconnectEnabled = defaults.object(forKey: Self.autoReconnectKey) as? Bool ?? true
@@ -259,6 +262,8 @@ import Foundation
     func setLimiter(enabled: Bool? = nil, strength: Int? = nil) {
         if let enabled { limiterEnabled = enabled }
         if let strength { limiterStrength = max(0, min(100, strength)) }
+        defaults.set(limiterEnabled, forKey: "limiterEnabled")
+        defaults.set(limiterStrength, forKey: "limiterStrength")
         sendCommand?("set-limiter", ["enabled": limiterEnabled, "strength": limiterStrength])
     }
 
