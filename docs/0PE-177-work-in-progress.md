@@ -38,10 +38,10 @@ DSP-Tests: `node --test plugin-source/scripts/test_peak_limiter.cjs`.
 
 ## Offene Voraussetzungen
 
-- Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur besteht auf dem Redmi (Nachweis unten), der korrigierte iOS-Lauf ist noch offen. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
-- Edge-Live-Abnahme vom Auftraggeber am 2026-10-08 ausdrücklich ausgenommen: "Die Live-Abnahme in Edge überspringen, diese darf nicht weiter blockieren." Kein bestandener Live-Nachweis; diese Ausnahme blockiert die weitere Arbeit und das Release-Gate nicht. Hörprüfung auf Pumpen/Verzerrung und A/V-Synchronitätsabnahme bleiben gesondert offen.
-- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der korrigierte native PCM-Gerätetest besteht; die vollständige Live-/Audio-Abnahme bleibt offen. Die iOS-Simulator-Vertragstests bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
-- Die AudioWorklet-Ladbarkeit unter der tatsächlichen TikTok-/WebView-Policy muss noch geprüft werden.
+- Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur besteht auf dem Redmi (Nachweis unten), der korrigierte iOS-Simulatorlauf besteht ebenfalls. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
+- Edge-Live-Abnahme am 2026-10-09 vom Auftraggeber als vollständig bestanden bestätigt. Nachweisart: Nutzerabnahme. Kein offener Edge-Release-Punkt.
+- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der korrigierte native PCM-Gerätetest besteht; die vollständige Live-/Audio-Abnahme bleibt offen. 40 iOS-Simulatortests einschließlich nativer PCM-Ausgabe und Stop bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
+- Die AudioWorklet-Ladbarkeit in den mobilen WebViews muss noch geprüft werden.
 - Die mobilen Branches sind noch nicht mit diesem Kandidaten synchronisiert.
 
 0PE-177 und das Release-Gate bleiben offen. 0PE-175/176 und die Veröffentlichung 0.8.2 sind noch nicht umgesetzt.
@@ -72,3 +72,14 @@ SHA-256:
 
 Der iOS-Lauf auf e5b3b2f scheiterte vor Testbeginn an einem ungültigen UTF-8-Byte
 in ContentView.swift. Korrektur: `5738cf8`; erneuter Simulatorlauf 37849630208.
+
+## iOS-Simulator: bestätigter Lauf
+
+Commit `5738cf829777b02880043e2a9d5d3e72ef4e1280`, GitHub Actions
+[37849630208](https://github.com/KikiKari/Projects/actions/runs/37849630208): SUCCESS.
+40 Testfälle auf iPhone-16-Pro-Simulator bestanden. Der native Test
+`testNativeVlcPcmIsLimitedAndStops` lief 3,507 Sekunden und prüft bekannte
+PCM16-Eingangsspitzen, Bypass, 25/75/100-Prozent-Grenzen sowie Stop nach jeder Stufe.
+Die Ausgabe-Meldung erfolgt nach AVAudioPlayerNode DataPlayedBack.
+Persistenz-/Migrationsprüfungen bestanden ebenfalls. Vollständige UI-,
+Player-Lebenszyklus- und A/V-Abnahme bleiben getrennte Prüfpunkte.

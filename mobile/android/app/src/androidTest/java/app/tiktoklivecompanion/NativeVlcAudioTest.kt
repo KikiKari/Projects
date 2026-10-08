@@ -69,4 +69,55 @@ class NativeVlcAudioTest {
             }
         } finally { file.delete() }
     }
+    @Test fun protectionChangesPauseResumeAndSeekKeepNativeOutputAlive() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val rate = 48000
+        val frames = rate * 12
+        val wav = ByteBuffer.allocate(44 + frames * 4).order(ByteOrder.LITTLE_ENDIAN)
+        wav.put("RIFF".toByteArray()).putInt(36 + frames * 4).put("WAVEfmt ".toByteArray())
+        wav.putInt(16).putShort(1).putShort(2).putInt(rate).putInt(rate * 4).putShort(4).putShort(16)
+        wav.put("data".toByteArray()).putInt(frames * 4)
+        repeat(frames) { i -> val sample = (sin(i * 2 * PI * 8000 / rate) * 31000).toInt().toShort(); wav.putShort(sample).putShort(sample) }
+        val file = File(context.cacheDir, "native-lifecycle-${System.nanoTime()}.wav")
+        file.writeBytes(wav.array())
+        val reports = java.util.concurrent.LinkedBlockingQueue<Double>()
+        val failures = java.util.concurrent.LinkedBlockingQueue<String>()
+        val vlc = LibVLC(context)
+        val player = MediaPlayer(vlc)
+        val output = NativeVlcAudio { _, _, peak, _, error ->
+            if (error != null) failures.offer(error) else reports.offer(peak)
+        }
+        fun awaitPeak(expected: Double) {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(8)
+            while (System.nanoTime() < deadline) {
+                assertTrue("Native output error: $failures", failures.isEmpty())
+                val peak = reports.poll(250, TimeUnit.MILLISECONDS) ?: continue
+                if (kotlin.math.abs(peak - expected) < 0.05) return
+            }
+            fail("No native output at $expected dBFS")
+        }
+        try {
+            output.install(player); output.setProtection(true, 25)
+            val media = Media(vlc, Uri.fromFile(file))
+            player.media = media; media.release(); player.play()
+            awaitPeak(-10.5)
+            output.setProtection(true, 100); reports.clear(); awaitPeak(-30.0)
+            player.pause()
+            Thread.sleep(300) // Drain already posted reports before observing pause.
+            reports.clear()
+            assertNull("PCM must stop while paused", reports.poll(350, TimeUnit.MILLISECONDS))
+            player.play(); awaitPeak(-30.0)
+            player.time = 6000
+            reports.clear(); awaitPeak(-30.0)
+            output.setProtection(false, 100); reports.clear(); awaitPeak(-1.732)
+            output.beginStop(); player.stop()
+            reports.clear()
+            assertNull("No PCM callback after stop", reports.poll(300, TimeUnit.MILLISECONDS))
+            assertTrue("Native output error: $failures", failures.isEmpty())
+        } finally {
+            output.beginStop(); player.stop(); output.releaseAfterPlayerStopped()
+            player.release(); vlc.release(); file.delete()
+        }
+    }
+
 }

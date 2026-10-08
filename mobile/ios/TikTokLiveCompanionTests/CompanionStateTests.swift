@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import MobileVLCKit
 @testable import TikTokLiveCompanion
 
 private final class FakeRecognizer: RecognitionService {
@@ -56,6 +57,57 @@ private final class FakeRecognizer: RecognitionService {
             audio.stop { stopped.fulfill() }
             await fulfillment(of: [stopped], timeout: 10)
         }
+    }
+    func testNativePauseResumeSeekAndLiveProtectionChanges() async throws {
+        let rate = 48000, frames = 48000 * 12
+        var data = Data()
+        func word(_ value: UInt32) { var value = value.littleEndian; withUnsafeBytes(of: &value) { data.append(contentsOf: $0) } }
+        func short(_ value: UInt16) { var value = value.littleEndian; withUnsafeBytes(of: &value) { data.append(contentsOf: $0) } }
+        data.append(contentsOf: "RIFF".utf8); word(UInt32(36 + frames * 4))
+        data.append(contentsOf: "WAVEfmt ".utf8); word(16); short(1); short(2)
+        word(UInt32(rate)); word(UInt32(rate * 4)); short(4); short(16)
+        data.append(contentsOf: "data".utf8); word(UInt32(frames * 4))
+        for i in 0..<frames {
+            let sample = Int16(sin(Double(i) * 2 * .pi * 8000 / Double(rate)) * 31000)
+            short(UInt16(bitPattern: sample)); short(UInt16(bitPattern: sample))
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        var reports = [Double]()
+        var target = -10.5
+        var pending: XCTestExpectation? = expectation(description: "Initial protected output")
+        let audio = try XCTUnwrap(TLCNativeVlcAudio(report: { _, _, output, _, error in
+            XCTAssertNil(error)
+            reports.append(output)
+            if abs(output - target) < 0.05 { pending?.fulfill(); pending = nil }
+        }))
+        audio.setProtection(enabled: true, strength: 25)
+        audio.play(url: url, drawable: UIView())
+        if let check = pending { await fulfillment(of: [check], timeout: 8) }
+        target = -30; pending = expectation(description: "Live strength change")
+        audio.setProtection(enabled: true, strength: 100)
+        if let check = pending { await fulfillment(of: [check], timeout: 8) }
+        audio.player.pause()
+        try await Task.sleep(nanoseconds: 300_000_000)
+        reports.removeAll()
+        try await Task.sleep(nanoseconds: 350_000_000)
+        XCTAssertTrue(reports.isEmpty, "PCM output must pause")
+        pending = expectation(description: "Resume protected output")
+        audio.player.play()
+        if let check = pending { await fulfillment(of: [check], timeout: 8) }
+        pending = expectation(description: "Output after seek and flush")
+        audio.player.time = VLCTime(int: 6000)
+        if let check = pending { await fulfillment(of: [check], timeout: 8) }
+        target = -1.732; pending = expectation(description: "Live bypass")
+        audio.setProtection(enabled: false, strength: 100)
+        if let check = pending { await fulfillment(of: [check], timeout: 8) }
+        let stopped = expectation(description: "Output stopped")
+        audio.stop { stopped.fulfill() }
+        await fulfillment(of: [stopped], timeout: 10)
+        reports.removeAll()
+        try await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertTrue(reports.isEmpty, "No reports after native stop")
     }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()
