@@ -69,6 +69,7 @@ import Foundation
     @Published var recommendationItems: [RecommendationItem] = []
     @Published var limiterEnabled = false
     @Published var limiterStrength = 30
+    @Published var nativeLimiterStatus = "Noch keine native Audiomessung"
     @Published var lastError: String?
     @Published var debugEnabled = false
     @Published var debugEvents: [[String: Any]] = []
@@ -158,7 +159,7 @@ import Foundation
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
             if feature == "websocket-hook" { hookAvailable = available }
-            if feature == "limiter" {
+            if feature == "limiter" && vlcReplacementURL == nil {
                 limiterEnabled = available && envelope.payload["enabled"]?.boolValue == true
                 if !available { lastError = "Pegelschutz nicht verfügbar · Player oder AudioWorklet fehlt" }
             }
@@ -250,6 +251,11 @@ import Foundation
         speaker.speak(utterance)
     }
 
+    func reportNativeLimiter(url: URL, active: Bool, input: Double, output: Double, reduction: Double, error: String?) {
+        guard vlcReplacementURL == url else { return }
+        nativeLimiterStatus = error ?? String(format: "VLC intern · Schutz %@ · Eingang %.1f dBFS · Ausgang %.1f dBFS · Dämpfung %.1f dB · Vorlauf 5 ms", active ? "aktiv" : "aus", input, output, reduction)
+        if let error { limiterEnabled = false; lastError = error }
+    }
     func setLimiter(enabled: Bool? = nil, strength: Int? = nil) {
         if let enabled { limiterEnabled = enabled }
         if let strength { limiterStrength = max(0, min(100, strength)) }

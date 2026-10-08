@@ -23,6 +23,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.tiktoklivecompanion.ios
+        SWIFT_OBJC_BRIDGING_HEADER: TikTokLiveCompanion/TikTokLiveCompanion-Bridging-Header.h
+        CLANG_ENABLE_OBJC_ARC: YES
   TikTokLiveCompanionTests:
     type: bundle.unit-test
     platform: iOS

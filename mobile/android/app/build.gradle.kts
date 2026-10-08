@@ -11,6 +11,8 @@ val tokenUrl = providers.gradleProperty("TLC_SHAZAM_TOKEN_URL").orElse(providers
 android {
     namespace = "app.tiktoklivecompanion"
     compileSdk = 36
+    ndkVersion = "27.2.12479018"
+    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     defaultConfig {
         applicationId = "app.tiktoklivecompanion.android"
         minSdk = 21

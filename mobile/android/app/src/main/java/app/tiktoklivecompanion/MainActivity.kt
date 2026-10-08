@@ -96,7 +96,11 @@ class MainActivity : ComponentActivity() {
             val playerModifier = if (state.videoExpanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(videoHeight)
             Box(playerModifier) {
                 CompanionWebView(model, Modifier.fillMaxSize().alpha(if (state.vlcReplacementUrl == null) 1f else 0f), onTap = model::expandVideo)
-                state.vlcReplacementUrl?.let { VlcVideoSurface(it, Modifier.fillMaxSize()) }
+                state.vlcReplacementUrl?.let { url ->
+                    VlcVideoSurface(url, Modifier.fillMaxSize(), state.limiterEnabled, state.limiterStrength) { active, input, output, reduction, error ->
+                        model.reportNativeLimiter(url, active, input, output, reduction, error)
+                    }
+                }
             }
             if (!state.videoExpanded) {
                 PrimaryTabRow(selectedTabIndex = state.tab.ordinal) { CompanionTab.entries.forEach { tab -> Tab(selected = state.tab == tab, onClick = { model.selectTab(tab) }, text = { Text(tab.label) }) } }
@@ -235,6 +239,7 @@ class MainActivity : ComponentActivity() {
         OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Ersatz") }
         OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (state.vlcReplacementUrl != null) Text(state.nativeLimiterStatus, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Digitalen Pegelschutz aktivieren", Modifier.weight(1f)); Switch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled) }
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Grenzwert"); Spacer(Modifier.weight(1f)); Text("${state.limiterThreshold} dBFS", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterThreshold.toFloat(), onValueChange = { model.setLimiterThreshold(it.toInt()) }, valueRange = -30f..-1f, steps = 28, enabled = state.limiterEnabled)

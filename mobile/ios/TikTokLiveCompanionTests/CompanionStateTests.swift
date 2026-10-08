@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import TikTokLiveCompanion
 
 private final class FakeRecognizer: RecognitionService {
@@ -14,6 +15,41 @@ private final class FakeRecognizer: RecognitionService {
 }
 
 @MainActor final class CompanionStateTests: XCTestCase {
+    func testNativeVlcPcmIsLimitedAndStops() async throws {
+        // Real decoder -> native callback -> common limiter -> AVAudioEngine.
+        // This measures digital PCM, not physical speaker output or A/V sync.
+        let rate = 48000
+        var data = Data()
+        func word(_ value: UInt32) { var value = value.littleEndian; withUnsafeBytes(of: &value) { data.append(contentsOf: $0) } }
+        func short(_ value: UInt16) { var value = value.littleEndian; withUnsafeBytes(of: &value) { data.append(contentsOf: $0) } }
+        data.append(contentsOf: "RIFF".utf8); word(UInt32(36 + rate * 2 * 2))
+        data.append(contentsOf: "WAVEfmt ".utf8); word(16); short(1); short(2)
+        word(UInt32(rate)); word(UInt32(rate * 4)); short(4); short(16)
+        data.append(contentsOf: "data".utf8); word(UInt32(rate * 4))
+        for i in 0..<rate {
+            let sample = Int16(sin(Double(i) * 2 * .pi * 8000 / Double(rate)) * 31000)
+            short(UInt16(bitPattern: sample)); short(UInt16(bitPattern: sample))
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let measured = expectation(description: "VLC delivered limited PCM")
+        var didMeasure = false
+        let audio = try XCTUnwrap(TLCNativeVlcAudio(report: { active, input, output, reduction, error in
+            XCTAssertNil(error)
+            if active && input > -3 && output > -90 && !didMeasure {
+                XCTAssertLessThanOrEqual(output, -29.95)
+                XCTAssertGreaterThan(reduction, 20)
+                didMeasure = true; measured.fulfill()
+            }
+        }))
+        audio.setProtection(enabled: true, strength: 100)
+        audio.play(url: url, drawable: UIView())
+        await fulfillment(of: [measured], timeout: 15)
+        let stopped = expectation(description: "VLC native callbacks stopped")
+        audio.stop { stopped.fulfill() }
+        await fulfillment(of: [stopped], timeout: 10)
+    }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()
         let defaults = UserDefaults(suiteName: #function)!

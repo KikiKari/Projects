@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(tlc_audio C)
+add_library(tlc_audio SHARED tlc_audio.c)
+target_compile_features(tlc_audio PRIVATE c_std_11)
+target_compile_options(tlc_audio PRIVATE -Wall -Wextra -Werror)
+target_include_directories(tlc_audio PRIVATE ../../../../../shared/native)
+target_link_libraries(tlc_audio dl m)

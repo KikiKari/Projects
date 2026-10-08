@@ -39,6 +39,7 @@ data class CompanionUiState(
     val limiterEnabled: Boolean = false,
     val limiterThreshold: Int = -6,
     val limiterStrength: Int = 30,
+    val nativeLimiterStatus: String = "Noch keine native Audiomessung",
     val ttsEnabled: Boolean = false,
     val ttsVolume: Int = 100,
     val ttsLanguage: TtsLanguage = TtsLanguage.AUTO,
@@ -232,6 +233,16 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         mutable.update { it.copy(mutedAuthors = updated, chats = it.chats.filterNot { line -> line.startsWith("$normalized:") }, chatEntries = it.chatEntries.filterNot { line -> line.author == normalized }, participants = it.participants - normalized) }
         preferences?.let { stored -> viewModelScope.launch { stored.setMutedAuthors(updated) } }
     }
+    fun reportNativeLimiter(url: String, active: Boolean, input: Double, output: Double, reduction: Double, failure: String?) {
+        mutable.update {
+            if (it.vlcReplacementUrl != url) it else it.copy(
+                nativeLimiterStatus = failure ?: String.format(java.util.Locale.ROOT,
+                    "VLC intern · Schutz %s · Eingang %.1f dBFS · Ausgang %.1f dBFS · Dämpfung %.1f dB · Vorlauf 5 ms",
+                    if (active) "aktiv" else "aus", input, output, reduction),
+                limiterEnabled = if (failure != null) false else it.limiterEnabled,
+                error = failure ?: it.error)
+        }
+    }
     fun setLimiterEnabled(enabled: Boolean) {
         mutable.update { it.copy(limiterEnabled = enabled) }
         preferences?.let { stored -> viewModelScope.launch { stored.setLimiterEnabled(enabled) } }
@@ -395,7 +406,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
                 }
-                if (feature == "limiter") mutable.update { it.copy(
+                if (feature == "limiter" && mutable.value.vlcReplacementUrl == null) mutable.update { it.copy(
                     limiterEnabled = available && envelope.payload["enabled"] == true,
                     error = if (!available) "Pegelschutz nicht verfügbar · Player oder AudioWorklet fehlt" else it.error
                 ) }
