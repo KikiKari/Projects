@@ -92,7 +92,7 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
             buffer.floatChannelData[0][i] = rendered[i * 2];
             buffer.floatChannelData[1][i] = rendered[i * 2 + 1];
         }
-        [_node scheduleBuffer:buffer completionCallbackType:AVAudioPlayerNodeCompletionDataPlayed completionHandler:^(AVAudioPlayerNodeCompletionCallbackType type) {
+        [_node scheduleBuffer:buffer completionCallbackType:AVAudioPlayerNodeCompletionDataPlayedBack completionHandler:^(AVAudioPlayerNodeCompletionCallbackType type) {
             (void)type; dispatch_semaphore_signal(slots);
         }];
         if (!_started) {
