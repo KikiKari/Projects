@@ -33,22 +33,27 @@ private final class FakeRecognizer: RecognitionService {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
         try data.write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
-        let measured = expectation(description: "VLC delivered limited PCM")
-        var didMeasure = false
-        let audio = try XCTUnwrap(TLCNativeVlcAudio(report: { active, input, output, reduction, error in
-            XCTAssertNil(error)
-            if active && input > -3 && output > -90 && !didMeasure {
-                XCTAssertLessThanOrEqual(output, -29.95)
-                XCTAssertGreaterThan(reduction, 20)
-                didMeasure = true; measured.fulfill()
-            }
-        }))
-        audio.setProtection(enabled: true, strength: 100)
-        audio.play(url: url, drawable: UIView())
-        await fulfillment(of: [measured], timeout: 15)
-        let stopped = expectation(description: "VLC native callbacks stopped")
-        audio.stop { stopped.fulfill() }
-        await fulfillment(of: [stopped], timeout: 10)
+        var previousPeak = 0.0
+        for strength in [-1, 25, 75, 100] {
+            let enabled = strength >= 0
+            let measured = expectation(description: "VLC PCM at strength \(strength)")
+            var peak: Double?
+            let audio = try XCTUnwrap(TLCNativeVlcAudio(report: { active, input, output, reduction, error in
+                XCTAssertNil(error)
+                if active == enabled && input > -3 && output > -90 && peak == nil {
+                    if enabled { XCTAssertLessThanOrEqual(output, -4 - Double(strength) * 0.26 + 0.05) }
+                    else { XCTAssertEqual(output, input, accuracy: 0.05); XCTAssertEqual(reduction, 0, accuracy: 0.05) }
+                    peak = output; measured.fulfill()
+                }
+            }))
+            audio.setProtection(enabled: enabled, strength: max(0, strength))
+            audio.play(url: url, drawable: UIView())
+            await fulfillment(of: [measured], timeout: 15)
+            if let peak { XCTAssertLessThan(peak, previousPeak); previousPeak = peak }
+            let stopped = expectation(description: "VLC native callbacks stopped at \(strength)")
+            audio.stop { stopped.fulfill() }
+            await fulfillment(of: [stopped], timeout: 10)
+        }
     }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()

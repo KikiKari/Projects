@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = ROOT.parent
-EXCLUDED_PARTS = {"__pycache__", ".gradle", ".kotlin", "build", "DerivedData", "xcuserdata"}
+EXCLUDED_PARTS = {"__pycache__", ".gradle", ".kotlin", ".cxx", "build", "DerivedData", "xcuserdata", "Pods"}
 
 
 def add_tree(archive: zipfile.ZipFile, source: Path, prefix: str = "") -> None:
@@ -28,6 +28,7 @@ parser.add_argument("--output-dir", type=Path, required=True)
 parser.add_argument("--android-apk", type=Path, help="Optional verified mockDebug or shazamDebug APK")
 parser.add_argument("--android-source", type=Path, default=PROJECT_ROOT / "mobile" / "android", help="Verified Android source root")
 parser.add_argument("--ios-source", type=Path, default=PROJECT_ROOT / "mobile" / "ios", help="Verified iOS source root")
+parser.add_argument("--native-shared-source", type=Path, default=PROJECT_ROOT / "mobile" / "shared", help="Shared native audio source root")
 args = parser.parse_args()
 args.output_dir.mkdir(parents=True, exist_ok=True)
 output_dir = args.output_dir.resolve()
@@ -78,12 +79,17 @@ ios_source = args.ios_source.resolve()
 android_source = args.android_source.resolve()
 if not ios_source.is_dir() or not android_source.is_dir():
     raise RuntimeError("--ios-source and --android-source must point to existing source directories")
+native_shared = args.native_shared_source.resolve()
+if not (native_shared / "native" / "tlc_peak_limiter.h").is_file():
+    raise RuntimeError("Shared native limiter source is required for both mobile source packages")
 
 with zipfile.ZipFile(ios_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, ios_source, "TikTokLiveCompanion-iOS")
+    add_tree(archive, native_shared, "shared")
 
 with zipfile.ZipFile(android_source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     add_tree(archive, android_source, "TikTokLiveCompanion-Android")
+    add_tree(archive, native_shared, "shared")
 
 if args.android_apk:
     source_apk = args.android_apk.resolve()

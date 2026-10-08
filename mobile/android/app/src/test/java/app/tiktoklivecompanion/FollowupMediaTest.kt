@@ -48,6 +48,23 @@ class FollowupMediaTest {
         assertEquals("player", model.state.value.mediaUrls.last().kind)
     }
 
+    @Test fun inactiveWebviewCannotOverrideNativeLimiterAndStaleNativeReportsAreIgnored() {
+        val model = CompanionViewModel(FollowupFakeEngine())
+        val url = "https://cdn.example/live.m3u8"
+        model.handle(envelope("media-url", mapOf("url" to url, "kind" to "network")))
+        model.toggleVlcReplacement()
+        model.setLimiter(true, 75)
+        model.handle(envelope("capability", mapOf("feature" to "limiter", "available" to false)))
+        assertTrue(model.state.value.limiterEnabled)
+        model.reportNativeLimiter(url, true, -1.0, -23.5, 22.5, null)
+        assertTrue(model.state.value.nativeLimiterStatus.contains("VLC intern"))
+        model.reportNativeLimiter("https://cdn.example/old.m3u8", false, -100.0, -100.0, 0.0, "old failure")
+        assertTrue(model.state.value.limiterEnabled)
+        model.reportNativeLimiter(url, false, -100.0, -100.0, 0.0, "sink failed")
+        assertFalse(model.state.value.limiterEnabled)
+        assertEquals("sink failed", model.state.value.error)
+    }
+
     @Test fun explicitStreamOpenStartsBackgroundPlayback() {
         val model = CompanionViewModel(FollowupFakeEngine())
         var started = false

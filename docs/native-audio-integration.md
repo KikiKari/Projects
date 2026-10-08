@@ -13,8 +13,13 @@ liefert denselben nativen Player-Zeiger, den `MediaPlayer.nativePlay` an
 Die Anbindung darf den Java-Wrapper nicht freigeben, solange Callbacks laufen.
 Es werden keine privaten Java-Felder oder fest codierten Struktur-Offsets verwendet.
 
-MobileVLCKit 3.7.3 wird separat anhand seines tatsächlich ausgelieferten Headers
-geprüft. Der Android-Nachweis überträgt sich nicht auf iOS.
+Der tatsächlich ausgelieferte MobileVLCKit-3.7.3-Header bietet
+`initWithLibVLCInstance:andLibrary:` öffentlich an. Die zugehörige
+[Implementierung bei 319ed2c0](https://github.com/videolan/vlckit/blob/319ed2c0/Sources/VLCMediaPlayer.m)
+übernimmt den Zeiger ohne zusätzlichen Retain und gibt ihn im Deallocator frei.
+Ihr `stop` ist asynchron. Der iOS-Adapter bleibt deshalb bis zum bestätigten
+Stop-Ereignis erhalten. Androids geprüfte nativeStop-Methode ruft dagegen
+`libvlc_media_player_stop` synchron auf.
 
 ## Gemeinsamer Signalvertrag
 
@@ -39,8 +44,9 @@ Drain, Lautstärkeregelung und Abbruch zur Integration. Ein Callback, der nur
 Messwerte berechnet und die ursprüngliche Audioausgabe weiterlaufen lässt,
 erfüllt den Schutz nicht.
 
-Android verwendet AudioTrack; iOS benötigt eine native Audioausgabe mit
-kontrolliertem PCM-Zugriff. Callback-Registrierung erfolgt vor `play`.
+Der Arbeitsstand verbindet Android mit AudioTrack und iOS mit AVAudioEngine /
+AVAudioPlayerNode. Beide erhalten begrenztes Float-PCM aus dem gemeinsamen Kernel.
+Die Laufzeitabnahme dieser Adapter ist noch offen. Callback-Registrierung erfolgt vor `play`.
 Stop muss alle Callbacks beenden, bevor Sink, JNI-Referenz oder Limiter
 freigegeben werden. UI-Konfigurationswechsel werden atomar übernommen.
 Fehler melden Schutz nicht verfügbar; sie dürfen keinen aktiven Schalter
