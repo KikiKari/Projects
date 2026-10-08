@@ -40,8 +40,8 @@ DSP-Tests: `node --test plugin-source/scripts/test_peak_limiter.cjs`.
 
 - Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur besteht auf dem Redmi (Nachweis unten), der korrigierte iOS-Simulatorlauf besteht ebenfalls. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
 - Edge-Live-Abnahme am 2026-10-09 vom Auftraggeber als vollständig bestanden bestätigt. Nachweisart: Nutzerabnahme. Kein offener Edge-Release-Punkt.
-- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der korrigierte native PCM-Gerätetest besteht; die vollständige Live-/Audio-Abnahme bleibt offen. 40 iOS-Simulatortests einschließlich nativer PCM-Ausgabe und Stop bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
-- Die AudioWorklet-Ladbarkeit in den mobilen WebViews muss noch geprüft werden.
+- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Native PCM-, Lebenszyklus- und WebView-Gerätetests bestehen; die Hör-/A/V-Nutzerabnahme ist bestanden. 40 iOS-Simulatortests einschließlich nativer PCM-Ausgabe und Stop bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
+- Android-WebView-Laufzeittest bestanden; entsprechender WKWebView-Test im iOS-Simulator läuft.
 - Die mobilen Branches sind noch nicht mit diesem Kandidaten synchronisiert.
 
 0PE-177 und das Release-Gate bleiben offen. 0PE-175/176 und die Veröffentlichung 0.8.2 sind noch nicht umgesetzt.
@@ -83,3 +83,10 @@ PCM16-Eingangsspitzen, Bypass, 25/75/100-Prozent-Grenzen sowie Stop nach jeder S
 Die Ausgabe-Meldung erfolgt nach AVAudioPlayerNode DataPlayedBack.
 Persistenz-/Migrationsprüfungen bestanden ebenfalls. Vollständige UI-,
 Player-Lebenszyklus- und A/V-Abnahme bleiben getrennte Prüfpunkte.
+
+## Weitere Android-Abnahme am 2026-10-09
+
+- Native Lebenszyklusprüfung auf Redmi: `protectionChangesPauseResumeAndSeekKeepNativeOutputAlive` und vierstufiger PCM-Test bestanden, insgesamt 2 Tests / 3,32 Sekunden. Prüft Stärkewechsel während Wiedergabe, Pause/Fortsetzen, Seek/Flush, Bypass und ausbleibende Meldungen nach Stop. Testquelle `003b5e1`, App weiterhin `e5b3b2f`.
+- Android-WebView: `packagedAudioWorkletRendersAllProtectionLevelsInWebView` bestanden, 1 Test / 0,748 Sekunden. Tatsächliche WebView mit mitgeliefertem `content_core.js`, vier Schutzstufen, Impulsgrenzen und exakt 240 Samples / 5 ms Vorlauf bei 48 kHz. Lokales Testdokument, kein Nachweis einer fremden Website-Policy. Testquelle `a959796`.
+- Test-APK SHA-256: `c40d9b3cf9c37327e611e5a99e5879add0bd03b754b80a3342b58c7426968668`.
+- Nutzerabnahme Redmi: VLC Ersatz bei 25/75/100 Prozent, verständliche Sprache, Bild/Ton synchron, keine störenden Lautstärkeschwankungen oder Verzerrungen. Rückmeldung: „Geprüft: keine Auffälligkeiten“.
