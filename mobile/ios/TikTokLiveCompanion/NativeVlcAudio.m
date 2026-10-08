@@ -24,7 +24,7 @@ extern int64_t libvlc_clock(void);
     id _stopObserver;
     CFTimeInterval _lastReport;
 }
-- (void)consume:(const float *)pcm frames:(unsigned)frames pts:(int64_t)pts;
+- (void)consume:(const int16_t *)pcm frames:(unsigned)frames pts:(int64_t)pts;
 - (void)control:(int)operation;
 @end
 
@@ -55,7 +55,7 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     if (!_nativePlayer) return nil;
     // Pinned VLCKit initializer takes ownership, without retaining the pointer.
     _player = [[VLCMediaPlayer alloc] initWithLibVLCInstance:_nativePlayer andLibrary:library];
-    libvlc_audio_set_format(_nativePlayer, "FL32", 48000, 2);
+    libvlc_audio_set_format(_nativePlayer, "S16N", 48000, 2);
     libvlc_audio_set_callbacks(_nativePlayer, tlc_play, tlc_pause, tlc_resume, tlc_flush, tlc_drain, (__bridge void *)self);
     return self;
 }
@@ -74,7 +74,7 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     [_node stop];
     dispatch_async(dispatch_get_main_queue(), ^{ if (!atomic_load(&self->_closing)) self->_report(NO, -100, -100, 0, message); });
 }
-- (void)consume:(const float *)pcm frames:(unsigned)frames pts:(int64_t)pts {
+- (void)consume:(const int16_t *)pcm frames:(unsigned)frames pts:(int64_t)pts {
     for (unsigned offset = 0; offset < frames; ) {
         if (atomic_load(&_closing) || atomic_load(&_failed)) return;
         dispatch_semaphore_t slots = _slots;
@@ -82,8 +82,10 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
             if (atomic_load(&_closing) || atomic_load(&_failed)) return;
         }
         unsigned count = MIN(512, frames - offset);
-        float rendered[512 * 2];
-        tlc_peak_report report = tlc_peak_process(_limiter, pcm ? pcm + offset * 2 : NULL,
+        float rendered[512 * 2], decoded[512 * 2];
+        if (pcm) for (unsigned i = 0; i < count * 2; ++i)
+            decoded[i] = pcm[offset * 2 + i] / 32768.0f;
+        tlc_peak_report report = tlc_peak_process(_limiter, pcm ? decoded : NULL,
             rendered, count, atomic_load(&_enabled), atomic_load(&_strength));
         AVAudioPCMBuffer *buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:_format frameCapacity:count];
         if (!buffer) { dispatch_semaphore_signal(slots); [self fail:@"Nativer Audiopuffer nicht verfügbar"]; return; }
@@ -92,8 +94,16 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
             buffer.floatChannelData[0][i] = rendered[i * 2];
             buffer.floatChannelData[1][i] = rendered[i * 2 + 1];
         }
+        CFTimeInterval now = NSProcessInfo.processInfo.systemUptime;
+        BOOL reportDue = now - _lastReport >= 0.1;
+        BOOL enabled = atomic_load(&_enabled);
+        if (reportDue) _lastReport = now;
         [_node scheduleBuffer:buffer completionCallbackType:AVAudioPlayerNodeCompletionDataPlayedBack completionHandler:^(AVAudioPlayerNodeCompletionCallbackType type) {
             (void)type; dispatch_semaphore_signal(slots);
+            if (reportDue) dispatch_async(dispatch_get_main_queue(), ^{
+                if (!atomic_load(&self->_closing) && !atomic_load(&self->_failed))
+                    self->_report(enabled, report.input_dbfs, report.output_dbfs, report.reduction_db, nil);
+            });
         }];
         if (!_started) {
             int64_t until = pts + offset * 1000000LL / 48000 - libvlc_clock();
@@ -101,14 +111,6 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
             uint64_t hostTime = [AVAudioTime hostTimeForSeconds:NSProcessInfo.processInfo.systemUptime + MAX(0, until) / 1000000.0];
             [_node playAtTime:[AVAudioTime timeWithHostTime:hostTime]];
             _started = YES;
-        }
-        CFTimeInterval now = NSProcessInfo.processInfo.systemUptime;
-        if (now - _lastReport >= 0.1) {
-            _lastReport = now; BOOL enabled = atomic_load(&_enabled);
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (!atomic_load(&self->_closing) && !atomic_load(&self->_failed))
-                    self->_report(enabled, report.input_dbfs, report.output_dbfs, report.reduction_db, nil);
-            });
         }
         offset += count;
     }

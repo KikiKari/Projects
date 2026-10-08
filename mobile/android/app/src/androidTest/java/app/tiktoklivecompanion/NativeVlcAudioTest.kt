@@ -3,6 +3,8 @@ package app.tiktoklivecompanion
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import android.os.Bundle
 import android.content.Context
 import org.junit.Assert.*
 import org.junit.Test
@@ -31,17 +33,18 @@ class NativeVlcAudioTest {
         val file = File(context.cacheDir, "native-limiter-${System.nanoTime()}.wav")
         file.writeBytes(wav.array())
         try {
-            var previousPeak = 0.0
+            var previousPeak = Double.POSITIVE_INFINITY
             for (strength in listOf(-1, 25, 75, 100)) {
                 val enabled = strength >= 0
                 val received = CountDownLatch(1)
                 var measured: Double? = null
+                var measuredInput: Double? = null
                 var failure: String? = null
                 val vlc = LibVLC(context)
                 val player = MediaPlayer(vlc)
                 val output = NativeVlcAudio { active, input, result, _, error ->
                     if (error != null) { failure = error; received.countDown() }
-                    else if (active == enabled && input > -3 && result > -90 && measured == null) { measured = result; received.countDown() }
+                    else if (active == enabled && input > -3 && result > -90 && measured == null) { measuredInput = input; measured = result; received.countDown() }
                 }
                 try {
                     output.install(player)
@@ -51,9 +54,13 @@ class NativeVlcAudioTest {
                     assertTrue("No native PCM report at $strength%", received.await(15, TimeUnit.SECONDS))
                     assertNull(failure)
                     assertNotNull(measured)
+                    InstrumentationRegistry.getInstrumentation().sendStatus(2, Bundle().apply {
+                        putString("stream", "Native PCM: strength=$strength input=$measuredInput output=$measured previous=$previousPeak\n")
+                    })
+                    assertEquals("Decoded WAV peak must match signed PCM16 fixture", -1.732, measuredInput!!, 0.05)
                     if (enabled) assertTrue("$measured exceeds ceiling at $strength%", measured!! <= -4 - strength * 0.26 + 0.05)
-                    else assertTrue("Bypass unexpectedly attenuated", measured!! > -3)
-                    assertTrue("Strength must reduce monotonically", measured!! < previousPeak)
+                    else assertEquals("Bypass must preserve decoded PCM", measuredInput!!, measured!!, 0.05)
+                    assertTrue("Strength $strength: $measured must be below $previousPeak", measured!! < previousPeak)
                     previousPeak = measured!!
                 } finally {
                     output.beginStop(); player.stop(); output.releaseAfterPlayerStopped()

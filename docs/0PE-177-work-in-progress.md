@@ -38,9 +38,9 @@ DSP-Tests: `node --test plugin-source/scripts/test_peak_limiter.cjs`.
 
 ## Offene Voraussetzungen
 
-- Native VLC-Ausgabe ist noch nicht an den Limiter angeschlossen. Die geprüfte Android-Java-API 3.7.5 bietet keine PCM-Callbacks. Die Perplexity-Recherche identifiziert native libVLC-C-Callbacks, die jedoch eine eigene Audioausgabe samt Pufferung und Synchronisation erfordern. MobileVLCKit muss dafür separat integriert werden.
+- Native VLC-Adapter sind als Kandidat angeschlossen (Android/JNI/AudioTrack, iOS/AVAudioEngine). Der erste Gerätetest deckte einen PCM-Formatfehler auf; die S16N-Korrektur muss erneut bestehen. Siehe `native-audio-integration.md`. Bisherige grüne native Grenzwerttests ohne Eingangskontrolle gelten nicht als Abnahme.
 - Keine Abnahme mit installierter Erweiterung und realem Stream; keine Hörprüfung auf Pumpen/Verzerrung und keine A/V-Synchronitätsabnahme.
-- Keine Android-Geräteabnahme dieses Kandidaten und keine iOS-Simulator-Laufzeitabnahme dieses Kandidaten.
+- Android-Testbuild wurde als Upgrade über 0.8.1 auf dem Redmi installiert; der Hash der Einstellungsdatei blieb identisch. Der native Gerätetest ist wegen des gefundenen Formatfehlers noch nicht abgenommen. Die iOS-Simulator-Vertragstests bestanden; eine vollständige Audio-/Player-Abnahme ist offen.
 - Die AudioWorklet-Ladbarkeit unter der tatsächlichen TikTok-/WebView-Policy muss noch geprüft werden.
 - Die mobilen Branches sind noch nicht mit diesem Kandidaten synchronisiert.
 

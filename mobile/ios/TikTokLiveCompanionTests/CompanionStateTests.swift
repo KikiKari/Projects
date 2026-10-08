@@ -33,7 +33,7 @@ private final class FakeRecognizer: RecognitionService {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
         try data.write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
-        var previousPeak = 0.0
+        var previousPeak = Double.infinity
         for strength in [-1, 25, 75, 100] {
             let enabled = strength >= 0
             let measured = expectation(description: "VLC PCM at strength \(strength)")
@@ -41,6 +41,8 @@ private final class FakeRecognizer: RecognitionService {
             let audio = try XCTUnwrap(TLCNativeVlcAudio(report: { active, input, output, reduction, error in
                 XCTAssertNil(error)
                 if active == enabled && input > -3 && output > -90 && peak == nil {
+                    print("Native PCM: strength=\(strength) input=\(input) output=\(output) reduction=\(reduction)")
+                    XCTAssertEqual(input, -1.732, accuracy: 0.05, "Decoded signed PCM16 fixture must have a plausible input peak")
                     if enabled { XCTAssertLessThanOrEqual(output, -4 - Double(strength) * 0.26 + 0.05) }
                     else { XCTAssertEqual(output, input, accuracy: 0.05); XCTAssertEqual(reduction, 0, accuracy: 0.05) }
                     peak = output; measured.fulfill()

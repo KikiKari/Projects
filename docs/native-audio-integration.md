@@ -2,6 +2,21 @@
 
 Status: in Umsetzung; kein Laufzeit- oder Release-Nachweis.
 
+## Im Gerätetest gefundener Formatfehler
+
+Der erste Redmi-Lauf des Kandidaten meldete zunächst einen Monotoniefehler.
+Die ergänzte Diagnose zeigte 498,49 dBFS für eine WAV-Datei mit etwa -1,73 dBFS.
+Das war ein echter Adapterfehler: S16N-Bytes wurden als Float-PCM interpretiert.
+Der daraufhin grüne reine Grenzwertvergleich ist **kein gültiger Abnahmenachweis**.
+Auch der vorherige iOS-Test bei 100 Prozent genügt ohne Eingangskontrolle nicht.
+
+Die [offizielle VLC-3-Implementierung von amem](https://github.com/videolan/vlc/blob/3.0.x/modules/audio_output/amem.c)
+unterstützt S16N; eine FL32-Anforderung stellt dessen Sampledaten nicht auf Float um.
+Beide Adapter fordern nun S16N an und konvertieren genau die gelieferten Samples
+mit `sample / 32768.0` in den gemeinsamen Float-Limiter. Die nativen Tests prüfen
+zusätzlich den bekannten Eingangspegel des PCM16-WAV-Testmaterials.
+Diese Korrektur muss noch auf Gerät und Simulator erneut bestehen.
+
 ## Nachgewiesener Zugriff
 
 Android bindet libvlc-all 3.7.5 ein. Die Java-API hat keine PCM-Callback-Methode,
