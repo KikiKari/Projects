@@ -346,6 +346,10 @@
     try { return JSON.parse(value); } catch (_) { return null; }
   }
 
+  function shouldFilterExternalSpeechTrigger(text, enabled) {
+    return enabled === true && String(text || "").trimStart().startsWith(".");
+  }
+
   function sanitizeChatText(value) {
     return String(value || "")
       .normalize("NFKC")
@@ -904,6 +908,7 @@
     limiterStrengthToDbfs,
     createPeakLimiter,
     createPeakLimiterNode,
+    shouldFilterExternalSpeechTrigger,
     limiterDbfsToStrength,
     limiterMakeupCompensation,
     sanitizeChatText,

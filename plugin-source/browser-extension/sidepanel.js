@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "filter-external-speech-triggers", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "top-chatters-actions", "top-chatters-reset", "top-chatters-more", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "embed-startup-status", "cancel-embed-startup", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "player-recovery-status", "hook-reconnect", "hook-reconnect-seconds", "hook-reconnect-status", "media-list", "media-count", "caption-list", "caption-count",
@@ -44,6 +44,7 @@
   let speechVoiceName = "";
   let speakNames = true;
   let gameModeEnabled = false;
+  let filterExternalSpeechTriggers = false;
   let shortenNames = false;
   let autoChatRefreshEnabled = false;
   let autoChatRefreshMinutes = 5;
@@ -418,6 +419,7 @@
   }
 
   async function speakItem(item) {
+    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers)) return;
     const text = speechText(item);
     if (!text) return;
     const lang = speechLang(item, text);
@@ -439,6 +441,7 @@
   }
 
   function enqueueSpeech(item) {
+    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers)) return;
     if (!speechEnabled) return;
     if (speechQueue.length >= 5) speechQueue.shift();
     speechQueue.push(item);
@@ -1059,6 +1062,8 @@
     speechVoiceName = response.settings?.speechVoiceName || "";
     speakNames = response.settings?.speakNames !== false;
     gameModeEnabled = Boolean(response.settings?.gameModeEnabled);
+    filterExternalSpeechTriggers = Boolean(response.settings?.filterExternalSpeechTriggers);
+    elements["filter-external-speech-triggers"].checked = filterExternalSpeechTriggers;
     shortenNames = Boolean(response.settings?.shortenNames);
     autoChatRefreshEnabled = Boolean(response.settings?.autoChatRefreshEnabled);
     autoChatRefreshMinutes = Math.max(1, Math.min(60, Math.round(Number(response.settings?.autoChatRefreshMinutes) || 5)));
@@ -1517,6 +1522,10 @@
     speakNames = elements["speak-names"].checked;
     elements["shorten-names"].disabled = !speakNames;
     await send("TLC_SET_SPEECH_PREFERENCE", { speakNames });
+  });
+  elements["filter-external-speech-triggers"].addEventListener("change", async () => {
+    filterExternalSpeechTriggers = elements["filter-external-speech-triggers"].checked;
+    await send("TLC_SET_SPEECH_PREFERENCE", { filterExternalSpeechTriggers });
   });
   elements["game-mode"].addEventListener("change", async () => {
     gameModeEnabled = elements["game-mode"].checked;

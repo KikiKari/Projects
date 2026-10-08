@@ -17,6 +17,17 @@ private class FakeEngine : RecognitionEngine {
 }
 
 class CompanionViewModelTest {
+    @Test fun externalTriggerFilterIsIndependentOfGameModeAndNames() {
+        for (game in listOf(false,true)) for (enabled in listOf(false,true)) {
+            for (text in listOf(".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer")) {
+                val model = CompanionViewModel(FakeEngine())
+                model.setGameMode(game); model.setFilterExternalSpeechTriggers(enabled)
+                model.requestSpeak(ChatLine("Autor", text))
+                assertEquals(if (enabled && text.trimStart().startsWith(".")) 0 else 1, model.state.value.speechQueue.size)
+            }
+        }
+    }
+
     @Test fun recognitionStartsOnlyAfterExplicitAction() {
         val engine = FakeEngine(); val model = CompanionViewModel(engine)
         assertEquals(0, engine.microphoneStarts)

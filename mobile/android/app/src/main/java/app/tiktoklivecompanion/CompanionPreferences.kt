@@ -38,6 +38,9 @@ class CompanionPreferences(private val context: Context) {
     private val auddTokenKey = stringPreferencesKey("audd_token")
     private val pairingCodeKey = stringPreferencesKey("pairing_code")
     private val universalApiKey = stringPreferencesKey("universal_caption_api_key")
+    private val filterExternalSpeechTriggersKey = booleanPreferencesKey("filterExternalSpeechTriggers")
+    val filterExternalSpeechTriggers: Flow<Boolean> = context.companionDataStore.data.map { it[filterExternalSpeechTriggersKey] ?: false }
+    suspend fun setFilterExternalSpeechTriggers(enabled: Boolean) { context.companionDataStore.edit { it[filterExternalSpeechTriggersKey] = enabled } }
     private val gameModeKey = booleanPreferencesKey("game_mode")
     private val ttsVoiceKey = stringPreferencesKey("tts_voice")
     val limiterEnabled: Flow<Boolean> = context.companionDataStore.data.map { values -> values[limiterEnabledKey] ?: false }

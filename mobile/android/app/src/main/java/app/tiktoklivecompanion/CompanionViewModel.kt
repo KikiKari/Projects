@@ -61,6 +61,7 @@ data class CompanionUiState(
     val autoReconnectEnabled: Boolean = false,
     val autoReconnectDelaySeconds: Int = 3,
     val gameModeEnabled: Boolean = true,
+    val filterExternalSpeechTriggers: Boolean = false,
     val auddToken: String = "",
     val pairingCode: String = "",
     val universalCaptionApiKey: String = "",
@@ -125,6 +126,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.auddToken.collectLatest { value -> mutable.update { it.copy(auddToken = value) } } }
             viewModelScope.launch { stored.pairingCode.collectLatest { value -> mutable.update { it.copy(pairingCode = value) } } }
             viewModelScope.launch { stored.universalCaptionApiKey.collectLatest { value -> mutable.update { it.copy(universalCaptionApiKey = value) } } }
+            viewModelScope.launch { stored.filterExternalSpeechTriggers.collectLatest { value -> mutable.update { it.copy(filterExternalSpeechTriggers = value) } } }
             viewModelScope.launch { stored.gameMode.collectLatest { value -> mutable.update { it.copy(gameModeEnabled = value) } } }
             viewModelScope.launch { stored.ttsVoice.collectLatest { value -> mutable.update { it.copy(ttsVoice = value) } } }
         }
@@ -164,6 +166,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "bridgeEvents" to JSONArray(current.debugEvents.map { JSONObject(it) })
         )).toString(2)
     }
+    fun setFilterExternalSpeechTriggers(enabled: Boolean) { mutable.update { it.copy(filterExternalSpeechTriggers = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setFilterExternalSpeechTriggers(enabled) } } }
     fun setGameMode(enabled: Boolean) { mutable.update { it.copy(gameModeEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setGameMode(enabled) } } }
     fun setAuddToken(value: String) { val safe = value.take(4096); mutable.update { it.copy(auddToken = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setAuddToken(safe) } } }
     fun setPairingCode(value: String) { val safe = value.take(512); mutable.update { it.copy(pairingCode = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setPairingCode(safe) } } }
@@ -343,6 +346,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
     private fun enqueueSpeech(line: ChatLine) {
         val current = mutable.value
+        if (current.filterExternalSpeechTriggers && line.content.trimStart().startsWith(".")) return
         val author = if (current.ttsShortenNames) line.author.take(24) else line.author
         val content = if (current.gameModeEnabled) line.content.replace(Regex("\\b[A-ZÄÖÜ]{3}\\b"), "").replace(Regex("\\s+"), " ").trim() else line.content
         val spoken = if (current.ttsSpeakNames && author.isNotBlank()) "$author sagt $content" else content

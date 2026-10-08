@@ -35,6 +35,10 @@ import Foundation
     @Published var hookAvailable = false
     @Published var captionsAvailable = false
     @Published var connected = false
+    struct SpeechChatEntry { let author: String; let content: String }
+    @Published var speechChatEntries: [SpeechChatEntry] = []
+    @Published var speechEnabled = false
+    @Published var filterExternalSpeechTriggers = false { didSet { defaults.set(filterExternalSpeechTriggers, forKey: "filterExternalSpeechTriggers") } }
     @Published var chatLines: [String] = []
     @Published var participants: [String: ParticipantStats] = [:]
     @Published var liveValues: [String: String] = [:]
@@ -92,6 +96,7 @@ import Foundation
     init(recognizer: RecognitionService = ShazamRecognitionService(), defaults: UserDefaults = .standard) {
         self.recognizer = recognizer
         self.defaults = defaults
+        self.filterExternalSpeechTriggers = defaults.bool(forKey: "filterExternalSpeechTriggers")
         self.limiterEnabled = defaults.bool(forKey: "limiterEnabled")
         let oldThreshold = defaults.object(forKey: "limiterThreshold") as? Double
         self.limiterStrength = max(0, min(100, defaults.object(forKey: "limiterStrength") as? Int ?? oldThreshold.map { Int((-$0 - 4) * 100 / 26) } ?? 30))
@@ -181,6 +186,9 @@ import Foundation
             let author = envelope.payload["nickname"]?.stringValue ?? ""
             let content = envelope.payload["content"]?.stringValue ?? ""
             guard !mutedAuthors.contains(author) else { return }
+            speechChatEntries.append(SpeechChatEntry(author: author, content: content))
+            speechChatEntries = Array(speechChatEntries.suffix(50))
+            if speechEnabled { speak(content, author: author) }
             chatLines.append(author.isEmpty ? content : "\(author): \(content)")
             if chatLines.count > 50 { chatLines.removeFirst(chatLines.count - 50) }
             if !author.isEmpty {
@@ -245,8 +253,15 @@ import Foundation
         }
     }
 
-    func speak(_ text: String) {
-        guard !text.isEmpty else { return }
+    func speechText(_ content: String, author: String = "") -> String? {
+        if filterExternalSpeechTriggers && content.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(".") { return nil }
+        let text = gameModeEnabled ? content.replacingOccurrences(of: "\\b[A-ZÄÖÜ]{3}\\b", with: "", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines) : content
+        guard !text.isEmpty else { return nil }
+        let name = shortenNames ? String(author.prefix(24)) : author
+        return speakNames && !name.isEmpty ? "\(name) sagt \(text)" : text
+    }
+    func speak(_ content: String, author: String = "") {
+        guard let text = speechText(content, author: author) else { return }
         guard shouldSpeak(text) else { return }
         speaker.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: String(text.prefix(1_000)))

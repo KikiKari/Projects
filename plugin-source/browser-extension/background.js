@@ -318,6 +318,7 @@ async function getSettings() {
     speechLanguage: "auto",
     speechVoiceName: "",
     gameModeEnabled: false,
+    filterExternalSpeechTriggers: false,
     speakNames: true,
     shortenNames: false,
     autoChatRefreshEnabled: false,
@@ -631,6 +632,7 @@ async function sendOffscreen(message) {
 async function queueSpeechForTab(tabId, state, item) {
   if (!state.speech?.enabled || item.muted) return;
   const settings = await getSettings();
+  if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", settings.filterExternalSpeechTriggers)) return;
   if (settings.gameModeEnabled && core.shouldFilterGameModeSpeech(item, state.participants || {}, state.chatMessages || [])) return;
   const text = cleanSpeechPayload(core.composeSpeechText(item, {
     teamTag: state.stream?.teamTag || "",
@@ -1508,6 +1510,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.voiceName == null ? {} : { speechVoiceName: String(message.voiceName).slice(0, 160) }),
           ...(message.auddApiToken == null ? {} : { auddApiToken: String(message.auddApiToken).trim().slice(0, 512) }),
           ...(message.universalCaptionApiKey == null ? {} : { universalCaptionApiKey: String(message.universalCaptionApiKey).trim().slice(0, 512) }),
+          ...(message.filterExternalSpeechTriggers == null ? {} : { filterExternalSpeechTriggers: Boolean(message.filterExternalSpeechTriggers) }),
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),

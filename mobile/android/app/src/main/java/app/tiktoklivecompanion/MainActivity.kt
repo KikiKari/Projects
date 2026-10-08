@@ -180,6 +180,7 @@ class MainActivity : ComponentActivity() {
             OutlinedTextField(state.ttsVoice, model::setTtsVoice, label = { Text("Stimme") }, singleLine = true)
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen sprechen", Modifier.weight(1f)); Switch(state.ttsSpeakNames, model::setTtsSpeakNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Trigger externer Sprachdienste filtern", Modifier.weight(1f)); Switch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Game-Mode", Modifier.weight(1f)); Switch(state.gameModeEnabled, model::setGameMode) }
         }
     })

@@ -162,6 +162,20 @@ private final class FakeRecognizer: RecognitionService {
             XCTAssertEqual(try XCTUnwrap(row["delay"] as? Int), 240)
         }
     }
+    func testExternalTriggerFilterPersistsAndPrecedesNames() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertFalse(state.filterExternalSpeechTriggers)
+        for game in [false,true] { for enabled in [false,true] {
+            state.gameModeEnabled = game; state.filterExternalSpeechTriggers = enabled
+            for text in [".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer"] {
+                XCTAssertEqual(state.speechText(text, author: "Autor") == nil, enabled && text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("."))
+            }
+        } }
+        XCTAssertTrue(CompanionState(recognizer: FakeRecognizer(), defaults: defaults).filterExternalSpeechTriggers)
+        defaults.removePersistentDomain(forName: #function)
+    }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()
         let defaults = UserDefaults(suiteName: #function)!

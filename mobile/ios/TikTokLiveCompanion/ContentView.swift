@@ -84,7 +84,7 @@ struct ContentView: View {
             Text("Chat").font(.headline)
             Toggle("Neue Nachrichten automatisch vorlesen", isOn: $state.keepSpeechActive)
             Button { settingsOpen = true } label: { Label("Sprach- und Chat-Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
-            ForEach(Array(state.chatLines.suffix(5).enumerated()), id: \.offset) { _, line in HStack { Text(line); Spacer(); Button { state.speak(line) } label: { Image(systemName: "speaker.wave.2") }; if let author = line.split(separator: ":", maxSplits: 1).first { Button { state.muteAuthor(String(author)) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
+            ForEach(Array(state.speechChatEntries.suffix(5).enumerated()), id: \.offset) { _, entry in HStack { Text(entry.author.isEmpty ? entry.content : "\(entry.author): \(entry.content)"); Spacer(); Button { state.speak(entry.content, author: entry.author) } label: { Image(systemName: "speaker.wave.2") }; if !entry.author.isEmpty { Button { state.muteAuthor(entry.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
             HStack { Text("Top-Chatter").font(.subheadline.bold()); Spacer(); Button("Zurücksetzen", action: state.resetTopChatters).disabled(state.participants.isEmpty) }
             ForEach(Array(state.topChatters.prefix(20))) { chatter in HStack { Text(chatter.author); Spacer(); Text("\(chatter.messages) N · \(chatter.words) W").monospacedDigit(); Button { state.muteAuthor(chatter.author) } label: { Image(systemName: "speaker.slash") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
@@ -99,6 +99,7 @@ struct ContentView: View {
             TextField("Stimme", text: $state.speechVoice)
             Toggle("Chatnamen sprechen", isOn: $state.speakNames)
             Toggle("Chatnamen kürzen", isOn: $state.shortenNames)
+            Toggle("Trigger externer Sprachdienste filtern", isOn: $state.filterExternalSpeechTriggers)
             Toggle("Game-Mode", isOn: $state.gameModeEnabled)
         }.navigationTitle("Sprach- und Chat-Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
         .navigationViewStyle(.stack)
