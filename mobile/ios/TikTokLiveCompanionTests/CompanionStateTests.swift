@@ -199,10 +199,11 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertFalse(state.filterExternalSpeechTriggers)
         for game in [false,true] { for enabled in [false,true] {
             state.gameModeEnabled = game; state.filterExternalSpeechTriggers = enabled
-            for text in [".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer"] {
+            for text in [".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer", "ABC"] {
                 XCTAssertEqual(state.speechText(text, author: "Autor") == nil, enabled && text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("."))
             }
         } }
+        XCTAssertEqual(state.speechText("ABC", author: "Autor"), "Autor: ABC")
         XCTAssertTrue(CompanionState(recognizer: FakeRecognizer(), defaults: defaults).filterExternalSpeechTriggers)
         defaults.removePersistentDomain(forName: #function)
     }

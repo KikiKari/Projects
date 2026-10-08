@@ -269,10 +269,8 @@ import Foundation
 
     func speechText(_ content: String, author: String = "") -> String? {
         if filterExternalSpeechTriggers && content.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(".") { return nil }
-        let text = gameModeEnabled ? content.replacingOccurrences(of: "\\b[A-ZÄÖÜ]{3}\\b", with: "", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines) : content
-        guard !text.isEmpty else { return nil }
-        let name = shortenNames ? String(author.prefix(24)) : author
-        return speakNames && !name.isEmpty ? "\(name) sagt \(text)" : text
+        guard !content.isEmpty else { return nil }
+        return speakNames && !author.isEmpty ? "\(author): \(content)" : content
     }
     private func scheduleChatRefresh() {
         chatRefreshTask?.cancel()
