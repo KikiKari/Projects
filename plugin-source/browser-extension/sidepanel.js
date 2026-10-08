@@ -13,7 +13,7 @@
     "page-info-section", "page-info-source", "profile-info", "summary-info", "refresh-page-info", "force-page-info",
     "recommendations-section", "recommendation-status", "recommendation-limit", "recommendation-sort", "scan-recommendations", "cancel-recommendations", "recommendation-progress", "recommendation-list", "recommendation-actions", "recommendation-more", "recommendation-modal", "recommendation-modal-list", "close-recommendations",
     "scan", "enable-captions",
-    "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "export-log", "export-caption-raw", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
+    "toggle-hook", "open-connection-settings", "connection-settings-modal", "close-connection-settings", "reset-tab", "open-embed-live", "open-normal-live", "export-log", "export-caption-raw", "clear", "debug-enabled", "debug-count", "export-debug", "clear-debug"
   ].map((id) => [id, document.getElementById(id)]));
   const PLAYER_BUTTONS = ["player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report"];
   const DEFAULT_SERVICE_URL = "http://127.0.0.1:43117";
@@ -175,7 +175,7 @@
     speechTabId = activeTabId;
     speechQueue = [];
     for (const item of currentState?.chatMessages || []) knownSpeechKeys.add(chatKey(item));
-    elements["toggle-speech"].textContent = "Vorlesen aus";
+    elements["toggle-speech"].textContent = "On";
     elements["toggle-speech"].setAttribute("aria-pressed", "true");
     setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
@@ -191,7 +191,7 @@
     globalThis.speechSynthesis?.cancel();
     try { speechAudioSource?.stop(); } catch (_) { /* Already stopped. */ }
     speechAudioSource = null;
-    elements["toggle-speech"].textContent = "Vorlesen";
+    elements["toggle-speech"].textContent = "Off";
     elements["toggle-speech"].setAttribute("aria-pressed", "false");
     setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
@@ -961,6 +961,8 @@
 
   function render(state) {
     currentState = state;
+    elements["toggle-hook"].textContent = state.hook?.armed ? "On" : "Off";
+    elements["toggle-hook"].setAttribute("aria-pressed", String(Boolean(state.hook?.armed)));
     elements["quick-recover"].checked = Boolean(state.quickRecoverEnabled);
     elements["quick-recover-seconds"].value = String(state.quickRecoverSeconds ?? 3);
     elements["hook-reconnect"].checked = Boolean(state.hookReconnect?.enabled);
@@ -980,14 +982,14 @@
     if (tabSpeechEnabled) {
       speechEnabled = true;
       speechTabId = activeTabId;
-      elements["toggle-speech"].textContent = "Vorlesen aus";
+      elements["toggle-speech"].textContent = "On";
       elements["toggle-speech"].setAttribute("aria-pressed", "true");
       setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
       elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist aktiv; warte auf neue Chatzeilen.";
     } else {
       speechEnabled = false;
       speechTabId = null;
-      elements["toggle-speech"].textContent = "Vorlesen";
+      elements["toggle-speech"].textContent = "Off";
       elements["toggle-speech"].setAttribute("aria-pressed", "false");
       setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
       elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist ausgeschaltet.";
@@ -1032,11 +1034,10 @@
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
-    for (const id of ["scan", "enable-captions", "enable-hook", "disable-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", "hook-reconnect", "hook-reconnect-seconds", "quick-recover", "quick-recover-seconds", ...PLAYER_BUTTONS]) {
+    for (const id of ["scan", "enable-captions", "toggle-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", "hook-reconnect", "hook-reconnect-seconds", "quick-recover", "quick-recover-seconds", ...PLAYER_BUTTONS]) {
       elements[id].disabled = !isTikTok;
     }
-    elements["enable-hook"].disabled = false;
-    elements["disable-hook"].disabled = false;
+    elements["toggle-hook"].disabled = false;
     const settingsResponse = await send("TLC_GET_SETTINGS");
     elements["hook-autostart"].checked = Boolean(settingsResponse.settings?.hookEnabled || settingsResponse.settings?.autoHook);
     elements["quick-recover"].checked = Boolean(settingsResponse.settings?.quickRecoverEnabled);
@@ -1297,10 +1298,11 @@
   elements["enable-captions"].dataset.busyText = "Suche Schalter …";
   elements.scan.addEventListener("click", () => run("TLC_SCAN", null, elements.scan));
   elements["enable-captions"].addEventListener("click", () => run("TLC_ENABLE_CAPTIONS", null, elements["enable-captions"]));
-  elements["enable-hook"].addEventListener("click", () => run("TLC_ENABLE_HOOK", "Hook bleibt aktiv."));
-  elements["disable-hook"].addEventListener("click", async () => {
-    elements["hook-autostart"].checked = false;
-    await run("TLC_DISABLE_HOOK", "Hook deaktiviert.");
+  elements["toggle-hook"].addEventListener("click", async () => {
+    const button = elements["toggle-hook"]; button.disabled = true;
+    try { await send(currentState?.hook?.armed ? "TLC_DISABLE_HOOK" : "TLC_ENABLE_HOOK"); await refresh(); }
+    catch (error) { elements.notice.textContent = String(error?.message || error); }
+    finally { button.disabled = false; }
   });
   elements["reset-tab"].addEventListener("click", () => {
     if (!keepSpeechActive) stopSpeech("Vorlesen wurde wegen des Refreshs ausgeschaltet.");
@@ -1352,6 +1354,17 @@
     renderAudience();
     elements["audience-modal"].hidden = false;
     elements["close-audience"].focus();
+  });
+  elements["open-connection-settings"].addEventListener("click", () => {
+    elements["connection-settings-modal"].hidden = false;
+    elements["close-connection-settings"].focus();
+  });
+  elements["close-connection-settings"].addEventListener("click", () => {
+    elements["connection-settings-modal"].hidden = true;
+    elements["open-connection-settings"].focus();
+  });
+  elements["connection-settings-modal"].addEventListener("click", event => {
+    if (event.target === elements["connection-settings-modal"]) elements["close-connection-settings"].click();
   });
   elements["open-speech-settings"].addEventListener("click", () => {
     elements["speech-settings-modal"].hidden = false;
@@ -1421,11 +1434,12 @@
     if (event.target === elements["chat-history-modal"]) elements["close-chat-history"].click();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !elements["speech-settings-modal"].hidden) elements["close-speech-settings"].click();
+    if (event.key === "Escape" && !elements["connection-settings-modal"].hidden) elements["close-connection-settings"].click();
+    else if (event.key === "Escape" && !elements["speech-settings-modal"].hidden) elements["close-speech-settings"].click();
     else if (event.key === "Escape" && !elements["audience-modal"].hidden) elements["close-audience"].click();
     else if (event.key === "Escape" && !elements["chat-history-modal"].hidden) elements["close-chat-history"].click();
     else if (event.key === "Escape" && !elements["recommendation-modal"].hidden) elements["close-recommendations"].click();
-    const openModal = !elements["speech-settings-modal"].hidden
+    const openModal = !elements["connection-settings-modal"].hidden ? elements["connection-settings-modal"] : !elements["speech-settings-modal"].hidden
       ? elements["speech-settings-modal"]
       : !elements["audience-modal"].hidden
       ? elements["audience-modal"]
@@ -1495,12 +1509,15 @@
       elements.notice.textContent = String(error?.message || error);
     }
   });
-  elements["toggle-speech"].addEventListener("click", () => {
-    if (speechEnabled) {
-      stopSpeech();
-      return;
-    }
-    activateSpeech();
+  elements["toggle-speech"].addEventListener("click", async () => {
+    const button = elements["toggle-speech"]; button.disabled = true;
+    try {
+      const enabled = !speechEnabled;
+      await send("TLC_SET_TAB_SPEECH", { enabled });
+      if (enabled) activateSpeech(undefined, false); else stopSpeech(undefined, false);
+      await refresh();
+    } catch (error) { elements["speech-status"].textContent = String(error?.message || error); }
+    finally { button.disabled = false; }
   });
   elements["speech-volume"].addEventListener("input", () => {
     elements["speech-volume-output"].textContent = `${elements["speech-volume"].value}%`;

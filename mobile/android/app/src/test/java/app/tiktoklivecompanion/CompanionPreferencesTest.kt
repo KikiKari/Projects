@@ -14,6 +14,22 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CompanionPreferencesTest {
+    @Test fun speechFilterAndRefreshSurviveRecreationIndependently() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = CompanionPreferences(context)
+        for (filter in listOf(false, true)) for (game in listOf(false, true)) {
+            preferences.setFilterExternalSpeechTriggers(filter)
+            preferences.setGameMode(game)
+            preferences.setAutoChatRefreshEnabled(true)
+            preferences.setAutoChatRefreshMinutes(7)
+            val restored = CompanionPreferences(context)
+            assertEquals(filter, restored.filterExternalSpeechTriggers.first())
+            assertEquals(game, restored.gameMode.first())
+            assertTrue(restored.autoChatRefreshEnabled.first())
+            assertEquals(7, restored.autoChatRefreshMinutes.first())
+        }
+    }
+
     @Test fun limiterStrengthSurvivesRecreationWithoutThresholdRounding() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = CompanionPreferences(context)

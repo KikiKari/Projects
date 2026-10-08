@@ -67,7 +67,7 @@ struct ContentView: View {
 
     private var songView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Songerkennung").font(.headline)
+            Text("Songs").font(.headline)
             Button(action: state.recognize) { VStack { Image(systemName: "magnifyingglass").font(.system(size: 34, weight: .medium)); Text("Jetzt erkennen").font(.callout.bold()) }.frame(width: 116, height: 116).foregroundStyle(.white).background(Design.accent).clipShape(Circle()) }.buttonStyle(.plain).frame(maxWidth: .infinity).accessibilityHint("Startet eine einmalige Erkennung von höchstens zwölf Sekunden")
             Picker("Audioquelle", selection: $state.recognitionSource) { ForEach(RecognitionSource.allCases) { Text($0.rawValue).tag($0) } }.pickerStyle(.segmented)
             Label(state.recognitionStatus, systemImage: "circle.fill").font(.footnote).foregroundStyle(.secondary).symbolRenderingMode(.palette).foregroundStyle(.green, .green)
@@ -77,13 +77,13 @@ struct ContentView: View {
         }
     }
 
-    private var capabilityRows: some View { VStack(spacing: 0) { capability("WebSocket-Hook", state.hookAvailable); Divider(); capability("Untertitel", state.captionsAvailable); Divider(); capability("Verbindung", state.connected) }.padding(.horizontal).background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 12)) }
+    private var capabilityRows: some View { VStack(spacing: 0) { capability("Connection", state.hookAvailable); Divider(); capability("Titel", state.captionsAvailable); Divider(); capability("Verbindung", state.connected) }.padding(.horizontal).background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 12)) }
     private func capability(_ label: String, _ available: Bool) -> some View { HStack { Text(label); Spacer(); Circle().fill(available ? Color.green : Color.red).frame(width: 10, height: 10) }.frame(minHeight: 46) }
     private var chatView: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Chat").font(.headline)
-            Toggle("Neue Nachrichten automatisch vorlesen", isOn: $state.keepSpeechActive)
-            Button { settingsOpen = true } label: { Label("Sprach- und Chat-Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
+            HStack { Text("Vorlesen"); Spacer(); Button(state.speechEnabled ? "On" : "Off") { state.setSpeechEnabled(!state.speechEnabled) } }
+            Button { settingsOpen = true } label: { Label("Sprach- und Chat Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
             ForEach(Array(state.speechChatEntries.suffix(5).enumerated()), id: \.offset) { _, entry in HStack { Text(entry.author.isEmpty ? entry.content : "\(entry.author): \(entry.content)"); Spacer(); Button { state.speak(entry.content, author: entry.author) } label: { Image(systemName: "speaker.wave.2") }; if !entry.author.isEmpty { Button { state.muteAuthor(entry.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
             HStack { Text("Top-Chatter").font(.subheadline.bold()); Spacer(); Button("Zurücksetzen", action: state.resetTopChatters).disabled(state.participants.isEmpty) }
@@ -100,17 +100,19 @@ struct ContentView: View {
             Toggle("Chatnamen sprechen", isOn: $state.speakNames)
             Toggle("Chatnamen kürzen", isOn: $state.shortenNames)
             Toggle("Trigger externer Sprachdienste filtern", isOn: $state.filterExternalSpeechTriggers)
+            Toggle("Auto-Chat Refresh", isOn: $state.autoChatRefreshEnabled)
+            Stepper("\(state.autoChatRefreshMinutes) min.", value: $state.autoChatRefreshMinutes, in: 1...60)
             Toggle("Game-Mode", isOn: $state.gameModeEnabled)
-        }.navigationTitle("Sprach- und Chat-Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
+        }.navigationTitle("Sprach- und Chat Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
         .navigationViewStyle(.stack)
     }
     private var statusView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("LIVE-Informationen").font(.headline); capabilityRows
+            Text("LIVE-Information").font(.headline); capabilityRows
             ForEach(state.liveValues.keys.sorted(), id: \.self) { key in HStack { Text(key); Spacer(); Text(state.liveValues[key] ?? "–").monospacedDigit() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             Text("Personen stummschalten").font(.subheadline.bold())
             ForEach(Array(state.topChatters.prefix(20))) { chatter in HStack { Text(chatter.author); Spacer(); Text("\(chatter.messages) N"); Button { state.muteAuthor(chatter.author) } label: { Image(systemName: "speaker.slash") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
-            Text("Seiteninformationen").font(.headline)
+            Text("PROFIL-Information").font(.headline)
             Button("Seite prüfen") { state.sendCommand?("inspect", [:]) }.buttonStyle(.bordered)
             ForEach(state.pageInformation.keys.sorted(), id: \.self) { key in HStack { Text(key); Spacer(); Text(state.pageInformation[key] ?? "–").monospacedDigit() }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             Text("LIVE-Empfehlungen").font(.headline)
@@ -120,7 +122,7 @@ struct ContentView: View {
             ForEach(state.recommendationItems) { item in VStack(alignment: .leading) { Text("@\(item.handle)").bold(); Text(item.displayName); Text(item.viewerLabel.isEmpty ? item.viewerCount.map(String.init) ?? "–" : item.viewerLabel); if !item.title.isEmpty { Text(item.title).font(.footnote) }; Link("Stream öffnen", destination: item.url) }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
         }
     }
-    private var playerView: some View { VStack(alignment: .leading, spacing: 12) { Text("Player").font(.headline); HStack { commandButton("Play", "play", "play.fill"); commandButton("Pause", "pause", "pause.fill"); commandButton("Stumm", "mute", "speaker.slash.fill") }; HStack { commandButton("Ton an", "unmute", "speaker.wave.2.fill"); commandButton("Vollbild", "fullscreen", "arrow.up.left.and.arrow.down.right"); commandButton("PiP", "picture-in-picture", "pip") }; commandButton("Neu laden", "reload-player", "arrow.clockwise"); Button("VLC Ersatz", action: state.toggleVlcReplacement).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Button("VLC Player", action: openExternalVlc).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Text("Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.").font(.caption); if state.vlcReplacementURL != nil { Text(state.nativeLimiterStatus).font(.caption) }; Toggle("Pegelschutz", isOn: Binding(get: { state.limiterEnabled }, set: { state.setLimiter(enabled: $0) })); HStack { Text("Schutzstärke"); Slider(value: Binding(get: { Double(state.limiterStrength) }, set: { state.setLimiter(strength: Int($0)) }), in: 0...100); Text("\(state.limiterStrength)%").monospacedDigit() }; ForEach(state.mediaLinks) { link in Link("\(link.label) · \(link.type)", destination: link.url).buttonStyle(.bordered) } } }
+    private var playerView: some View { VStack(alignment: .leading, spacing: 12) { Text("Player").font(.headline); HStack { commandButton("Play", "play", "play.fill"); commandButton("Pause", "pause", "pause.fill"); commandButton("Stumm", "mute", "speaker.slash.fill") }; HStack { commandButton("Ton an", "unmute", "speaker.wave.2.fill"); commandButton("Vollbild", "fullscreen", "arrow.up.left.and.arrow.down.right"); commandButton("PiP", "picture-in-picture", "pip") }; commandButton("Neu laden", "reload-player", "arrow.clockwise"); Button("Player", action: state.toggleVlcReplacement).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Button("VLC Player", action: openExternalVlc).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Text("Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.").font(.caption); if state.vlcReplacementURL != nil { Text(state.nativeLimiterStatus).font(.caption) }; Toggle("Pegelschutz", isOn: Binding(get: { state.limiterEnabled }, set: { state.setLimiter(enabled: $0) })); HStack { Text("Schutzstärke"); Slider(value: Binding(get: { Double(state.limiterStrength) }, set: { state.setLimiter(strength: Int($0)) }), in: 0...100); Text("\(state.limiterStrength)%").monospacedDigit() }; Text("HAR-Logs").font(.headline); ForEach(state.mediaLinks) { link in Link("\(link.label) · \(link.type)", destination: link.url).buttonStyle(.bordered) } } }
     private func openExternalVlc() {
         guard let mediaURL = state.bestVlcMediaURL() else { return }
         var components = URLComponents(string: "vlc-x-callback://x-callback-url/stream")
@@ -132,14 +134,26 @@ struct ContentView: View {
         }
     }
     private func commandButton(_ label: String, _ command: String, _ icon: String) -> some View { Button { state.sendCommand?(command, [:]) } label: { Label(label, systemImage: icon).frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered) }
+    @State private var connectionSettingsOpen = false
+    private var connectionSettingsView: some View {
+        NavigationView { Form {
+            HStack { Toggle("Player-Recovery", isOn: $state.autoReconnectEnabled); TextField("Sek.", value: $state.autoReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
+            HStack { Toggle("Hook-Reconnect", isOn: $state.hookReconnectEnabled); TextField("Sek.", value: $state.hookReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
+        }.navigationTitle("Connection-Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { connectionSettingsOpen = false } } } }.navigationViewStyle(.stack)
+    }
     private var moreView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Mehr").font(.headline)
-            HStack { Toggle("Player-Recovery", isOn: $state.autoReconnectEnabled); TextField("Sek.", value: $state.autoReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
-            Text("Player: \(state.playerRecovery["phase"] as? String ?? "bereit")").font(.footnote)
-            HStack { Toggle("Hook-Reconnect", isOn: $state.hookReconnectEnabled); TextField("Sek.", value: $state.hookReconnectDelaySeconds, format: .number).keyboardType(.numberPad).frame(width: 54); Text("Sek.") }
-            Text("Hook: \(state.hookRecovery["phase"] as? String ?? "disabled")").font(.footnote)
-            HStack { Button("Normal", action: state.openNormal); Button("Embed", action: state.openEmbed) }
+            Text("Player-Recovery: \(state.autoReconnectEnabled ? state.playerRecovery["phase"] as? String ?? "aktiv" : "aus")").font(.footnote)
+            Text("Hook-Reconnect: \(state.hookReconnectEnabled ? state.hookRecovery["phase"] as? String ?? "aktiv" : "aus")").font(.footnote)
+            Text("Connection").font(.headline)
+            HStack {
+                Button(state.connectionEnabled ? "On" : "Off") { state.setConnectionEnabled(!state.connectionEnabled) }
+                Button("Browser", action: state.openNormal)
+                Button("Player", action: state.toggleVlcReplacement).disabled(state.mediaLinks.isEmpty)
+                Button { connectionSettingsOpen = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Connection-Einstellungen")
+            }.sheet(isPresented: $connectionSettingsOpen) { connectionSettingsView }
+            Button("Embed", action: state.openEmbed)
             Text("Embed: \(state.embedPhase) · Versuch \(state.embedAttempt)/3").font(.footnote)
             Toggle("Debugmodus", isOn: $state.debugEnabled)
             Text("\(state.debugEvents.count) bereinigte Diagnoseereignisse").font(.footnote).foregroundStyle(.secondary)
@@ -154,7 +168,7 @@ struct ContentView: View {
                 }.disabled(state.debugEvents.isEmpty)
                 Button("Leeren", action: state.clearDebugEvents).disabled(state.debugEvents.isEmpty)
             }
-            Text("Caption-Protokoll").font(.headline)
+            Text("LIVE-Logs").font(.headline)
             Text("\(state.captionRecords.count) RAW-Untertitelereignisse").font(.footnote).foregroundStyle(.secondary)
             HStack {
                 Button("JSON-L-Export") { captionExportDocument = CaptionExportDocument(content: state.captionJSONLines()); captionExportName = "tiktok-live-captions.jsonl"; captionExportOpen = true }.disabled(state.captionRecords.isEmpty)

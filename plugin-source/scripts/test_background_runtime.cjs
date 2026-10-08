@@ -117,7 +117,7 @@ function worker(seed = {}) {
     webRequest: { onBeforeRequest: event("request") }
   };
   const context = vm.createContext({ chrome, TLC_CONTENT_CORE: core, TLC_EXPORT_PRIVACY: exportPrivacy, importScripts() {},
-    URL, Date: seed.now == null ? Date : TestDate, console, crypto: webcrypto, setTimeout, clearTimeout, fetch: async () => null });
+    structuredClone, URL, Date: seed.now == null ? Date : TestDate, console, crypto: webcrypto, setTimeout, clearTimeout, fetch: async () => null });
   vm.runInContext(fs.readFileSync(path.join(extension, "background.js"), "utf8"), context);
   const send = (type, tabId, extra = {}) => new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error(`No response: ${type}`)), seed.responseTimeoutMs || 1000);
@@ -1057,4 +1057,32 @@ test('0PE-172/173: hook attempt is exported with correlation and without payload
  assert.equal(report.hookRecovery.phase,'connecting');
  assert.ok(!JSON.stringify(report).includes('PRIVATE-CAPTION'));assert.ok(!JSON.stringify(report).includes('SECRET'));
  assert.equal(report.hookRecovery.completedAtMs,null);
+});
+
+
+test("0PE-175: saved filter survives worker restart and is independent of Game-Mode", async () => {
+  const first = worker();
+  assert.equal((await first.send("TLC_GET_SETTINGS", 7)).settings.filterExternalSpeechTriggers, false);
+  for (const filter of [false, true]) for (const game of [false, true]) {
+    await first.send("TLC_SET_SPEECH_PREFERENCE", 7, { filterExternalSpeechTriggers: filter, gameModeEnabled: game });
+    const restored = worker({local: first.local});
+    const settings = (await restored.send("TLC_GET_SETTINGS", 7)).settings;
+    assert.equal(settings.filterExternalSpeechTriggers, filter);
+    assert.equal(settings.gameModeEnabled, game);
+    const spoken = [];
+    restored.context.sendOffscreen = async message => spoken.push(message);
+    for (const content of [".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer"]) {
+      const state = {speech: {enabled:true}, participants:{}, chatMessages:[]};
+      await restored.context.queueSpeechForTab(7, state, {author:"Autor",content});
+    }
+    assert.equal(spoken.length, filter ? 2 : 5);
+  }
+});
+test("0PE-176: failed Connection reload preserves the previous state", async () => {
+  const w = worker({tabs:[{id:7,url:"https://www.tiktok.com/@creator/live"}]});
+  await w.send("TLC_ENABLE_HOOK",7);
+  assert.equal((await w.context.getState(7)).hook.armed,true);
+  vm.runInContext('chrome.tabs.reload = async () => { throw new Error("reload failed"); }', w.context);
+  await assert.rejects(w.send("TLC_DISABLE_HOOK",7), /reload failed/);
+  assert.equal((await w.context.getState(7)).hook.armed,true);
 });

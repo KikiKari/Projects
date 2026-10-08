@@ -24,6 +24,26 @@ private class FollowupFakeEngine : RecognitionEngine {
 class FollowupMediaTest {
     private fun envelope(type: String, payload: Map<String, Any?>) = BridgeEnvelope(1, type, "", 1, "2026-07-22T12:00:00Z", payload)
 
+    @Test fun connectionWaitsForBridgeAndBrowserExitsPlayer() {
+        val model = CompanionViewModel(FollowupFakeEngine())
+        val commands = mutableListOf<String>()
+        model.sendCommand = { name, _ -> commands += name }
+        model.setConnectionEnabled(true)
+        assertFalse(model.state.value.connectionEnabled)
+        model.handle(envelope("capability", mapOf("feature" to "connection", "available" to true)))
+        assertTrue(model.state.value.connectionEnabled)
+        model.setConnectionEnabled(false)
+        assertTrue(model.state.value.connectionEnabled)
+        model.handle(envelope("capability", mapOf("feature" to "connection", "available" to false)))
+        assertFalse(model.state.value.connectionEnabled)
+        model.handle(envelope("media-url", mapOf("url" to "https://cdn.example/live.m3u8", "kind" to "network")))
+        model.toggleVlcReplacement()
+        assertTrue(model.state.value.vlcReplacementUrl != null)
+        model.openNormal()
+        assertEquals(null, model.state.value.vlcReplacementUrl)
+        assertTrue(commands.contains("set-vlc-active"))
+    }
+
     @Test fun limiterUsesPercentageAndReportsUnavailableAudioHonestly() {
         val model = CompanionViewModel(FollowupFakeEngine())
         var command = ""
@@ -112,7 +132,7 @@ class FollowupMediaTest {
         assertFalse(live.contains("Top-Chatter"))
         assertTrue(live.contains("Personen stummschalten"))
         assertTrue(ui.substringAfter("private fun MoreTab").contains("Debugmodus"))
-        assertTrue(ui.contains("Sprach- und Chat-Einstellungen"))
+        assertTrue(ui.contains("Sprach- und Chat Einstellungen"))
         assertTrue(ui.contains("JSON-L-Export"))
         assertTrue(ui.contains("RAW-JSON-Export"))
         assertTrue(live.contains("LIVE-Empfehlungen"))

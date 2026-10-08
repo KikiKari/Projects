@@ -32,11 +32,19 @@ import Foundation
     }
     @Published var recognitionStatus = "Bereit für manuelle Erkennung"
     @Published var recognitionResult: RecognitionResult?
+    @Published var connectionEnabled = false
     @Published var hookAvailable = false
     @Published var captionsAvailable = false
     @Published var connected = false
     struct SpeechChatEntry { let author: String; let content: String }
     @Published var speechChatEntries: [SpeechChatEntry] = []
+    private var chatRefreshTask: Task<Void, Never>?
+    @Published var autoChatRefreshEnabled = false { didSet { defaults.set(autoChatRefreshEnabled, forKey: "autoChatRefreshEnabled"); scheduleChatRefresh() } }
+    @Published var autoChatRefreshMinutes = 5 { didSet {
+        let safe = max(1, min(60, autoChatRefreshMinutes))
+        if safe != autoChatRefreshMinutes { autoChatRefreshMinutes = safe; return }
+        defaults.set(safe, forKey: "autoChatRefreshMinutes"); scheduleChatRefresh()
+    } }
     @Published var speechEnabled = false
     @Published var filterExternalSpeechTriggers = false { didSet { defaults.set(filterExternalSpeechTriggers, forKey: "filterExternalSpeechTriggers") } }
     @Published var chatLines: [String] = []
@@ -96,6 +104,8 @@ import Foundation
     init(recognizer: RecognitionService = ShazamRecognitionService(), defaults: UserDefaults = .standard) {
         self.recognizer = recognizer
         self.defaults = defaults
+        self.autoChatRefreshEnabled = defaults.bool(forKey: "autoChatRefreshEnabled")
+        self.autoChatRefreshMinutes = max(1, min(60, defaults.object(forKey: "autoChatRefreshMinutes") as? Int ?? 5))
         self.filterExternalSpeechTriggers = defaults.bool(forKey: "filterExternalSpeechTriggers")
         self.limiterEnabled = defaults.bool(forKey: "limiterEnabled")
         let oldThreshold = defaults.object(forKey: "limiterThreshold") as? Double
@@ -111,6 +121,7 @@ import Foundation
         self.universalCaptionApiKey = defaults.string(forKey: Self.universalApiKey) ?? ""
         self.speechLanguage = defaults.string(forKey: Self.speechLanguageKey) ?? "Auto"
         self.speechVoice = defaults.string(forKey: Self.speechVoiceKey) ?? "Systemstandard"
+        scheduleChatRefresh()
         recognizer.onResult = { [weak self] result in Task { @MainActor in
             self?.recognitionResult = result
             self?.recognitionStatus = result.matched ? "Song erkannt" : "Kein passender Song erkannt"
@@ -166,6 +177,7 @@ import Foundation
         case "capability":
             let feature = envelope.payload["feature"]?.stringValue
             let available = envelope.payload["available"]?.boolValue == true
+            if feature == "connection" { connectionEnabled = available }
             if feature == "websocket-hook" { hookAvailable = available }
             if feature == "limiter" && vlcReplacementURL == nil {
                 limiterEnabled = available && envelope.payload["enabled"]?.boolValue == true
@@ -260,6 +272,26 @@ import Foundation
         let name = shortenNames ? String(author.prefix(24)) : author
         return speakNames && !name.isEmpty ? "\(name) sagt \(text)" : text
     }
+    private func scheduleChatRefresh() {
+        chatRefreshTask?.cancel()
+        guard autoChatRefreshEnabled else { return }
+        let interval = UInt64(autoChatRefreshMinutes) * 60_000_000_000
+        chatRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do { try await Task.sleep(nanoseconds: interval) } catch { return }
+                guard let self else { return }
+                self.chatLines.removeAll(); self.speechChatEntries.removeAll()
+            }
+        }
+    }
+    func setConnectionEnabled(_ enabled: Bool) {
+        guard let sendCommand else { lastError = "Connection ist noch nicht bereit"; return }
+        sendCommand("set-connection", ["enabled": enabled])
+    }
+    func setSpeechEnabled(_ enabled: Bool) {
+        speechEnabled = enabled
+        if !enabled { speaker.stopSpeaking(at: .immediate) }
+    }
     func speak(_ content: String, author: String = "") {
         guard let text = speechText(content, author: author) else { return }
         guard shouldSpeak(text) else { return }
@@ -296,6 +328,7 @@ import Foundation
         guard !normalized.isEmpty else { return }
         mutedAuthors.insert(normalized)
         chatLines.removeAll { $0.hasPrefix("\(normalized):") }
+        speechChatEntries.removeAll { $0.author == normalized }
         participants.removeValue(forKey: normalized)
         defaults.set(Array(mutedAuthors).sorted(), forKey: Self.mutedAuthorsKey)
     }
@@ -359,6 +392,7 @@ import Foundation
         }
     }
     func openNormal() {
+        if vlcReplacementURL != nil { toggleVlcReplacement() }
         guard embedMode else { return }
         embedTask?.cancel(); embedMode = false; embedPhase = "cancelled"
         noteNavigation(normalURL); loadURL?(normalURL)

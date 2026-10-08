@@ -72,14 +72,22 @@ class MainActivity : ComponentActivity() {
 @Composable private fun CompanionApp(model: CompanionViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val tts = remember { TextToSpeech(context) { } }
+    var ttsReady by remember { mutableStateOf(false) }
+    val tts = remember { TextToSpeech(context) { status ->
+        ttsReady = status == TextToSpeech.SUCCESS
+        if (!ttsReady) { model.setTtsEnabled(false); model.reportError("Sprachausgabe konnte nicht gestartet werden") }
+    } }
     DisposableEffect(tts) { onDispose { tts.shutdown() } }
     val nextSpeech = state.speechQueue.firstOrNull()
-    LaunchedEffect(nextSpeech?.id) {
+    LaunchedEffect(state.ttsEnabled) { if (!state.ttsEnabled) tts.stop() }
+    LaunchedEffect(nextSpeech?.id, ttsReady) {
+        if (!ttsReady) return@LaunchedEffect
         nextSpeech?.let { request ->
             request.languageTag?.let { tts.language = Locale.forLanguageTag(it) }
             val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, state.ttsVolume / 100f) }
-            tts.speak(request.text, TextToSpeech.QUEUE_ADD, params, "tlc-chat-${request.id}")
+            if (tts.speak(request.text, TextToSpeech.QUEUE_ADD, params, "tlc-chat-${request.id}") == TextToSpeech.ERROR) {
+                model.setTtsEnabled(false); model.reportError("Sprachausgabe fehlgeschlagen")
+            }
             model.consumeSpeech(request.id)
         }
     }
@@ -139,7 +147,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun SongTab(state: CompanionUiState, model: CompanionViewModel, recognize: () -> Unit) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Songerkennung", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Songs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Button(onClick = recognize, shape = CircleShape, modifier = Modifier.align(Alignment.CenterHorizontally).size(116.dp).semantics { contentDescription = "Jetzt erkennen; höchstens zwölf Sekunden" }) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(Icons.Default.Search, null, modifier = Modifier.size(34.dp)); Text("Jetzt erkennen", fontWeight = FontWeight.Bold) } }
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { RecognitionSource.entries.forEachIndexed { index, source -> SegmentedButton(selected = state.source == source, onClick = { model.selectSource(source) }, shape = SegmentedButtonDefaults.itemShape(index, RecognitionSource.entries.size)) { Text(source.label, maxLines = 1) } } }
         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Circle, null, tint = Color(0xFF009B5A), modifier = Modifier.size(10.dp)); Spacer(Modifier.width(8.dp)); Text(state.recognitionStatus, style = MaterialTheme.typography.bodySmall) }
@@ -147,17 +155,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("WebSocket-Hook", state.hookAvailable); HorizontalDivider(); Capability("Untertitel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
+@Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("Connection", state.hookAvailable); HorizontalDivider(); Capability("Titel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
 @Composable private fun Capability(label: String, available: Boolean) { Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label); Spacer(Modifier.weight(1f)); Icon(Icons.Default.Circle, null, tint = if (available) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp)) } }
 @Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel) {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Neue Nachrichten automatisch vorlesen", Modifier.weight(1f)); Switch(state.ttsEnabled, model::setTtsEnabled) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled) "On" else "Off") } }
             Text("Lautstärke ${state.ttsVolume} %", style = MaterialTheme.typography.labelMedium)
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
-            OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Sprach- und Chat-Einstellungen") }
+            OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Sprach- und Chat Einstellungen") }
         } }
         Text("Letzte Chatnachrichten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.chatEntries.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray)
@@ -170,7 +178,7 @@ class MainActivity : ComponentActivity() {
     if (settingsOpen) SpeechSettingsDialog(state, model) { settingsOpen = false }
 }
 @Composable private fun SpeechSettingsDialog(state: CompanionUiState, model: CompanionViewModel, close: () -> Unit) {
-    AlertDialog(onDismissRequest = close, confirmButton = { TextButton(onClick = close) { Text("Schließen") } }, title = { Text("Sprach- und Chat-Einstellungen") }, text = {
+    AlertDialog(onDismissRequest = close, confirmButton = { TextButton(onClick = close) { Text("Schließen") } }, title = { Text("Sprach- und Chat Einstellungen") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.auddToken, model::setAuddToken, label = { Text("AudD API-Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             OutlinedTextField(state.pairingCode, model::setPairingCode, label = { Text("Pairing-Code") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
@@ -181,6 +189,12 @@ class MainActivity : ComponentActivity() {
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen sprechen", Modifier.weight(1f)); Switch(state.ttsSpeakNames, model::setTtsSpeakNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Trigger externer Sprachdienste filtern", Modifier.weight(1f)); Switch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Auto-Chat Refresh", Modifier.weight(1f)); Switch(state.autoChatRefreshEnabled, model::setAutoChatRefreshEnabled) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { model.setAutoChatRefreshMinutes(state.autoChatRefreshMinutes - 1) }) { Text("−") }
+                Text("${state.autoChatRefreshMinutes} min.")
+                TextButton(onClick = { model.setAutoChatRefreshMinutes(state.autoChatRefreshMinutes + 1) }) { Text("+") }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Game-Mode", Modifier.weight(1f)); Switch(state.gameModeEnabled, model::setGameMode) }
         }
     })
@@ -189,7 +203,7 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     var recommendationLimit by remember(state.recommendationLimit) { mutableStateOf(state.recommendationLimit.toString()) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("LIVE-Informationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("LIVE-Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         CapabilityRows(state)
         if (state.liveValues.isEmpty()) Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
@@ -197,7 +211,7 @@ class MainActivity : ComponentActivity() {
         val activeAuthors = state.chatEntries.map { it.author }.filter { it.isNotBlank() }.distinct().takeLast(20)
         if (activeAuthors.isEmpty()) Text("Noch keine Personen aus dem LIVE-Chat verfügbar.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         activeAuthors.forEach { author -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(author, Modifier.weight(1f)); TextButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, null); Spacer(Modifier.width(6.dp)); Text("Stumm") } } } }
-        Text("Seiteninformationen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("PROFIL-Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.pageInfo.isEmpty()) Text("Noch keine Seitenprüfung ausgeführt · „Seite prüfen“ im Tab Mehr.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.pageInfo.forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) { Text(key, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(value, fontWeight = FontWeight.Bold) } } }
         Text("LIVE-Empfehlungen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -237,7 +251,7 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { Text("Vollbild") }
             OutlinedButton(onClick = { model.sendCommand?.invoke("reload-player", emptyMap()) }, modifier = Modifier.weight(1f)) { Text("Neu laden") }
         }
-        OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Ersatz") }
+        OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Player") }
         OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.", style = MaterialTheme.typography.bodySmall)
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -246,7 +260,7 @@ class MainActivity : ComponentActivity() {
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterStrength.toFloat(), onValueChange = { model.setLimiter(state.limiterEnabled, it.toInt()) }, valueRange = 0f..100f, enabled = state.limiterEnabled)
         Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        Text("Media-/VLC-URLs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("HAR-Logs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.mediaUrls.isEmpty()) Text("Noch keine direkte Media-URL erkannt. Sie erscheint, sobald TikTok den Player lädt.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.mediaUrls.forEach { media -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(media.kind, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(media.url, maxLines = 2) }; TextButton(onClick = { copyMedia("TikTok LIVE Media-URL", media.url) }) { Text("Kopieren") } } } }
         if (state.mediaUrls.isNotEmpty()) OutlinedButton(onClick = { copyMedia("TikTok LIVE Media-URLs", state.mediaUrls.joinToString("\n") { it.url }) }, modifier = Modifier.fillMaxWidth()) { Text("Alle kopieren") }
@@ -254,6 +268,7 @@ class MainActivity : ComponentActivity() {
 }
 @Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel) {
     val context = LocalContext.current
+    var connectionSettingsOpen by remember { mutableStateOf(false) }
     var hookDelay by remember(state.hookReconnectDelaySeconds) { mutableStateOf(state.hookReconnectDelaySeconds.toString()) }
     var reconnectDelay by remember(state.autoReconnectDelaySeconds) { mutableStateOf(state.autoReconnectDelaySeconds.toString()) }
     var pendingCaptionExport by remember { mutableStateOf("") }
@@ -262,11 +277,20 @@ class MainActivity : ComponentActivity() {
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Mehr", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Player-Recovery: ${if (!state.autoReconnectEnabled) "aus" else state.playerRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
+        Text("Hook-Reconnect: ${if (!state.hookReconnectEnabled) "aus" else state.hookRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
+        Text("Connection", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            OutlinedButton(onClick = { model.setConnectionEnabled(!state.connectionEnabled) }) { Text(if (state.connectionEnabled) "On" else "Off") }
+            OutlinedButton(onClick = model::openNormal) { Text("Browser") }
+            OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { Text("Player") }
+            IconButton(onClick = { connectionSettingsOpen = true }) { Icon(Icons.Default.Settings, contentDescription = "Connection-Einstellungen") }
+        }
+        if (connectionSettingsOpen) AlertDialog(onDismissRequest = { connectionSettingsOpen = false }, title = { Text("Connection-Einstellungen") }, text = { Column {
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Player-Recovery", Modifier.weight(1f)); OutlinedTextField(reconnectDelay, { value -> reconnectDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setAutoReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); Switch(state.autoReconnectEnabled, model::setAutoReconnect) }
-        Text("Player: ${state.playerRecovery["phase"] ?: "bereit"}", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Hook-Reconnect", Modifier.weight(1f)); OutlinedTextField(hookDelay, { value -> hookDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setHookReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); Switch(state.hookReconnectEnabled, model::setHookReconnect) }
-        Text("Hook: ${state.hookRecovery["phase"] ?: "disabled"} · ${state.hookRecovery["reason"] ?: ""}", style = MaterialTheme.typography.bodySmall)
-        Row { OutlinedButton(onClick = model::openNormal) { Text("Normal") }; OutlinedButton(onClick = model::openEmbed) { Text("Embed") } }
+        } }, confirmButton = { TextButton(onClick = { connectionSettingsOpen = false }) { Text("Schließen") } })
+        OutlinedButton(onClick = model::openEmbed) { Text("Embed") }
         Text("Embed: ${state.embedPhase} · Versuch ${state.embedAttempt}/3", style = MaterialTheme.typography.bodySmall)
         listOf("inspect" to "Seite prüfen", "captions" to "Untertitel aktivieren", "refresh" to "Refresh", "open-report" to "Melden öffnen").forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { Text(label) } }
         OutlinedButton(onClick = model::startForce, enabled = !state.forceInProgress, modifier = Modifier.fillMaxWidth()) { Text(if (state.forceInProgress) "Force läuft …" else "Force") }
@@ -279,7 +303,7 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; val vlcInstalled = runCatching { context.packageManager.getPackageInfo("org.videolan.vlc", 0) }.isSuccess; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", model.debugReport(vlcInstalled))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
             OutlinedButton(onClick = model::clearDebugEvents, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Leeren") }
         }
-        Text("Caption-Protokoll", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("LIVE-Logs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text("${state.captionRecords.size} RAW-Untertitelereignisse", style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { pendingCaptionExport = model.captionJsonLines(); exportCaption.launch("tiktok-live-captions.jsonl") }, enabled = state.captionRecords.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("JSON-L-Export") }

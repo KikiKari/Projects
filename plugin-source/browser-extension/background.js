@@ -937,12 +937,14 @@ async function setHookFlag(tabId, enabled) {
     return { armed: Boolean(enabled), waitingForTikTok: Boolean(enabled), reloading: false };
   }
   const state = await getState(tab.id);
+  const previousState = structuredClone(state);
   state.enabled = true;
   if (!state.browserSessionId) state.browserSessionId = newBrowserSessionId();
   state.hook = { armed: enabled, installed: false, connected: false, lastError: null };
   if (enabled) state.liveStats = emptyState().liveStats;
   await setState(tab.id, state);
-  await chrome.tabs.reload(tab.id);
+  try { await chrome.tabs.reload(tab.id); }
+  catch (error) { await setState(tab.id, previousState); throw error; }
   return { armed: Boolean(enabled), waitingForTikTok: Boolean(enabled), reloading: true, tabId: tab.id };
 }
 

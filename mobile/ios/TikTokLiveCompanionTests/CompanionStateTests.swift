@@ -22,6 +22,36 @@ private final class FakeRecognizer: RecognitionService {
 }
 
 @MainActor final class CompanionStateTests: XCTestCase {
+    func testConnectionAcknowledgementAndBrowserReturn() {
+        let state = recoveryState(#function)
+        var commands: [String] = []
+        state.sendCommand = { name, _ in commands.append(name) }
+        state.setConnectionEnabled(true)
+        XCTAssertFalse(state.connectionEnabled)
+        state.handle(event("capability", ["feature": .string("connection"), "available": .bool(true)]))
+        XCTAssertTrue(state.connectionEnabled)
+        state.setConnectionEnabled(false)
+        XCTAssertTrue(state.connectionEnabled)
+        state.handle(event("capability", ["feature": .string("connection"), "available": .bool(false)]))
+        XCTAssertFalse(state.connectionEnabled)
+        state.handle(event("media-url", ["url": .string("https://cdn.example/live.m3u8"), "kind": .string("network")]))
+        state.toggleVlcReplacement()
+        XCTAssertNotNil(state.vlcReplacementURL)
+        state.openNormal()
+        XCTAssertNil(state.vlcReplacementURL)
+        XCTAssertTrue(commands.contains("set-vlc-active"))
+    }
+    func testAutoChatRefreshPersistence() {
+        let suite = #function
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        state.autoChatRefreshEnabled = true; state.autoChatRefreshMinutes = 7
+        let restored = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertTrue(restored.autoChatRefreshEnabled)
+        XCTAssertEqual(restored.autoChatRefreshMinutes, 7)
+        state.autoChatRefreshEnabled = false; restored.autoChatRefreshEnabled = false
+    }
     func testNativeVlcPcmIsLimitedAndStops() async throws {
         // Real decoder -> native callback -> common limiter -> AVAudioEngine.
         // This measures digital PCM, not physical speaker output or A/V sync.

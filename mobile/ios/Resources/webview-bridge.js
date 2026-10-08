@@ -13,11 +13,12 @@
   const FORCE_RETURN_MAX_ATTEMPTS = 2;
   const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
   const ALLOWED_COMMANDS = new Set([
-    "inspect", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
+    "inspect", "set-connection", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "reload-player", "captions", "refresh", "set-player-expanded", "reject-cookies",
     "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter", "set-auto-reconnect",
     "scan-recommendations", "cancel-recommendation-scan"
   ]);
+  let connectionEnabled = true;
   let sequence = 0;
   let streamId = location.pathname;
   let audioCapture = null;
@@ -48,6 +49,7 @@
   }
 
   function emit(type, payload = {}) {
+    if (!connectionEnabled && ["chat", "caption", "live-stats", "gift", "socket-open"].includes(type)) return;
     nativePost({ version: 1, type, streamId, sequence: ++sequence, timestamp: new Date().toISOString(), payload: { ...payload, ...(root.TLC_MOBILE_RECOVERY ? {documentId: root.TLC_MOBILE_RECOVERY.documentId} : {}), frameOrigin: location.origin, frameKind: isTop ? "top" : "sub" } });
   }
 
@@ -294,6 +296,7 @@
   }
 
   function emitDecoded(decoded) {
+    if (!connectionEnabled) return;
     for (const item of decoded.chatMessages || []) {
       const entry = { nickname: text(item.nickname, 128), displayId: text(item.displayId, 128), content: text(item.content, 1000), language: text(item.contentLanguage, 24) };
       chat.push(entry);
@@ -538,7 +541,11 @@
     const video = primaryVideo();
     try {
       root.TLC_MOBILE_RECOVERY?.command(name, payload);
-      if (name === "inspect" || name === "hook-status") inspect();
+      if (name === "set-connection") {
+        connectionEnabled = payload.enabled === true;
+        emit("capability", {feature:"connection", available:connectionEnabled});
+      }
+      else if (name === "inspect" || name === "hook-status") inspect();
       else if (name === "play") await video?.play();
       else if (name === "pause") video?.pause();
       else if (name === "mute" && video) video.muted = true;
@@ -604,5 +611,6 @@
     }, 500);
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startTopFrame, { once: true }); else startTopFrame();
+  emit("capability", {feature:"connection", available:connectionEnabled});
   emit("bridge-ready", { version: "0.8.1", origin: location.origin, documentStart: true, autoReconnectDelayMs });
 })(globalThis);

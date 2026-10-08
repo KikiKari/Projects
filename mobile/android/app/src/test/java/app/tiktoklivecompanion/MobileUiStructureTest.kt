@@ -46,7 +46,7 @@ class MobileUiStructureTest {
         val sourceRoot = listOf(File("src/main/java/app/tiktoklivecompanion"), File("app/src/main/java/app/tiktoklivecompanion")).first { it.isDirectory }
         val main = File(sourceRoot, "MainActivity.kt").readText()
         val vlc = File(sourceRoot, "VlcVideoSurface.kt").readText()
-        val replacement = main.indexOf("Text(\"VLC Ersatz\")")
+        val replacement = main.indexOf("Text(\"Player\")")
         val external = main.indexOf("Text(\"VLC Player\")")
         assertTrue(replacement >= 0 && external > replacement)
         assertTrue(main.contains("setPackage(\"org.videolan.vlc\")"))

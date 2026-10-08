@@ -1,7 +1,7 @@
 import Foundation
 
 enum CompanionTab: String, CaseIterable, Identifiable {
-    case live = "Live", chat = "Chat", song = "Song", player = "Player", more = "Mehr"
+    case live = "Live", chat = "Chat", song = "Songs", player = "Player", more = "Mehr"
     var id: String { rawValue }
 }
 

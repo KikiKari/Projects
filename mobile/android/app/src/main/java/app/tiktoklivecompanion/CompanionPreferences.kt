@@ -41,6 +41,12 @@ class CompanionPreferences(private val context: Context) {
     private val filterExternalSpeechTriggersKey = booleanPreferencesKey("filterExternalSpeechTriggers")
     val filterExternalSpeechTriggers: Flow<Boolean> = context.companionDataStore.data.map { it[filterExternalSpeechTriggersKey] ?: false }
     suspend fun setFilterExternalSpeechTriggers(enabled: Boolean) { context.companionDataStore.edit { it[filterExternalSpeechTriggersKey] = enabled } }
+    private val autoChatRefreshEnabledKey = booleanPreferencesKey("autoChatRefreshEnabled")
+    private val autoChatRefreshMinutesKey = intPreferencesKey("autoChatRefreshMinutes")
+    val autoChatRefreshEnabled: Flow<Boolean> = context.companionDataStore.data.map { it[autoChatRefreshEnabledKey] ?: false }
+    val autoChatRefreshMinutes: Flow<Int> = context.companionDataStore.data.map { (it[autoChatRefreshMinutesKey] ?: 5).coerceIn(1, 60) }
+    suspend fun setAutoChatRefreshEnabled(value: Boolean) { context.companionDataStore.edit { it[autoChatRefreshEnabledKey] = value } }
+    suspend fun setAutoChatRefreshMinutes(value: Int) { context.companionDataStore.edit { it[autoChatRefreshMinutesKey] = value.coerceIn(1, 60) } }
     private val gameModeKey = booleanPreferencesKey("game_mode")
     private val ttsVoiceKey = stringPreferencesKey("tts_voice")
     val limiterEnabled: Flow<Boolean> = context.companionDataStore.data.map { values -> values[limiterEnabledKey] ?: false }

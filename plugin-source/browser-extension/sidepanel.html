@@ -14,12 +14,12 @@
   <main>
     <section aria-labelledby="chat-heading">
       <div class="section-title">
-        <h2 id="chat-heading">Chatzeilen</h2>
+        <h2 id="chat-heading">Chat</h2>
         <div class="title-actions">
           <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
           <button id="chat-count" class="count count-button" type="button" aria-haspopup="dialog" title="Gesammelte Chatzeilen öffnen">0</button>
           <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Refresh</button>
-          <button id="toggle-speech" class="secondary compact" aria-pressed="false">Vorlesen</button>
+          <button id="toggle-speech" class="secondary compact" aria-pressed="false" aria-label="Vorlesen">Off</button>
           <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
         </div>
       </div>
@@ -30,13 +30,12 @@
       <div class="button-row">
         <button id="service-action" class="secondary">Sprachdienst</button>
         <button id="sherpa-action" class="secondary">Sherpa</button>
-        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Sprach- und Chat-Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Sprach- und Chat Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
       </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
       <div id="service-setup" class="inline-status" hidden>
         <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
       </div>
-      <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
       <label class="option-row"><input id="keep-speech-active" type="checkbox"> Permanent aktiv</label>
     </section>
 
@@ -55,7 +54,7 @@
 
     <section id="page-info-section" aria-labelledby="page-info-heading">
       <div class="section-title">
-        <h2 id="page-info-heading">Seiteninformationen</h2>
+        <h2 id="page-info-heading">PROFIL-Information</h2>
         <div class="title-actions">
           <span id="page-info-source" class="live-indicator">Metadaten</span>
           <button id="refresh-page-info" class="secondary compact">Refresh</button>
@@ -68,7 +67,7 @@
 
     <section aria-labelledby="stats-heading">
       <div class="section-title">
-        <h2 id="stats-heading">LIVE-Informationen</h2>
+        <h2 id="stats-heading">LIVE-Information</h2>
         <span id="stats-live" class="live-indicator">warte</span>
       </div>
       <div id="live-stats" class="status-grid stats-grid"></div>
@@ -77,24 +76,22 @@
 
     <section aria-labelledby="hook-heading">
       <div class="section-title">
-        <h2 id="hook-heading">WebSocket-Hook</h2>
+        <h2 id="hook-heading">Connection</h2>
         <span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span>
       </div>
       <div class="button-row">
-        <button id="enable-hook" class="primary">Hook setzen</button>
-        <button id="disable-hook" class="secondary">Hook deaktivieren</button>
+        <button id="toggle-hook" class="primary" aria-label="Connection" aria-pressed="false">Off</button>
         <button id="reset-tab" class="secondary danger-outline">Refresh</button>
         <button id="open-embed-live" class="secondary">Embed</button>
-        <button id="open-normal-live" class="secondary">Normal</button>
-        <button id="player-vlc-frame" class="secondary compact">VLC Ersatz</button>
+        <button id="open-normal-live" class="secondary">Browser</button>
+        <button id="player-vlc-frame" class="secondary compact">Player</button>
+        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog">⚙</button>
       </div>
       <p id="hook-status" class="inline-status"></p>
       <p id="embed-startup-status" class="inline-status" role="status" aria-live="polite" hidden></p>
       <button id="cancel-embed-startup" class="secondary" hidden>Embed-Start abbrechen</button>
       <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
-      <label class="option-row quick-recover-setting"><input id="hook-reconnect" type="checkbox"> Hook-Reconnect <input id="hook-reconnect-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Hook-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
       <p id="hook-reconnect-status" class="inline-status" role="status">Hook-Reconnect: aus</p>
-      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Player-Recovery <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Player-Recovery-Bestätigungszeit in Sekunden"><span>Sek.</span></label>
       <p id="player-recovery-status" class="inline-status" role="status">Player-Recovery: aus</p>
     </section>
 
@@ -120,7 +117,7 @@
 
     <section aria-labelledby="caption-heading">
       <div class="section-title">
-        <h2 id="caption-heading">Untertitel</h2>
+        <h2 id="caption-heading">Titel</h2>
         <button id="scan" class="secondary">Seite prüfen</button>
       </div>
       <div id="caption-status" class="status-grid"></div>
@@ -130,7 +127,7 @@
 
     <section aria-labelledby="player-heading">
       <div class="section-title">
-        <h2 id="player-heading">Playersteuerung</h2>
+        <h2 id="player-heading">Player</h2>
         <span id="player-time" class="player-time">–</span>
       </div>
       <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
@@ -155,7 +152,7 @@
 
     <section aria-labelledby="song-heading">
       <div class="section-title">
-        <h2 id="song-heading">Songerkennung</h2>
+        <h2 id="song-heading">Songs</h2>
         <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
       </div>
       <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
@@ -166,7 +163,7 @@
 
     <section aria-labelledby="links-heading">
       <div class="section-title">
-        <h2 id="links-heading">VLC-Links</h2>
+        <h2 id="links-heading">HAR-Logs</h2>
         <span id="media-count" class="count">0</span>
       </div>
       <div id="media-list" class="list empty">Noch keine FLV-/HLS-Links erkannt.</div>
@@ -175,7 +172,7 @@
 
     <section aria-labelledby="log-heading">
       <div class="section-title">
-        <h2 id="log-heading">Caption-Protokoll</h2>
+        <h2 id="log-heading">LIVE-Logs</h2>
         <span id="caption-count" class="count">0</span>
       </div>
       <div class="button-row">
@@ -213,7 +210,7 @@
     <div id="speech-settings-modal" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="speech-settings-heading">
         <div class="section-title">
-          <h2 id="speech-settings-heading">Sprach- und Chat-Einstellungen</h2>
+          <h2 id="speech-settings-heading">Sprach- und Chat Einstellungen</h2>
           <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
         </div>
         <div class="settings-grid speech-integration-settings">
@@ -225,6 +222,7 @@
         </div>
         <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
         <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
+        <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
         <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
         <label class="option-row"><input id="filter-external-speech-triggers" type="checkbox"> Trigger externer Sprachdienste filtern</label>
       </section>
@@ -233,7 +231,7 @@
     <div id="chat-history-modal" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="chat-history-heading">
         <div class="section-title">
-          <h2 id="chat-history-heading">Gesammelte Chatzeilen</h2>
+          <h2 id="chat-history-heading">Gesammelte Chatnachrichten</h2>
           <button id="close-chat-history" class="secondary compact" aria-label="Chatzeilen schließen">Schließen</button>
         </div>
         <p id="chat-history-limit" class="inline-status"></p>
@@ -253,6 +251,14 @@
 
     <p id="notice" role="alert" class="notice"></p>
   </main>
+  <div id="connection-settings-modal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="connection-settings-heading">
+      <div class="section-title"><h2 id="connection-settings-heading">Connection-Einstellungen</h2><button id="close-connection-settings" class="secondary compact">Schließen</button></div>
+      <label class="option-row quick-recover-setting"><input id="hook-reconnect" type="checkbox"> Hook-Reconnect <input id="hook-reconnect-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Hook-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Player-Recovery <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Player-Recovery-Bestätigungszeit in Sekunden"><span>Sek.</span></label>
+    </section>
+  </div>
+
 
   <script src="content-core.js"></script>
   <script src="sidepanel.js"></script>

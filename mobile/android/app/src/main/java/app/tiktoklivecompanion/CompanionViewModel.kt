@@ -28,6 +28,9 @@ data class CompanionUiState(
     val result: RecognitionResult? = null,
     val connected: Boolean = false,
     val hookAvailable: Boolean = false,
+    val connectionEnabled: Boolean = false,
+    val autoChatRefreshEnabled: Boolean = false,
+    val autoChatRefreshMinutes: Int = 5,
     val captionsAvailable: Boolean = false,
     val chats: List<String> = emptyList(),
     val chatEntries: List<ChatLine> = emptyList(),
@@ -90,6 +93,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     private var embedStartedAt = 0L
     private var embedId = ""
     private var captionExpiry: Job? = null
+    private var chatRefreshJob: Job? = null
     private var speechSequence = 0L
     private var forceWatchdog: Job? = null
     private val recentSpeech = LinkedHashMap<String, Long>()
@@ -109,6 +113,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         recognizer.onResult = { result -> mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") } }
         recognizer.onError = { message -> mutable.update { it.copy(error = message, recognitionStatus = message) } }
         preferences?.let { stored ->
+            viewModelScope.launch { stored.autoChatRefreshEnabled.collectLatest { value -> mutable.update { it.copy(autoChatRefreshEnabled = value) }; scheduleChatRefresh() } }
+            viewModelScope.launch { stored.autoChatRefreshMinutes.collectLatest { value -> mutable.update { it.copy(autoChatRefreshMinutes = value) }; scheduleChatRefresh() } }
             viewModelScope.launch { stored.source.collectLatest { source -> mutable.update { it.copy(source = source) } } }
             viewModelScope.launch { stored.mutedAuthors.collectLatest { authors -> mutable.update { it.copy(mutedAuthors = authors) } } }
             viewModelScope.launch { stored.limiterEnabled.collectLatest { enabled -> mutable.update { it.copy(limiterEnabled = enabled) } } }
@@ -167,6 +173,29 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         )).toString(2)
     }
     fun setFilterExternalSpeechTriggers(enabled: Boolean) { mutable.update { it.copy(filterExternalSpeechTriggers = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setFilterExternalSpeechTriggers(enabled) } } }
+    private fun scheduleChatRefresh() {
+        chatRefreshJob?.cancel()
+        if (!mutable.value.autoChatRefreshEnabled) return
+        chatRefreshJob = viewModelScope.launch {
+            while (true) {
+                delay(mutable.value.autoChatRefreshMinutes * 60_000L)
+                mutable.update { it.copy(chats = emptyList(), chatEntries = emptyList()) }
+            }
+        }
+    }
+    fun setAutoChatRefreshEnabled(enabled: Boolean) {
+        mutable.update { it.copy(autoChatRefreshEnabled = enabled) }; scheduleChatRefresh()
+        preferences?.let { stored -> viewModelScope.launch { stored.setAutoChatRefreshEnabled(enabled) } }
+    }
+    fun setAutoChatRefreshMinutes(minutes: Int) {
+        val safe = minutes.coerceIn(1, 60)
+        mutable.update { it.copy(autoChatRefreshMinutes = safe) }; scheduleChatRefresh()
+        preferences?.let { stored -> viewModelScope.launch { stored.setAutoChatRefreshMinutes(safe) } }
+    }
+    fun setConnectionEnabled(enabled: Boolean) {
+        val dispatch = sendCommand ?: return reportError("Connection ist noch nicht bereit")
+        dispatch("set-connection", mapOf("enabled" to enabled))
+    }
     fun setGameMode(enabled: Boolean) { mutable.update { it.copy(gameModeEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setGameMode(enabled) } } }
     fun setAuddToken(value: String) { val safe = value.take(4096); mutable.update { it.copy(auddToken = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setAuddToken(safe) } } }
     fun setPairingCode(value: String) { val safe = value.take(512); mutable.update { it.copy(pairingCode = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setPairingCode(safe) } } }
@@ -302,6 +331,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         }
     }
     fun openNormal() {
+        if (mutable.value.vlcReplacementUrl != null) toggleVlcReplacement()
         if (!mutable.value.embedMode) return
         embedJob?.cancel(); mutable.update { it.copy(embedMode = false, embedPhase = "cancelled") }
         noteNavigation(currentWebUrl); loadUrl?.invoke(currentWebUrl)
@@ -326,7 +356,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun captionJsonLines(): String = mutable.value.captionRecords.joinToString("\n") { it.rawJson }
     fun captionRawJson(): String = JSONArray(mutable.value.captionRecords.map { JSONObject(it.rawJson) }).toString(2)
     fun clearCaptions() = mutable.update { it.copy(captionRecords = emptyList()) }
-    fun setTtsEnabled(enabled: Boolean) { mutable.update { it.copy(ttsEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsEnabled(enabled) } } }
+    fun setTtsEnabled(enabled: Boolean) { mutable.update { it.copy(ttsEnabled = enabled, speechQueue = if (enabled) it.speechQueue else emptyList()) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsEnabled(enabled) } } }
     fun setTtsVolume(volume: Int) { val value = volume.coerceIn(0, 100); mutable.update { it.copy(ttsVolume = value) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsVolume(value) } } }
     fun setTtsLanguage(language: TtsLanguage) { mutable.update { it.copy(ttsLanguage = language) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsLanguage(language) } } }
     fun setTtsSpeakNames(enabled: Boolean) { mutable.update { it.copy(ttsSpeakNames = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsSpeakNames(enabled) } } }
@@ -406,6 +436,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false
+                if (feature == "connection") mutable.update { it.copy(connectionEnabled = available) }
                 if (feature == "websocket-hook") mutable.update { it.copy(hookAvailable = available || it.hookAvailable) }
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
