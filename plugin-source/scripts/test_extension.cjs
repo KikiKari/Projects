@@ -742,4 +742,7 @@ assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 require("node:child_process").execFileSync(process.execPath, ["--test", path.join(__dirname, "test_background_runtime.cjs")], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_sidepanel_player_guard.cjs")], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_vlc_switch.cjs")], { stdio: "inherit" });
+for (const script of ["test_external_speech_filter.cjs", "test_issue_controls.cjs"]) {
+  require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, script)], { stdio: "inherit" });
+}
 console.log(`PASS: manifest 0.8.1, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);
