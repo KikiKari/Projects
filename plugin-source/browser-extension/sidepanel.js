@@ -175,7 +175,7 @@
     speechTabId = activeTabId;
     speechQueue = [];
     for (const item of currentState?.chatMessages || []) knownSpeechKeys.add(chatKey(item));
-    elements["toggle-speech"].textContent = "On";
+    elements["toggle-speech"].textContent = "Off";
     elements["toggle-speech"].setAttribute("aria-pressed", "true");
     setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
@@ -191,7 +191,7 @@
     globalThis.speechSynthesis?.cancel();
     try { speechAudioSource?.stop(); } catch (_) { /* Already stopped. */ }
     speechAudioSource = null;
-    elements["toggle-speech"].textContent = "Off";
+    elements["toggle-speech"].textContent = "On";
     elements["toggle-speech"].setAttribute("aria-pressed", "false");
     setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
     elements["speech-status"].textContent = message;
@@ -961,7 +961,7 @@
 
   function render(state) {
     currentState = state;
-    elements["toggle-hook"].textContent = state.hook?.armed ? "On" : "Off";
+    elements["toggle-hook"].textContent = state.hook?.armed ? "Off" : "On";
     elements["toggle-hook"].setAttribute("aria-pressed", String(Boolean(state.hook?.armed)));
     elements["quick-recover"].checked = Boolean(state.quickRecoverEnabled);
     elements["quick-recover-seconds"].value = String(state.quickRecoverSeconds ?? 3);
@@ -982,14 +982,14 @@
     if (tabSpeechEnabled) {
       speechEnabled = true;
       speechTabId = activeTabId;
-      elements["toggle-speech"].textContent = "On";
+      elements["toggle-speech"].textContent = "Off";
       elements["toggle-speech"].setAttribute("aria-pressed", "true");
       setLed(elements["speech-led"], true, "Vorlesen aktiv", "Vorlesen inaktiv");
       elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist aktiv; warte auf neue Chatzeilen.";
     } else {
       speechEnabled = false;
       speechTabId = null;
-      elements["toggle-speech"].textContent = "Off";
+      elements["toggle-speech"].textContent = "On";
       elements["toggle-speech"].setAttribute("aria-pressed", "false");
       setLed(elements["speech-led"], false, "Vorlesen aktiv", "Vorlesen inaktiv");
       elements["speech-status"].textContent = state.speech?.status || "Vorlesen ist ausgeschaltet.";

@@ -82,7 +82,7 @@ struct ContentView: View {
     private var chatView: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Chat").font(.headline)
-            HStack { Text("Vorlesen"); Spacer(); Button(state.speechEnabled ? "On" : "Off") { state.setSpeechEnabled(!state.speechEnabled) } }
+            HStack { Text("Vorlesen"); Spacer(); Button(state.speechEnabled ? "Off" : "On") { state.setSpeechEnabled(!state.speechEnabled) } }
             Button { settingsOpen = true } label: { Label("Sprach- und Chat Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
             ForEach(Array(state.speechChatEntries.suffix(5).enumerated()), id: \.offset) { _, entry in HStack { Text(entry.author.isEmpty ? entry.content : "\(entry.author): \(entry.content)"); Spacer(); Button { state.speak(entry.content, author: entry.author) } label: { Image(systemName: "speaker.wave.2") }; if !entry.author.isEmpty { Button { state.muteAuthor(entry.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
@@ -148,7 +148,7 @@ struct ContentView: View {
             Text("Hook-Reconnect: \(state.hookReconnectEnabled ? state.hookRecovery["phase"] as? String ?? "aktiv" : "aus")").font(.footnote)
             Text("Connection").font(.headline)
             HStack {
-                Button(state.connectionEnabled ? "On" : "Off") { state.setConnectionEnabled(!state.connectionEnabled) }
+                Button(state.connectionEnabled ? "Off" : "On") { state.setConnectionEnabled(!state.connectionEnabled) }
                 Button("Browser", action: state.openNormal)
                 Button("Player", action: state.toggleVlcReplacement).disabled(state.mediaLinks.isEmpty)
                 Button { connectionSettingsOpen = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Connection-Einstellungen")

@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity() {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(enabled = ttsReady, onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled && ttsReady) "On" else "Off") } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(enabled = ttsReady, onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled && ttsReady) "Off" else "On") } }
             Text("Lautstärke ${state.ttsVolume} %", style = MaterialTheme.typography.labelMedium)
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
             OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Sprach- und Chat Einstellungen") }
@@ -277,7 +277,7 @@ class MainActivity : ComponentActivity() {
         Text("Hook-Reconnect: ${if (!state.hookReconnectEnabled) "aus" else state.hookRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
         Text("Connection", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = { model.setConnectionEnabled(!state.connectionEnabled) }) { Text(if (state.connectionEnabled) "On" else "Off") }
+            OutlinedButton(onClick = { model.setConnectionEnabled(!state.connectionEnabled) }) { Text(if (state.connectionEnabled) "Off" else "On") }
             OutlinedButton(onClick = model::openNormal) { Text("Browser") }
             OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { Text("Player") }
             IconButton(onClick = { connectionSettingsOpen = true }) { Icon(Icons.Default.Settings, contentDescription = "Connection-Einstellungen") }
