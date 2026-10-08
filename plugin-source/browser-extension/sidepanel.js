@@ -199,7 +199,7 @@
   }
 
   function serviceHeaders(extra = {}) {
-    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.8.1", ...extra };
+    return { "Authorization": `Bearer ${pairingCode}`, "X-TLC-Client": "sidepanel-0.8.2", ...extra };
   }
 
   function speechText(item) {
@@ -406,7 +406,7 @@
     } catch (error) {
       const message = String(error?.message || error);
       elements["service-status"].textContent = message.includes("HTTP 404")
-        ? "Sherpa-Endpunkt fehlt: lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.1-Paket ausführen."
+        ? "Sherpa-Endpunkt fehlt: lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.2-Paket ausführen."
         : `Sherpa-Installation konnte nicht gestartet werden: ${message}`;
       return false;
     } finally {
@@ -1110,7 +1110,7 @@
       elements["sherpa-action"].disabled = Boolean(health.sherpaConfigured);
       await loadSpeechVoices();
       if (!Object.prototype.hasOwnProperty.call(health, "canInstallSherpa")) {
-        elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.1-Paket ausführen.";
+        elements["service-status"].textContent = "Lokaler Dienst ist veraltet; bitte setup.ps1 aus dem aktuellen 0.8.2-Paket ausführen.";
         return health;
       }
       return health;
@@ -1574,7 +1574,7 @@
     }
     try {
       const response = await fetch(`${serviceUrl}/v1/health`, {
-        headers: { "Authorization": `Bearer ${candidate}`, "X-TLC-Client": "sidepanel-0.8.1" }
+        headers: { "Authorization": `Bearer ${candidate}`, "X-TLC-Client": "sidepanel-0.8.2" }
       });
       if (!response.ok) throw new Error(response.status === 401 ? "Pairing-Code ungültig." : `Sprachdienst HTTP ${response.status}`);
       pairingCode = candidate;

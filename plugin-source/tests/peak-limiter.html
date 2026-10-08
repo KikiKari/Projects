@@ -35,7 +35,7 @@ async function render(kind, strength, legacy) {
   }
   source.start();
   const rendered = await context.startRendering();
-  return {kind, strength, path: strength === null ? 'off' : legacy ? '0.8.1-compressor' : 'candidate-lookahead',
+  return {kind, strength, path: strength === null ? 'off' : legacy ? '0.8.2-compressor' : 'candidate-lookahead',
     inputDbfs: peakDb(data), outputDbfs: peakDb(rendered.getChannelData(0))};
 }
 document.getElementById('run').onclick = async () => {

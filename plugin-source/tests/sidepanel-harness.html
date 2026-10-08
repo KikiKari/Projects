@@ -102,7 +102,7 @@
             }
             if (message.type === "TLC_GET_CAPTION_JSONL_EXPORT") return { ok: true, records: TLC_EXPORT_PRIVACY.captions(state.captions) };
             if (message.type === "TLC_GET_CAPTION_RAW_EXPORT") return { ok: true, report: TLC_EXPORT_PRIVACY.captionReport({
-              version: "0.8.1", generatedAtUtc: new Date().toISOString(), messages: state.captions,
+              version: "0.8.2", generatedAtUtc: new Date().toISOString(), messages: state.captions,
               dataStreams: state.media, data: { captionInfo: state.captionInfo, captionSources: state.captionSources, playerState: state.playerState }, stream: { page: state.page }
             }) };
             if (message.type === "TLC_SCAN") {
@@ -136,7 +136,7 @@
               return { ok: true };
             }
             if (message.type === "TLC_SET_MUTE") return { ok: true, state, settings: { permanentMutes: [] } };
-            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: TLC_EXPORT_PRIVACY.diagnosticReport({ version: "0.8.1", debug: state.debug, page: state.page, media: state.media }) };
+            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: TLC_EXPORT_PRIVACY.diagnosticReport({ version: "0.8.2", debug: state.debug, page: state.page, media: state.media }) };
             return { ok: true, response: { activated: true } };
           },
           onMessage: { addListener(listener) { stateListeners.push(listener); } }

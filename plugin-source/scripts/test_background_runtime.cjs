@@ -84,7 +84,7 @@ function worker(seed = {}) {
     sidePanel: { setPanelBehavior: async () => {}, setOptions: async () => {} },
     runtime: {
       onInstalled: event("installed"), onStartup: event("startup"), onMessage: event("message"),
-      getManifest: () => ({ version: "0.8.1" }), getURL: (name) => `chrome-extension://test/${name}`,
+      getManifest: () => ({ version: "0.8.2" }), getURL: (name) => `chrome-extension://test/${name}`,
       sendMessage: async (message) => { broadcasts.push(structuredClone(message)); }
     },
     tabs: {

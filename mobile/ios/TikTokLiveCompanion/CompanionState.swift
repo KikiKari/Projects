@@ -403,7 +403,7 @@ import Foundation
     func debugReport(vlcInstalled: Bool) -> String {
         let report: [String: Any] = [
             "generatedAtUtc": ISO8601DateFormatter().string(from: Date()),
-            "version": "0.8.1",
+            "version": "0.8.2",
             "platform": "ios",
             "components": [
                 "layout": ["liveInformationBeforePageInformation": true],

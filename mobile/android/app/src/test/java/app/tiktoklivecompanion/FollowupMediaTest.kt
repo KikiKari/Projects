@@ -118,7 +118,7 @@ class FollowupMediaTest {
         assertEquals(50, state.recommendationLimit)
         assertEquals(1, state.captionRecords.size)
         assertTrue(model.captionJsonLines().contains("Hallo"))
-        assertTrue(model.debugReport(false).contains("0.8.1"))
+        assertTrue(model.debugReport(false).contains("0.8.2"))
         assertTrue(model.debugReport(false).contains("settingsDialogAvailable"))
     }
 
