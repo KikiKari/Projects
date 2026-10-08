@@ -1449,7 +1449,7 @@
       volumeGainDb: volumeGainDb(volume),
       peakDbfs: currentPeakDbfs(),
       limiterEnabled: Boolean(pipeline?.enabled),
-      limiterMode: pipeline?.enabled ? "Lookahead" : null,
+      limiterMode: pipeline?.enabled ? pipeline.limiter.limiterMode : null,
       limiterStrength: core.limiterDbfsToStrength(pipeline ? pipeline.thresholdDbfs : -6),
       limiterThresholdDbfs: pipeline ? pipeline.thresholdDbfs : -6,
       limiterReductionDb: pipeline?.limiter.measurements?.reductionDb ?? null,

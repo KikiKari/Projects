@@ -276,9 +276,29 @@
     };
   }
 
+  function createCompressorLimiterNode(context) {
+    const node = context.createDynamicsCompressor();
+    node.limiterMode = "Kompressor";
+    node.threshold.value = 0;
+    node.knee.value = 0;
+    node.ratio.value = 1;
+    node.attack.value = 0;
+    node.release.value = 0.06;
+    node.setProtection = ({ enabled, strength }) => {
+      const percent = Math.max(0, Math.min(100, Number(strength) || 0));
+      node.threshold.setValueAtTime(enabled ? -4 - percent * 0.26 : 0, context.currentTime);
+      node.ratio.setValueAtTime(enabled ? 20 : 1, context.currentTime);
+    };
+    Object.defineProperty(node, "measurements", { get: () => ({
+      reductionDb: Math.max(0, -Number(node.reduction || 0)),
+      inputPeakDbfs: null, outputPeakDbfs: null, lookaheadMs: null
+    }) });
+    return node;
+  }
+
   async function createPeakLimiterNode(context) {
     if (!context.audioWorklet || typeof AudioWorkletNode !== "function") {
-      throw new Error("Pegelschutz benötigt AudioWorklet-Unterstützung.");
+      return createCompressorLimiterNode(context);
     }
     const source = `const createPeakLimiter = ${createPeakLimiter.toString()};
       class TLCPeakLimiter extends AudioWorkletProcessor {
@@ -310,8 +330,10 @@
       registerProcessor('tlc-peak-limiter', TLCPeakLimiter);`;
     const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
     try { await context.audioWorklet.addModule(url); }
+    catch (_) { return createCompressorLimiterNode(context); }
     finally { URL.revokeObjectURL(url); }
     const node = new AudioWorkletNode(context, "tlc-peak-limiter");
+    node.limiterMode = "Lookahead";
     node.setProtection = ({ enabled, strength }) => {
       node.parameters.get("enabled").setValueAtTime(enabled === true ? 1 : 0, context.currentTime);
       node.parameters.get("strength").setValueAtTime(Math.max(0, Math.min(100, Number(strength) || 0)), context.currentTime);

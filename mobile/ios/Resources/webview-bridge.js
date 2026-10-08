@@ -402,6 +402,7 @@
   async function attachPeakLimiter(graph) {
     if (graph.peakLimiter) return;
     graph.peakLimiter = await root.TLC_CONTENT_CORE.createPeakLimiterNode(graph.context);
+    if (!graph.peakLimiter.port) return;
     graph.peakLimiter.port.onmessage = event => {
       graph.peakLimiter.measurements = event.data;
       if (graph === audioGraph && limiter.enabled) emit("limiter", {
