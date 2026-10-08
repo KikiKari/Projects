@@ -103,7 +103,7 @@ private final class FakeRecognizer: RecognitionService {
         audio.player.play()
         if let check = pending { await fulfillment(of: [check], timeout: 8) }
         pending = expectation(description: "Output after seek and flush")
-        audio.player.time = VLCTime(int: 6000)
+        audio.player.position = 0.5
         if let check = pending { await fulfillment(of: [check], timeout: 8) }
         target = -1.732; pending = expectation(description: "Live bypass")
         audio.setProtection(enabled: false, strength: 100)
