@@ -1,5 +1,7 @@
 package app.tiktoklivecompanion
 
+data class ServiceVoice(val id: String, val name: String, val culture: String, val installed: Boolean, val bytes: Long, val license: String)
+
 enum class CompanionTab(val label: String) { LIVE("Live"), CHAT("Chat"), SONG("Songs"), PLAYER("Player"), MORE("Mehr") }
 enum class RecognitionSource(val label: String) { MICROPHONE("Mikrofon"), WEBVIEW("WebView (experimentell)") }
 enum class TtsLanguage(val label: String, val tag: String?) { AUTO("Auto", null), DE("Deutsch", "de-DE"), EN("Englisch", "en-US") }

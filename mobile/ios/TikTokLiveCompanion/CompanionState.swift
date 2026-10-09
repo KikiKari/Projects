@@ -2,6 +2,14 @@ import AVFoundation
 import Foundation
 
 @MainActor final class CompanionState: ObservableObject {
+    struct ServiceVoice: Identifiable { let id: String; let name: String; let culture: String; let installed: Bool; let bytes: Int; let license: String }
+    @Published var serviceVoices: [ServiceVoice] = []
+    @Published var serviceStatus = ""
+    private var serviceAudio: AVAudioPlayer?
+    private var serviceSpeechTask: Task<Void, Never>?
+    private var pipelineRetryTask: Task<Void, Never>?
+    @Published var serviceURL = "" { didSet { defaults.set(serviceURL, forKey: "companionServiceURL") } }
+    private let serviceClient = MobilePipelineClient()
     @Published var hookReconnectEnabled = false {
         didSet { defaults.set(hookReconnectEnabled, forKey: "hookReconnectEnabled"); pushHookRecovery() }
     }
@@ -72,7 +80,7 @@ import Foundation
     }
     @Published var auddToken = "" { didSet { defaults.set(String(auddToken.prefix(4096)), forKey: Self.auddTokenKey) } }
     @Published var pairingCode = "" { didSet { defaults.set(String(pairingCode.prefix(512)), forKey: Self.pairingCodeKey) } }
-    @Published var universalCaptionApiKey = "" { didSet { defaults.set(String(universalCaptionApiKey.prefix(4096)), forKey: Self.universalApiKey) } }
+    @Published var universalCaptionApiKey = "" { didSet { defaults.set(String(universalCaptionApiKey.prefix(4096)), forKey: Self.universalApiKey); sendCommand?("set-pipeline-enabled", ["enabled": !universalCaptionApiKey.isEmpty]) } }
     @Published var speechLanguage = "Auto" { didSet { defaults.set(speechLanguage, forKey: Self.speechLanguageKey) } }
     @Published var speechVoice = "Systemstandard" { didSet { defaults.set(speechVoice, forKey: Self.speechVoiceKey) } }
     @Published var captionRecords: [CaptionRecord] = []
@@ -106,6 +114,7 @@ import Foundation
     init(recognizer: RecognitionService = ShazamRecognitionService(), defaults: UserDefaults = .standard) {
         self.recognizer = recognizer
         self.defaults = defaults
+        self.serviceURL = defaults.string(forKey: "companionServiceURL") ?? ""
         self.autoChatRefreshEnabled = defaults.bool(forKey: "autoChatRefreshEnabled")
         self.autoChatRefreshMinutes = max(1, min(60, defaults.object(forKey: "autoChatRefreshMinutes") as? Int ?? 5))
         self.filterExternalSpeechTriggers = defaults.bool(forKey: "filterExternalSpeechTriggers")
@@ -124,8 +133,18 @@ import Foundation
         self.speechLanguage = defaults.string(forKey: Self.speechLanguageKey) ?? "Auto"
         self.speechVoice = defaults.string(forKey: Self.speechVoiceKey) ?? "Systemstandard"
         scheduleChatRefresh()
+        pipelineRetryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                if let owner = self, !owner.universalCaptionApiKey.isEmpty {
+                    do { try await owner.serviceClient.flush(baseURL: owner.serviceURL, pairing: owner.pairingCode, key: owner.universalCaptionApiKey) }
+                    catch { owner.serviceStatus = "Pipeline-Verbindung unterbrochen; gespeicherte Daten werden erneut gesendet." }
+                }
+                do { try await Task.sleep(nanoseconds: 30_000_000_000) } catch { return }
+            }
+        }
         recognizer.onResult = { [weak self] result in Task { @MainActor in
             self?.recognitionResult = result
+            if let data = try? JSONEncoder().encode(result), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { self?.publishPipeline("songs", data: object) }
             self?.recognitionStatus = result.matched ? "Song erkannt" : "Kein passender Song erkannt"
         }}
         recognizer.onError = { [weak self] message in Task { @MainActor in
@@ -147,6 +166,10 @@ import Foundation
     }
 
     func handle(_ envelope: BridgeEnvelope) {
+        if !universalCaptionApiKey.isEmpty {
+            let url = serviceURL, pairing = pairingCode, key = universalCaptionApiKey, audd = auddToken
+            Task { do { try await serviceClient.capture(envelope, baseURL: url, pairing: pairing, key: key, secrets: [audd]) } catch { lastError = "Pipeline-Verbindung unterbrochen; Daten bleiben vorgemerkt." } }
+        }
         if connectionPaused && ["chat", "caption", "live-stats", "gift", "socket-open"].contains(envelope.type) { return }
         if envelope.payload["frameKind"]?.stringValue != "sub", let doc = envelope.payload["documentId"]?.stringValue {
             guard !retiredDocuments.contains(doc) else { return }
@@ -160,6 +183,7 @@ import Foundation
         }
         switch envelope.type {
         case "bridge-ready", "recovery-ready":
+            sendCommand?("set-pipeline-enabled", ["enabled": !universalCaptionApiKey.isEmpty])
             pushHookRecovery()
             sendCommand?("set-auto-reconnect", ["enabled": autoReconnectEnabled, "delaySeconds": autoReconnectDelaySeconds])
             sendCommand?("set-vlc-active", ["active": vlcReplacementURL != nil])
@@ -212,6 +236,7 @@ import Foundation
                 stats.words += content.split(whereSeparator: \.isWhitespace).count
                 participants[author] = stats
             }
+            publishPipeline("top-chatters", data: participants.mapValues { ["messages": $0.messages, "words": $0.words] })
         case "caption":
             let contents = envelope.payload["contents"]?.arrayValue
             let first = contents?.first?.objectValue
@@ -299,15 +324,71 @@ import Foundation
     }
     func setSpeechEnabled(_ enabled: Bool) {
         speechEnabled = enabled
-        if !enabled { speaker.stopSpeaking(at: .immediate) }
+        if !enabled { speaker.stopSpeaking(at: .immediate); serviceSpeechTask?.cancel(); serviceAudio?.stop() }
     }
     func speak(_ content: String, author: String = "") {
         guard let text = speechText(content, author: author) else { return }
         guard shouldSpeak(text) else { return }
         speaker.stopSpeaking(at: .immediate)
+        serviceSpeechTask?.cancel(); serviceAudio?.stop()
+        if speechVoice.hasPrefix("sherpa-") || speechVoice.hasPrefix("vits-") || serviceVoices.contains(where: { $0.id == speechVoice }) {
+            let voice = speechVoice
+            serviceSpeechTask = Task {
+                do {
+                    let audio = try await serviceClient.request("/v1/tts", baseURL: serviceURL, pairing: pairingCode, body: ["text": text, "language": "auto", "voiceName": voice])
+                    try Task.checkCancellation()
+                    serviceAudio = try AVAudioPlayer(data: audio)
+                    guard serviceAudio?.play() == true else { throw URLError(.cannotDecodeContentData) }
+                } catch is CancellationError {} catch { lastError = "Sherpa-Sprachausgabe nicht verfügbar." }
+            }
+            return
+        }
         let utterance = AVSpeechUtterance(string: String(text.prefix(1_000)))
-        utterance.voice = AVSpeechSynthesisVoice(language: "de-DE")
+        utterance.voice = AVSpeechSynthesisVoice(identifier: speechVoice) ?? AVSpeechSynthesisVoice(language: "de-DE")
         speaker.speak(utterance)
+    }
+
+    private func publishPipeline(_ pipeline: String, data: [String: Any]) {
+        guard !universalCaptionApiKey.isEmpty else { return }
+        let documentID = currentDocument
+        Task { try? await serviceClient.publishData(pipeline, data: data, documentID: documentID, baseURL: serviceURL, pairing: pairingCode, key: universalCaptionApiKey) }
+    }
+    func loadServiceVoices() {
+        Task {
+            do {
+                let data = try await serviceClient.request("/v1/voices", baseURL: serviceURL, pairing: pairingCode)
+                let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                if !universalCaptionApiKey.isEmpty {
+                    try? await serviceClient.publishData("sherpa", data: object ?? [:], documentID: currentDocument, baseURL: serviceURL, pairing: pairingCode, key: universalCaptionApiKey)
+                    let health = try await serviceClient.request("/v1/health", baseURL: serviceURL, pairing: pairingCode)
+                    let healthObject = try JSONSerialization.jsonObject(with: health) as? [String: Any] ?? [:]
+                    try? await serviceClient.publishData("speech-service", data: healthObject, documentID: currentDocument, baseURL: serviceURL, pairing: pairingCode, key: universalCaptionApiKey)
+                }
+                serviceVoices = (object?["catalog"] as? [[String: Any]] ?? []).compactMap { voice in
+                    guard let id = voice["id"] as? String, let name = voice["name"] as? String else { return nil }
+                    return ServiceVoice(id: id, name: name, culture: voice["culture"] as? String ?? "", installed: voice["installed"] as? Bool ?? false, bytes: voice["bytes"] as? Int ?? 0, license: (voice["license"] as? [String: Any])?["id"] as? String ?? "")
+                }
+                serviceStatus = "Companion-Dienst verbunden"
+            } catch { serviceStatus = "Companion-Dienst nicht erreichbar" }
+        }
+    }
+    func installServiceVoice(_ id: String) {
+        Task {
+            do {
+                _ = try await serviceClient.request("/v1/voices/install", baseURL: serviceURL, pairing: pairingCode, body: ["voiceId": id])
+                serviceStatus = "Stimme wird installiert"
+                for _ in 0..<120 {
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                    let data = try await serviceClient.request("/v1/sherpa/status", baseURL: serviceURL, pairing: pairingCode)
+                    let status = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    if status?["running"] as? Bool != true {
+                        if let error = status?["error"] as? String, !error.isEmpty { serviceStatus = error; return }
+                        loadServiceVoices(); return
+                    }
+                }
+                serviceStatus = "Installation dauert länger; Status erneut laden"
+            } catch { serviceStatus = "Stimme konnte nicht installiert werden" }
+        }
     }
 
     func reportNativeLimiter(url: URL, active: Bool, input: Double, output: Double, reduction: Double, error: String?) {
@@ -464,5 +545,86 @@ private enum RecoveryProjection {
             else if key == "atUtc" { result[key] = value.stringValue.flatMap { validTimestamp($0) ? $0 : nil }.map { $0 as Any } ?? NSNull() }
         }
         return result
+    }
+}
+
+
+@MainActor private final class MobilePipelineClient {
+    private let sessionID = UUID().uuidString
+    private let tabID = UUID().uuidString
+    private let clientID: String
+    private let directory: URL
+    private var flushing = false
+    private let session = URLSession(configuration: .ephemeral, delegate: CompanionNoRedirectDelegate(), delegateQueue: nil)
+    private var registeredDocuments = Set<String>()
+    init() {
+        clientID = UserDefaults.standard.string(forKey: "pipelineClientID") ?? UUID().uuidString
+        UserDefaults.standard.set(clientID, forKey: "pipelineClientID")
+        directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("pipeline-outbox")
+    }
+    func publishData(_ pipeline: String, data: [String: Any], documentID: String?, baseURL: String, pairing: String, key: String) async throws {
+        let object: [String: Any] = ["version": 1, "type": "pipeline-snapshot", "streamId": "companion", "sequence": 0, "timestamp": ISO8601DateFormatter().string(from: Date()), "payload": ["pipeline": pipeline, "data": data, "documentId": documentID ?? sessionID]]
+        let envelope = try JSONDecoder().decode(BridgeEnvelope.self, from: JSONSerialization.data(withJSONObject: object))
+        try await capture(envelope, baseURL: baseURL, pairing: pairing, key: key, secrets: [])
+    }
+    func request(_ route: String, baseURL: String, pairing: String, body: [String: Any]? = nil) async throws -> Data {
+        guard let base = URL(string: baseURL), base.scheme == "https", base.host != nil, base.user == nil, base.query == nil,
+              let url = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + route) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(pairing)", forHTTPHeaderField: "Authorization")
+        if let body { request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try JSONSerialization.data(withJSONObject: body) }
+        let (data, response) = try await session.data(for: request)
+        guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else { throw URLError(.badServerResponse) }
+        return data
+    }
+    func capture(_ envelope: BridgeEnvelope, baseURL: String, pairing: String, key: String, secrets: [String]) async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let mapping = ["caption": "title", "chat": "chat", "live-stats": "live", "inspection": "profile", "media-links": "media-links", "media-url": "media-links", "pipeline-document": "browser-tab"]
+        let pipeline = ["pipeline-record", "pipeline-snapshot"].contains(envelope.type) ? (envelope.payload["pipeline"]?.stringValue ?? "debug-logs") : (mapping[envelope.type] ?? "debug-logs")
+        var types = [pipeline]
+        if pipeline != "debug-logs" { types.append("debug-logs") }
+        if pipeline == "title" { types.append("live-logs") }
+        let document = envelope.payload["documentId"]?.stringValue ?? sessionID
+        let initial = registeredDocuments.insert(document).inserted ? ["title", "chat", "speech-service", "sherpa", "top-chatters", "profile", "live", "songs", "media-links", "live-logs", "debug-logs", "browser-tab"].filter { !types.contains($0) } : []
+        types = initial + types
+        for type in types {
+            let id = UUID().uuidString
+            let sequence = UserDefaults.standard.integer(forKey: "pipelineSourceSequence") + 1
+            UserDefaults.standard.set(sequence, forKey: "pipelineSourceSequence")
+            let row: [String: Any] = ["sourceSequence": sequence, "eventId": id, "clientId": clientID, "sessionId": sessionID, "tabId": tabID,
+                "documentId": document, "pipeline": type,
+                "capturedAt": ISO8601DateFormatter().string(from: Date()), "availability": initial.contains(type) ? "unavailable" : "available", "source": "ios-webview-bridge",
+                "structured": initial.contains(type) ? ["reason": "not-yet-observed"] : envelope.rawObject, "raw": initial.contains(type) ? NSNull() : envelope.rawObject]
+            let data = try JSONSerialization.data(withJSONObject: row)
+            var text = String(decoding: data, as: UTF8.self)
+            for secret in ([pairing, key] + secrets).filter({ !$0.isEmpty }) { text = text.replacingOccurrences(of: secret, with: "[credential removed]") }
+            var sanitized = try JSONSerialization.jsonObject(with: Data(text.utf8)) as! [String: Any]
+            sanitized["credentialsRedacted"] = text != String(decoding: data, as: UTF8.self)
+            try JSONSerialization.data(withJSONObject: sanitized).write(to: directory.appendingPathComponent(id + ".json"), options: .atomic)
+        }
+        try await flush(baseURL: baseURL, pairing: pairing, key: key)
+    }
+    func flush(baseURL: String, pairing: String, key: String) async throws {
+        guard !flushing, !baseURL.isEmpty, !pairing.isEmpty, !key.isEmpty,
+              FileManager.default.fileExists(atPath: directory.path) else { return }
+        flushing = true
+        defer { flushing = false }
+        _ = try await request("/v1/pipelines/key", baseURL: baseURL, pairing: pairing, body: ["key": key])
+        let files = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey]).filter { $0.pathExtension == "json" }.sorted { first, second in
+            let a = ((try? JSONSerialization.jsonObject(with: Data(contentsOf: first))) as? [String: Any])?["sourceSequence"] as? Int ?? 0
+            let b = ((try? JSONSerialization.jsonObject(with: Data(contentsOf: second))) as? [String: Any])?["sourceSequence"] as? Int ?? 0
+            return a < b
+        }
+        for file in files {
+            let row = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as! [String: Any]
+            _ = try await request("/v1/pipelines/events", baseURL: baseURL, pairing: pairing, body: row)
+            try FileManager.default.removeItem(at: file)
+        }
+    }
+}
+
+private final class CompanionNoRedirectDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
     }
 }

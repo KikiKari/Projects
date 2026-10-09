@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.mjs",
     "setup": "powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1",
-    "test": "node --test test/service.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -132,7 +132,7 @@ class FollowupMediaTest {
         assertFalse(live.contains("Top-Chatter"))
         assertTrue(live.contains("Personen stummschalten"))
         assertTrue(ui.substringAfter("private fun MoreTab").contains("Debugmodus"))
-        assertTrue(ui.contains("Sprach- und Chat Einstellungen"))
+        assertTrue(ui.contains("Erweiterte Einstellungen"))
         assertTrue(ui.contains("JSON-L-Export"))
         assertTrue(ui.contains("RAW-JSON-Export"))
         assertTrue(live.contains("LIVE-Empfehlungen"))

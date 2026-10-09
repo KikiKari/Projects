@@ -14,6 +14,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 data class CompanionUiState(
+    val serviceVoices: List<ServiceVoice> = emptyList(),
+    val serviceStatus: String = "",
     val hookReconnectEnabled: Boolean = false,
     val hookReconnectDelaySeconds: Int = 3,
     val hookRecovery: Map<String, Any?> = emptyMap(),
@@ -81,6 +83,55 @@ data class CompanionUiState(
 }
 
 class CompanionViewModel(private val recognizer: RecognitionEngine, private val preferences: CompanionPreferences? = null) : ViewModel() {
+    var serviceClient: CompanionServiceClient? = null
+        set(value) {
+            field = value
+            pipelineRetryJob?.cancel()
+            if (value != null) pipelineRetryJob = viewModelScope.launch {
+                while (true) {
+                    value.pairingCode = mutable.value.pairingCode
+                    value.universalKey = mutable.value.universalCaptionApiKey
+                    value.auddToken = mutable.value.auddToken
+                    runCatching { value.flush() }.onFailure {
+                        mutable.update { it.copy(serviceStatus = "Pipeline-Verbindung unterbrochen; gespeicherte Daten werden erneut gesendet.") }
+                    }
+                    delay(30_000)
+                }
+            }
+        }
+    private var pipelineRetryJob: Job? = null
+    fun loadServiceVoices() { viewModelScope.launch {
+        runCatching {
+            val client = requireNotNull(serviceClient)
+            client.pairingCode = mutable.value.pairingCode
+            val data = JSONObject(String(client.request("/v1/voices"), Charsets.UTF_8))
+            client.universalKey = mutable.value.universalCaptionApiKey
+            client.auddToken = mutable.value.auddToken
+            runCatching { client.publishData("sherpa", mapOf("catalog" to data)) }
+            val health = JSONObject(String(client.request("/v1/health"), Charsets.UTF_8))
+            runCatching { client.publishData("speech-service", mapOf("health" to health)) }
+            val catalog = data.optJSONArray("catalog") ?: JSONArray()
+            val voices = (0 until catalog.length()).map { i -> catalog.getJSONObject(i).let { voice -> ServiceVoice(voice.getString("id"), voice.getString("name"), voice.optString("culture"), voice.optBoolean("installed"), voice.optLong("bytes"), voice.optJSONObject("license")?.optString("id") ?: "") } }
+            mutable.update { it.copy(serviceVoices = voices, serviceStatus = "Companion-Dienst verbunden") }
+        }.onFailure { error -> mutable.update { it.copy(serviceStatus = error.message ?: "Companion-Dienst nicht erreichbar") } }
+    } }
+    fun installServiceVoice(id: String) { viewModelScope.launch {
+        runCatching {
+            val client = requireNotNull(serviceClient)
+            client.pairingCode = mutable.value.pairingCode
+            client.request("/v1/voices/install", JSONObject().put("voiceId", id))
+            mutable.update { it.copy(serviceStatus = "Stimme wird installiert") }
+            for (attempt in 0 until 120) {
+                delay(2000)
+                val status = JSONObject(String(client.request("/v1/sherpa/status"), Charsets.UTF_8))
+                if (!status.optBoolean("running")) {
+                    check(status.optString("error", "").let { it.isBlank() || it == "null" }) { status.optString("error") }
+                    loadServiceVoices(); return@launch
+                }
+            }
+            error("Installation dauert länger; Status erneut laden")
+        }.onFailure { error -> mutable.update { it.copy(serviceStatus = error.message ?: "Stimme konnte nicht installiert werden") } }
+    } }
     private val mutable = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = mutable
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
@@ -112,7 +163,14 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     init {
-        recognizer.onResult = { result -> mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") } }
+        recognizer.onResult = { result ->
+            mutable.update { it.copy(result = result, recognitionStatus = if (result.matched) "Song erkannt" else "Kein passender Song erkannt") }
+            serviceClient?.let { client ->
+                client.pairingCode = mutable.value.pairingCode; client.universalKey = mutable.value.universalCaptionApiKey
+            client.auddToken = mutable.value.auddToken
+                viewModelScope.launch { runCatching { client.publishData("songs", mapOf("matched" to result.matched, "title" to result.title, "artist" to result.artist, "album" to result.album, "artworkUrl" to result.artworkUrl, "songUrl" to result.songUrl, "matchOffset" to result.matchOffset, "source" to result.source.name)) } }
+            }
+        }
         recognizer.onError = { message -> mutable.update { it.copy(error = message, recognitionStatus = message) } }
         preferences?.let { stored ->
             viewModelScope.launch { stored.autoChatRefreshEnabled.collectLatest { value -> mutable.update { it.copy(autoChatRefreshEnabled = value) }; scheduleChatRefresh() } }
@@ -201,7 +259,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun setGameMode(enabled: Boolean) { mutable.update { it.copy(gameModeEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setGameMode(enabled) } } }
     fun setAuddToken(value: String) { val safe = value.take(4096); mutable.update { it.copy(auddToken = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setAuddToken(safe) } } }
     fun setPairingCode(value: String) { val safe = value.take(512); mutable.update { it.copy(pairingCode = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setPairingCode(safe) } } }
-    fun setUniversalCaptionApiKey(value: String) { val safe = value.take(4096); mutable.update { it.copy(universalCaptionApiKey = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setUniversalCaptionApiKey(safe) } } }
+    fun setUniversalCaptionApiKey(value: String) { val safe = value.take(4096); mutable.update { it.copy(universalCaptionApiKey = safe) }; sendCommand?.invoke("set-pipeline-enabled", mapOf("enabled" to safe.isNotBlank())); preferences?.let { stored -> viewModelScope.launch { stored.setUniversalCaptionApiKey(safe) } } }
     fun setTtsVoice(value: String) { val safe = value.take(160); mutable.update { it.copy(ttsVoice = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsVoice(safe) } } }
     fun resetTopChatters() = mutable.update { it.copy(participants = emptyMap()) }
     fun toggleVideoExpanded() {
@@ -397,6 +455,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
 
     fun handle(envelope: BridgeEnvelope) {
+        serviceClient?.let { client ->
+            client.pairingCode = mutable.value.pairingCode
+            client.universalKey = mutable.value.universalCaptionApiKey
+            client.auddToken = mutable.value.auddToken
+            viewModelScope.launch { runCatching { client.capture(envelope) }.onFailure { error -> reportError(error.message ?: "Pipeline-Verbindung unterbrochen") } }
+        }
         if (connectionPaused && envelope.type in setOf("chat", "caption", "live-stats", "gift", "socket-open")) return
         val doc = envelope.payload["documentId"] as? String
         if (envelope.payload["frameKind"] != "sub" && doc != null) {
@@ -430,6 +494,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 embedJob?.cancel(); mutable.update { it.copy(embedPhase = "playing") }
             }
             "bridge-ready" -> {
+                sendCommand?.invoke("set-pipeline-enabled", mapOf("enabled" to mutable.value.universalCaptionApiKey.isNotBlank()))
                 pushRecovery()
                 pushLimiter()
                 sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to mutable.value.autoReconnectDelaySeconds))
@@ -476,7 +541,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val line = entry.visibleText
                 mutable.update { current ->
                     val people = LinkedHashMap(current.participants)
-                    if (author.isNotBlank() && (people.containsKey(author) || people.size < 5_000)) {
+                    if (author.isNotBlank()) {
                         val prior = people[author] ?: ParticipantStats()
                         people[author] = prior.copy(messages = prior.messages + 1, words = prior.words + content.trim().split(Regex("\\s+")).count { it.isNotBlank() })
                     }
@@ -559,6 +624,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 }
             }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
+        }
+        if (envelope.type == "chat") serviceClient?.let { client ->
+            val people = mutable.value.participants.mapValues { (_, person) -> mapOf("messages" to person.messages, "words" to person.words) }
+            viewModelScope.launch { runCatching { client.publishData("top-chatters", people, doc ?: "unknown") } }
         }
     }
 

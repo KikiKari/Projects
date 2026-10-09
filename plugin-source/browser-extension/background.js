@@ -1,4 +1,5 @@
 importScripts("content-core.js", "export-privacy.js");
+importScripts("pipeline-client.js", "pipeline-capture.js");
 
 const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
@@ -287,6 +288,7 @@ async function cachedProfile(handle) {
 
 async function addDebug(tabId, event, detail = {}) {
   if (!Number.isInteger(tabId) || tabId < 0) return;
+  TLCPipelines.publish(tabId, 'debug-logs', { event, detail }, { event, detail }, 'background-debug').catch(() => {});
   if (event.startsWith("reconnect-") || event === "quick-recover") {
     detail = { ...detail, controller: "player-quick-recovery" };
   }
@@ -303,6 +305,9 @@ function redactUrl(raw) {
 }
 
 async function setState(tabId, state) {
+  for (const [pipeline, data] of [['title', state.captionInfo], ['profile', state.profileInfo], ['live', state.liveStats], ['top-chatters', state.participants]]) {
+    TLCPipelines.publish(tabId, pipeline, data, data, 'companion-state').catch(() => {});
+  }
   await chrome.storage.session.set({ [stateKey(tabId)]: state });
   await cacheStreamSnapshot(state);
   const embedStartup = await getEmbedSession(tabId);
@@ -551,7 +556,8 @@ async function addMedia(tabId, entries, source) {
     };
     if (!previous || expiry(candidate) >= expiry(previous)) byUrl.set(key, candidate);
   }
-  state.media = [...byUrl.values()].slice(-MAX_MEDIA);
+  TLCPipelines.publish(tabId, 'media-links', [...byUrl.values()], entries, source).catch(() => {});
+  state.media = [...byUrl.values()];
   await setState(tabId, state);
 }
 
@@ -706,10 +712,6 @@ function updateParticipant(state, raw, author, patch = {}) {
   );
   const key = state.participants[requestedKey] ? requestedKey : (matchedEntry?.[0] || requestedKey);
   const existing = state.participants[key];
-  if (!existing && Object.keys(state.participants).length >= MAX_PARTICIPANTS) {
-    state.participantsTruncated = true;
-    return { key, participant: null };
-  }
   const participant = {
     key,
     ...core.mergeParticipantRecord(existing, raw, author, patch)
@@ -1295,6 +1297,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  TLCPipelines.publish(tabId, 'browser-tab', { closed: true }, null, 'tab-closed').finally(() => chrome.storage.session.remove(`pipelineTab:${tabId}`)).catch(() => {});
   liveModeGenerations.delete(tabId);
   pendingModeRequests.delete(tabId);
   chrome.alarms.clear(`tlc-embed-deadline-${tabId}`).catch(() => {});
@@ -1329,6 +1332,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 );
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  TLCPipelines.message(message, sender).catch(() => {});
   const tabId = message.tabId ?? sender.tab?.id;
   const isModeRequest = ["TLC_OPEN_EMBED_LIVE", "TLC_OPEN_NORMAL_LIVE"].includes(message.type);
   if (isModeRequest) {

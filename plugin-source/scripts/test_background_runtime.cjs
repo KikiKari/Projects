@@ -116,7 +116,7 @@ function worker(seed = {}) {
     scripting: { executeScript: async () => [] },
     webRequest: { onBeforeRequest: event("request") }
   };
-  const context = vm.createContext({ chrome, TLC_CONTENT_CORE: core, TLC_EXPORT_PRIVACY: exportPrivacy, importScripts() {},
+  const context = vm.createContext({ chrome, TLC_CONTENT_CORE: core, TLC_EXPORT_PRIVACY: exportPrivacy, TLCPipelines: { publish: async () => {}, message: async () => {} }, importScripts() {},
     structuredClone, URL, Date: seed.now == null ? Date : TestDate, console, crypto: webcrypto, setTimeout, clearTimeout, fetch: async () => null });
   vm.runInContext(fs.readFileSync(path.join(extension, "background.js"), "utf8"), context);
   const send = (type, tabId, extra = {}) => new Promise((resolve, reject) => {

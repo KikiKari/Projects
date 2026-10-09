@@ -5,6 +5,8 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { PipelineStore } from "./pipeline-store.mjs";
+import { handlePipelineRequest } from "./pipeline-api.mjs";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const defaultConfigDir = path.join(process.env.LOCALAPPDATA || os.homedir(), "TikTokLiveCompanion");
@@ -280,6 +282,12 @@ export async function listVoiceCatalog(catalogPath = voiceCatalogPath, installed
     culture: String(voice.culture || ""),
     gender: String(voice.gender || ""),
     family: String(voice.family || "vits-piper"),
+    bytes: Number(voice.bytes) || null,
+    sha256: voice.sha256 || null,
+    license: voice.license || null,
+    runtime: voice.runtime || null,
+    speakers: voice.speakers || null,
+    sampleRate: voice.sampleRate || null,
     installed: installed.has(String(voice.id || ""))
   })).filter((voice) => voice.id && voice.name);
 }
@@ -383,9 +391,10 @@ function sendJson(response, status, payload, origin = "") {
   response.end(JSON.stringify(payload));
 }
 
-export function createServer({ config, configProvider, configSaver = saveConfig, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, validateAuddToken = auddValidateToken, sherpaInstaller = runSherpaInstaller, vlcStatus = detectVlcStatus, vlcInstaller = runVlcInstaller } = {}) {
+export function createServer({ config, configProvider, configSaver = saveConfig, pipelineStore, tts = companionTts, voices = listAvailableVoices, catalog, recognize = auddRecognize, validateAuddToken = auddValidateToken, sherpaInstaller = runSherpaInstaller, vlcStatus = detectVlcStatus, vlcInstaller = runVlcInstaller } = {}) {
   if (!config?.pairingCode) throw new Error("Pairing-Code fehlt.");
   const catalogProvider = catalog || (() => listVoiceCatalog(voiceCatalogPath, voices));
+  let journal = pipelineStore;
   return http.createServer(async (request, response) => {
     const currentConfig = configProvider ? await configProvider() : config;
     const origin = String(request.headers.origin || "");
@@ -401,6 +410,10 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
       return response.end();
     }
     const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+    if (requestUrl.pathname.startsWith('/v1/pipelines')) {
+      journal ||= new PipelineStore(currentConfig.pipelineDirectory || path.join(defaultConfigDir, 'pipelines'), { retentionDays: currentConfig.pipelineRetentionDays ?? 7, maxBytes: currentConfig.pipelineMaxBytes ?? 2 * 1024 ** 3 });
+      if (await handlePipelineRequest(request, response, { store: journal, config: currentConfig, saveConfig: configSaver, readBody, origin: allowedOrigin })) return;
+    }
     if (request.method === "GET" && requestUrl.pathname === "/v1/pair") {
       const pairingOrigin = `chrome-extension://${String(currentConfig.extensionId || "")}`;
       if (!allowedOrigin || allowedOrigin !== pairingOrigin) {
@@ -549,7 +562,15 @@ export function createServer({ config, configProvider, configSaver = saveConfig,
 
 async function main() {
   const config = await ensureConfig();
-  const server = createServer({ config, configProvider: () => ensureConfig() });
+  const pipelineStore = new PipelineStore(config.pipelineDirectory || path.join(defaultConfigDir, 'pipelines'), { retentionDays: config.pipelineRetentionDays ?? 7, maxBytes: config.pipelineMaxBytes ?? 2 * 1024 ** 3 });
+  await pipelineStore.ready;
+  const server = createServer({ config, configProvider: () => ensureConfig(), pipelineStore });
+  const tailscaleAddress = Object.entries(os.networkInterfaces()).filter(([name]) => /tailscale/i.test(name)).flatMap(([, entries]) => entries || []).find(entry => entry.family === 'IPv4' && /^100\./.test(entry.address))?.address;
+  if (tailscaleAddress) {
+    const remoteServer = createServer({ config, configProvider: () => ensureConfig(), pipelineStore });
+    remoteServer.on('error', error => console.error(`Tailscale-Dienst: ${error.code || 'nicht verfügbar'}`));
+    remoteServer.listen(Number(config.port) || 43117, tailscaleAddress);
+  }
   server.listen(Number(config.port) || 43117, "127.0.0.1", () => {
     console.log(`TikTok LIVE Companion Dienst ${VERSION}: http://127.0.0.1:${Number(config.port) || 43117}`);
     console.log(config.auddApiToken ? "AudD ist eingerichtet." : "AudD-Token fehlt; npm run setup ausführen.");

@@ -30,7 +30,7 @@
       <div class="button-row">
         <button id="service-action" class="secondary">Sprachdienst</button>
         <button id="sherpa-action" class="secondary">Sherpa</button>
-        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Sprach- und Chat Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Erweiterte Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
       </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
       <div id="service-setup" class="inline-status" hidden>
@@ -210,7 +210,7 @@
     <div id="speech-settings-modal" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="speech-settings-heading">
         <div class="section-title">
-          <h2 id="speech-settings-heading">Sprach- und Chat Einstellungen</h2>
+          <h2 id="speech-settings-heading">Erweiterte Einstellungen</h2>
           <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
         </div>
         <div class="settings-grid speech-integration-settings">
@@ -218,7 +218,7 @@
           <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
           <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
           <label id="pairing-code-setting"><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
-          <label><span>Universal API-Key für Untertitel</span><input id="universal-caption-api-key" type="password" autocomplete="off" spellcheck="false"></label>
+          <label><span>Universal API-Key</span><input id="universal-caption-api-key" type="password" autocomplete="off" spellcheck="false"></label>
         </div>
         <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
         <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>

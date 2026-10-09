@@ -22,6 +22,7 @@
     "sherpa-en-alan", "sherpa-en-amy", "sherpa-en-danny", "sherpa-en-lessac", "sherpa-en-libritts", "sherpa-en-ryan"
   ];
   const VOICE_GROUPS = [
+    ["Weitere Sprachen", ["vits-piper-fr_FR-siwis-medium", "vits-piper-es_ES-davefx-medium", "vits-piper-it_IT-paola-medium", "vits-piper-pt_BR-faber-medium", "vits-piper-nl_NL-pim-medium", "vits-piper-pl_PL-gosia-medium", "vits-piper-tr_TR-dfki-medium"]],
     ["Kyrillisch", ["sherpa-bg-supertonic", "sherpa-kk-iseke", "sherpa-ru-irina", "sherpa-sr-institut", "sherpa-uk-ukrainian"]],
     ["Asiatisch", ["sherpa-zh-chaowen", "sherpa-ja-supertonic", "sherpa-ko-supertonic"]],
     ["Abjad", ["sherpa-ar-kareem", "sherpa-fa-amir", "sherpa-ur-fasih"]],
@@ -319,6 +320,7 @@
       option.value = id;
       option.dataset.installed = String(Boolean(voice.installed));
       option.textContent = `${name}${voice?.culture ? ` (${voice.culture})` : ""}${voice.installed ? "" : " · installieren"}`;
+      option.title = [voice.bytes ? `${(voice.bytes / 1048576).toFixed(1)} MiB Download` : '', voice.license?.id || '', voice.runtime?.device || ''].filter(Boolean).join(' · ');
       parent.append(option);
       if (selected === name) resolvedSelected = id;
     };
@@ -330,9 +332,12 @@
       if (group.children.length) select.append(group);
     }
     for (const voice of available.values()) appendVoice(voice);
-    if ((voices.length || catalog.length) && resolvedSelected && !seen.has(resolvedSelected)) {
-      speechVoiceName = "";
-      send("TLC_SET_SPEECH_PREFERENCE", { voiceName: "" }).catch(() => {});
+    if (resolvedSelected && !seen.has(resolvedSelected)) {
+      const missing = document.createElement('option');
+      missing.value = resolvedSelected;
+      missing.textContent = `${resolvedSelected} · derzeit nicht verfügbar`;
+      select.append(missing);
+      seen.add(resolvedSelected);
     }
     select.value = seen.has(resolvedSelected) ? resolvedSelected : "";
   }
@@ -342,6 +347,7 @@
       const response = await fetch(`${serviceUrl}/v1/voices`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
+      send('TLC_PIPELINE_SERVICE', { pipeline: 'sherpa', data: payload }).catch(() => {});
       voiceCatalog = payload.catalog || [];
       setSpeechVoiceOptions(payload.voices || [], voiceCatalog);
     } catch (_) {
@@ -1103,6 +1109,7 @@
       const response = await fetch(`${serviceUrl}/v1/health`, { headers: serviceHeaders() });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const health = await response.json();
+      send('TLC_PIPELINE_SERVICE', { pipeline: 'speech-service', data: health }).catch(() => {});
       elements["service-status"].textContent = `Lokaler Dienst bereit · ${health.tts || "Standard"}${health.auddConfigured ? " · AudD bereit" : " · AudD-Token fehlt"}.`;
       elements["service-action"].textContent = "Sprachdienst aktiv!";
       elements["service-action"].disabled = true;
@@ -1262,6 +1269,7 @@
         body: sample
       });
       const result = await response.json().catch(() => ({}));
+      send('TLC_PIPELINE_SERVICE', { pipeline: 'songs', data: result }).catch(() => {});
       if (!response.ok) throw new Error(result.error || `Songerkennung HTTP ${response.status}`);
       if (!result.match) {
         elements["song-status"].textContent = "Kein passender Song erkannt.";

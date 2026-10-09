@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
             val engine = remember { createRecognitionEngine(applicationContext) }
             val model: CompanionViewModel = viewModel(factory = simpleViewModelFactory { CompanionViewModel(engine, CompanionPreferences(applicationContext)) })
             DisposableEffect(model) {
+                model.serviceClient = CompanionServiceClient(applicationContext)
                 model.backgroundPlaybackChanged = { enabled ->
                     val intent = Intent(applicationContext, BackgroundPlaybackService::class.java).setAction(if (enabled) BackgroundPlaybackService.ACTION_START else BackgroundPlaybackService.ACTION_STOP)
                     if (enabled) ContextCompat.startForegroundService(applicationContext, intent) else applicationContext.startService(intent)
@@ -81,9 +82,32 @@ class MainActivity : ComponentActivity() {
     val nextSpeech = state.speechQueue.firstOrNull()
     LaunchedEffect(state.ttsEnabled) { if (!state.ttsEnabled) tts.stop() }
     LaunchedEffect(nextSpeech?.id, ttsReady) {
+        if (nextSpeech != null && (state.ttsVoice.startsWith("sherpa-") || state.ttsVoice.startsWith("vits-") || state.serviceVoices.any { it.id == state.ttsVoice })) {
+            try {
+                val client = requireNotNull(model.serviceClient)
+                client.pairingCode = state.pairingCode
+                val audio = client.request("/v1/tts", org.json.JSONObject().put("text", nextSpeech.text).put("language", nextSpeech.languageTag ?: "auto").put("voiceName", state.ttsVoice))
+                val file = java.io.File.createTempFile("sherpa-", ".wav", context.cacheDir)
+                try {
+                    file.writeBytes(audio)
+                    kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+                        val player = android.media.MediaPlayer()
+                        continuation.invokeOnCancellation { player.release() }
+                        player.setOnCompletionListener { player.release(); if (continuation.isActive) continuation.resumeWith(Result.success(Unit)) }
+                        player.setOnErrorListener { _, _, _ -> player.release(); if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("Sherpa-Wiedergabe fehlgeschlagen"))); true }
+                        try { player.setDataSource(file.absolutePath); player.prepare(); player.setVolume(state.ttsVolume / 100f, state.ttsVolume / 100f); player.start() }
+                        catch (error: Exception) { player.release(); if (continuation.isActive) continuation.resumeWith(Result.failure(error)) }
+                    }
+                } finally { file.delete() }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) { model.reportError(error.message ?: "Sherpa nicht erreichbar") }
+            model.consumeSpeech(nextSpeech.id)
+            return@LaunchedEffect
+        }
         if (!ttsReady) return@LaunchedEffect
         nextSpeech?.let { request ->
             request.languageTag?.let { tts.language = Locale.forLanguageTag(it) }
+            tts.voices?.find { it.name == state.ttsVoice }?.let { tts.voice = it }
             val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, state.ttsVolume / 100f) }
             if (tts.speak(request.text, TextToSpeech.QUEUE_ADD, params, "tlc-chat-${request.id}") == TextToSpeech.ERROR) {
                 model.setTtsEnabled(false); model.reportError("Sprachausgabe fehlgeschlagen")
@@ -118,7 +142,7 @@ class MainActivity : ComponentActivity() {
                         CompanionTab.SONG -> SongTab(state, model) {
                             if (state.source == RecognitionSource.MICROPHONE && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) micPermission.launch(Manifest.permission.RECORD_AUDIO) else model.recognize()
                         }
-                        CompanionTab.CHAT -> ChatTab(state, model, ttsReady)
+                        CompanionTab.CHAT -> ChatTab(state, model, ttsReady, if (ttsReady) tts.voices.orEmpty().toList() else emptyList())
                         CompanionTab.LIVE -> LiveTab(state, model)
                         CompanionTab.PLAYER -> PlayerTab(state, model)
                         CompanionTab.MORE -> MoreTab(state, model)
@@ -157,7 +181,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun CapabilityRows(state: CompanionUiState) { ElevatedCard(Modifier.fillMaxWidth()) { Capability("Connection", state.hookAvailable); HorizontalDivider(); Capability("Titel", state.captionsAvailable); HorizontalDivider(); Capability("Verbindung", state.connected) } }
 @Composable private fun Capability(label: String, available: Boolean) { Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text(label); Spacer(Modifier.weight(1f)); Icon(Icons.Default.Circle, null, tint = if (available) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp)) } }
-@Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel, ttsReady: Boolean) {
+@Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel, ttsReady: Boolean, systemVoices: List<android.speech.tts.Voice>) {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -165,7 +189,7 @@ class MainActivity : ComponentActivity() {
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(enabled = ttsReady, onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { Text(if (state.ttsEnabled && ttsReady) "Off" else "On") } }
             Text("Lautstärke ${state.ttsVolume} %", style = MaterialTheme.typography.labelMedium)
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
-            OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Sprach- und Chat Einstellungen") }
+            OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Settings, null); Spacer(Modifier.width(8.dp)); Text("Erweiterte Einstellungen") }
         } }
         Text("Letzte Chatnachrichten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (state.chatEntries.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray)
@@ -175,17 +199,29 @@ class MainActivity : ComponentActivity() {
         if (state.topChatters.isNotEmpty()) TextButton(onClick = model::resetTopChatters) { Text("Top-Chatter zurücksetzen") }
         state.topChatters.take(20).forEach { chatter -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Text(chatter.author); Spacer(Modifier.weight(1f)); Text("${chatter.messages} N · ${chatter.words} W", fontWeight = FontWeight.Bold); IconButton(onClick = { model.muteAuthor(chatter.author) }) { Icon(Icons.Default.VolumeOff, "Stummschalten") } } } }
     }
-    if (settingsOpen) SpeechSettingsDialog(state, model) { settingsOpen = false }
+    if (settingsOpen) SpeechSettingsDialog(state, model, systemVoices) { settingsOpen = false }
 }
-@Composable private fun SpeechSettingsDialog(state: CompanionUiState, model: CompanionViewModel, close: () -> Unit) {
-    AlertDialog(onDismissRequest = close, confirmButton = { TextButton(onClick = close) { Text("Schließen") } }, title = { Text("Sprach- und Chat Einstellungen") }, text = {
+@Composable private fun SpeechSettingsDialog(state: CompanionUiState, model: CompanionViewModel, systemVoices: List<android.speech.tts.Voice>, close: () -> Unit) {
+    var serviceUrl by remember { mutableStateOf(model.serviceClient?.baseUrl ?: "") }
+    AlertDialog(onDismissRequest = close, confirmButton = { TextButton(onClick = close) { Text("Schließen") } }, title = { Text("Erweiterte Einstellungen") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.auddToken, model::setAuddToken, label = { Text("AudD API-Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             OutlinedTextField(state.pairingCode, model::setPairingCode, label = { Text("Pairing-Code") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-            OutlinedTextField(state.universalCaptionApiKey, model::setUniversalCaptionApiKey, label = { Text("Universal API-Key für Untertitel") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+            OutlinedTextField(state.universalCaptionApiKey, model::setUniversalCaptionApiKey, label = { Text("Universal API-Key") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+            OutlinedTextField(serviceUrl, { serviceUrl = it; model.serviceClient?.baseUrl = it }, label = { Text("Companion-Dienst (Tailscale HTTPS)") }, singleLine = true)
             Text("Sprache", style = MaterialTheme.typography.labelMedium)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { TtsLanguage.entries.forEachIndexed { index, language -> SegmentedButton(state.ttsLanguage == language, { model.setTtsLanguage(language) }, SegmentedButtonDefaults.itemShape(index, TtsLanguage.entries.size)) { Text(language.label) } } }
             OutlinedTextField(state.ttsVoice, model::setTtsVoice, label = { Text("Stimme") }, singleLine = true)
+            OutlinedButton(model::loadServiceVoices) { Text("Sherpa-Stimmen laden") }
+            Text(state.serviceStatus)
+            TextButton(onClick = { model.setTtsVoice("Systemstandard") }) { Text("Systemstandard") }
+            for (voice in systemVoices.sortedBy { it.name }) { TextButton(onClick = { model.setTtsVoice(voice.name) }) { Text("${voice.name} · ${voice.locale.toLanguageTag()}") } }
+            state.serviceVoices.forEach { voice ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { model.setTtsVoice(voice.id) }, modifier = Modifier.weight(1f)) { Text("${voice.name} · ${voice.culture} · ${voice.bytes / 1048576} MiB · ${voice.license}") }
+                    if (!voice.installed) TextButton(onClick = { model.installServiceVoice(voice.id) }) { Text("Installieren") }
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen sprechen", Modifier.weight(1f)); Switch(state.ttsSpeakNames, model::setTtsSpeakNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); Switch(state.ttsShortenNames, model::setTtsShortenNames) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("Trigger externer Sprachdienste filtern", Modifier.weight(1f)); Switch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers) }

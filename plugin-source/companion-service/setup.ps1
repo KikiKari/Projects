@@ -29,6 +29,9 @@ $config = [ordered]@{
   extensionId = $configuredExtensionId
   port = 43117
 }
+foreach ($setting in @('universalApiKey', 'pipelineDirectory', 'pipelineRetentionDays', 'pipelineMaxBytes')) {
+  if ($existing -and $null -ne $existing.$setting) { $config[$setting] = $existing.$setting }
+}
 if ($BootstrapNonce) {
   if ($BootstrapNonce -notmatch '^[A-Za-z0-9_-]{32,128}$') { throw "Der Pairing-Nonce ist ungültig." }
   $config.bootstrapNonce = $BootstrapNonce

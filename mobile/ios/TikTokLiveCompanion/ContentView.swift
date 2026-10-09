@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import UIKit
 import UniformTypeIdentifiers
 
@@ -83,7 +84,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Chat").font(.headline)
             HStack { Text("Vorlesen"); Spacer(); Button(state.speechEnabled ? "Off" : "On") { state.setSpeechEnabled(!state.speechEnabled) } }
-            Button { settingsOpen = true } label: { Label("Sprach- und Chat Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
+            Button { settingsOpen = true } label: { Label("Erweiterte Einstellungen", systemImage: "gearshape") }.buttonStyle(.bordered)
             ForEach(Array(state.speechChatEntries.suffix(5).enumerated()), id: \.offset) { _, entry in HStack { Text(entry.author.isEmpty ? entry.content : "\(entry.author): \(entry.content)"); Spacer(); Button { state.speak(entry.content, author: entry.author) } label: { Image(systemName: "speaker.wave.2") }; if !entry.author.isEmpty { Button { state.muteAuthor(entry.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
             HStack { Text("Top-Chatter").font(.subheadline.bold()); Spacer(); Button("Zurücksetzen", action: state.resetTopChatters).disabled(state.participants.isEmpty) }
@@ -94,16 +95,30 @@ struct ContentView: View {
         NavigationView { Form {
             SecureField("AudD API-Token", text: $state.auddToken)
             SecureField("Pairing-Code", text: $state.pairingCode)
-            SecureField("Universal API-Key für Untertitel", text: $state.universalCaptionApiKey)
+            SecureField("Universal API-Key", text: $state.universalCaptionApiKey)
+            TextField("Companion-Dienst (Tailscale HTTPS)", text: $state.serviceURL).textInputAutocapitalization(.never).autocorrectionDisabled()
             Picker("Sprache", selection: $state.speechLanguage) { ForEach(["Auto", "Deutsch", "Englisch", "Russisch", "Ukrainisch", "Bulgarisch", "Serbisch", "Kasachisch", "Chinesisch", "Japanisch", "Koreanisch", "Arabisch", "Persisch", "Urdu", "Hindi", "Nepali", "Malayalam"], id: \.self) { Text($0) } }
             TextField("Stimme", text: $state.speechVoice)
+            Button("Sherpa-Stimmen laden", action: state.loadServiceVoices)
+            Text(state.serviceStatus)
+            Button("Systemstandard") { state.speechVoice = "Systemstandard" }
+            ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
+                Button("\(voice.name) · \(voice.language)") { state.speechVoice = voice.identifier }
+            }
+            ForEach(state.serviceVoices) { voice in
+                VStack(alignment: .leading) {
+                    Button("\(voice.name) · \(voice.culture)") { state.speechVoice = voice.id }
+                    Text("\(voice.bytes / 1048576) MiB · \(voice.license)").font(.caption)
+                    if !voice.installed { Button("Installieren") { state.installServiceVoice(voice.id) } }
+                }
+            }
             Toggle("Chatnamen sprechen", isOn: $state.speakNames)
             Toggle("Chatnamen kürzen", isOn: $state.shortenNames)
             Toggle("Trigger externer Sprachdienste filtern", isOn: $state.filterExternalSpeechTriggers)
             Toggle("Auto-Chat Refresh", isOn: $state.autoChatRefreshEnabled)
             HStack { Text("Auto-Chat Refresh"); TextField("Minuten", value: $state.autoChatRefreshMinutes, format: .number).keyboardType(.numberPad).frame(width: 54); Text("min.") }
             Toggle("Game-Mode", isOn: $state.gameModeEnabled)
-        }.navigationTitle("Sprach- und Chat Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
+        }.navigationTitle("Erweiterte Einstellungen").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Schließen") { settingsOpen = false } } } }
         .navigationViewStyle(.stack)
     }
     private var statusView: some View {

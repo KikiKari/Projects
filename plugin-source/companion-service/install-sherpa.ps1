@@ -38,6 +38,10 @@ function Assert-SafeArchiveEntries([string]$Archive) {
 
 function Expand-ApprovedArchive([string]$Archive, [long]$ExpectedBytes, [string]$ExpectedSha256, [string]$Destination, [string]$ExpectedRoot = "") {
   $staging = Join-Path $modelRoot (".extract-" + [guid]::NewGuid().ToString("N"))
+  $approvedRoot = [IO.Path]::GetFullPath($modelRoot).TrimEnd('\') + '\'
+  foreach ($candidate in @($staging, $Destination, $Archive)) {
+    if (-not [IO.Path]::GetFullPath($candidate).StartsWith($approvedRoot, [StringComparison]::OrdinalIgnoreCase)) { throw "Installationspfad liegt außerhalb des Modellverzeichnisses." }
+  }
   try {
     Assert-ApprovedArchive $Archive $ExpectedBytes $ExpectedSha256
     Assert-SafeArchiveEntries $Archive
@@ -45,6 +49,7 @@ function Expand-ApprovedArchive([string]$Archive, [long]$ExpectedBytes, [string]
     & tar -xf $Archive -C $staging
     if ($LASTEXITCODE -ne 0) { throw "Freigegebenes Archiv konnte nicht entpackt werden." }
     $source = if ($ExpectedRoot) { Join-Path $staging $ExpectedRoot } else { $staging }
+    if (-not [IO.Path]::GetFullPath($source).StartsWith([IO.Path]::GetFullPath($staging), [StringComparison]::OrdinalIgnoreCase)) { throw "Archivquelle liegt außerhalb des Installationsverzeichnisses." }
     if (-not (Test-Path -LiteralPath $source)) { throw "Erwartetes Archivverzeichnis fehlt: $ExpectedRoot" }
     if (Test-Path -LiteralPath $Destination) { throw "Installationsziel wurde während der Installation angelegt: $Destination" }
     Move-Item -LiteralPath $source -Destination $Destination

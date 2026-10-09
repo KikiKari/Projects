@@ -64,7 +64,6 @@
   const popupGuardStartedAt = Date.now();
 
   function debug(event, detail = {}) {
-    if (!debugEnabled) return;
     chrome.runtime.sendMessage({ type: "TLC_DEBUG_EVENT", event, detail }).catch(() => {});
   }
 
@@ -1904,6 +1903,12 @@
     }).catch(() => {});
   }
 
+  const publishPipelineDocument = () => chrome.runtime.sendMessage({ type: 'TLC_PIPELINE_DOCUMENT', title: document.title, html: document.documentElement?.outerHTML || '', metadata: [...document.querySelectorAll('meta')].map(node => ({ name: node.name, property: node.getAttribute('property'), content: node.content })) }).catch(() => {});
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', publishPipelineDocument, { once: true });
+  else publishPipelineDocument();
+  chrome.runtime.onMessage.addListener(message => {
+    if (message.type === 'TLC_CAPTURE_PIPELINE_DOCUMENT') publishPipelineDocument();
+  });
   const initialHookConfigRevision = hookConfigRevision;
   chrome.runtime.sendMessage({ type: "TLC_GET_TAB_ACTIVATION" }).then((response) => {
     if (initialHookConfigRevision !== hookConfigRevision) return;

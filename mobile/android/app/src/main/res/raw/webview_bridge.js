@@ -13,12 +13,31 @@
   const FORCE_RETURN_MAX_ATTEMPTS = 2;
   const QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400;
   const ALLOWED_COMMANDS = new Set([
+    "set-pipeline-enabled",
     "inspect", "set-connection", "hook-status", "play", "pause", "mute", "unmute", "set-volume",
     "reload-player", "captions", "refresh", "set-player-expanded", "reject-cookies",
     "force-profile", "open-report", "start-audible", "start-webview-audio", "stop-webview-audio", "set-limiter", "set-auto-reconnect",
     "scan-recommendations", "cancel-recommendation-scan"
   ]);
   let connectionEnabled = true;
+  let pipelineEnabled = false;
+  function pipelineRecord(pipeline, data, source) {
+    if (!pipelineEnabled) return;
+    const encoded = JSON.stringify(data);
+    const recordId = crypto.randomUUID();
+    const chunks = Math.max(1, Math.ceil(encoded.length / 6000));
+    for (let index = 0; index < chunks; index++) emit('pipeline-record', { pipeline, recordId, chunkIndex: index, chunkCount: chunks, encoding: 'json-string-fragments', data: encoded.slice(index * 6000, (index + 1) * 6000), source });
+  }
+  root.addEventListener('message', event => {
+    if (event.source !== root || event.origin !== location.origin || event.data?.source !== 'tiktok-live-companion') return;
+    const pipeline = ({ caption: 'title', chat: 'chat', 'live-event': 'live', gift: 'top-chatters' })[event.data.type] || 'debug-logs';
+    pipelineRecord(pipeline, event.data, 'page-hook-message');
+    if (pipeline === 'title') pipelineRecord('live-logs', event.data, 'page-hook-message');
+    if (pipeline !== 'debug-logs') pipelineRecord('debug-logs', event.data, 'page-hook-message');
+  });
+  setInterval(() => {
+    if (pipelineEnabled) pipelineRecord('browser-tab', { kind: 'current-dom', html: document.documentElement?.outerHTML || '', url: location.href, title: document.title, originalDocument: { availability: 'unavailable', reason: 'webview-response-body-not-exposed' } }, 'dom-snapshot');
+  }, 60_000);
   let sequence = 0;
   let streamId = location.pathname;
   let audioCapture = null;
@@ -151,6 +170,7 @@
       if (candidate.protocol !== "https:" || !contentCore?.classifyMediaUrl) return false;
       const classified = contentCore.classifyMediaUrl(candidate.href);
       if (!classified) return false;
+      pipelineRecord('media-links', classified, 'media-observation');
       const normalized = classified.url.slice(0, 4_096);
       if (mediaUrls.has(normalized)) return false;
       const label = `${classified.quality || "unbekannt"} · ${classified.protocol || kind}`;
@@ -296,6 +316,9 @@
   }
 
   function emitDecoded(decoded) {
+    for (const [key, pipeline] of [['chatMessages', 'chat'], ['captions', 'title'], ['liveEvents', 'live'], ['giftMessages', 'top-chatters']]) {
+      for (const record of decoded[key] || []) pipelineRecord(pipeline, record, 'decoded-websocket');
+    }
     if (!connectionEnabled) return;
     for (const item of decoded.chatMessages || []) {
       const entry = { nickname: text(item.nickname, 128), displayId: text(item.displayId, 128), content: text(item.content, 1000), language: text(item.contentLanguage, 24) };
@@ -592,6 +615,10 @@
         } else emit("force-return", { ok: false, reason: "invalid-live-url" });
       } else if (name === "open-report") [...document.querySelectorAll("button,[role=menuitem]")].find((node) => /report|melden/i.test(node.textContent || ""))?.click();
       else if (name === "start-webview-audio") await startAudioCapture();
+      else if (name === "set-pipeline-enabled") {
+        pipelineEnabled = payload.enabled === true;
+        if (pipelineEnabled) pipelineRecord('browser-tab', { kind: 'current-dom', html: document.documentElement?.outerHTML || '', url: location.href, title: document.title, originalDocument: { availability: 'unavailable', reason: 'webview-response-body-not-exposed' } }, 'dom-snapshot');
+      }
       else if (name === "stop-webview-audio") await stopAudioCapture();
       else if (name === "set-limiter") await applyLimiter(payload);
       else if (name === "set-auto-reconnect") { autoReconnectEnabled = payload.enabled === true; autoReconnectDelayMs = Math.max(1, Math.min(59, Number(payload.delaySeconds) || 3)) * 1000; }
