@@ -82,6 +82,7 @@ import Foundation
     @Published var recommendationItems: [RecommendationItem] = []
     @Published var limiterEnabled = false
     @Published var limiterStrength = 30
+    @Published var webLimiterStatus = "WebView · Pegelschutz aus"
     @Published var nativeLimiterStatus = "Noch keine native Audiomessung"
     @Published var lastError: String?
     @Published var debugEnabled = false
@@ -255,6 +256,14 @@ import Foundation
             }
         case "quick-recover": liveValues["Auto-Reconnect"] = "aktiv"
         case "limiter":
+            if vlcReplacementURL == nil && limiterEnabled,
+               let input = envelope.payload["inputPeakDbfs"]?.numberValue,
+               let output = envelope.payload["outputPeakDbfs"]?.numberValue,
+               let reduction = envelope.payload["reductionDb"]?.numberValue,
+               input.isFinite, output.isFinite, reduction.isFinite {
+                let mode = envelope.payload["limiterMode"]?.stringValue == "Kompressor" ? "Kompressor" : "Lookahead"
+                webLimiterStatus = String(format: "WebView · %@ · Eingang %.1f dBFS · Ausgang %.1f dBFS · Dämpfung %.1f dB", mode, input, output, reduction)
+            }
             if let strength = envelope.payload["strength"]?.numberValue { liveValues["Pegelschutz"] = "\(Int(strength))%" }
         case "audio-chunk":
             guard let encoded = envelope.payload["data"]?.stringValue,

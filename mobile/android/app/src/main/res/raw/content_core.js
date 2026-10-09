@@ -277,21 +277,41 @@
   }
 
   function createCompressorLimiterNode(context) {
-    const node = context.createDynamicsCompressor();
+    const compressor = context.createDynamicsCompressor();
+    const node = context.createAnalyser();
+    const output = context.createAnalyser();
+    const makeup = context.createGain();
+    makeup.gain.value = 1;
+    node.fftSize = output.fftSize = 2048;
+    node.connect(compressor).connect(makeup).connect(output);
+    // Keep the AudioNode input usable by source.connect(node), while external
+    // connections and disconnections act on the end of the processing chain.
+    node.connect = output.connect.bind(output);
+    node.disconnect = output.disconnect.bind(output);
+    const inputSamples = new Float32Array(node.fftSize);
+    const outputSamples = new Float32Array(output.fftSize);
+    const peakDbfs = (analyser, samples) => {
+      analyser.getFloatTimeDomainData(samples);
+      let peak = 0;
+      for (const sample of samples) peak = Math.max(peak, Math.abs(sample));
+      return peak > 0 ? Math.max(-100, 20 * Math.log10(peak)) : -100;
+    };
     node.limiterMode = "Kompressor";
-    node.threshold.value = 0;
-    node.knee.value = 0;
-    node.ratio.value = 1;
-    node.attack.value = 0;
-    node.release.value = 0.06;
+    compressor.threshold.value = 0;
+    compressor.knee.value = 0;
+    compressor.ratio.value = 1;
+    compressor.attack.value = 0;
+    compressor.release.value = 0.06;
     node.setProtection = ({ enabled, strength }) => {
       const percent = Math.max(0, Math.min(100, Number(strength) || 0));
-      node.threshold.setValueAtTime(enabled ? -4 - percent * 0.26 : 0, context.currentTime);
-      node.ratio.setValueAtTime(enabled ? 20 : 1, context.currentTime);
+      compressor.threshold.setValueAtTime(enabled ? -4 - percent * 0.26 : 0, context.currentTime);
+      compressor.ratio.setValueAtTime(enabled ? 20 : 1, context.currentTime);
+      makeup.gain.setValueAtTime(enabled ? limiterMakeupCompensation(-4 - percent * 0.26, 20) : 1, context.currentTime);
     };
     Object.defineProperty(node, "measurements", { get: () => ({
-      reductionDb: Math.max(0, -Number(node.reduction || 0)),
-      inputPeakDbfs: null, outputPeakDbfs: null, lookaheadMs: null
+      reductionDb: Math.max(0, -Number(compressor.reduction || 0) - 20 * Math.log10(Math.max(makeup.gain.value, 1e-12))),
+      inputPeakDbfs: peakDbfs(node, inputSamples),
+      outputPeakDbfs: peakDbfs(output, outputSamples), lookaheadMs: null
     }) });
     return node;
   }
@@ -328,10 +348,11 @@
         }
       }
       registerProcessor('tlc-peak-limiter', TLCPeakLimiter);`;
-    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    const extensionUrl = globalThis.chrome?.runtime?.getURL?.("peak-limiter-worklet.js");
+    const url = extensionUrl || URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
     try { await context.audioWorklet.addModule(url); }
     catch (_) { return createCompressorLimiterNode(context); }
-    finally { URL.revokeObjectURL(url); }
+    finally { if (!extensionUrl) URL.revokeObjectURL(url); }
     const node = new AudioWorkletNode(context, "tlc-peak-limiter");
     node.limiterMode = "Lookahead";
     node.setProtection = ({ enabled, strength }) => {

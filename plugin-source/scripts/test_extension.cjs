@@ -80,7 +80,13 @@ for (const relative of [
 const scripts = fs.readdirSync(extension).filter((name) => name.endsWith(".js"));
 for (const name of scripts) {
   const source = fs.readFileSync(path.join(extension, name), "utf8");
-  new vm.Script(source, { filename: name });
+  if (name === "peak-limiter-worklet.js") {
+    const result = require("node:child_process").spawnSync(process.execPath,
+      ["--check", "--input-type=module"], { input: source, encoding: "utf8" });
+    assert.strictEqual(result.status, 0, result.stderr);
+  } else {
+    new vm.Script(source, { filename: name });
+  }
   assert.ok(!/\beval\s*\(/.test(source), `${name} contains eval()`);
   assert.ok(!/new\s+Function\s*\(/.test(source), `${name} contains new Function()`);
   assert.ok(!/\.innerHTML\s*=/.test(source), `${name} assigns innerHTML`);

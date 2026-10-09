@@ -251,7 +251,7 @@ class MainActivity : ComponentActivity() {
         OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.", style = MaterialTheme.typography.bodySmall)
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        if (state.vlcReplacementUrl != null) Text(state.nativeLimiterStatus, style = MaterialTheme.typography.bodySmall)
+        Text(if (state.vlcReplacementUrl != null) state.nativeLimiterStatus else if (state.limiterEnabled) state.webLimiterStatus else "WebView · Pegelschutz aus", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Digitalen Pegelschutz aktivieren", Modifier.weight(1f)); Switch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled) }
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterStrength.toFloat(), onValueChange = { model.setLimiter(state.limiterEnabled, it.toInt()) }, valueRange = 0f..100f, enabled = state.limiterEnabled)

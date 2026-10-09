@@ -36,9 +36,26 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.tiktok.com/*"],
-      "js": ["vendor-mpegts.js", "content-core.js", "content.js"],
+      "matches": [
+        "https://www.tiktok.com/*"
+      ],
+      "js": [
+        "vendor-mpegts.js",
+        "content-core.js",
+        "content.js"
+      ],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "peak-limiter-worklet.js",
+        "content-core.js"
+      ],
+      "matches": [
+        "https://www.tiktok.com/*"
+      ]
     }
   ]
 }

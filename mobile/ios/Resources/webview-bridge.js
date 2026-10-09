@@ -402,11 +402,23 @@
   async function attachPeakLimiter(graph) {
     if (graph.peakLimiter) return;
     graph.peakLimiter = await root.TLC_CONTENT_CORE.createPeakLimiterNode(graph.context);
-    if (!graph.peakLimiter.port) return;
+    if (!graph.peakLimiter.port) {
+      const meterTimer = setInterval(() => {
+        if (graph !== audioGraph || graph.context.state === "closed") {
+          clearInterval(meterTimer);
+          return;
+        }
+        if (limiter.enabled && graph.context.state === "running") emit("limiter", {
+          ...graph.peakLimiter.measurements, enabled: true,
+          strength: limiter.strength, audioPath: "web-audio", limiterMode: graph.peakLimiter.limiterMode
+        });
+      }, 100);
+      return;
+    }
     graph.peakLimiter.port.onmessage = event => {
       graph.peakLimiter.measurements = event.data;
       if (graph === audioGraph && limiter.enabled) emit("limiter", {
-        ...event.data, enabled: true, strength: limiter.strength, audioPath: "web-audio"
+        ...event.data, enabled: true, strength: limiter.strength, audioPath: "web-audio", limiterMode: graph.peakLimiter.limiterMode
       });
     };
   }

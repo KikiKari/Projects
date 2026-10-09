@@ -42,6 +42,7 @@ data class CompanionUiState(
     val limiterEnabled: Boolean = false,
     val limiterThreshold: Int = -6,
     val limiterStrength: Int = 30,
+    val webLimiterStatus: String = "WebView · Pegelschutz aus",
     val nativeLimiterStatus: String = "Noch keine native Audiomessung",
     val ttsEnabled: Boolean = false,
     val ttsVolume: Int = 100,
@@ -529,6 +530,18 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 if (ok == false) recoverForce("Bridge-Rückkehr fehlgeschlagen")
             }
             "force-start" -> mutable.update { it.copy(forceInProgress = true, forceRecoveryUrl = (envelope.payload["url"] as? String) ?: it.forceRecoveryUrl) }
+            "limiter" -> {
+                if (mutable.value.vlcReplacementUrl == null && mutable.value.limiterEnabled) {
+                    val input = (envelope.payload["inputPeakDbfs"] as? Number)?.toDouble()
+                    val output = (envelope.payload["outputPeakDbfs"] as? Number)?.toDouble()
+                    val reduction = (envelope.payload["reductionDb"] as? Number)?.toDouble()
+                    if (input != null && output != null && reduction != null && input.isFinite() && output.isFinite() && reduction.isFinite()) {
+                        val mode = if (envelope.payload["limiterMode"] == "Kompressor") "Kompressor" else "Lookahead"
+                        mutable.update { it.copy(webLimiterStatus = String.format(java.util.Locale.ROOT,
+                            "WebView · %s · Eingang %.1f dBFS · Ausgang %.1f dBFS · Dämpfung %.1f dB", mode, input, output, reduction)) }
+                    }
+                }
+            }
             "quick-recover" -> mutable.update { it.copy(liveValues = it.liveValues + ("Auto-Reconnect" to "aktiv")) }
             "player-state" -> {
                 mutable.update { it.copy(playerMuted = envelope.payload["muted"] as? Boolean, audibleStartBlocked = envelope.payload["reason"] == "autoplay-blocked") }
