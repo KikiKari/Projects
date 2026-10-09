@@ -460,7 +460,7 @@ test("0PE-167: actual content message handlers preserve Sidepanel pause and re-e
   const control = new FakeElement();
   const dialog = Object.assign(new FakeElement(), { innerText: "Log in to TikTok", textContent: "Log in to TikTok" });
   let showDialog = false;
-  let listener;
+  const contentListeners = [];
   const domListeners = {};
   let now = 1000;
   class ContentDate extends Date { static now() { return now; } }
@@ -468,7 +468,7 @@ test("0PE-167: actual content message handlers preserve Sidepanel pause and re-e
     querySelector: () => null, querySelectorAll: (selector) => selector === "video" ? [video] : selector.includes('[data-e2e="play-icon"]') ? [control] : showDialog && selector.includes('[role="dialog"]') ? [dialog] : [] };
   const controlPosts=[], runtimePosts=[], windowListeners={};
   const contentWindow={postMessage:m=>controlPosts.push(m),addEventListener:(k,f)=>{windowListeners[k]=f;}};
-  const chrome = { runtime: { onMessage: { addListener: (fn) => { listener = fn; } }, sendMessage: async m => {runtimePosts.push(m);return { enabled: false };} } };
+  const chrome = { runtime: { onMessage: { addListener: (fn) => { contentListeners.push(fn); } }, sendMessage: async m => {runtimePosts.push(m);return { enabled: false };} } };
   const context = vm.createContext({ TLC_CONTENT_CORE: core, chrome, document, window: contentWindow,
     location: { pathname: "/@creator/live", href: "https://www.tiktok.com/@creator/live" }, crypto: webcrypto,
     Element: FakeElement, HTMLMediaElement: { HAVE_CURRENT_DATA: 2 },
@@ -476,7 +476,7 @@ test("0PE-167: actual content message handlers preserve Sidepanel pause and re-e
     Date: ContentDate, URL, console, setTimeout: (fn) => setImmediate(fn), clearTimeout: clearImmediate });
   vm.runInContext(fs.readFileSync(path.join(extension, "content.js"), "utf8"), context);
   await new Promise((resolve) => setImmediate(resolve));
-  const send = (message) => new Promise((resolve) => listener(message, {}, resolve));
+  const send = (message) => new Promise((resolve) => contentListeners.forEach(listener => listener(message, {}, resolve)));
   await send({ type: "TLC_SET_TAB_ACTIVE", enabled: true, quickRecoverEnabled: true, quickRecoverSeconds: 1 });
   await send({type:"TLC_HOOK_RECONNECT_CONFIG",enabled:true,armed:true,seconds:2});
   assert.equal(controlPosts.at(-1).enabled,true);
