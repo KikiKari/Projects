@@ -1,0 +1,7 @@
+{
+  "version": "0.8.2",
+  "androidBuild": 11,
+  "iosBuild": 11,
+  "sourceCommit": "6aab8755066f59fbe52bf4af7faa5d788c09bc9c",
+  "signingCertificateSha256": "e0823c1c0ffaee862569765e30b1c9ac0590066d912b04e5ca257d57f7c7a809"
+}
