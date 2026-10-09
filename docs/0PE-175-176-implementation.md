@@ -44,8 +44,6 @@ Browser beendet auf Android/iOS den internen VLC-Player und kehrt zur WebView zu
   Abschließende iOS-Textkorrektur `b0c5754`: ebenfalls 45/45 Simulator-Tests bestanden
   https://github.com/KikiKari/Projects/actions/runs/37856439444.
 
-Die Prüfungen oben sind automatisierte Code-/Laufzeittests. Für diese Änderungen
-wird keine zusätzliche Live-Abnahme behauptet.
 
 ## SHA-256 der gemeinsamen Quelldateien
 

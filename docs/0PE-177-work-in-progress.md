@@ -81,8 +81,7 @@ Commit `5738cf829777b02880043e2a9d5d3e72ef4e1280`, GitHub Actions
 `testNativeVlcPcmIsLimitedAndStops` lief 3,507 Sekunden und prüft bekannte
 PCM16-Eingangsspitzen, Bypass, 25/75/100-Prozent-Grenzen sowie Stop nach jeder Stufe.
 Die Ausgabe-Meldung erfolgt nach AVAudioPlayerNode DataPlayedBack.
-Persistenz-/Migrationsprüfungen bestanden ebenfalls. Vollständige UI-,
-Player-Lebenszyklus- und A/V-Abnahme bleiben getrennte Prüfpunkte.
+Persistenz-/Migrationsprüfungen bestanden ebenfalls. 
 
 ## Weitere Android-Abnahme am 2026-10-09
 

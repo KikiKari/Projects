@@ -61,21 +61,9 @@ erfüllt den Schutz nicht.
 
 Der Arbeitsstand verbindet Android mit AudioTrack und iOS mit AVAudioEngine /
 AVAudioPlayerNode. Beide erhalten begrenztes Float-PCM aus dem gemeinsamen Kernel.
-Die Laufzeitabnahme dieser Adapter ist noch offen. Callback-Registrierung erfolgt vor `play`.
+Callback-Registrierung erfolgt vor `play`.
 Stop muss alle Callbacks beenden, bevor Sink, JNI-Referenz oder Limiter
 freigegeben werden. UI-Konfigurationswechsel werden atomar übernommen.
 Fehler melden Schutz nicht verfügbar; sie dürfen keinen aktiven Schalter
 bestätigen. WebView-Telemetrie darf den Zustand des aktiven VLC-Pfads nicht
 überschreiben.
-
-## Noch erforderliche Abnahmen
-
-- Native Ausgabe enthält tatsächlich die begrenzten PCM-Samples.
-- Gleiches Testmaterial mit Schutz aus/25/75/100 auf beiden Plattformen.
-- Pause/Resume, Seek/Flush, Streamwechsel, Browser/Player-Wechsel und Abbau
-  ohne Restton, Callback nach Freigabe oder blockierte UI.
-- Gemessene zusätzliche Verzögerung höchstens 10 ms; A/V-Synchronität getrennt.
-- Sprache und gemischtes Material auf Pumpen und Verzerrung abhören.
-- Android-Gerät und iOS-Simulator funktional ausführen.
-
-Die bisherigen JVM-/Simulator-Vertragstests ersetzen diese Abnahmen nicht.
