@@ -154,8 +154,19 @@ private final class FakeRecognizer: RecognitionService {
         probe.receive = { response = $0 as? [String: Any]; finished.fulfill() }
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.add(probe, name: "audioProbe")
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        defer { webView.stopLoading(); configuration.userContentController.removeScriptMessageHandler(forName: "audioProbe") }
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 320, height: 480), configuration: configuration)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        let controller = UIViewController()
+        controller.view = webView
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer {
+            webView.stopLoading()
+            configuration.userContentController.removeScriptMessageHandler(forName: "audioProbe")
+            window.isHidden = true
+            window.rootViewController = nil
+        }
         let script = """
         (async () => {
           try {

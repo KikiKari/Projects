@@ -1,34 +1,44 @@
-# Lokaler Begleitdienst 0.8.1
+# Lokaler Companion-Dienst 0.8.2
 
-Der optionale Windows-Dienst liefert verstärkbares TTS-Audio und reicht ausschließlich manuell aufgenommene Audioausschnitte an AudD weiter. Er bindet nur an `127.0.0.1`.
+Der Windows-Dienst stellt Sherpa-Sprachausgabe, optionale AudD-Erkennung und die zwölf Universal-API-Pipelines bereit. Er lauscht lokal an Loopback und zusätzlich an der vorhandenen Tailscale-Netzwerkschnittstelle.
 
-## Aktualisierung von einem alten entpackten Paket
+## Installation und wiederholte Einrichtung
 
-Wenn sich beim Sidepanel-Button noch ein altes CMD-Fenster mit `npm error ENOENT` und `C:\Users\...\Documents\package.json` öffnet, ist der am 2. August erzeugte Windows-Protokollstarter weiterhin aktiv. Im aktuellen entpackten Paket einmal `companion-service\Sprachdienst-reparieren.cmd` doppelklicken. Eine vorhandene Erweiterungs-ID, der Pairing-Code und bereits installierte Sherpa-Dateien werden wiederverwendet. Nur wenn noch keine gültige Erweiterungs-ID gespeichert ist, fragt die Reparatur danach. Anschließend im Sidepanel `Sprachdienst starten` anklicken; der Pairing-Code wird automatisch übernommen.
+Die aktuelle Erweiterungs-ZIP vollständig entpacken. `companion-service\Sprachdienst-reparieren.cmd` aus diesem Paket starten. Die Einrichtung übernimmt vorhandene Kopplung, Erweiterungs-ID, Dienstport, API-Einstellungen und Sherpa-Stimmen. Eine gültige gespeicherte Erweiterungs-ID wird nicht erneut abgefragt.
 
-Wenn das Sidepanel meldet `Lokaler Dienst ist veraltet`, läuft auf `127.0.0.1:43117` noch ein alter Dienst. In der alten PowerShell zuerst `Ctrl+C` drücken und danach aus dem aktuell entpackten 0.8.1-Paket starten:
+Die Einrichtung erneuert `start-service.ps1`, `install-service.ps1` und `protocol-handler.cmd` unter `%LOCALAPPDATA%\TikTokLiveCompanion` sowie die Windows-Protokollregistrierung. Alle Starter zeigen danach auf das aktuelle entpackte Paket. Den Paketordner deshalb anschließend nicht verschieben.
 
-```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.8.1"
-npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
-npm start
-```
-
-Der einmalige Setup-Schritt bindet die lokale Konfiguration an genau diese Erweiterung, installiert die deutschen und englischen Standardstimmen, registriert `tiktok-live-companion://start` und führt abschließend `npm start` verborgen aus. Danach starten und reparieren die Sidepanel-Buttons den eingerichteten Dienst über absolute Skriptpfade; der aktuelle Arbeitsordner ist dabei unerheblich. Ein kurzlebiger lokaler Bootstrap-Nonce übergibt den bereits lokal erzeugten Pairing-Code einmalig an die gebundene Erweiterung; er muss nicht abgetippt werden.
-
-Der Pairing-Code wird aus `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` wiederverwendet und ändert sich normalerweise nicht. Er ändert sich nur, wenn diese Konfigurationsdatei gelöscht oder neu erzeugt wird. Die PowerShell mit `npm start` muss während der Nutzung offen bleiben, wenn der Dienst nicht über den registrierten Protokollstarter im Hintergrund läuft.
-
-Der Dienst bleibt fest auf `http://127.0.0.1:43117`. Das AudD-Token ist optional und wird nur für die manuelle Songerkennung in `%LOCALAPPDATA%\TikTokLiveCompanion\service.json` gespeichert. Sherpa-Modelle und die kuratierte Stimmenliste liegen unter `%LOCALAPPDATA%\TikTokLiveCompanion\sherpa-onnx` und `%LOCALAPPDATA%\TikTokLiveCompanion\sherpa-voices.json`. Deutsch und Englisch werden beim Grundsetup installiert. Weitere im mitgelieferten `voice-catalog.json` bestätigte Stimmen werden erst nach ihrer Auswahl über den authentifizierten Loopback-Endpunkt `/v1/voices/install` geladen. Jedes freigegebene Archiv ist an Größe und SHA-256 gebunden, wird vor dem Entpacken auf sichere Pfade und Linkeinträge geprüft und erst aus einem temporären Staging-Verzeichnis übernommen. Nicht bestätigte Modelle werden nicht angeboten.
-
-Manuell eingegebene Pairing-Codes werden erst nach einem erfolgreichen Health-Check gespeichert. Ein AudD-Token wird vor dem Speichern beim Anbieter geprüft; ungültige, deaktivierte oder nicht prüfbare Werte verändern weder Dienstkonfiguration noch Erweiterungsspeicher. Sind Sprachdienst und Sherpa aktiv, werden die beiden Felder im Sidepanel ausgeblendet. Zum späteren Ändern oder erneuten Setzen von Pairing-Code oder AudD-Token das Plugin entfernen und neu hinzufügen.
-
-Falls die automatische Installation auf einem System blockiert wird, kann sie manuell aus dem entpackten Paket gestartet werden:
+Ein bereits laufender Dienst wird über seinen authentifizierten Health-Endpunkt und den zugehörigen Node-Prozess erkannt und für das Update neu gestartet. Anführungszeichen und absolute Skriptpfade werden berücksichtigt. Ein fremder Prozess auf dem Dienstport wird nicht beendet. Nach dem Start muss der Companion seine Erreichbarkeit bestätigen.
 
 ```powershell
-cd "C:\Users\silve\Downloads\tiktok-live-companion-extension-0.8.1\companion-service"
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install-sherpa.ps1
-npm run setup -- -ExtensionId <Erweiterungs-ID-aus-dem-Sidepanel>
-npm start
+npm run setup -- -ExtensionId <Erweiterungs-ID>
 ```
 
-Die deutsche Sherpa-Auswahl verwendet Piper-basierte Modelle wie Kerstin sowie männliche Stimmen wie Thorsten/Karlsson, sofern sie installiert sind. Für AudD ist nur der eigene API-Token erforderlich; ohne Token bleibt die Songerkennung deaktiviert, Chat-TTS funktioniert trotzdem.
+Erstinstallationen verwenden Port 43117 und richten die Standardstimmen ein. Bei wiederholter Einrichtung wird `port` aus `service.json` übernommen; bestehende Stimmen werden nicht erneut installiert. Der gespeicherte Pairing-Code bleibt erhalten. Der kurzlebige Bootstrap-Nonce übergibt ihn automatisch an die gebundene Erweiterung.
+
+## Lokaler Port und Tailscale
+
+Standard lokal: `http://127.0.0.1:43117`. Ein bereits konfigurierter abweichender lokaler Port bleibt erhalten. Die Dienstadresse in den erweiterten Einstellungen muss diesen lokalen Port verwenden.
+
+Tailscale Serve kann einen eigenen HTTPS-Port verwenden, beispielsweise 8443, und auf den lokalen Dienstport weiterleiten. Die beiden Ports haben unterschiedliche Aufgaben:
+
+```powershell
+tailscale serve status
+tailscale serve --bg --https=8443 http://127.0.0.1:43117
+```
+
+Vorhandene Serve-Freigaben erhalten und den Proxy-Zielport an den tatsächlich konfigurierten lokalen Port anpassen. Die angezeigte HTTPS-Adresse in Android und iOS als Companion-Dienst eintragen. Keine öffentliche Freigabe erforderlich.
+
+## Konfiguration und Stimmen
+
+`%LOCALAPPDATA%\TikTokLiveCompanion\service.json` enthält die lokale Laufzeitkonfiguration. Zugangsdaten nicht in Quellcode, Pakete oder Dokumentation übernehmen. Sherpa-Dateien liegen unter `sherpa-onnx`, die installierten Stimmen unter `sherpa-voices.json` im selben Konfigurationsverzeichnis.
+
+Zusätzliche Stimmen werden einzeln aus dem gemeinsamen Katalog installiert. Französisch, Spanisch, Italienisch, Portugiesisch (Brasilien), Niederländisch, Polnisch und Türkisch ergänzen die vorhandene Auswahl. Der Katalog nennt Sprache, Sprecher, Größe, SHA-256, Modellbezug und Lizenzquelle. Archive werden vor ihrer Übernahme aus einem temporären Verzeichnis validiert. Bestehende Stimmen-IDs und Auswahl bleiben erhalten.
+
+Pairing und AudD werden in „Erweiterte Einstellungen“ verwaltet. Ohne AudD-Token bleibt die optionale Songerkennung ausgeschaltet; Sherpa benötigt keinen Cloud-Key. Android und iOS können die WAV-Ausgabe des Dienstes über Tailscale HTTPS abspielen.
+
+## Universal API-Key
+
+Lesende Programme verwenden `Authorization: Bearer <Universal API-Key>` unter `/v1/pipelines`. Pairing authentifiziert Einrichtung und Datenanlieferung. Tab-, Sitzungs- und Dokumentidentitäten trennen die zwölf Pipelines. SSE, JSON und JSONL ermöglichen Weiterverarbeitung ohne UI-Scraping.
+
+Die Standardaufbewahrung beträgt sieben Tage mit insgesamt höchstens 2 GiB. `pipelineRetentionDays` und `pipelineMaxBytes` sind konfigurierbar. Lücken und fehlende Quellen werden ausdrücklich ausgewiesen; Zugangsdaten werden aus Nutzlasten entfernt.

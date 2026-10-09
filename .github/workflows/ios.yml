@@ -67,6 +67,14 @@ jobs:
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath "$RUNNER_TEMP/tlc-ios-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/tlc-ios-results" \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_TESTABILITY=YES \
             SWIFT_OPTIMIZATION_LEVEL=-Onone
+
+      - name: Report simulator result
+        if: always()
+        run: |
+          if [[ -d "$RUNNER_TEMP/tlc-ios-results" ]]; then
+            xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/tlc-ios-results"
+          fi

@@ -23,21 +23,22 @@ if ($configuredExtensionId -notmatch '^[a-p]{32}$') {
   throw "Die Chrome-Erweiterungs-ID fehlt oder ist ungültig."
 }
 
-$config = [ordered]@{
-  pairingCode = $pairingCode
-  auddApiToken = $auddToken
-  extensionId = $configuredExtensionId
-  port = 43117
+$serviceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $serviceDir 'service-runtime.ps1')
+$config = [ordered]@{}
+if ($existing) {
+  foreach ($property in $existing.PSObject.Properties) { $config[$property.Name] = $property.Value }
 }
-foreach ($setting in @('universalApiKey', 'pipelineDirectory', 'pipelineRetentionDays', 'pipelineMaxBytes')) {
-  if ($existing -and $null -ne $existing.$setting) { $config[$setting] = $existing.$setting }
-}
+$config.pairingCode = $pairingCode
+$config.auddApiToken = $auddToken
+$config.extensionId = $configuredExtensionId
+$config.port = Get-TlcServicePort $existing
 if ($BootstrapNonce) {
   if ($BootstrapNonce -notmatch '^[A-Za-z0-9_-]{32,128}$') { throw "Der Pairing-Nonce ist ungültig." }
   $config.bootstrapNonce = $BootstrapNonce
   $config.bootstrapExpiresAtUtc = [DateTime]::UtcNow.AddMinutes(2).ToString("o")
 }
-$json = $config | ConvertTo-Json
+$json = $config | ConvertTo-Json -Depth 32
 [IO.File]::WriteAllText($configPath, $json, (New-Object Text.UTF8Encoding($false)))
 Write-Host "Konfiguration gespeichert: $configPath"
 if ($existingInstallation) {
@@ -47,10 +48,11 @@ if ($existingInstallation) {
 }
 Write-Host "Pairing-Code fuer das Sidepanel: $pairingCode"
 
-$serviceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $serviceDir "install-sherpa.ps1")
+if (-not (Test-Path -LiteralPath (Join-Path $configDir 'sherpa-voices.json'))) {
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $serviceDir "install-sherpa.ps1")
+  if ($LASTEXITCODE -ne 0) { throw 'Sherpa-Einrichtung fehlgeschlagen.' }
+}
 
-$npmPath = (Get-Command npm.cmd -ErrorAction Stop).Source
 $startScriptPath = Join-Path $configDir "start-service.ps1"
 $installScriptPath = Join-Path $configDir "install-service.ps1"
 $protocolScriptPath = Join-Path $configDir "protocol-handler.cmd"
@@ -103,16 +105,10 @@ if (`$LaunchUri -match '^tiktok-live-companion://start/([A-Za-z0-9_-]{32,128})$'
   `$serviceConfig = Get-Content -Raw -LiteralPath "$configPath" | ConvertFrom-Json
   `$serviceConfig | Add-Member -NotePropertyName bootstrapNonce -NotePropertyValue `$Matches[1] -Force
   `$serviceConfig | Add-Member -NotePropertyName bootstrapExpiresAtUtc -NotePropertyValue ([DateTime]::UtcNow.AddMinutes(2).ToString("o")) -Force
-  [IO.File]::WriteAllText("$configPath", (`$serviceConfig | ConvertTo-Json), (New-Object Text.UTF8Encoding(`$false)))
+  [IO.File]::WriteAllText("$configPath", (`$serviceConfig | ConvertTo-Json -Depth 32), (New-Object Text.UTF8Encoding(`$false)))
 }
-`$client = New-Object Net.Sockets.TcpClient
-try {
-  `$connect = `$client.BeginConnect("127.0.0.1", 43117, `$null, `$null)
-  if (`$connect.AsyncWaitHandle.WaitOne(250) -and `$client.Connected) { exit 0 }
-} finally {
-  `$client.Dispose()
-}
-Start-Process -FilePath "$npmPath" -ArgumentList @("start") -WorkingDirectory "$serviceDir" -WindowStyle Hidden
+. "$serviceDir\service-runtime.ps1"
+Start-TlcService -ConfigPath "$configPath" -ServiceDirectory "$serviceDir"
 "@
 [IO.File]::WriteAllText($startScriptPath, $startScript, (New-Object Text.UTF8Encoding($false)))
 
@@ -162,34 +158,5 @@ New-ItemProperty -Path $protocolKey -Name "URL Protocol" -Value "" -PropertyType
 $protocolCommand = "cmd.exe /d /c `"`"$protocolScriptPath`" `"%1`"`""
 New-ItemProperty -Path "$protocolKey\shell\open\command" -Name "(Default)" -Value $protocolCommand -PropertyType String -Force | Out-Null
 
-if ($BootstrapNonce) {
-  $listenerPid = 0
-  try {
-    $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort 43117 -State Listen -ErrorAction Stop | Select-Object -First 1
-    $listenerPid = [int]$listener.OwningProcess
-  } catch {
-    $netstatLine = netstat -ano -p tcp | Select-String -Pattern '^\s*TCP\s+127\.0\.0\.1:43117\s+\S+\s+LISTENING\s+(\d+)\s*$' | Select-Object -First 1
-    if ($netstatLine -and $netstatLine.Matches.Count) { $listenerPid = [int]$netstatLine.Matches[0].Groups[1].Value }
-  }
-  if ($listenerPid -gt 0) {
-    $listenerProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $listenerPid"
-    if (-not $listenerProcess -or $listenerProcess.Name -ne "node.exe" -or $listenerProcess.CommandLine -notmatch '(?i)\bnode(?:\.exe)?\b\s+server\.mjs\b') {
-      throw "Port 43117 wird nicht vom erwarteten TikTok-LIVE-Companion-Dienst verwendet."
-    }
-    Stop-Process -Id $listenerPid -Force
-    Write-Host "Vorhandener Sprachdienst wurde fuer die saubere Neueinrichtung beendet."
-    for ($attempt = 0; $attempt -lt 20; $attempt += 1) {
-      Start-Sleep -Milliseconds 100
-      $probe = New-Object Net.Sockets.TcpClient
-      try {
-        $connection = $probe.BeginConnect("127.0.0.1", 43117, $null, $null)
-        if (-not ($connection.AsyncWaitHandle.WaitOne(100) -and $probe.Connected)) { break }
-      } finally {
-        $probe.Dispose()
-      }
-    }
-  }
-}
-
-& $startScriptPath
-Write-Host "Der Sprachdienst wurde mit npm start im Hintergrund gestartet."
+Start-TlcService -ConfigPath $configPath -ServiceDirectory $serviceDir -Restart
+Write-Host "Vorhandene Kopplung, Dienstport, API-Einstellungen und Sherpa-Stimmen bleiben erhalten."
