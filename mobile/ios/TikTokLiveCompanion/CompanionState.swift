@@ -591,10 +591,13 @@ private enum RecoveryProjection {
             let id = UUID().uuidString
             let sequence = UserDefaults.standard.integer(forKey: "pipelineSourceSequence") + 1
             UserDefaults.standard.set(sequence, forKey: "pipelineSourceSequence")
+            let unavailable = initial.contains(type)
+            let structured: [String: Any] = unavailable ? ["reason": "not-yet-observed"] : envelope.rawObject
+            let raw: Any = unavailable ? NSNull() as Any : envelope.rawObject as Any
             let row: [String: Any] = ["sourceSequence": sequence, "eventId": id, "clientId": clientID, "sessionId": sessionID, "tabId": tabID,
                 "documentId": document, "pipeline": type,
                 "capturedAt": ISO8601DateFormatter().string(from: Date()), "availability": initial.contains(type) ? "unavailable" : "available", "source": "ios-webview-bridge",
-                "structured": initial.contains(type) ? ["reason": "not-yet-observed"] : envelope.rawObject, "raw": initial.contains(type) ? NSNull() : envelope.rawObject]
+                "structured": structured, "raw": raw]
             let data = try JSONSerialization.data(withJSONObject: row)
             var text = String(decoding: data, as: UTF8.self)
             for secret in ([pairing, key] + secrets).filter({ !$0.isEmpty }) { text = text.replacingOccurrences(of: secret, with: "[credential removed]") }
