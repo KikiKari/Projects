@@ -3,123 +3,114 @@
 # Quelle: python, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_projects.py
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_projects.py
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_projects.py
-# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_mobile_projects.py
+# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
 
+package require Tcl 8.6
 package require json
-package require plist
 
 # Define paths similar to Python's Path operations
 set scriptDir [file normalize [file dirname [info script]]]
-set rootDir [file normalize "$scriptDir/../../"]
-set iosDir [file join $rootDir "mobile" "ios"]
-set androidDir [file join $rootDir "mobile" "android"]
-set sharedFile [file join $rootDir "plugin-source" "mobile-shared" "webview-bridge.js"]
+set ROOT [file normalize [file join $scriptDir ".." ".."]]
+set IOS [file join $ROOT "mobile" "ios"]
+set ANDROID [file join $ROOT "mobile" "android"]
+set SHARED [file join $ROOT "plugin-source" "mobile-shared" "webview-bridge.js"]
 
-# Function to mimic Python's require behavior
+# Helper function to mimic Python's assert behavior
 proc require {condition message} {
-    if {!$condition} {
+    if {![uplevel #0 expr $condition]} {
         error $message
     }
 }
 
-# Helper function to check if substring exists in file content
-proc file_contains {filepath substring} {
+# Read file content with encoding
+proc read_file {filepath} {
     set fh [open $filepath r]
-    set content [read $fh]
-    close $fh
-    return [string first $substring $content] != -1
-}
-
-# Helper function to compare two files byte by byte
-proc files_equal {file1 file2} {
-    set fh1 [open $file1 rb]
-    set data1 [read $fh1]
-    close $fh1
-    
-    set fh2 [open $file2 rb]
-    set data2 [read $fh2]
-    close $fh2
-    
-    return [expr {$data1 eq $data2}]
-}
-
-# Check Android project if it exists
-if {[file exists $androidDir]} {
-    set manifestFile [file join $androidDir "app" "src" "main" "AndroidManifest.xml"]
-    set gradleFile [file join $androidDir "app" "build.gradle.kts"]
-    set webViewFile [file join $androidDir "app" "src" "main" "java" "app" "tiktoklivecompanion" "CompanionWebView.kt"]
-    set libsDir [file join $androidDir "app" "libs"]
-    set bridgeDest [file join $androidDir "app" "src" "main" "res" "raw" "webview_bridge.js"]
-    
-    # Read files for checking contents
-    set manifestContent [read_file $manifestFile]
-    set gradleContent [read_file $gradleFile]
-    set webViewContent [read_file $webViewFile]
-    
-    # Perform checks
-    require [expr {[string first "minSdk = 21" $gradleContent] != -1 && [string first {versionName = "0.8.0"} $gradleContent] != -1}] "Android version contract"
-    require [string first {usesCleartextTraffic="false"} $manifestContent] != -1 "Android cleartext must be disabled"
-    require [string first "addJavascriptInterface" $webViewContent] == -1 "insecure Android JavaScript interface"
-    require [expr {[string first "addWebMessageListener" $webViewContent] != -1 && [string first "ALLOWED_ORIGIN" $webViewContent] != -1}] "origin-restricted Android bridge"
-    
-    # Check no .aar files exist in libs directory
-    set aarFiles [glob -nocomplain [file join $libsDir "*.aar"]]
-    require [llength $aarFiles] == 0 "ShazamKit AAR must not be committed"
-    
-    # Compare shared JS file with Android copy
-    require [files_equal $sharedFile $bridgeDest] "Android bridge copy drift"
-}
-
-# Check iOS project if it exists
-if {[file exists $iosDir]} {
-    set webViewSwift [file join $iosDir "TikTokLiveCompanion" "CompanionWebView.swift"]
-    set pbxproj [file join $iosDir "TikTokLiveCompanion.xcodeproj" "project.pbxproj"]
-    set infoPlist [file join $iosDir "TikTokLiveCompanion" "Info.plist"]
-    set iosBridge [file join $iosDir "Resources" "webview-bridge.js"]
-    
-    # Read files for checking contents
-    set webViewContent [read_file $webViewSwift]
-    set pbxContent [read_file $pbxproj]
-    
-    # Perform checks
-    require [expr {[string first "forMainFrameOnly: false" $webViewContent] != -1 && [string first {securityOrigin.host == "www.tiktok.com"} $webViewContent] != -1}] "origin-restricted iOS subframe bridge"
-    require [expr {[string first "MARKETING_VERSION = 0.8.0" $pbxContent] != -1 && [string first "IPHONEOS_DEPLOYMENT_TARGET = 15.0" $pbxContent] != -1}] "iOS version contract"
-    
-    # Check source memberships
-    set requiredMembers {"StreamNameNormalizer.swift in Sources" "StreamNameNormalizerTests.swift in Sources" "MobileUIStructureTests.swift in Sources"}
-    set allFound true
-    foreach member $requiredMembers {
-        if {[string first $member $pbxContent] == -1} {
-            set allFound false
-            break
-        }
-    }
-    require $allFound "iOS source and XCTest membership"
-    
-    # Compare shared JS file with iOS copy
-    require [files_equal $sharedFile $iosBridge] "iOS bridge copy drift"
-    
-    # Load and check Info.plist
-    set plistData [plist::parse [read_file $infoPlist]]
-    require [dict get $plistData CFBundleShortVersionString] eq "0.8.0" "iOS plist version"
-}
-
-# Check that no .p8 files are committed anywhere in the repo
-set p8Files [glob -nocomplain -dir $rootDir -types f "*.p8"]
-require [llength $p8Files] == 0 "Apple private key must not be committed"
-
-# Check recognition result schema
-set schemaFile [file join $rootDir "plugin-source" "mobile-shared" "recognition-result.schema.json"]
-set schemaJson [json::json2dict [read_file $schemaFile]]
-set enumValues [dict get [dict get [dict get $schemaJson properties] source] enum]
-require [expr {$enumValues eq {"microphone" "webview"}}] "recognition source schema"
-
-puts "PASS: available mobile platform versions, bridge boundaries, policies, schema, source sync and secret exclusions"
-
-# Helper procedure to read entire file content
-proc read_file {filename} {
-    set fh [open $filename r]
+    fconfigure $fh -encoding utf-8
     set content [read $fh]
     close $fh
     return $content
 }
+
+# Read binary file content
+proc read_binary {filepath} {
+    set fh [open $filepath rb]
+    set content [read $fh]
+    close $fh
+    return $content
+}
+
+# Check Android project if it exists
+if {[file exists $ANDROID]} {
+    set manifest [read_file [file join $ANDROID "app" "src" "main" "AndroidManifest.xml"]]
+    set gradle [read_file [file join $ANDROID "app" "build.gradle.kts"]]
+    set android_webview [read_file [file join $ANDROID "app" "src" "main" "java" "app" "tiktoklivecompanion" "CompanionWebView.kt"]]
+    
+    require {[string first {minSdk = 21} $gradle] != -1 && [string first {versionName = "0.8.2"} $gradle] != -1} "Android version contract"
+    require {[string first {usesCleartextTraffic="false"} $manifest] != -1} "Android cleartext must be disabled"
+    require {[string first addJavascriptInterface $android_webview] == -1} "insecure Android JavaScript interface"
+    require {[string first addWebMessageListener $android_webview] != -1 && [string first ALLOWED_ORIGIN $android_webview] != -1} "origin-restricted Android bridge"
+    
+    # Check for .aar files in libs directory
+    set aar_files [glob -nocomplain [file join $ANDROID "app" "libs" "*.aar"]]
+    require {[llength $aar_files] == 0} "ShazamKit AAR must not be committed"
+    
+    set shared_content [read_binary $SHARED]
+    set android_bridge_content [read_binary [file join $ANDROID "app" "src" "main" "res" "raw" "webview_bridge.js"]]
+    require {$shared_content eq $android_bridge_content} "Android bridge copy drift"
+}
+
+# Check iOS project if it exists
+if {[file exists $IOS]} {
+    set ios_webview [read_file [file join $IOS "TikTokLiveCompanion" "CompanionWebView.swift"]]
+    set pbx [read_file [file join $IOS "TikTokLiveCompanion.xcodeproj" "project.pbxproj"]]
+    
+    require {[string first {forMainFrameOnly: false} $ios_webview] != -1 && [string first {securityOrigin.host == "www.tiktok.com"} $ios_webview] != -1} "origin-restricted iOS subframe bridge"
+    require {[string first {MARKETING_VERSION = 0.8.2} $pbx] != -1 && [string first {IPHONEOS_DEPLOYMENT_TARGET = 15.0} $pbx] != -1} "iOS version contract"
+    
+    # Check source and test membership
+    set required_names {"StreamNameNormalizer.swift in Sources" "StreamNameNormalizerTests.swift in Sources" "MobileUIStructureTests.swift in Sources"}
+    foreach name $required_names {
+        require {[string first $name $pbx] != -1} "iOS source and XCTest membership"
+    }
+    
+    set shared_content [read_binary $SHARED]
+    set ios_bridge_content [read_binary [file join $IOS "Resources" "webview-bridge.js"]]
+    require {$shared_content eq $ios_bridge_content} "iOS bridge copy drift"
+    
+    # Parse Info.plist using system plutil command
+    set plist_file [file join $IOS "TikTokLiveCompanion" "Info.plist"]
+    set temp_json "/tmp/info_plist.json"
+    exec plutil -convert json -o $temp_json $plist_file
+    set plist_fh [open $temp_json r]
+    set plist_data [read $plist_fh]
+    close $plist_fh
+    file delete $temp_json
+    
+    set info_dict [::json::json2dict $plist_data]
+    array set info_array $info_dict
+    require {$info_array(CFBundleShortVersionString) eq "0.8.2"} "iOS plist version"
+}
+
+# Check for Apple private keys
+set p8_files {}
+foreach item [glob -directory $ROOT -types f -nocomplain "**/*.p8"] {
+    lappend p8_files $item
+}
+require {[llength $p8_files] == 0} "Apple private key must not be committed"
+
+# Validate JSON schema
+set schema_file [file join $ROOT "plugin-source" "mobile-shared" "recognition-result.schema.json"]
+set schema_content [read_file $schema_file]
+set schema_dict [::json::json2dict $schema_content]
+array set schema_array $schema_dict
+
+# Navigate to properties.source.enum
+array set properties_array $schema_array(properties)
+array set source_array $properties_array(source)
+set enum_values $source_array(enum)
+
+set expected_enum [list microphone webview]
+require {$enum_values eq $expected_enum} "recognition source schema"
+
+puts "PASS: available mobile platform versions, bridge boundaries, policies, schema, source sync and secret exclusions"

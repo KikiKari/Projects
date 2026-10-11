@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # tree_indexer_v2.py — portiert nach perl5
-# Quelle: python, OpenClaw@gateway1:scripts/tree_indexer_v2.py
-# Erzeugt: 2026-08-22 durch ABSTRACTIONS_MANAGER.py
+# Quelle: python, OpenClaw@gateway2:scripts/tree_indexer_v2.py
+# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -10,22 +10,19 @@ use File::Find;
 use File::Spec;
 use Digest::MD5 qw(md5_hex);
 use POSIX qw(strftime);
-use JSON;
 
-# Konfiguration
-my $WORKSPACE = "/home/openclaw/.openclaw/workspace";
-my $DB_DIR = "$WORKSPACE/db";
-my $DB_PATH = "$DB_DIR/tree.db";
+# Tree Indexer v2 - Erweitertes Tracking mit Metadaten
 
-# Sicherstellen, dass das DB-Verzeichnis existiert
-mkdir $DB_DIR unless -d $DB_DIR;
+my $WORKSPACE = '/workspace';
+my $DB_DIR = $WORKSPACE;
 
 package TreeIndexerV2;
 
 sub new {
     my $class = shift;
     my $self = {
-        dbh => undef,
+        db_path => "$WORKSPACE/db/tree.db",
+        conn => undef,
     };
     bless $self, $class;
     return $self;
@@ -33,19 +30,21 @@ sub new {
 
 sub connect {
     my $self = shift;
-    $self->{dbh} = DBI->connect("dbi:SQLite:dbname=$DB_PATH", "", "", { RaiseError => 1, AutoCommit => 0 });
-    return $self->{dbh};
+    unless ($self->{conn}) {
+        $self->{conn} = DBI->connect("dbi:SQLite:dbname=$self->{db_path}", "", "", { RaiseError => 1, AutoCommit => 0 });
+    }
+    return $self->{conn};
 }
 
 sub init_schema_v2 {
     my $self = shift;
-    my $dbh = $self->connect();
+    my $conn = $self->connect();
     
     # Haupttabelle mit erweiterten Metadaten
-    $dbh->do(qq{
+    $conn->do(qq{
         CREATE TABLE IF NOT EXISTS tree_entries_v2 (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            file_id TEXT UNIQUE,
+            file_id TEXT UNIQUE,              -- Eindeutige Datei-ID (Hash von Pfad)
             root_path TEXT NOT NULL,
             relative_path TEXT NOT NULL,
             name TEXT NOT NULL,
@@ -53,30 +52,36 @@ sub init_schema_v2 {
             depth INTEGER,
             parent_path TEXT,
             
-            size_bytes INTEGER,
-            previous_size_bytes INTEGER,
-            size_change_bytes INTEGER,
+            -- Größen-Tracking
+            size_bytes INTEGER,               -- Aktuelle Größe
+            previous_size_bytes INTEGER,      -- Vorherige Größe (für Delta)
+            size_change_bytes INTEGER,        -- Änderung (positiv/negativ)
             
-            mtime_timestamp REAL,
-            mtime_iso TEXT,
-            first_seen_timestamp REAL,
-            last_seen_timestamp REAL,
+            -- Zeitstempel
+            mtime_timestamp REAL,             -- Letzte Änderung (Unix timestamp)
+            mtime_iso TEXT,                   -- ISO-Format für Lesbarkeit
+            first_seen_timestamp REAL,        -- Wann wurde Datei erste Mal gesehen
+            last_seen_timestamp REAL,         -- Wann wurde Datei zuletzt gesehen
             
+            -- Änderungs-Tracking
             change_type TEXT CHECK(change_type IN ('NEW', 'MODIFIED', 'MOVED', 'RENAMED', 'UNCHANGED', 'DELETED')),
             
-            original_name TEXT,
-            original_path TEXT,
-            previous_path TEXT,
+            -- Historie
+            original_name TEXT,               -- Ursprünglicher Name wenn umbenannt
+            original_path TEXT,               -- Ursprünglicher Pfad wenn verschoben
+            previous_path TEXT,               -- Vorheriger Pfad
             
-            content_hash TEXT,
+            -- Content-Hash (optionale Integritätsprüfung)
+            content_hash TEXT,                -- MD5 der Datei (nur für kleine Dateien)
             
+            -- Metadaten
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     });
     
     # Historie-Tabelle für alle Änderungen
-    $dbh->do(qq{
+    $conn->do(qq{
         CREATE TABLE IF NOT EXISTS file_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             file_id TEXT NOT NULL,
@@ -91,71 +96,69 @@ sub init_schema_v2 {
     });
     
     # Index für schnelle Suchen
-    $dbh->do("CREATE INDEX IF NOT EXISTS idx_file_id ON tree_entries_v2(file_id)");
-    $dbh->do("CREATE INDEX IF NOT EXISTS idx_path ON tree_entries_v2(relative_path)");
-    $dbh->do("CREATE INDEX IF NOT EXISTS idx_mtime ON tree_entries_v2(mtime_timestamp)");
-    $dbh->do("CREATE INDEX IF NOT EXISTS idx_change_type ON tree_entries_v2(change_type)");
+    $conn->do('CREATE INDEX IF NOT EXISTS idx_file_id ON tree_entries_v2(file_id)');
+    $conn->do('CREATE INDEX IF NOT EXISTS idx_path ON tree_entries_v2(relative_path)');
+    $conn->do('CREATE INDEX IF NOT EXISTS idx_mtime ON tree_entries_v2(mtime_timestamp)');
+    $conn->do('CREATE INDEX IF NOT EXISTS idx_change_type ON tree_entries_v2(change_type)');
     
-    $dbh->commit();
+    $conn->commit();
     print "✅ tree.db Schema v2 erstellt/aktualisiert\n";
     return $self;
 }
 
 sub get_file_metadata {
     my ($self, $full_path) = @_;
+    my %metadata = (size => 0, mtime => 0, mtime_iso => undef);
+    
     if (-e $full_path) {
         my @stat = stat($full_path);
-        my $mtime_iso = strftime("%Y-%m-%dT%H:%M:%S", localtime($stat[9]));
-        return {
-            size => $stat[7],
-            mtime => $stat[9],
-            mtime_iso => $mtime_iso,
-        };
-    } else {
-        return { size => 0, mtime => 0, mtime_iso => undef };
+        if (@stat) {
+            $metadata{size} = $stat[7];
+            $metadata{mtime} = $stat[9];
+            $metadata{mtime_iso} = strftime("%Y-%m-%dT%H:%M:%S", localtime($stat[9]));
+        }
     }
+    
+    return \%metadata;
 }
 
 sub generate_file_id {
     my ($self, $relative_path) = @_;
-    my $digest = md5_hex($relative_path);
-    return substr($digest, 0, 16);
+    return substr(md5_hex($relative_path), 0, 16);
 }
 
 sub scan_directory_detailed {
     my ($self, $root_path, $max_depth) = @_;
     $max_depth //= 8;
+    
     my @entries;
-    my %seen_paths;
+    my $root_length = length($root_path);
     
     find(sub {
         my $item = $File::Find::name;
-        return unless -e $item; # Skip broken symlinks
-        
-        # Berechne relativen Pfad
-        my $rel_path = File::Spec->abs2rel($item, $root_path);
-        return if $rel_path eq '.' || $rel_path eq ''; # Skip root itself
+        return if ($item eq $root_path);
         
         # Max depth prüfen
-        my @parts = split('/', $rel_path);
+        my $relative_item = substr($item, $root_length + 1);
+        my @parts = split('/', $relative_item);
         my $depth = scalar(@parts);
-        return if $depth > $max_depth;
         
-        # Vermeide Duplikate
-        return if exists $seen_paths{$rel_path};
-        $seen_paths{$rel_path} = 1;
+        if ($depth > $max_depth) {
+            return;
+        }
         
-        my $file_id = $self->generate_file_id($rel_path);
+        my $relative_path = $relative_item;
+        my $file_id = $self->generate_file_id($relative_path);
         my $metadata = $self->get_file_metadata($item);
         
         my $entry = {
             file_id => $file_id,
             root_path => $root_path,
-            relative_path => $rel_path,
-            name => (split('/', $rel_path))[-1],
-            type => (-d $item) ? 'directory' : ((-l $item) ? 'symlink' : 'file'),
+            relative_path => $relative_path,
+            name => $_,
+            type => (-d $_) ? 'directory' : ((-l $_) ? 'symlink' : 'file'),
             depth => $depth,
-            parent_path => dirname_safe($rel_path),
+            parent_path => ($depth > 1) ? join('/', @parts[0..$#parts-1]) : '',
             size_bytes => $metadata->{size},
             mtime_timestamp => $metadata->{mtime},
             mtime_iso => $metadata->{mtime_iso},
@@ -166,31 +169,23 @@ sub scan_directory_detailed {
     return \@entries;
 }
 
-sub dirname_safe {
-    my $path = shift;
-    my @parts = split('/', $path);
-    pop @parts;
-    return join('/', @parts) || '';
-}
-
 sub update_database {
     my ($self, $entries) = @_;
-    my $dbh = $self->connect();
+    my $conn = $self->connect();
+    my $cursor = $conn->prepare("SELECT * FROM tree_entries_v2 WHERE file_id = ?");
     
     # Aktuelle Zeit
     my $now = time();
     my $now_timestamp = $now;
     
     # Alle bestehenden Einträge als "potentiell gelöscht" markieren
-    $dbh->do("UPDATE tree_entries_v2 SET change_type = NULL");
+    $conn->do("UPDATE tree_entries_v2 SET change_type = NULL");
     
     my %stats = (new => 0, modified => 0, unchanged => 0, moved => 0);
     
     foreach my $entry (@$entries) {
-        # Prüfe ob Datei bereits bekannt
-        my $sth_select = $dbh->prepare("SELECT * FROM tree_entries_v2 WHERE file_id = ?");
-        $sth_select->execute($entry->{file_id});
-        my $existing = $sth_select->fetchrow_hashref();
+        $cursor->execute($entry->{file_id});
+        my $existing = $cursor->fetchrow_hashref();
         
         if ($existing) {
             # Vergleiche Metadaten
@@ -215,7 +210,7 @@ sub update_database {
             }
             
             # Update
-            my $sth_update = $dbh->prepare(qq{
+            my $update_stmt = $conn->prepare(qq{
                 UPDATE tree_entries_v2 SET
                     size_bytes = ?,
                     previous_size_bytes = ?,
@@ -229,7 +224,7 @@ sub update_database {
                     updated_at = CURRENT_TIMESTAMP
                 WHERE file_id = ?
             });
-            $sth_update->execute(
+            $update_stmt->execute(
                 $entry->{size_bytes},
                 $old_size,
                 $size_change,
@@ -238,18 +233,18 @@ sub update_database {
                 $now_timestamp,
                 $change_type,
                 ($change_type eq 'MOVED') ? $old_path : undef,
-                ($change_type eq 'MOVED') ? $old_path : undef,
+                ($change_type eq 'MOVED') ? $old_path : $existing->{original_path},
                 $entry->{file_id}
             );
             
             # Änderung in Historie loggen
             if ($change_type eq 'MODIFIED' || $change_type eq 'MOVED') {
-                my $sth_hist = $dbh->prepare(qq{
+                my $history_stmt = $conn->prepare(qq{
                     INSERT INTO file_history
                     (file_id, timestamp, change_type, old_path, new_path, old_size, new_size)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 });
-                $sth_hist->execute(
+                $history_stmt->execute(
                     $entry->{file_id},
                     $now_timestamp,
                     $change_type,
@@ -262,7 +257,7 @@ sub update_database {
         } else {
             # Neue Datei
             $stats{new}++;
-            my $sth_insert = $dbh->prepare(qq{
+            my $insert_stmt = $conn->prepare(qq{
                 INSERT INTO tree_entries_v2
                 (file_id, root_path, relative_path, name, type, depth, parent_path,
                  size_bytes, previous_size_bytes, size_change_bytes,
@@ -270,7 +265,7 @@ sub update_database {
                  change_type, content_hash)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             });
-            $sth_insert->execute(
+            $insert_stmt->execute(
                 $entry->{file_id},
                 $entry->{root_path},
                 $entry->{relative_path},
@@ -292,59 +287,79 @@ sub update_database {
     }
     
     # Markiere nicht aktualisierte Einträge als DELETED
-    my $sth_deleted = $dbh->prepare(qq{
+    my $select_deleted = $conn->prepare(qq{
         SELECT * FROM tree_entries_v2 
         WHERE change_type IS NULL OR last_seen_timestamp < ?
     });
-    $sth_deleted->execute($now_timestamp - 3600); # Älter als 1 Stunde
+    $select_deleted->execute($now_timestamp - 3600); # Älter als 1 Stunde
     
-    my $deleted_count = 0;
-    while (my $item = $sth_deleted->fetchrow_hashref()) {
-        my $sth_upd = $dbh->prepare(qq{
+    my @deleted;
+    while (my $row = $select_deleted->fetchrow_hashref()) {
+        push @deleted, $row;
+    }
+    
+    foreach my $item (@deleted) {
+        my $delete_stmt = $conn->prepare(qq{
             UPDATE tree_entries_v2 
             SET change_type = 'DELETED', updated_at = CURRENT_TIMESTAMP
             WHERE file_id = ?
         });
-        $sth_upd->execute($item->{file_id});
-        $deleted_count++;
+        $delete_stmt->execute($item->{file_id});
     }
-    $stats{deleted} = $deleted_count;
     
-    $dbh->commit();
+    $stats{deleted} = scalar(@deleted);
+    
+    $conn->commit();
     return \%stats;
 }
 
 sub export_changes {
     my ($self, $since_hours) = @_;
     $since_hours //= 24;
-    my $dbh = $self->connect();
     
-    my $since = time() - ($since_hours * 3600);
-    
-    my $sth = $dbh->prepare(qq{
+    my $conn = $self->connect();
+    my $cursor = $conn->prepare(qq{
         SELECT * FROM tree_entries_v2 
         WHERE change_type IN ('NEW', 'MODIFIED', 'MOVED', 'DELETED')
         AND last_seen_timestamp > ?
         ORDER BY last_seen_timestamp DESC
     });
-    $sth->execute($since);
+    
+    my $since = time() - ($since_hours * 3600);
+    $cursor->execute($since);
     
     my @changes;
-    while (my $row = $sth->fetchrow_hashref()) {
+    while (my $row = $cursor->fetchrow_hashref()) {
         push @changes, $row;
     }
     
     # Export als JSON
     my $export_file = "$WORKSPACE/tree_changes_last_${since_hours}h.json";
-    open(my $fh, '>', $export_file) or die "Kann $export_file nicht öffnen: $!";
-    print $fh to_json(\@changes, { pretty => 1 });
-    close($fh);
+    
+    open(my $fh, '>', $export_file) or die "Could not open file '$export_file' $!";
+    print $fh "[\n";
+    for my $i (0 .. $#changes) {
+        my $row = $changes[$i];
+        print $fh "  {\n";
+        my @keys = keys %$row;
+        for my $j (0 .. $#keys) {
+            my $key = $keys[$j];
+            my $value = defined $row->{$key} ? "\"$row->{$key}\"" : "null";
+            print $fh "    \"$key\": $value";
+            print $fh "," if $j < $#keys;
+            print $fh "\n";
+        }
+        print $fh "  }";
+        print $fh "," if $i < $#changes;
+        print $fh "\n";
+    }
+    print $fh "]\n";
+    close $fh;
     
     print "✅ Änderungen exportiert: $export_file (" . scalar(@changes) . " Einträge)\n";
     return $export_file;
 }
 
-# Hauptprogramm
 sub main {
     print "=" x 60 . "\n";
     print "TREE INDEXER v2 - Erweitertes Tracking\n";
@@ -354,7 +369,7 @@ sub main {
     $indexer->init_schema_v2();
     
     print "\n--- Scanning Workspace ---\n";
-    my $entries = $indexer->scan_directory_detailed('/home/openclaw/.openclaw/workspace/', 8);
+    my $entries = $indexer->scan_directory_detailed($WORKSPACE, 8);
     print "Gefunden: " . scalar(@$entries) . " Einträge\n";
     
     print "\n--- Aktualisiere Datenbank ---\n";
@@ -367,7 +382,7 @@ sub main {
     print "  DELETED:    " . ($stats->{deleted} // 0) . "\n";
     
     print "\n--- Exportiere Änderungen (24h) ---\n";
-    $indexer->export_changes(since_hours => 24);
+    $indexer->export_changes(24);
     
     print "\n" . "=" x 60 . "\n";
     print "TREE INDEXING ABGESCHLOSSEN\n";

@@ -1,121 +1,42 @@
 #!/usr/bin/env tclsh8.6
 # tree_indexer_v2.py — portiert nach tcl
-# Quelle: python, OpenClaw@gateway1:scripts/tree_indexer_v2.py
-# Erzeugt: 2026-08-22 durch ABSTRACTIONS_MANAGER.py
+# Quelle: python, OpenClaw@gateway2:scripts/tree_indexer_v2.py
+# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
 
 # Tree Indexer v2 - Erweitertes Tracking mit Metadaten
 
 package require sqlite3
+package require fileutil
+package require md5
 
-set WORKSPACE "/home/openclaw/.openclaw/workspace"
-set DB_DIR "$WORKSPACE/db"
+set WORKSPACE "/workspace"
+set DB_DIR $WORKSPACE
 
-# Hilfsfunktionen
-proc file_normalize {path} {
-    # Entferne abschließende Slashes
-    set path [string trimright $path "/"]
-    if {$path eq ""} {set path "/"}
-    return $path
-}
-
-proc file_join {args} {
-    set result ""
-    foreach part $args {
-        if {$part ne ""} {
-            if {$result eq ""} {
-                set result $part
-            } else {
-                set result [file join $result $part]
-            }
-        }
-    }
-    return $result
-}
-
-proc dict_get_default {dict key default} {
-    if {[dict exists $dict $key]} {
-        return [dict get $dict $key]
-    } else {
-        return $default
-    }
-}
-
-proc timestamp_to_iso {timestamp} {
-    if {$timestamp eq "" || $timestamp == 0} {
-        return ""
-    }
-    return [clock format $timestamp -format "%Y-%m-%dT%H:%M:%S"]
-}
-
-proc iso_now {} {
-    return [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%S"]
-}
-
-proc md5_short {text} {
-    if {[catch {exec echo -n $text | md5sum} result]} {
-        # Fallback ohne md5sum
-        set hash ""
-        binary scan $text H* hash
-        return [string range $hash 0 15]
-    } else {
-        return [string range $result 0 15]
-    }
-}
-
-proc glob_recursive {dir {max_depth 8}} {
-    set entries {}
-    set queue [list [list $dir 0]]
+# Klasse TreeIndexerV2
+proc TreeIndexerV2 {} {
+    variable db_path
+    variable conn
     
-    while {[llength $queue] > 0} {
-        set item [lindex $queue 0]
-        set queue [lrange $queue 1 end]
-        
-        set current_dir [lindex $item 0]
-        set depth [lindex $item 1]
-        
-        if {$depth > $max_depth} {
-            continue
-        }
-        
-        if {[catch {glob -nocomplain -dir $current_dir *} files]} {
-            continue
-        }
-        
-        foreach file $files {
-            lappend entries [list $file $depth]
-            if {[file isdirectory $file]} {
-                lappend queue [list $file [expr {$depth + 1}]]
-            }
-        }
+    set db_path "$WORKSPACE/db/tree.db"
+    set conn ""
+}
+
+# Methode zur Initialisierung der Datenbankverbindung
+proc connect {} {
+    variable db_path
+    variable conn
+    
+    if {$conn eq ""} {
+        sqlite3 db_conn $db_path
+        set conn db_conn
+        ${conn} eval {PRAGMA foreign_keys = ON}
     }
-    
-    return $entries
+    return $conn
 }
 
-proc TreeIndexerV2_new {} {
-    set obj [dict create]
-    dict set obj db_path "$DB_DIR/tree.db"
-    dict set obj conn ""
-    return $obj
-}
-
-proc TreeIndexerV2_connect {this} {
-    set db_path [dict get $this db_path]
-    set conn "db_conn"
-    
-    # Stelle sicher dass das DB-Verzeichnis existiert
-    file mkdir [file dirname $db_path]
-    
-    sqlite3 $conn $db_path
-    ${conn} eval {PRAGMA foreign_keys = ON}
-    
-    dict set this conn $conn
-    return $this
-}
-
-proc TreeIndexerV2_init_schema_v2 {this} {
-    set this [TreeIndexerV2_connect $this]
-    set conn [dict get $this conn]
+# Methode zur Initialisierung des Schemas
+proc init_schema_v2 {} {
+    set conn [connect]
     
     # Haupttabelle mit erweiterten Metadaten
     ${conn} eval {
@@ -173,65 +94,79 @@ proc TreeIndexerV2_init_schema_v2 {this} {
     }
     
     # Index für schnelle Suchen
-    ${conn} eval {
-        CREATE INDEX IF NOT EXISTS idx_file_id ON tree_entries_v2(file_id);
-        CREATE INDEX IF NOT EXISTS idx_path ON tree_entries_v2(relative_path);
-        CREATE INDEX IF NOT EXISTS idx_mtime ON tree_entries_v2(mtime_timestamp);
-        CREATE INDEX IF NOT EXISTS idx_change_type ON tree_entries_v2(change_type);
-    }
+    ${conn} eval {CREATE INDEX IF NOT EXISTS idx_file_id ON tree_entries_v2(file_id)}
+    ${conn} eval {CREATE INDEX IF NOT EXISTS idx_path ON tree_entries_v2(relative_path)}
+    ${conn} eval {CREATE INDEX IF NOT EXISTS idx_mtime ON tree_entries_v2(mtime_timestamp)}
+    ${conn} eval {CREATE INDEX IF NOT EXISTS idx_change_type ON tree_entries_v2(change_type)}
     
     puts "✅ tree.db Schema v2 erstellt/aktualisiert"
-    return $this
+    return
 }
 
-proc TreeIndexerV2_get_file_metadata {this full_path} {
-    array set meta {}
-    set meta(size) 0
-    set meta(mtime) 0
-    set meta(mtime_iso) ""
+# Methode zum Extrahieren von Metadaten einer Datei
+proc get_file_metadata {full_path} {
+    array set metadata [list size 0 mtime 0 mtime_iso ""]
+
+    if {[catch {file stat $full_path stat_info}]} {
+        return [array get metadata]
+    }
+
+    set metadata(size) $stat_info(size)
+    set metadata(mtime) $stat_info(mtime)
     
-    if {[file exists $full_path]} {
-        if {![catch {file mtime $full_path} mtime_val]} {
-            set meta(size) [file size $full_path]
-            set meta(mtime) $mtime_val
-            set meta(mtime_iso) [timestamp_to_iso $mtime_val]
-        }
+    # Konvertiere Unix-Timestamp zu ISO-Format
+    set iso_time [clock format $stat_info(mtime) -format "%Y-%m-%dT%H:%M:%S"]
+    set metadata(mtime_iso) $iso_time
+    
+    return [array get metadata]
+}
+
+# Methode zur Generierung einer eindeutigen ID aus dem Pfad
+proc generate_file_id {relative_path} {
+    set hash [md5::md5 -hex $relative_path]
+    return [string range $hash 0 15]
+}
+
+# Methode zum detaillierten Scannen mit Metadaten
+proc scan_directory_detailed {root_path max_depth} {
+    set entries [list]
+    set root_len [string length $root_path]
+    if {[string index $root_path end] ne "/"} {
+        incr root_len
     }
     
-    return [array get meta]
-}
-
-proc TreeIndexerV2_generate_file_id {this relative_path} {
-    return [md5_short $relative_path]
-}
-
-proc TreeIndexerV2_scan_directory_detailed {this root_path {max_depth 8}} {
-    set entries {}
-    set root_path [file_normalize $root_path]
-    
-    set items [glob_recursive $root_path $max_depth]
-    
-    foreach item_info $items {
-        set item [lindex $item_info 0]
-        set depth [lindex $item_info 1]
+    # Durchsuche rekursiv das Verzeichnis
+    foreach item [glob -nocomplain -types {d f l} -path $root_path **] {
+        # Berechne Tiefe
+        set rel_path [string range $item $root_len end]
+        set parts [split $rel_path "/"]
+        set depth [llength $parts]
         
-        # Berechne relativen Pfad
-        set relative_path [string range $item [string length $root_path] end]
-        set relative_path [string trimleft $relative_path "/"]
+        # Max depth prüfen
+        if {$depth > $max_depth} {
+            continue
+        }
         
-        if {$relative_path eq ""} continue
+        set file_id [generate_file_id $rel_path]
+        array set metadata [get_file_metadata $item]
         
-        set file_id [TreeIndexerV2_generate_file_id $this $relative_path]
-        array set metadata [TreeIndexerV2_get_file_metadata $this $item]
+        # Bestimme Typ
+        set type "file"
+        if {[file isdirectory $item]} {
+            set type "directory"
+        } elseif {[file islink $item]} {
+            set type "symlink"
+        }
         
+        # Erstelle Eintrag
         set entry [dict create \
             file_id $file_id \
             root_path $root_path \
-            relative_path $relative_path \
+            relative_path $rel_path \
             name [file tail $item] \
-            type [expr {[file isdirectory $item] ? "directory" : ([file islink $item] ? "symlink" : "file")}] \
+            type $type \
             depth $depth \
-            parent_path [file dirname $relative_path] \
+            parent_path [file dirname $rel_path] \
             size_bytes $metadata(size) \
             mtime_timestamp $metadata(mtime) \
             mtime_iso $metadata(mtime_iso) \
@@ -243,41 +178,36 @@ proc TreeIndexerV2_scan_directory_detailed {this root_path {max_depth 8}} {
     return $entries
 }
 
-proc TreeIndexerV2_update_database {this entries} {
-    set this [TreeIndexerV2_connect $this]
-    set conn [dict get $this conn]
+# Methode zur Aktualisierung der Datenbank mit Änderungserkennung
+proc update_database {entries} {
+    set conn [connect]
+    array set stats [list new 0 modified 0 unchanged 0 moved 0 deleted 0]
     
     # Aktuelle Zeit
     set now [clock seconds]
-    set now_timestamp [clock scan [clock format $now -format "%Y-%m-%d %H:%M:%S"]]
+    set now_timestamp [expr {double($now)}]
     
     # Alle bestehenden Einträge als "potentiell gelöscht" markieren
     ${conn} eval {UPDATE tree_entries_v2 SET change_type = NULL}
-    
-    array set stats [list new 0 modified 0 unchanged 0 moved 0 deleted 0]
     
     foreach entry $entries {
         set file_id [dict get $entry file_id]
         
         # Prüfe ob Datei bereits bekannt
-        set existing_rows [${conn} eval {
-            SELECT * FROM tree_entries_v2 WHERE file_id = $file_id
-        }]
+        set existing [${conn} eval {SELECT * FROM tree_entries_v2 WHERE file_id = $file_id}]
         
-        if {[llength $existing_rows] > 0} {
-            # Konvertiere Ergebnis zu Dict
-            set colnames [${conn} eval {PRAGMA table_info(tree_entries_v2)}]
-            set existing_dict [dict create]
-            for {set i 0} {$i < [llength $colnames]} {incr i 2} {
-                set colname [lindex $colnames $i 1]
-                set value [lindex $existing_rows $i]
-                dict set existing_dict $colname $value
+        if {[llength $existing] > 0} {
+            # Konvertiere Ergebnis in Array
+            array set row {}
+            set colnames [${conn} columns]
+            foreach col $colnames val $existing {
+                set row($col) $val
             }
             
             # Vergleiche Metadaten
-            set old_mtime [dict_get_default $existing_dict mtime_timestamp 0]
-            set old_size [dict_get_default $existing_dict size_bytes 0]
-            set old_path [dict_get_default $existing_dict relative_path ""]
+            set old_mtime [expr {$row(mtime_timestamp) ? $row(mtime_timestamp) : 0}]
+            set old_size [expr {$row(size_bytes) ? $row(size_bytes) : 0}]
+            set old_path $row(relative_path)
             
             # Größenänderung berechnen
             set size_change [expr {[dict get $entry size_bytes] - $old_size}]
@@ -297,45 +227,45 @@ proc TreeIndexerV2_update_database {this entries} {
             # Update
             ${conn} eval {
                 UPDATE tree_entries_v2 SET
-                    size_bytes = $size_bytes,
-                    previous_size_bytes = $old_size,
+                    size_bytes = $size,
+                    previous_size_bytes = $prev_size,
                     size_change_bytes = $size_change,
-                    mtime_timestamp = $mtime_timestamp,
+                    mtime_timestamp = $mtime,
                     mtime_iso = $mtime_iso,
-                    last_seen_timestamp = $last_seen_timestamp,
+                    last_seen_timestamp = $last_seen,
                     change_type = $change_type,
-                    previous_path = $previous_path,
-                    original_path = COALESCE(original_path, $original_path_value),
+                    previous_path = $prev_path,
+                    original_path = COALESCE(original_path, $orig_path),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE file_id = $file_id
-            } {
-                set size_bytes [dict get $entry size_bytes]
-                set old_size $old_size
-                set size_change $size_change
-                set mtime_timestamp [dict get $entry mtime_timestamp]
-                set mtime_iso [dict get $entry mtime_iso]
-                set last_seen_timestamp $now_timestamp
-                set change_type $change_type
-                set previous_path [expr {$change_type eq "MOVED" ? $old_path : ""}]
-                set original_path_value [expr {$change_type eq "MOVED" ? $old_path : $old_path}]
-                set file_id $file_id
-            }
+            } [subst {
+                size [dict get $entry size_bytes]
+                prev_size $old_size
+                size_change $size_change
+                mtime [dict get $entry mtime_timestamp]
+                mtime_iso [dict get $entry mtime_iso]
+                last_seen $now_timestamp
+                change_type $change_type
+                prev_path [expr {$change_type eq "MOVED" ? $old_path : ""}]
+                orig_path [expr {$change_type eq "MOVED" ? $old_path : $row(original_path)}]
+                file_id $file_id
+            }]
             
             # Änderung in Historie loggen
             if {$change_type in {"MODIFIED" "MOVED"}} {
                 ${conn} eval {
                     INSERT INTO file_history
                     (file_id, timestamp, change_type, old_path, new_path, old_size, new_size)
-                    VALUES ($file_id_hist, $timestamp_hist, $change_type_hist, $old_path_hist, $new_path_hist, $old_size_hist, $new_size_hist)
-                } {
-                    set file_id_hist $file_id
-                    set timestamp_hist $now_timestamp
-                    set change_type_hist $change_type
-                    set old_path_hist $old_path
-                    set new_path_hist [dict get $entry relative_path]
-                    set old_size_hist $old_size
-                    set new_size_hist [dict get $entry size_bytes]
-                }
+                    VALUES ($file_id, $timestamp, $change_type, $old_path, $new_path, $old_size, $new_size)
+                } [subst {
+                    file_id $file_id
+                    timestamp $now_timestamp
+                    change_type $change_type
+                    old_path $old_path
+                    new_path [dict get $entry relative_path]
+                    old_size $old_size
+                    new_size [dict get $entry size_bytes]
+                }]
             }
         } else {
             # Neue Datei
@@ -346,154 +276,112 @@ proc TreeIndexerV2_update_database {this entries} {
                  size_bytes, previous_size_bytes, size_change_bytes,
                  mtime_timestamp, mtime_iso, first_seen_timestamp, last_seen_timestamp,
                  change_type, content_hash)
-                VALUES ($file_id_ins, $root_path_ins, $relative_path_ins, $name_ins, $type_ins, $depth_ins, $parent_path_ins,
-                        $size_bytes_ins, $previous_size_bytes_ins, $size_change_bytes_ins,
-                        $mtime_timestamp_ins, $mtime_iso_ins, $first_seen_timestamp_ins, $last_seen_timestamp_ins,
-                        $change_type_ins, $content_hash_ins)
-            } {
-                set file_id_ins [dict get $entry file_id]
-                set root_path_ins [dict get $entry root_path]
-                set relative_path_ins [dict get $entry relative_path]
-                set name_ins [dict get $entry name]
-                set type_ins [dict get $entry type]
-                set depth_ins [dict get $entry depth]
-                set parent_path_ins [dict get $entry parent_path]
-                set size_bytes_ins [dict get $entry size_bytes]
-                set previous_size_bytes_ins [dict get $entry size_bytes]
-                set size_change_bytes_ins 0
-                set mtime_timestamp_ins [dict get $entry mtime_timestamp]
-                set mtime_iso_ins [dict get $entry mtime_iso]
-                set first_seen_timestamp_ins $now_timestamp
-                set last_seen_timestamp_ins $now_timestamp
-                set change_type_ins "NEW"
-                set content_hash_ins ""
-            }
+                VALUES ($file_id, $root_path, $rel_path, $name, $type, $depth, $parent_path,
+                        $size_bytes, $size_bytes, 0,
+                        $mtime_timestamp, $mtime_iso, $first_seen, $last_seen,
+                        'NEW', NULL)
+            } [subst {
+                file_id [dict get $entry file_id]
+                root_path [dict get $entry root_path]
+                rel_path [dict get $entry relative_path]
+                name [dict get $entry name]
+                type [dict get $entry type]
+                depth [dict get $entry depth]
+                parent_path [dict get $entry parent_path]
+                size_bytes [dict get $entry size_bytes]
+                mtime_timestamp [dict get $entry mtime_timestamp]
+                mtime_iso [dict get $entry mtime_iso]
+                first_seen $now_timestamp
+                last_seen $now_timestamp
+            }]
         }
     }
     
     # Markiere nicht aktualisierte Einträge als DELETED
-    set deleted_rows [${conn} eval {
+    set deleted [${conn} eval {
         SELECT * FROM tree_entries_v2 
-        WHERE change_type IS NULL OR last_seen_timestamp < $cutoff_time
-    } {
-        set cutoff_time [expr {$now_timestamp - 3600}]
-    }]
+        WHERE change_type IS NULL OR last_seen_timestamp < $cutoff
+    } [subst {cutoff [expr {$now_timestamp - 3600}]}]]
     
-    set deleted_count 0
-    # Iteriere durch die gelöschten Zeilen (vereinfachte Version)
-    set deleted_files [${conn} eval {
-        SELECT file_id FROM tree_entries_v2 
-        WHERE change_type IS NULL OR last_seen_timestamp < $cutoff_time
-    } {
-        set cutoff_time [expr {$now_timestamp - 3600}]
-    }]
-    
-    foreach file_id_del $deleted_files {
+    foreach row $deleted {
+        array set item {}
+        set colnames [${conn} columns]
+        foreach col $colnames val $row {
+            set item($col) $val
+        }
         ${conn} eval {
             UPDATE tree_entries_v2 
             SET change_type = 'DELETED', updated_at = CURRENT_TIMESTAMP
-            WHERE file_id = $file_id_del
-        }
-        incr deleted_count
+            WHERE file_id = $file_id
+        } [subst {file_id $item(file_id)}]
     }
     
-    set stats(deleted) $deleted_count
+    set stats(deleted) [expr {[llength $deleted] / 20}] ;# Anzahl Spalten in tree_entries_v2
     
     ${conn} eval {COMMIT}
     return [array get stats]
 }
 
-proc TreeIndexerV2_export_changes {this {since_hours 24}} {
-    set this [TreeIndexerV2_connect $this]
-    set conn [dict get $this conn]
+# Methode zum Exportieren von Änderungen der letzten X Stunden
+proc export_changes {{since_hours 24}} {
+    set conn [connect]
     
     set since [expr {[clock seconds] - ($since_hours * 3600)}]
     
     set changes [${conn} eval {
         SELECT * FROM tree_entries_v2 
         WHERE change_type IN ('NEW', 'MODIFIED', 'MOVED', 'DELETED')
-        AND last_seen_timestamp > $since_timestamp
+        AND last_seen_timestamp > $since
         ORDER BY last_seen_timestamp DESC
-    } {
-        set since_timestamp $since
-    }]
+    } [subst {since $since}]]
     
-    # Export als JSON-ähnliches Format
+    # Export als JSON
     set export_file "$WORKSPACE/tree_changes_last_${since_hours}h.json"
-    set fp [open $export_file w]
     
-    puts $fp "\["
-    set first 1
-    set count 0
+    set data [list]
+    set colnames [${conn} columns]
     
-    # Da direkte SQL-Abfrage komplex ist, simuliere einfachen Export
-    set rows [${conn} eval {
-        SELECT id, file_id, root_path, relative_path, name, type, depth, parent_path,
-               size_bytes, previous_size_bytes, size_change_bytes,
-               mtime_timestamp, mtime_iso, first_seen_timestamp, last_seen_timestamp,
-               change_type, original_name, original_path, previous_path, content_hash,
-               created_at, updated_at
-        FROM tree_entries_v2 
-        WHERE change_type IN ('NEW', 'MODIFIED', 'MOVED', 'DELETED')
-        AND last_seen_timestamp > $since_timestamp
-        ORDER BY last_seen_timestamp DESC
-    } {
-        set since_timestamp $since
-    }]
-    
-    set row_count [expr {[llength $rows] / 22}] ;# 22 Spalten
-    
-    for {set i 0} {$i < [llength $rows]} {incr i 22} {
-        if {!$first} {puts -nonewline $fp ","}
-        puts $fp "  \{"
-        
-        set fields [list id file_id root_path relative_path name type depth parent_path \
-                         size_bytes previous_size_bytes size_change_bytes \
-                         mtime_timestamp mtime_iso first_seen_timestamp last_seen_timestamp \
-                         change_type original_name original_path previous_path content_hash \
-                         created_at updated_at]
-                         
-        for {set j 0} {$j < 22} {incr j} {
-            set field [lindex $fields $j]
-            set value [lindex $rows [expr {$i + $j}]]
-            if {$value eq ""} {
-                set json_value "null"
-            } elseif {[string is double $value] || [string is integer $value]} {
-                set json_value $value
-            } else {
-                set json_value "\"$value\""
-            }
-            puts $fp "    \"$field\": $json_value"
-            if {$j < 21} {puts -nonewline $fp ","}
-            puts $fp ""
+    # Verarbeite jede Zeile
+    set row_length [llength $colnames]
+    for {set i 0} {$i < [llength $changes]} {incr i $row_length} {
+        set row_dict [dict create]
+        for {set j 0} {$j < $row_length} {incr j} {
+            dict set row_dict [lindex $colnames $j] [lindex $changes $i+$j]
         }
-        
-        puts -nonewline $fp "  \}"
-        set first 0
-        incr count
+        lappend data $row_dict
     }
     
-    puts $fp "\n\]"
-    close $fp
+    # Schreibe JSON-Datei
+    set f [open $export_file w]
+    puts $f "\[[join [lmap row $data {
+        set json_row "{"
+        foreach {key value} $row {
+            append json_row "\"$key\": \"[string map {\" \\\"} $value]\", "
+        }
+        # Entferne letztes Komma und Leerzeichen
+        set json_row [string trimright $json_row ", "]
+        append json_row "}"
+    }] ",\n"]]"
+    close $f
     
-    puts "✅ Änderungen exportiert: $export_file ($count Einträge)"
+    puts "✅ Änderungen exportiert: $export_file ([llength $data] Einträge)"
     return $export_file
 }
 
+# Hauptmethode
 proc main {} {
     puts [string repeat "=" 60]
     puts "TREE INDEXER v2 - Erweitertes Tracking"
     puts [string repeat "=" 60]
     
-    set indexer [TreeIndexerV2_new]
-    set indexer [TreeIndexerV2_init_schema_v2 $indexer]
+    init_schema_v2
     
     puts "\n--- Scanning Workspace ---"
-    set entries [TreeIndexerV2_scan_directory_detailed $indexer "/home/openclaw/.openclaw/workspace/" 8]
+    set entries [scan_directory_detailed $WORKSPACE 8]
     puts "Gefunden: [llength $entries] Einträge"
     
     puts "\n--- Aktualisiere Datenbank ---"
-    array set stats [TreeIndexerV2_update_database $indexer $entries]
+    array set stats [update_database $entries]
     puts "Statistiken:"
     puts "  NEU:        $stats(new)"
     puts "  MODIFIED:   $stats(modified)"
@@ -502,7 +390,7 @@ proc main {} {
     puts "  DELETED:    $stats(deleted)"
     
     puts "\n--- Exportiere Änderungen (24h) ---"
-    TreeIndexerV2_export_changes $indexer 24
+    export_changes 24
     
     puts "\n[string repeat "=" 60]"
     puts "TREE INDEXING ABGESCHLOSSEN"

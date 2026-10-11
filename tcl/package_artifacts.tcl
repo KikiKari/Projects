@@ -1,143 +1,235 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
 # package_artifacts.py — portiert nach tcl
 # Quelle: python, Projects@TikTok-Live-Companion:plugin-source/scripts/package_artifacts.py
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/package_artifacts.py
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/package_artifacts.py
-# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/package_artifacts.py
+# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
 
 package require Tcl 8.6
 package require zipfile::encode
+package require sha256
 package require fileutil
 package require json
-package require sha256
+package require cmdline
 
-# Globale Variablen
-set ROOT [file normalize [file dirname [info script]]]
-set PROJECT_ROOT [file dirname $ROOT]
-array set EXCLUDED_PARTS [list __pycache__ 1 .gradle 1 .kotlin 1 build 1 DerivedData 1 xcuserdata 1]
+# Global variables
+set EXCLUDED_PARTS [list "__pycache__" ".gradle" ".kotlin" ".cxx" "build" "DerivedData" "xcuserdata" "Pods"]
 
-proc add_tree {archive source {prefix ""}} {
-    global EXCLUDED_PARTS
-    
-    # Rekursiv alle Dateien finden
-    set files [lsort [glob -nocomplain -dir $source -types f -recursive *]]
-    
-    foreach filepath $files {
-        # Prüfe ob Datei ausgeschlossen ist
-        set relpath [fileutil::stripPath $source $filepath]
-        set parts [split $relpath "/"]
-        
-        set excluded 0
-        foreach part $parts {
-            if {[info exists EXCLUDED_PARTS($part)]} {
-                set excluded 1
-                break
+# Helper procedures
+proc resolve_path {path} {
+    if {[catch {file normalize $path} result]} {
+        return $path
+    }
+    return $result
+}
+
+proc parent_path {path} {
+    return [file dirname $path]
+}
+
+proc read_json {filepath} {
+    set fd [open $filepath r]
+    set content [read $fd]
+    close $fd
+    return [json::json2dict $content]
+}
+
+proc write_json {filepath data} {
+    set fd [open $filepath w]
+    puts $fd [json::dict2json $data]
+    close $fd
+}
+
+proc rglob {dir} {
+    set result {}
+    proc scan_dir {d} {
+        upvar result result
+        foreach f [glob -nocomplain -directory $d *] {
+            if {[file isdirectory $f]} {
+                lappend result $f
+                scan_dir $f
+            } else {
+                lappend result $f
             }
         }
-        
-        # Prüfe Dateiendung
-        set ext [string tolower [file extension $filepath]]
-        if {$excluded || $ext eq ".pyc" || $ext eq ".aar"} {
+    }
+    scan_dir $dir
+    return $result
+}
+
+proc should_exclude {path} {
+    global EXCLUDED_PARTS
+    foreach part [file split $path] {
+        if {$part in $EXCLUDED_PARTS} {
+            return 1
+        }
+    }
+    set ext [file extension $path]
+    if {$ext in [list ".pyc" ".aar"]} {
+        return 1
+    }
+    return 0
+}
+
+proc add_tree {archive source {prefix ""}} {
+    set all_files [rglob $source]
+    set sorted_files [lsort $all_files]
+    
+    foreach path $sorted_files {
+        if {![file isfile $path] || [should_exclude $path]} {
             continue
         }
         
-        # Archivpfad erstellen
-        set archive_path [file join $prefix $relpath]
-        set archive_path [string map {"/" "\\"} $archive_path]  ;# Windows-Pfade
-        
-        # Datei zum Archiv hinzufügen
-        $archive add $filepath -name $archive_path
-    }
-}
-
-# Argumente parsen
-proc parse_args {} {
-    global argv PROJECT_ROOT
-    
-    array set args [list \
-        output_dir "" \
-        android_apk "" \
-        android_source [file join $PROJECT_ROOT mobile android] \
-        ios_source [file join $PROJECT_ROOT mobile ios] \
-    ]
-    
-    for {set i 0} {$i < [llength $argv]} {incr i} {
-        set arg [lindex $argv $i]
-        switch -exact -- $arg {
-            --output-dir {
-                incr i
-                set args(output_dir) [lindex $argv $i]
-            }
-            --android-apk {
-                incr i
-                set args(android_apk) [lindex $argv $i]
-            }
-            --android-source {
-                incr i
-                set args(android_source) [lindex $argv $i]
-            }
-            --ios-source {
-                incr i
-                set args(ios_source) [lindex $argv $i]
-            }
-            default {
-                error "Unbekanntes Argument: $arg"
-            }
+        set relative [string range $path [string length $source] end]
+        if {[string index $relative 0] eq "/"} {
+            set relative [string range $relative 1 end]
         }
+        
+        set archive_path $relative
+        if {$prefix ne ""} {
+            set archive_path [file join $prefix $relative]
+        }
+        
+        # Convert to posix separators
+        set archive_path [string map {\\ /} $archive_path]
+        
+        # Create zip entry with fixed timestamp
+        set entry_data [read_binary_file $path]
+        set permissions 0644
+        if {[file tail $path] eq "gradlew"} {
+            set permissions 0755
+        }
+        
+        $archive addelement $entry_data $archive_path \
+            -method deflate \
+            -level 9 \
+            -time [clock scan "1980-01-01 00:00:00"] \
+            -permissions $permissions
     }
-    
-    if {$args(output_dir) eq ""} {
-        error "--output-dir ist erforderlich"
-    }
-    
-    return [array get args]
 }
 
-# Hauptprogramm
+proc read_binary_file {filepath} {
+    set fd [open $filepath rb]
+    set data [read $fd]
+    close $fd
+    return $data
+}
+
+proc write_binary_file {filepath data} {
+    set fd [open $filepath wb]
+    puts -nonewline $fd $data
+    close $fd
+}
+
+proc copy_directory {src dest} {
+    file mkdir $dest
+    file copy -force $src $dest
+}
+
+proc remove_directory {dir} {
+    if {[file exists $dir]} {
+        file delete -force $dir
+    }
+}
+
+proc write_text_file {filepath text} {
+    set fd [open $filepath w]
+    puts $fd $text
+    close $fd
+}
+
+proc read_text_file {filepath} {
+    set fd [open $filepath r]
+    set content [read $fd]
+    close $fd
+    return $content
+}
+
+proc compute_sha256 {filepath} {
+    set fd [open $filepath rb]
+    set sha [sha256::sha256 -channel $fd]
+    close $fd
+    return $sha
+}
+
+# Main script
 proc main {} {
-    global ROOT PROJECT_ROOT
+    global argv
+    global EXCLUDED_PARTS
     
-    # Argumente parsen
-    array set args [parse_args]
+    # Parse arguments
+    set optionspec {
+        {output-dir.arg "" "Output directory"}
+        {android-apk.arg "" "Optional verified mockDebug or shazamDebug APK"}
+        {android-source.arg "" "Verified Android source root"}
+        {ios-source.arg "" "Verified iOS source root"}
+        {native-shared-source.arg "" "Shared native audio source root"}
+    }
     
-    # Ausgabeverzeichnis erstellen
-    file mkdir $args(output_dir)
-    set output_dir [file normalize $args(output_dir)]
+    array set options [cmdline::getoptions argv $optionspec]
     
-    # Version aus manifest.json lesen
-    set manifest_file [file join $ROOT browser-extension manifest.json]
-    set manifest_content [readFile $manifest_file]
-    set manifest [json::json2dict $manifest_content]
-    set version [dict get $manifest version]
+    if {$options(output-dir) eq ""} {
+        puts stderr "Error: --output-dir is required"
+        exit 1
+    }
     
-    # Dateinamen definieren
-    set extension_zip [file join $args(output_dir) "tiktok-live-companion-extension-$version.zip"]
-    set plugin_zip [file join $args(output_dir) "tiktok-live-companion-plugin-$version.zip"]
-    set service_zip [file join $args(output_dir) "tiktok-live-companion-service-$version.zip"]
-    set ios_source_zip [file join $args(output_dir) "tiktok-live-companion-ios-$version-source.zip"]
-    set android_source_zip [file join $args(output_dir) "tiktok-live-companion-android-$version-source.zip"]
-    set android_apk [file join $args(output_dir) "tiktok-live-companion-android-$version.apk"]
-    set extension_dir [file join $args(output_dir) "tiktok-live-companion-extension-$version"]
-    set checksum_file [file join $args(output_dir) "tiktok-live-companion-$version-SHA256.txt"]
+    # Set up paths
+    set script_path [info script]
+    set ROOT [file dirname [file dirname $script_path]]
+    set PROJECT_ROOT [file dirname $ROOT]
     
-    # Extension-Verzeichnis vorbereiten
-    set resolved_extension_dir [file normalize $extension_dir]
-    if {[file dirname $resolved_extension_dir] ne $output_dir} {
+    # Set defaults for optional parameters
+    if {$options(android-source) eq ""} {
+        set options(android-source) [file join $PROJECT_ROOT "mobile" "android"]
+    }
+    if {$options(ios-source) eq ""} {
+        set options(ios-source) [file join $PROJECT_ROOT "mobile" "ios"]
+    }
+    if {$options(native-shared-source) eq ""} {
+        set options(native-shared-source) [file join $PROJECT_ROOT "mobile" "shared"]
+    }
+    
+    # Resolve paths
+    set output_dir [resolve_path $options(output-dir)]
+    set android_source [resolve_path $options(android-source)]
+    set ios_source [resolve_path $options(ios-source)]
+    set native_shared [resolve_path $options(native-shared-source)]
+    
+    # Create output directory
+    file mkdir $output_dir
+    
+    # Read manifest
+    set manifest_path [file join $ROOT "browser-extension" "manifest.json"]
+    set manifest [read_json $manifest_path]
+    set version [dict get $manifest "version"]
+    
+    # Define output files
+    set extension_zip [file join $output_dir "tiktok-live-companion-extension-$version.zip"]
+    set plugin_zip [file join $output_dir "tiktok-live-companion-plugin-$version.zip"]
+    set service_zip [file join $output_dir "tiktok-live-companion-service-$version.zip"]
+    set ios_source_zip [file join $output_dir "tiktok-live-companion-ios-$version-source.zip"]
+    set android_source_zip [file join $output_dir "tiktok-live-companion-android-$version-source.zip"]
+    set android_apk [file join $output_dir "tiktok-live-companion-android-$version.apk"]
+    set extension_dir [file join $output_dir "tiktok-live-companion-extension-$version"]
+    set checksum_file [file join $output_dir "tiktok-live-companion-$version-SHA256.txt"]
+    
+    # Validate paths
+    set resolved_extension_dir [resolve_path $extension_dir]
+    if {[parent_path $resolved_extension_dir] ne $output_dir} {
         error "Refusing to package outside the requested output directory"
     }
     
-    if {[file exists $extension_dir]} {
-        file delete -force $extension_dir
-    }
+    # Clean and prepare extension directory
+    remove_directory $extension_dir
+    copy_directory [file join $ROOT "browser-extension"] $extension_dir
+    copy_directory [file join $ROOT "companion-service"] [file join $extension_dir "companion-service"]
     
-    file copy [file join $ROOT browser-extension] $extension_dir
-    file copy [file join $ROOT companion-service] [file join $extension_dir companion-service]
+    # Write Windows batch file
+    set batch_content "@echo off\r\ncall \"%~dp0companion-service\\\\Sprachdienst-reparieren.cmd\"\\r\n"
+    write_text_file [file join $extension_dir "Sprachdienst-reparieren.cmd"] $batch_content
     
-    # Batch-Datei schreiben
-    set batch_content "@echo off\r\ncall \"%~dp0companion-service\\\\Sprachdienst-reparieren.cmd\"\r\n"
-    writeFile [file join $extension_dir "Sprachdienst-reparieren.cmd"] $batch_content
-    
-    # package.json schreiben
+    # Write package.json
     set package_json [dict create \
         name "tiktok-live-companion-extension-package" \
         private true \
@@ -148,53 +240,72 @@ proc main {} {
             test "npm --prefix companion-service test" \
         ] \
     ]
+    write_text_file [file join $extension_dir "package.json"] "[json::dict2json $package_json]\n"
     
-    set package_json_str [json::dict2json $package_json]
-    writeFile [file join $extension_dir package.json] "$package_json_str\n"
-    
-    # ZIP-Archive erstellen
-    set archive [zipfile::encode::openArchive $extension_zip]
+    # Create extension zip
+    set archive [zipfile::encode::create]
     add_tree $archive $extension_dir
-    zipfile::encode::closeArchive $archive
+    set fd [open $extension_zip w]
+    puts -nonewline $fd [$archive write]
+    close $fd
+    $archive destroy
     
-    set archive [zipfile::encode::openArchive $plugin_zip]
+    # Create plugin zip
+    set archive [zipfile::encode::create]
     add_tree $archive $ROOT "tiktok-live-companion"
-    zipfile::encode::closeArchive $archive
+    set fd [open $plugin_zip w]
+    puts -nonewline $fd [$archive write]
+    close $fd
+    $archive destroy
     
-    set archive [zipfile::encode::openArchive $service_zip]
-    add_tree $archive [file join $ROOT companion-service]
-    zipfile::encode::closeArchive $archive
+    # Create service zip
+    set archive [zipfile::encode::create]
+    add_tree $archive [file join $ROOT "companion-service"]
+    set fd [open $service_zip w]
+    puts -nonewline $fd [$archive write]
+    close $fd
+    $archive destroy
     
-    # Quellverzeichnisse prüfen
-    set ios_source [file normalize $args(ios_source)]
-    set android_source [file normalize $args(android_source)]
-    
+    # Validate source directories
     if {![file isdirectory $ios_source] || ![file isdirectory $android_source]} {
         error "--ios-source and --android-source must point to existing source directories"
     }
     
-    # iOS Source Archive
-    set archive [zipfile::encode::openArchive $ios_source_zip]
+    set limiter_header [file join $native_shared "native" "tlc_peak_limiter.h"]
+    if {![file isfile $limiter_header]} {
+        error "Shared native limiter source is required for both mobile source packages"
+    }
+    
+    # Create iOS source zip
+    set archive [zipfile::encode::create]
     add_tree $archive $ios_source "TikTokLiveCompanion-iOS"
-    zipfile::encode::closeArchive $archive
+    add_tree $archive $native_shared "shared"
+    set fd [open $ios_source_zip w]
+    puts -nonewline $fd [$archive write]
+    close $fd
+    $archive destroy
     
-    # Android Source Archive
-    set archive [zipfile::encode::openArchive $android_source_zip]
+    # Create Android source zip
+    set archive [zipfile::encode::create]
     add_tree $archive $android_source "TikTokLiveCompanion-Android"
-    zipfile::encode::closeArchive $archive
+    add_tree $archive $native_shared "shared"
+    set fd [open $android_source_zip w]
+    puts -nonewline $fd [$archive write]
+    close $fd
+    $archive destroy
     
-    # APK kopieren falls angegeben
-    if {$args(android_apk) ne ""} {
-        set source_apk [file normalize $args(android_apk)]
+    # Handle Android APK if provided
+    if {$options(android-apk) ne ""} {
+        set source_apk [resolve_path $options(android-apk)]
         if {![file isfile $source_apk] || [string tolower [file extension $source_apk]] ne ".apk"} {
             error "--android-apk must point to an existing APK"
         }
-        if {$source_apk ne [file normalize $android_apk]} {
+        if {$source_apk ne [resolve_path $android_apk]} {
             file copy -force $source_apk $android_apk
         }
     }
     
-    # Checksummen berechnen
+    # Compute checksums
     set artifacts [list $extension_zip $plugin_zip $service_zip $ios_source_zip $android_source_zip]
     if {[file exists $android_apk]} {
         lappend artifacts $android_apk
@@ -202,41 +313,33 @@ proc main {} {
     
     set checksums {}
     foreach artifact $artifacts {
-        set digest [sha256::sha256 -file $artifact]
+        set digest [compute_sha256 $artifact]
         lappend checksums "$digest  [file tail $artifact]"
     }
+    write_text_file $checksum_file "[join $checksums \n]\n"
     
-    writeFile $checksum_file "[join $checksums \n]\n"
-    
-    # Ergebnis ausgeben
-    set result [dict create \
-        extension_dir [file normalize $extension_dir] \
-        extension_zip [file normalize $extension_zip] \
-        plugin_zip [file normalize $plugin_zip] \
-        service_zip [file normalize $service_zip] \
-        ios_source_zip [file normalize $ios_source_zip] \
-        android_source_zip [file normalize $android_source_zip] \
-        android_apk [expr {[file exists $android_apk] ? [file normalize $android_apk] : ""}] \
-        checksum_file [file normalize $checksum_file] \
+    # Output results as JSON
+    set result_dict [dict create \
+        extension_dir [resolve_path $extension_dir] \
+        extension_zip [resolve_path $extension_zip] \
+        plugin_zip [resolve_path $plugin_zip] \
+        service_zip [resolve_path $service_zip] \
+        ios_source_zip [resolve_path $ios_source_zip] \
+        android_source_zip [resolve_path $android_source_zip] \
+        android_apk [expr {[file exists $android_apk] ? [resolve_path $android_apk] : ""}] \
+        checksum_file [resolve_path $checksum_file] \
         version $version \
     ]
     
-    puts [json::dict2json $result]
+    # Filter out empty android_apk
+    if {[dict get $result_dict android_apk] eq ""} {
+        dict unset result_dict android_apk
+    }
+    
+    puts [json::dict2json $result_dict]
 }
 
-# Hilfsfunktionen
-proc readFile {filename} {
-    set fh [open $filename r]
-    set content [read $fh]
-    close $fh
-    return $content
+# Run main procedure
+if {[info script] eq $argv0} {
+    main
 }
-
-proc writeFile {filename content} {
-    set fh [open $filename w]
-    puts -nonewline $fh $content
-    close $fh
-}
-
-# Programm starten
-main
