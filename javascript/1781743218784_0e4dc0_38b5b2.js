@@ -1,23 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
-// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0e4dc0_38b5b2.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_38b5b2.pl
+// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0e4dc0.js — portiert nach shell
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_0e4dc0.pl — portiert nach javascript
+// 1781743218784_0e4dc0.js — portiert nach Node.js
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.sh — portiert nach JavaScript
-// Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.html — portiert nach JavaScript
-// Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
@@ -229,22 +217,23 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 }
 
-function main() {
-  if (process.argv.length !== 3) {
-    console.error("Usage: " + process.argv[1] + " <output-file>");
+function main(args) {
+  if (args.length !== 1) {
+    console.error("Usage: " + args[0] + " <output-file>");
     process.exit(1);
   }
-
-  const outputFile = process.argv[2];
-
+  
+  const outputFile = args[0];
+  
+  // Generate HTML content and write to file
+  const html_content = generateHTML();
   try {
-    const htmlContent = generateHTML();
-    fs.writeFileSync(outputFile, htmlContent);
+    fs.writeFileSync(outputFile, html_content);
     console.log("HTML file generated: " + outputFile);
-  } catch (error) {
+  } catch (err) {
     console.error("Could not write to file '" + outputFile + "'");
     process.exit(1);
   }
 }
 
-main();
+main(process.argv.slice(1));

@@ -1,10 +1,13 @@
-#!/usr/bin/env perl
-# 1781743218784_0e4dc0_4857ff.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e4dc0_4857ff.tcl
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e4dc0_4857ff_36a169.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff_36a169.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use MIME::Base64 qw(encode_base64 decode_base64);
 
 sub generateHTML {
     return <<'HTML_END';
@@ -224,14 +227,14 @@ sub main {
         exit 1;
     }
     
-    my $outputFile = $args[0];
+    my $output_file = $args[0];
     
     # Generate HTML content and write to file
-    open(my $fh, '>:encoding(UTF-8)', $outputFile)
-        or die "Could not open file '$outputFile': $!";
-    print $fh generateHTML();
-    close($fh);
-    print "HTML file generated: $outputFile\n";
+    my $html_content = generateHTML();
+    open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
+    print $fh $html_content;
+    close $fh;
+    print "HTML file generated: $output_file\n";
 }
 
 main(@ARGV);

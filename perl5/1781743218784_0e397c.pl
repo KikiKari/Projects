@@ -1,10 +1,29 @@
-#!/usr/bin/env perl
-# 1781743218784.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e397c.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode encode);
+use File::Slurp qw(write_file);
+
+# 1781743218784.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach JavaScript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
 
 sub generateHTML {
     my $html = <<'HTML_END';
@@ -226,20 +245,17 @@ sub main {
         exit 1;
     }
     
-    my $output_file = $args[0];
+    my $outputFile = $args[0];
     
     eval {
-        my $html_content = generateHTML();
-        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
-        print $fh $html_content;
-        close($fh);
-        print "HTML file generated: $output_file\n";
+        my $htmlContent = generateHTML();
+        write_file($outputFile, $htmlContent);
+        print "HTML file generated: $outputFile\n";
     };
     if ($@) {
-        my $error = $@;
-        print "Error generating HTML file: $error\n";
+        print "Error generating HTML file: $@\n";
         exit 1;
     }
 }
 
-main() unless caller;
+main();

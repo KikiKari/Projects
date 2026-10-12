@@ -1,10 +1,30 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0.sh — portiert nach tcl
+# 1781743218784_0e4dc0_38b5b2.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_38b5b2.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
 # Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0e4dc0.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach JavaScript
+# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach JavaScript
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
 proc generateHTML {} {
-    set html {<!DOCTYPE html>
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -27,7 +47,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 10px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -209,33 +229,30 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>}
-    return $html
 }
 
-proc main {argv} {
-    if {[llength $argv] != 1} {
+proc main {} {
+    if {$::argc != 1} {
         puts stderr "Usage: [info script] <output-file>"
         exit 1
     }
-    
-    set outputFile [lindex $argv 0]
-    
-    # Generate HTML content and write to file
-    set htmlContent [generateHTML]
-    if {[catch {set fd [open $outputFile w]} errorMsg]} {
-        puts stderr "Could not open file '$outputFile' for writing: $errorMsg"
+
+    set outputFile [lindex $::argv 0]
+
+    if {[catch {set htmlContent [generateHTML]} error]} {
+        puts stderr "Error generating HTML content"
         exit 1
     }
-    
-    puts -nonewline $fd $htmlContent
-    close $fd
-    
-    if {[catch {file stat $outputFile _}]} {
+
+    if {[catch {set fileId [open $outputFile "w"]} error]} {
         puts stderr "Could not write to file '$outputFile'"
         exit 1
-    } else {
-        puts "HTML file generated: $outputFile"
     }
+
+    puts -nonewline $fileId $htmlContent
+    close $fileId
+    
+    puts "HTML file generated: $outputFile"
 }
 
-main $argv
+main

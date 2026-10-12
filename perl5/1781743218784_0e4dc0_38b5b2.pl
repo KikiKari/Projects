@@ -1,29 +1,20 @@
-#!/usr/bin/env perl
-# 1781743218784_0e4dc0.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e4dc0_38b5b2.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_38b5b2.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use MIME::Base64 qw(encode_base64 decode_base64);
+use JSON qw(encode_json decode_json);
 
-# 1781743218784_0e4dc0.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0e4dc0.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.sh — portiert nach JavaScript
-# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
-# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.html — portiert nach JavaScript
-# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
-# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+binmode(STDOUT, ':encoding(UTF-8)');
+binmode(STDERR, ':encoding(UTF-8)');
 
 sub generateHTML {
-  return <<'EOF';
+  return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -229,27 +220,28 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 }
 
 sub main {
-  if (@_ != 1) {
-    print STDERR "Usage: $_[0] <output-file>\n";
-    exit 1;
+  if (@ARGV != 1) {
+    print STDERR "Usage: $0 <output-file>\n";
+    exit(1);
   }
-  
-  my $outputFile = $_[0];
-  
-  # Generate HTML content and write to file
-  my $html_content = generateHTML();
-  if (open(my $fh, '>', $outputFile)) {
+
+  my $output_file = $ARGV[0];
+
+  eval {
+    my $html_content = generateHTML();
+    open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file' $!";
     print $fh $html_content;
     close($fh);
-    print "HTML file generated: $outputFile\n";
-  } else {
-    print STDERR "Could not write to file '$outputFile'\n";
-    exit 1;
+    print "HTML file generated: $output_file\n";
+  };
+  if ($@) {
+    print STDERR "Could not write to file '$output_file'\n";
+    exit(1);
   }
 }
 
-main(@ARGV);
+main();

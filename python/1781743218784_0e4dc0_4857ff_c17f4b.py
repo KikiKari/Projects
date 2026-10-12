@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-# 1781743218784_0e4dc0_4857ff.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0_4857ff.sh
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0e4dc0.pl — portiert nach shell — portiert nach Python 3.12
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff_c17f4b.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff_c17f4b.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-
+import json
 
 def generate_html():
     return '''<!DOCTYPE html>
@@ -217,7 +213,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-
 def main():
     args = sys.argv[1:]
     
@@ -232,7 +227,6 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     print(f"HTML file generated: {output_file}")
-
 
 if __name__ == "__main__":
     main()

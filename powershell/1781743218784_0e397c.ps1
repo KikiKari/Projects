@@ -1,21 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach JavaScript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
-
-function GenerateHTML {
+function Generate-HTML {
     $html = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -230,19 +218,18 @@ function Main {
     $args = $args
     
     if ($args.Count -ne 1) {
-        Write-Host "Usage: powershell script.ps1 <output-file>"
+        Write-Output "Usage: pwsh script.ps1 <output-file>"
         exit 1
     }
     
     $outputFile = $args[0]
     
     try {
-        $htmlContent = GenerateHTML
+        $htmlContent = Generate-HTML
         Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Host "HTML file generated: $outputFile"
-    }
-    catch {
-        Write-Host "Error generating HTML file: $_"
+        Write-Output "HTML file generated: $outputFile"
+    } catch {
+        Write-Output "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }

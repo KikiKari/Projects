@@ -1,13 +1,16 @@
 #!/usr/bin/env node
-// 1781743218784_0e4dc0_4857ff.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0_4857ff.sh
+// 1781743218784_0e4dc0_4857ff_c17f4b.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0_4857ff_c17f4b.pl
+// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e4dc0_4857ff.sh — portiert nach JavaScript
+// Quelle: perl5, Projects@abstractions:shell/1781743218784_0e4dc0_4857ff.pl
 // Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
 function generateHTML() {
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -214,20 +217,18 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  
-  if (args.length !== 1) {
-    console.error("Usage: node script.js <output-file>");
-    process.exit(1);
-  }
-  
-  const outputFile = args[0];
-  
-  // Generate HTML content and write to file
-  const htmlContent = generateHTML();
-  fs.writeFileSync(outputFile, htmlContent);
-  console.log(`HTML file generated: ${outputFile}`);
+function main(args) {
+    if (args.length !== 1) {
+        console.error("Usage: node script.js <output-file>");
+        process.exit(1);
+    }
+    
+    const outputFile = args[0];
+    
+    // Generate HTML content and write to file
+    const htmlContent = generateHTML();
+    fs.writeFileSync(outputFile, htmlContent);
+    console.log(`HTML file generated: ${outputFile}`);
 }
 
-main();
+main(process.argv.slice(2));

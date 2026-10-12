@@ -1,16 +1,21 @@
 #!/bin/bash
 # 1781743218784_0e4dc0.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_0e4dc0.pl — portiert nach bash
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+# Prüfe Argumente
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+fi
 
-generateHTML() {
-  cat <<'EOF'
+output_file="$1"
+
+# Generiere HTML-Inhalt
+generate_html() {
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,17 +224,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-main() {
-  if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 <output-file>" >&2
-    exit 1
-  fi
-  
-  local outputFile="$1"
-  
-  # Generate HTML content and write to file
-  generateHTML > "$outputFile"
-  echo "HTML file generated: $outputFile"
-}
+# Schreibe HTML-Inhalt in Ausgabedatei
+generate_html > "$output_file"
 
-main "$@"
+echo "HTML file generated: $output_file"

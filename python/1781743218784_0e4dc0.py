@@ -1,12 +1,31 @@
 #!/usr/bin/env python3
 # 1781743218784_0e4dc0.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
 # Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-import sys
-import json
+# 1781743218784_0e4dc0.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-def generate_html():
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.sh — portiert nach JavaScript
+# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach JavaScript
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+import sys
+
+def generateHTML():
     return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -215,16 +234,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 def main(args):
     if len(args) != 1:
-        print("Usage: python3 script.py <output-file>")
+        print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
-    
+
     output_file = args[0]
     
     # Generate HTML content and write to file
-    html_content = generate_html()
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print(f"HTML file generated: {output_file}")
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(generateHTML())
+        print(f"HTML file generated: {output_file}")
+    except Exception as error:
+        print(f"Could not write file '{output_file}': {error}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

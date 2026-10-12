@@ -1,22 +1,16 @@
 #!/usr/bin/perl
 # 1781743218784.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
 use Encode qw(encode decode);
-use File::Slurper qw(write_text);
+use File::Slurp qw(write_file);
 
-# Prüfe Aufrufparameter
-if (@ARGV != 1) {
-    print STDERR "Aufruf: perl $0 <Ausgabedatei>\n";
-    exit 1;
-}
-my $output_path = $ARGV[0];
-
-my $html_content = <<'HTML';
+sub generate_html {
+    my $html = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,6 +216,30 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
+    
+    return $html;
+}
 
-write_text($output_path, $html_content, 'UTF-8');
+sub main {
+    my @args = @ARGV;
+    
+    if (@args != 1) {
+        print STDERR "Usage: perl script.pl <output-file>\n";
+        exit 1;
+    }
+    
+    my $output_file = $args[0];
+    
+    eval {
+        my $html_content = generate_html();
+        write_file($output_file, $html_content);
+        print "HTML file generated: $output_file\n";
+    };
+    if ($@) {
+        print STDERR "Error generating HTML file: $@\n";
+        exit 1;
+    }
+}
+
+main();

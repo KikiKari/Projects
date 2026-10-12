@@ -1,10 +1,16 @@
 #!/usr/bin/perl
-# 1781743218784_0e4dc0_4857ff.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0_4857ff.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff_dc7447.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff_dc7447.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode encode);
+use MIME::Base64 qw(encode_base64 decode_base64);
+
+binmode(STDOUT, ':encoding(utf8)');
+binmode(STDERR, ':encoding(utf8)');
 
 sub generate_html {
     return <<'HTML_END';
@@ -228,9 +234,9 @@ sub main {
     
     # Generate HTML content and write to file
     eval {
-        open my $fh, '>:encoding(UTF-8)', $output_file or die "Could not open file '$output_file' for writing: $!";
+        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file' for writing: $!";
         print $fh generate_html();
-        close $fh;
+        close($fh);
         print "HTML file generated: $output_file\n";
     };
     if ($@) {
@@ -239,4 +245,4 @@ sub main {
     }
 }
 
-main(@ARGV) if __FILE__ eq $0;
+main(@ARGV);

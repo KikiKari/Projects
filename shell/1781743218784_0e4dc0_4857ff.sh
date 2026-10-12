@@ -1,12 +1,20 @@
 #!/bin/bash
-# 1781743218784_0e4dc0_4857ff.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_4857ff.ps1
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
+# 1781743218784_0e4dc0_4857ff.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_4857ff.ps1
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.pl — portiert nach JavaScript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
 generate_html() {
-    cat << 'EOF'
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -216,7 +224,7 @@ EOF
 }
 
 main() {
-    if [ $# -ne 1 ]; then
+    if [[ $# -ne 1 ]]; then
         echo "Usage: $0 <output-file>" >&2
         exit 1
     fi

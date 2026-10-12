@@ -1,22 +1,12 @@
 #!/usr/bin/env node
-// 1781743218784.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0e397c.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
+// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784.js — portiert nach python
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.pl — portiert nach javascript
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.js — portiert nach JavaScript
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-// Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+const fs = require('fs');
 
 function generateHTML() {
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -220,9 +210,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
-    return html;
+</html>`;
 }
 
 function main() {
@@ -237,12 +225,16 @@ function main() {
     
     try {
         const htmlContent = generateHTML();
-        require('fs').writeFileSync(outputFile, htmlContent, 'utf-8');
+        fs.writeFileSync(outputFile, htmlContent, 'utf8');
         console.log(`HTML file generated: ${outputFile}`);
     } catch (error) {
-        console.log(`Error generating HTML file: ${error.message}`);
+        console.error(`Error generating HTML file: ${error.message}`);
         process.exit(1);
     }
 }
 
-main();
+if (require.main === module) {
+    main();
+}
+
+module.exports = { generateHTML, main };

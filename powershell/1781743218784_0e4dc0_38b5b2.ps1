@@ -1,27 +1,30 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e4dc0.sh — portiert nach powershell
+# 1781743218784_0e4dc0_38b5b2.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_38b5b2.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e4dc0.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0e4dc0.sh
 # Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-<#
-.SYNOPSIS
-Generates an HTML file containing a secret vault application.
-.DESCRIPTION
-This script generates an HTML file that contains a client-side secret vault application.
-The application allows users to encrypt and decrypt secrets using AES-256-GCM and PBKDF2.
-.PARAMETER OutputFile
-The path to the output HTML file.
-.EXAMPLE
-.\1781743218784_0e4dc0.ps1 -OutputFile "vault.html"
-#>
+# 1781743218784_0e4dc0.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
+# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
 
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputFile
-)
+# 1781743218784_0e4dc0.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
 
-function Generate-Html {
-    return @'
+# 1781743218784.sh — portiert nach JavaScript
+# Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+# Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.html — portiert nach JavaScript
+# Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+# Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
+
+function GenerateHTML {
+  return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -227,16 +230,25 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
-try {
-    # Generate HTML content and write to file
-    $htmlContent = Generate-Html
-    Set-Content -Path $OutputFile -Value $htmlContent -Encoding UTF8
-    Write-Host "HTML file generated: $OutputFile"
-}
-catch {
-    Write-Error "Could not write to file '$OutputFile'"
+function Main {
+  if ($args.Count -ne 1) {
+    Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
     exit 1
+  }
+
+  $outputFile = $args[0]
+
+  try {
+    $htmlContent = GenerateHTML
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+    Write-Host "HTML file generated: $outputFile"
+  } catch {
+    Write-Error "Could not write to file '$outputFile'"
+    exit 1
+  }
 }
+
+Main @args

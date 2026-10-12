@@ -1,16 +1,13 @@
 #!/bin/bash
-# 1781743218784_0e4dc0_4857ff.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_0e4dc0_4857ff.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff_dc7447.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff_dc7447.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Portierung von Python nach Bash 5
-# Originale Python-Datei: 1781743218784_0e4dc0_4857ff.py
-
-# Funktion zur Generierung des HTML-Inhalts
+# Function to generate HTML content
 generate_html() {
-    cat <<'EOF'
+cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,26 +216,27 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-# Hauptfunktion
+# Main function
 main() {
-    local args_count=$#
-    
-    # Prüfe ob genau ein Argument übergeben wurde
-    if [[ $args_count -ne 1 ]]; then
-        echo "Usage: $0 <output-file>" >&2
-        exit 1
-    fi
-    
-    local output_file="$1"
-    
-    # Generiere HTML-Inhalt und schreibe in Datei
-    if ! generate_html > "$output_file"; then
-        echo "Could not write to file '$output_file'" >&2
-        exit 1
-    fi
-    
+  # Check argument count
+  if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+  fi
+
+  local output_file="$1"
+
+  # Generate HTML content and write to file
+  generate_html > "$output_file"
+  
+  # Check if write was successful
+  if [[ $? -eq 0 ]]; then
     echo "HTML file generated: $output_file"
+  else
+    echo "Could not write to file '$output_file'" >&2
+    exit 1
+  fi
 }
 
-# Skriptaufruf
+# Call main with all arguments
 main "$@"

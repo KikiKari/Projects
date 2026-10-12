@@ -1,13 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e4dc0_4857ff.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_4857ff.ps1
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e4dc0_4857ff.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e4dc0.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-proc GenerateHTML {} {
+proc generateHTML {} {
     return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -215,20 +211,20 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 }
 
-proc Main {argv} {
-    if {[llength $argv] != 1} {
+proc main {args} {
+    if {[llength $args] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set outputFile [lindex $argv 0]
+    set outputFile [lindex $args 0]
     
     # Generate HTML content and write to file
-    set htmlContent [GenerateHTML]
+    set htmlContent [generateHTML]
     set fh [open $outputFile w]
     puts -nonewline $fh $htmlContent
     close $fh
     puts "HTML file generated: $outputFile"
 }
 
-Main $argv
+main {*}$argv

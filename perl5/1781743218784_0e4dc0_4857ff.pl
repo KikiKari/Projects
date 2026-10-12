@@ -1,13 +1,13 @@
-#!/usr/bin/env perl
-# 1781743218784_0e4dc0_4857ff.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e4dc0_4857ff.ps1
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e4dc0_4857ff.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0_4857ff.js
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-sub GenerateHTML {
-    return <<'HTML_END';
+sub generateHTML {
+    return <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -31,7 +31,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 10px;font-weight:700;}
+h1{font-size:21px;margin:0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -213,10 +213,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 }
 
-sub Main {
+sub main {
     my @args = @_;
     
     if (@args != 1) {
@@ -227,11 +227,11 @@ sub Main {
     my $outputFile = $args[0];
     
     # Generate HTML content and write to file
-    my $htmlContent = GenerateHTML();
+    my $htmlContent = generateHTML();
     open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
     print $fh $htmlContent;
-    close($fh);
+    close $fh;
     print "HTML file generated: $outputFile\n";
 }
 
-Main(@ARGV);
+main(@ARGV);
