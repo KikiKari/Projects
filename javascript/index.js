@@ -1,78 +1,62 @@
 #!/usr/bin/env node
-// index.css — portiert nach javascript
-// Quelle: css, OpenClaw@main:src/index.css
-// Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+// index.html — portiert nach javascript
+// Quelle: html, Projects@TikTok-Live-Companion:site/index.html
+// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// CSS-Inhalt als strukturiertes Objekt
-const cssRules = {
-  body: {
-    margin: '0',
-    'font-family': [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      "'Segoe UI'",
-      "'Roboto'",
-      "'Oxygen'",
-      "'Ubuntu'",
-      "'Cantarell'",
-      "'Fira Sans'",
-      "'Droid Sans'",
-      "'Helvetica Neue'",
-      'sans-serif'
-    ].join(', '),
-    '-webkit-font-smoothing': 'antialiased',
-    '-moz-osx-font-smoothing': 'grayscale'
-  },
-  code: {
-    'font-family': [
-      'source-code-pro',
-      'Menlo',
-      'Monaco',
-      'Consolas',
-      "'Courier New'",
-      'monospace'
-    ].join(', ')
-  }
-};
+// Ermittle das Verzeichnis des aktuellen Skripts
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Funktion zum Konvertieren des Regelobjekts in CSS-Text
-function generateCSSText(rules) {
-  let cssText = '';
-  
-  for (const [selector, properties] of Object.entries(rules)) {
-    cssText += `${selector} {\n`;
-    
-    for (const [property, value] of Object.entries(properties)) {
-      cssText += `  ${property}: ${value};\n`;
-    }
-    
-    cssText += '}\n\n';
-  }
-  
-  return cssText.trim();
+// Funktion zum Erstellen eines HTML-Dokuments
+function createHtmlDocument() {
+  // Erstelle das HTML-Dokument mit allen erforderlichen Elementen
+  const html = `<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Dokumentation für TikTok LIVE Companion 0.8.2 – Chat-TTS, Zuschauerstatistik, Songerkennung und Stream-Informationen direkt im Browser." />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/png" href="/branding/staenderglobus-ios.png" />
+    <link rel="apple-touch-icon" href="/branding/staenderglobus-ios.png" />
+    <title>TikTok LIVE Companion – Dokumentation</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`;
+
+  return html;
 }
 
 // Hauptfunktion
 function main() {
-  // Prüfe Kommandozeilenargumente
-  if (process.argv.length < 3) {
-    console.error('Verwendung: node script.js <ausgabedatei>');
+  // Prüfe, ob ein Dateiname als Argument übergeben wurde
+  const outputFile = process.argv[2];
+  
+  if (!outputFile) {
+    console.error('Bitte geben Sie einen Dateinamen als Argument an.');
     process.exit(1);
   }
-
-  const outputFile = process.argv[2];
-  const cssContent = generateCSSText(cssRules);
   
   try {
-    fs.writeFileSync(outputFile, cssContent);
-    console.log(`CSS erfolgreich geschrieben in: ${outputFile}`);
+    // Erstelle das HTML-Dokument
+    const htmlContent = createHtmlDocument();
+    
+    // Schreibe den Inhalt in die angegebene Datei
+    fs.writeFileSync(outputFile, htmlContent);
+    
+    console.log(`HTML-Datei erfolgreich erstellt: ${outputFile}`);
   } catch (error) {
-    console.error('Fehler beim Schreiben der Datei:', error.message);
+    console.error('Fehler beim Erstellen der HTML-Datei:', error.message);
     process.exit(1);
   }
 }
 
+// Führe die Hauptfunktion aus
 main();

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // sidepanel-harness.html — portiert nach javascript
 // Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/sidepanel-harness.html
-// Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+// auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/sidepanel-harness.html
+// auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/sidepanel-harness.html
+// auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/sidepanel-harness.html
+// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -10,23 +13,73 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function generateSidepanelHarness() {
-  // Create the HTML structure
-  const html = `<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sidepanel Test Harness</title>
-</head>
-<body>
-  <script>
+// Create the HTML document structure
+function createDocument() {
+  return {
+    doctype: '<!doctype html>',
+    html: {
+      attrs: { lang: 'de' },
+      head: {
+        children: [
+          { tag: 'meta', attrs: { charset: 'utf-8' } },
+          { tag: 'meta', attrs: { name: 'viewport', content: 'width=device-width, initial-scale=1' } },
+          { tag: 'title', content: 'Sidepanel Test Harness' }
+        ]
+      },
+      body: {
+        children: []
+      }
+    }
+  };
+}
+
+// Create an HTML element
+function createElement(tag, attrs = {}, children = []) {
+  return { tag, attrs, children };
+}
+
+// Create a text node
+function createTextNode(content) {
+  return { type: 'text', content };
+}
+
+// Create the test harness UI elements
+function createTestElements() {
+  const captionLabel = createElement('label', {}, [
+    createTextNode('Caption-Testzustand\n    '),
+    createElement('select', { id: 'test-caption-scenario' }, [
+      createElement('option', { value: 'metadata' }, [createTextNode('Seitenmetadaten')]),
+      createElement('option', { value: 'mixed' }, [createTextNode('DOM und WebSocket aktuell')]),
+      createElement('option', { value: 'historical' }, [createTextNode('Nur historische Captions')]),
+      createElement('option', { value: 'none' }, [createTextNode('Keine Captions')])
+    ])
+  ]);
+
+  const embedLabel = createElement('label', {}, [
+    createTextNode('Embed-Testzustand\n    '),
+    createElement('select', { id: 'test-embed-scenario' }, [
+      createElement('option', { value: 'loading' }, [createTextNode('Startet')]),
+      createElement('option', { value: 'retry-wait' }, [createTextNode('Serverfehler – Wiederanlauf')]),
+      createElement('option', { value: 'awaiting-gesture' }, [createTextNode('Benutzeraktion nötig')]),
+      createElement('option', { value: 'playing' }, [createTextNode('Wiedergabe bestätigt')]),
+      createElement('option', { value: 'failed' }, [createTextNode('Versuche ausgeschöpft')])
+    ])
+  ]);
+
+  return [captionLabel, embedLabel];
+}
+
+// Create the main script content
+function createMainScript() {
+  return `
     (async () => {
       const state = {
         page: { url: "https://www.tiktok.com/@demo/live", title: "Demo LIVE", scannedAtUtc: new Date().toISOString() },
         captionInfo: { present: true, open: true, supportLang: ["de", "en"], location: null, showType: 1 },
         menuCaptionAvailable: true,
         menuCaptionActive: false,
+        quickRecoverEnabled: false,
+        quickRecoverSeconds: 3,
         profileInfo: {
           present: true, nickname: "Demo Creator", uniqueId: "demo", signature: "Barrierefreier Teststream",
           followingCount: "12", followerCount: "238800", likeCount: "1800000", live: true, source: "metadata"
@@ -71,6 +124,7 @@ async function generateSidepanelHarness() {
         debug: { enabled: false, entries: [{ atUtc: new Date().toISOString(), event: "scan", detail: { mediaCount: 3 } }] }
       };
 
+      const stateListeners = [];
       globalThis.chrome = {
         tabs: {
           query: async () => [{ id: 1, url: state.page.url, title: state.page.title }],
@@ -80,7 +134,25 @@ async function generateSidepanelHarness() {
         runtime: {
           sendMessage: async (message) => {
             if (message.type === "TLC_GET_STATE") return { ok: true, state };
-            if (message.type === "TLC_GET_SETTINGS") return { ok: true, settings: { autoHook: true, keepSpeechActive: true, speechVolume: 0.5, speechLanguage: "auto", speakNames: true, shortenNames: false, serviceUrl: "http://127.0.0.1:43117", pairingCode: "", permanentMutes: [] } };
+            if (message.type === "TLC_OPEN_EMBED_LIVE") {
+              state.embedStartup = TLC_CONTENT_CORE.newEmbedSession(crypto.randomUUID(), "demo", Date.now());
+              return { ok: true, response: { activated: false, phase: "loading" } };
+            }
+            if (message.type === "TLC_CANCEL_EMBED_STARTUP" || message.type === "TLC_OPEN_NORMAL_LIVE") {
+              if (state.embedStartup) state.embedStartup = { ...state.embedStartup, phase: "cancelled", nextAttemptAtMs: null };
+              return { ok: true };
+            }
+            if (message.type === "TLC_GET_SETTINGS") return { ok: true, settings: { autoHook: true, keepSpeechActive: true, speechVolume: 0.5, speechLanguage: "auto", speakNames: true, shortenNames: false, serviceUrl: "http://127.0.0.1:43117", pairingCode: "", permanentMutes: [], quickRecoverEnabled: state.quickRecoverEnabled, quickRecoverSeconds: state.quickRecoverSeconds } };
+            if (message.type === "TLC_SET_QUICK_RECOVER") {
+              state.quickRecoverEnabled = Boolean(message.enabled);
+              state.quickRecoverSeconds = Math.max(1, Math.min(59, Math.round(Number(message.seconds) || 3)));
+              return { ok: true, state, seconds: state.quickRecoverSeconds };
+            }
+            if (message.type === "TLC_GET_CAPTION_JSONL_EXPORT") return { ok: true, records: TLC_EXPORT_PRIVACY.captions(state.captions) };
+            if (message.type === "TLC_GET_CAPTION_RAW_EXPORT") return { ok: true, report: TLC_EXPORT_PRIVACY.captionReport({
+              version: "0.8.2", generatedAtUtc: new Date().toISOString(), messages: state.captions,
+              dataStreams: state.media, data: { captionInfo: state.captionInfo, captionSources: state.captionSources, playerState: state.playerState }, stream: { page: state.page }
+            }) };
             if (message.type === "TLC_SCAN") {
               return { ok: true, response: { captionInfo: state.captionInfo, captionControl: true, mediaCount: state.media.length } };
             }
@@ -112,14 +184,15 @@ async function generateSidepanelHarness() {
               return { ok: true };
             }
             if (message.type === "TLC_SET_MUTE") return { ok: true, state, settings: { permanentMutes: [] } };
-            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: { version: "0.7.0", debug: state.debug } };
+            if (message.type === "TLC_GET_DEBUG_REPORT") return { ok: true, report: TLC_EXPORT_PRIVACY.diagnosticReport({ version: "0.8.2", debug: state.debug, page: state.page, media: state.media }) };
             return { ok: true, response: { activated: true } };
           },
-          onMessage: { addListener() {} }
+          onMessage: { addListener(listener) { stateListeners.push(listener); } }
         }
       };
 
-      const source = await fetch("../browser-extension/sidepanel.html").then((response) => response.text());
+      const assetVersion = Date.now();
+      const source = await fetch("../browser-extension/sidepanel.html", { cache: "no-store" }).then((response) => response.text());
       const parsed = new DOMParser().parseFromString(source, "text/html");
       document.title = parsed.title;
       for (const child of [...parsed.body.children]) {
@@ -130,39 +203,119 @@ async function generateSidepanelHarness() {
       css.href = "../browser-extension/sidepanel.css?v=0.7.0-1";
       document.head.append(css);
       const coreScript = document.createElement("script");
-      coreScript.src = "../browser-extension/content-core.js";
+      coreScript.src = \`../browser-extension/content-core.js?\${assetVersion}\`;
       coreScript.onload = () => {
-        const script = document.createElement("script");
-        script.src = "../browser-extension/sidepanel.js";
-        document.body.append(script);
+        document.getElementById("test-embed-scenario").addEventListener("change", (event) => {
+          state.embedStartup = {
+            ...TLC_CONTENT_CORE.newEmbedSession(crypto.randomUUID(), "demo", Date.now()),
+            phase: event.target.value, reason: "server-error", attempt: event.target.value === "failed" ? 3 : 1
+          };
+          stateListeners.forEach((listener) => listener({ type: "TLC_STATE_UPDATED", tabId: 1, state }));
+        });
+        document.getElementById("test-caption-scenario").addEventListener("change", (event) => {
+          const mode = event.target.value;
+          const observedAt = Date.now() - (mode === "historical" ? 60_000 : 0);
+          state.captions = mode === "none" ? [] : ["DomCaption", "WebcastCaptionMessage"].map((method) => ({
+            method, source: method === "DomCaption" ? "dom" : "websocket", receivedAtUtc: new Date(observedAt).toISOString(),
+            contents: [{ lang: "de", text: "Dies ist eine Test-Caption." }]
+          }));
+          state.captionSources = TLC_CONTENT_CORE.captionSourceSnapshot();
+          if (mode === "metadata") state.captionSources.metadata = { present: true, open: true, supportLang: ["de"] };
+          else for (const caption of state.captions) state.captionSources = TLC_CONTENT_CORE.observeCaptionSource(state.captionSources, caption, observedAt);
+          state.captionInfo = TLC_CONTENT_CORE.summarizeCaptionSources(state.captionSources);
+          stateListeners.forEach((listener) => listener({ type: "TLC_STATE_UPDATED", tabId: 1, state }));
+        });
+        const privacyScript = document.createElement("script");
+        privacyScript.src = \`../browser-extension/export-privacy.js?\${assetVersion}\`;
+        privacyScript.onload = () => {
+          const script = document.createElement("script");
+          script.src = \`../browser-extension/sidepanel.js?\${assetVersion}\`;
+          document.body.append(script);
+        };
+        document.body.append(privacyScript);
       };
       document.body.append(coreScript);
     })();
-  </script>
-</body>
-</html>`;
+  `;
+}
 
+// Convert document structure to HTML string
+function renderDocument(doc) {
+  let html = doc.doctype + '\n';
+  html += renderElement(doc.html, 'html');
   return html;
 }
 
-async function main() {
-  const outputPath = process.argv[2];
+// Render an HTML element
+function renderElement(element, tagName) {
+  if (typeof element === 'string') {
+    return element;
+  }
+
+  if (element.type === 'text') {
+    return element.content;
+  }
+
+  let html = '';
+  const tag = tagName || element.tag;
   
-  if (!outputPath) {
-    console.error('Usage: node script.js <output-file-path>');
+  if (tag) {
+    html += `<${tag}`;
+    
+    if (element.attrs) {
+      for (const [key, value] of Object.entries(element.attrs)) {
+        html += ` ${key}="${value}"`;
+      }
+    }
+    
+    if (element.children && element.children.length > 0) {
+      html += '>\n';
+      for (const child of element.children) {
+        html += renderElement(child);
+      }
+      html += `</${tag}>`;
+    } else if (element.content) {
+      html += '>' + element.content + `</${tag}>`;
+    } else {
+      html += '>';
+    }
+  }
+  
+  return html;
+}
+
+// Generate the complete HTML document
+async function generateHTML() {
+  const doc = createDocument();
+  
+  // Add test elements to body
+  const testElements = createTestElements();
+  doc.html.body.children.push(...testElements);
+  
+  // Add script element
+  const scriptElement = createElement('script', {}, [createTextNode('\n' + createMainScript() + '  ')]);
+  doc.html.body.children.push(scriptElement);
+  
+  return renderDocument(doc);
+}
+
+// Main function
+async function main() {
+  if (process.argv.length < 3) {
+    console.error('Usage: node script.js <output-file>');
     process.exit(1);
   }
 
+  const outputFile = process.argv[2];
+  const htmlContent = await generateHTML();
+  
   try {
-    const htmlContent = await generateSidepanelHarness();
-    await fs.writeFile(outputPath, htmlContent, 'utf8');
-    console.log(`Sidepanel harness written to ${outputPath}`);
+    await fs.writeFile(outputFile, htmlContent, 'utf8');
+    console.log(`HTML file generated successfully: ${outputFile}`);
   } catch (error) {
-    console.error('Error generating sidepanel harness:', error);
+    console.error('Error writing file:', error);
     process.exit(1);
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+main();
