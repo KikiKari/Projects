@@ -105,6 +105,28 @@ class FollowupMediaTest {
         assertTrue(model.debugReport(false).contains("bridgeEvents"))
     }
 
+    @Test fun scannerAcceptsThreeHundredAndRetainsAllResultItems() {
+        val model = CompanionViewModel(FollowupFakeEngine())
+        for (limit in listOf(1, 50, 51, 299, 300, 301)) {
+            model.startRecommendationScan(limit)
+            assertEquals(limit.coerceAtMost(300), model.state.value.recommendationLimit)
+        }
+        val items = (1..300).map { mapOf("handle" to "creator$it", "url" to "https://www.tiktok.com/@creator$it/live", "position" to it, "title" to "Title") }
+        model.handle(envelope("recommendation-scan-progress", mapOf("items" to items, "scanned" to 300, "status" to "complete")))
+        assertEquals(300, model.state.value.recommendationItems.size)
+    }
+
+    @Test fun scannerLargeEnvelopeKeepsOtherMessageLimits() {
+        val items = org.json.JSONArray()
+        repeat(300) { items.put(org.json.JSONObject().put("handle", "creator$it").put("title", "x".repeat(300))) }
+        val raw = org.json.JSONObject().put("version", 1).put("type", "recommendation-scan-progress").put("streamId", "test").put("sequence", 1).put("timestamp", "2026-10-12").put("payload", org.json.JSONObject().put("items", items)).toString()
+        assertTrue(raw.toByteArray().size > BridgeValidator.MAX_BYTES)
+        assertEquals(300, (BridgeValidator.decode(raw, BridgeValidator.ALLOWED_ORIGIN, true)!!.payload["items"] as List<*>).size)
+        assertEquals(null, BridgeValidator.decode(raw.replace("recommendation-scan-progress", "chat"), BridgeValidator.ALLOWED_ORIGIN, true))
+        items.put(org.json.JSONObject().put("handle", "extra"))
+        assertEquals(null, BridgeValidator.decode(org.json.JSONObject(raw).put("payload", org.json.JSONObject().put("items", items)).toString(), BridgeValidator.ALLOWED_ORIGIN, true))
+    }
+
     @Test fun releaseEightSettingsCaptionsRecommendationsAndReconnectArePersistedInState() {
         val model = CompanionViewModel(FollowupFakeEngine())
         model.setAuddToken("audd")
@@ -115,7 +137,7 @@ class FollowupMediaTest {
         model.handle(envelope("caption", mapOf("sentenceId" to "1", "definite" to true, "contents" to listOf(mapOf("lang" to "de", "text" to "Hallo")))))
         val state = model.state.value
         assertEquals(59, state.autoReconnectDelaySeconds)
-        assertEquals(50, state.recommendationLimit)
+        assertEquals(99, state.recommendationLimit)
         assertEquals(1, state.captionRecords.size)
         assertTrue(model.captionJsonLines().contains("Hallo"))
         assertTrue(model.debugReport(false).contains("0.8.2"))

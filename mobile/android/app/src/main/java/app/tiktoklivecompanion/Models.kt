@@ -1,6 +1,16 @@
 package app.tiktoklivecompanion
 
-data class ServiceVoice(val id: String, val name: String, val culture: String, val installed: Boolean, val bytes: Long, val license: String)
+data class ServiceVoice(val id: String, val name: String, val culture: String, val installed: Boolean, val bytes: Long, val license: String, val group: String = "") {
+    val displayGroup: String get() = group.ifBlank {
+        when (culture.substringBefore('-').substringBefore('_').lowercase()) {
+            "ru", "bg", "kk", "sr", "uk" -> "Kyrillisch"
+            "zh", "ja", "ko" -> "Asiatisch"
+            "ar", "fa", "ur" -> "Abjad"
+            "hi", "ml", "ne" -> "Indisch"
+            else -> "Weitere Stimmen"
+        }
+    }
+}
 
 enum class CompanionTab(val label: String) { LIVE("Live"), CHAT("Chat"), SONG("Songs"), PLAYER("Player"), MORE("Mehr") }
 enum class RecognitionSource(val label: String) { MICROPHONE("Mikrofon"), WEBVIEW("WebView (experimentell)") }

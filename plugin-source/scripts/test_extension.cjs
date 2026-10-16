@@ -493,7 +493,7 @@ assert.ok(panelHtml.indexOf('id="page-info-section"') < panelHtml.indexOf('id="s
 assert.ok(panelHtml.indexOf('id="hook-heading"') < panelHtml.indexOf('id="recommendations-section"'));
 assert.ok(panelHtml.indexOf('id="recommendations-section"') < panelHtml.indexOf('id="caption-heading"'));
 assert.ok(panelHtml.includes('id="recommendation-limit"'));
-assert.ok(panelHtml.includes('min="1" max="50"'));
+assert.ok(panelHtml.includes('min="1" max="300"'));
 assert.ok(panelHtml.includes('id="scan-recommendations"'));
 assert.ok(panelHtml.includes('id="cancel-recommendations"'));
 assert.ok(panelHtml.includes('id="recommendation-progress"'));
@@ -502,7 +502,7 @@ assert.ok(panelHtml.includes('id="recommendation-modal"'));
 assert.ok(sidepanelSource.includes("function renderRecommendations"));
 assert.ok(sidepanelSource.includes("core.sortRecommendations"));
 assert.ok(sidepanelSource.includes('link.textContent = "Stream öffnen"'));
-assert.ok(contentSource.includes("RECOMMENDATION_SCAN_MAX = 50"));
+assert.ok(contentSource.includes("RECOMMENDATION_SCAN_MAX = 300"));
 assert.ok(contentSource.includes('type: "TLC_RECOMMENDATION_SCAN_PROGRESS"'));
 assert.ok(contentSource.includes("noGrowthRounds >= 3"));
 assert.ok(contentSource.includes("window.scrollTo({ left: originalScroll.x, top: originalScroll.y"));
@@ -704,7 +704,7 @@ assert.ok(panelHtml.includes('id="export-debug"'));
 assert.ok(panelHtml.includes('id="toggle-hook"'));
 assert.ok(!panelHtml.includes('id="enable-hook"'));
 assert.ok(!panelHtml.includes('id="disable-hook"'));
-assert.ok(panelHtml.includes('id="reset-tab" class="secondary danger-outline">Refresh</button>'));
+assert.ok(panelHtml.includes('id="reset-tab" class="secondary danger-outline">Reset</button>'));
 assert.ok(!panelHtml.includes("Hook dauerhaft gesetzt lassen"));
 assert.ok(!panelHtml.includes("Unterbrechung automatisch schnell beheben"));
 assert.ok(!panelHtml.includes("Hook aktivieren"));
@@ -748,7 +748,7 @@ assert.ok(!panelHtml.includes("<h1>Companion</h1>"));
 require("node:child_process").execFileSync(process.execPath, ["--test", path.join(__dirname, "test_background_runtime.cjs")], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_sidepanel_player_guard.cjs")], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "test_vlc_switch.cjs")], { stdio: "inherit" });
-for (const script of ["test_external_speech_filter.cjs", "test_issue_controls.cjs"]) {
+for (const script of ["test_external_speech_filter.cjs", "test_issue_controls.cjs", "test_voice_groups.cjs"]) {
   require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, script)], { stdio: "inherit" });
 }
 console.log(`PASS: manifest 0.8.2, ${scripts.length} scripts, chat speech composition, gifts, audience statistics, service controls and security guards`);

@@ -14,6 +14,20 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CompanionPreferencesTest {
+    @Test fun triggerSelectionSurvivesRecreationAndCheckboxChanges() = runTest {
+        val context=ApplicationProvider.getApplicationContext<Context>()
+        val preferences=CompanionPreferences(context)
+        assertEquals(".",preferences.externalSpeechTriggerCharacters.first())
+        preferences.setExternalSpeechTriggerCharacters(".,-;:!")
+        for (enabled in listOf(true,false,true)) {
+            preferences.setFilterExternalSpeechTriggers(enabled)
+            val restored=CompanionPreferences(context)
+            assertEquals(".,-;:",restored.externalSpeechTriggerCharacters.first())
+            assertEquals(enabled,restored.filterExternalSpeechTriggers.first())
+        }
+        preferences.setExternalSpeechTriggerCharacters("")
+        assertEquals("",CompanionPreferences(context).externalSpeechTriggerCharacters.first())
+    }
     @Test fun speechFilterAndRefreshSurviveRecreationIndependently() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val preferences = CompanionPreferences(context)

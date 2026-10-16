@@ -41,6 +41,9 @@ class CompanionPreferences(private val context: Context) {
     private val filterExternalSpeechTriggersKey = booleanPreferencesKey("filterExternalSpeechTriggers")
     val filterExternalSpeechTriggers: Flow<Boolean> = context.companionDataStore.data.map { it[filterExternalSpeechTriggersKey] ?: false }
     suspend fun setFilterExternalSpeechTriggers(enabled: Boolean) { context.companionDataStore.edit { it[filterExternalSpeechTriggersKey] = enabled } }
+    private val externalSpeechTriggerCharactersKey = stringPreferencesKey("externalSpeechTriggerCharacters")
+    val externalSpeechTriggerCharacters: Flow<String> = context.companionDataStore.data.map { ExternalSpeechTriggers.normalize(it[externalSpeechTriggerCharactersKey]) }
+    suspend fun setExternalSpeechTriggerCharacters(value: String) { context.companionDataStore.edit { it[externalSpeechTriggerCharactersKey] = ExternalSpeechTriggers.normalize(value) } }
     private val autoChatRefreshEnabledKey = booleanPreferencesKey("autoChatRefreshEnabled")
     private val autoChatRefreshMinutesKey = intPreferencesKey("autoChatRefreshMinutes")
     val autoChatRefreshEnabled: Flow<Boolean> = context.companionDataStore.data.map { it[autoChatRefreshEnabledKey] ?: false }

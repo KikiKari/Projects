@@ -6,13 +6,16 @@ import org.json.JSONObject
 object BridgeValidator {
     const val ALLOWED_ORIGIN = "https://www.tiktok.com"
     const val MAX_BYTES = 64 * 1024
+    const val MAX_RECOMMENDATION_BYTES = 1024 * 1024
     private val allowedTypes = setOf("pipeline-record", "recovery-ready", "hook-status", "hook-recovery", "socket-telemetry", "caption-state", "player-recovery", "player-observation", "embed-blocked", "bridge-ready", "inspection", "capability", "chat", "caption", "live-stats", "gift", "media-links", "media-url", "quick-recover", "limiter", "bridge-error", "command-result", "audio-chunk", "audio-complete", "socket-open", "force-start", "force-return", "player-state", "recommendation-scan-progress")
 
     fun decode(raw: String, origin: String, isMainFrame: Boolean): BridgeEnvelope? {
-        if (origin != ALLOWED_ORIGIN || raw.toByteArray().size > MAX_BYTES) return null
+        if (origin != ALLOWED_ORIGIN || raw.toByteArray().size > MAX_RECOMMENDATION_BYTES) return null
         return runCatching {
             val json = JSONObject(raw)
             val type = json.getString("type")
+            if (raw.toByteArray().size > MAX_BYTES && type != "recommendation-scan-progress") return null
+            if (type == "recommendation-scan-progress" && (json.optJSONObject("payload")?.optJSONArray("items")?.length() ?: 0) > 300) return null
             if (json.getInt("version") != 1 || type !in allowedTypes) return null
             val payloadJson = json.optJSONObject("payload") ?: JSONObject()
             val payload = payloadJson.keys().asSequence().associateWith { key -> convert(payloadJson.opt(key)) }

@@ -9,6 +9,8 @@
   <key>CFBundleShortVersionString</key><string>0.8.2</string>
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
   <key>UILaunchScreen</key><dict/>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+  <key>NSLocalNetworkUsageDescription</key><string>Der Companion-Dienst wird zuerst auf diesem Gerät und danach unter Ihrer eingetragenen Adresse gesucht.</string>
   <key>NSMicrophoneUsageDescription</key><string>Die Songerkennung hört nach Ihrem Klick bis zu zwölf Sekunden zu.</string>
   <key>UIBackgroundModes</key><array><string>audio</string></array>
   <key>LSApplicationQueriesSchemes</key><array><string>vlc-x-callback</string></array>

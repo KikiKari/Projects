@@ -389,8 +389,13 @@
     try { return JSON.parse(value); } catch (_) { return null; }
   }
 
-  function shouldFilterExternalSpeechTrigger(text, enabled) {
-    return enabled === true && String(text || "").trimStart().startsWith(".");
+  function normalizeExternalSpeechTriggerCharacters(value) {
+    return Array.from(String(value ?? ".")).filter(character => /[\p{P}\p{S}]/u.test(character) && !/["'\p{Pi}\p{Pf}]/u.test(character)).slice(0, 5).join("");
+  }
+
+  function shouldFilterExternalSpeechTrigger(text, enabled, characters = ".") {
+    const first = Array.from(String(text || "").trimStart())[0];
+    return enabled === true && Boolean(first) && Array.from(normalizeExternalSpeechTriggerCharacters(characters)).includes(first);
   }
 
   function sanitizeChatText(value) {
@@ -952,6 +957,7 @@
     createPeakLimiter,
     createPeakLimiterNode,
     shouldFilterExternalSpeechTrigger,
+    normalizeExternalSpeechTriggerCharacters,
     limiterDbfsToStrength,
     limiterMakeupCompensation,
     sanitizeChatText,

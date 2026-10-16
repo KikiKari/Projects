@@ -2,8 +2,11 @@ import AVFoundation
 import Foundation
 
 @MainActor final class CompanionState: ObservableObject {
-    struct ServiceVoice: Identifiable { let id: String; let name: String; let culture: String; let installed: Bool; let bytes: Int; let license: String }
     @Published var serviceVoices: [ServiceVoice] = []
+    var serviceVoiceGroups: [String] {
+        var seen = Set<String>()
+        return serviceVoices.map { $0.displayGroup }.filter { seen.insert($0).inserted }
+    }
     @Published var serviceStatus = ""
     private var serviceAudio: AVAudioPlayer?
     private var serviceSpeechTask: Task<Void, Never>?
@@ -56,6 +59,11 @@ import Foundation
     } }
     @Published var speechEnabled = false
     @Published var filterExternalSpeechTriggers = false { didSet { defaults.set(filterExternalSpeechTriggers, forKey: "filterExternalSpeechTriggers") } }
+    @Published var externalSpeechTriggerCharacters = "." { didSet {
+        let safe = ExternalSpeechTriggers.normalize(externalSpeechTriggerCharacters)
+        if safe != externalSpeechTriggerCharacters { externalSpeechTriggerCharacters = safe }
+        defaults.set(safe, forKey: "externalSpeechTriggerCharacters")
+    } }
     @Published var chatLines: [String] = []
     @Published var participants: [String: ParticipantStats] = [:]
     @Published var liveValues: [String: String] = [:]
@@ -118,6 +126,7 @@ import Foundation
         self.autoChatRefreshEnabled = defaults.bool(forKey: "autoChatRefreshEnabled")
         self.autoChatRefreshMinutes = max(1, min(60, defaults.object(forKey: "autoChatRefreshMinutes") as? Int ?? 5))
         self.filterExternalSpeechTriggers = defaults.bool(forKey: "filterExternalSpeechTriggers")
+        self.externalSpeechTriggerCharacters = ExternalSpeechTriggers.normalize(defaults.string(forKey: "externalSpeechTriggerCharacters"))
         self.limiterEnabled = defaults.bool(forKey: "limiterEnabled")
         let oldThreshold = defaults.object(forKey: "limiterThreshold") as? Double
         self.limiterStrength = max(0, min(100, defaults.object(forKey: "limiterStrength") as? Int ?? oldThreshold.map { Int((-$0 - 4) * 100 / 26) } ?? 30))
@@ -302,7 +311,7 @@ import Foundation
     }
 
     func speechText(_ content: String, author: String = "") -> String? {
-        if filterExternalSpeechTriggers && content.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(".") { return nil }
+        if ExternalSpeechTriggers.matches(content, enabled: filterExternalSpeechTriggers, characters: externalSpeechTriggerCharacters) { return nil }
         guard !content.isEmpty else { return nil }
         return speakNames && !author.isEmpty ? "\(author): \(content)" : content
     }
@@ -366,7 +375,7 @@ import Foundation
                 }
                 serviceVoices = (object?["catalog"] as? [[String: Any]] ?? []).compactMap { voice in
                     guard let id = voice["id"] as? String, let name = voice["name"] as? String else { return nil }
-                    return ServiceVoice(id: id, name: name, culture: voice["culture"] as? String ?? "", installed: voice["installed"] as? Bool ?? false, bytes: voice["bytes"] as? Int ?? 0, license: (voice["license"] as? [String: Any])?["id"] as? String ?? "")
+                    return ServiceVoice(id: id, name: name, culture: voice["culture"] as? String ?? "", installed: voice["installed"] as? Bool ?? false, bytes: voice["bytes"] as? Int ?? 0, license: (voice["license"] as? [String: Any])?["id"] as? String ?? "", group: voice["group"] as? String ?? "")
                 }
                 serviceStatus = "Companion-Dienst verbunden"
             } catch { serviceStatus = "Companion-Dienst nicht erreichbar" }
@@ -430,7 +439,7 @@ import Foundation
 
     func resetTopChatters() { participants.removeAll() }
     func startRecommendationScan() {
-        recommendationLimit = max(1, min(50, recommendationLimit))
+        recommendationLimit = max(1, min(300, recommendationLimit))
         recommendationStatus = "running"; recommendationScanned = 0; recommendationItems = []
         sendCommand?("scan-recommendations", ["limit": recommendationLimit])
     }
@@ -568,8 +577,17 @@ private enum RecoveryProjection {
         try await capture(envelope, baseURL: baseURL, pairing: pairing, key: key, secrets: [])
     }
     func request(_ route: String, baseURL: String, pairing: String, body: [String: Any]? = nil) async throws -> Data {
-        guard let base = URL(string: baseURL), base.scheme == "https", base.host != nil, base.user == nil, base.query == nil,
-              let url = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + route) else { throw URLError(.badURL) }
+        let selected = try await CompanionEndpoint.select(baseURL) { endpoint in
+            guard let url = URL(string: endpoint + "/v1/health") else { throw URLError(.badURL) }
+            var probe = URLRequest(url: url, timeoutInterval: endpoint.hasPrefix("http:") ? 1.5 : 5)
+            probe.setValue("Bearer \(pairing)", forHTTPHeaderField: "Authorization")
+            let (data, response) = try await self.session.data(for: probe)
+            guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode),
+                  let health = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  health["ok"] as? Bool == true, health["version"] is String,
+                  health["bootstrapPairing"] as? Bool == true else { throw URLError(.badServerResponse) }
+        }
+        guard let url = URL(string: selected + route) else { throw URLError(.badURL) }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(pairing)", forHTTPHeaderField: "Authorization")
         if let body { request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try JSONSerialization.data(withJSONObject: body) }

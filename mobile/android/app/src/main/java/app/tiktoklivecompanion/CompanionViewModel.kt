@@ -68,6 +68,7 @@ data class CompanionUiState(
     val autoReconnectDelaySeconds: Int = 3,
     val gameModeEnabled: Boolean = true,
     val filterExternalSpeechTriggers: Boolean = false,
+    val externalSpeechTriggerCharacters: String = ".",
     val auddToken: String = "",
     val pairingCode: String = "",
     val universalCaptionApiKey: String = "",
@@ -111,7 +112,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             val health = JSONObject(String(client.request("/v1/health"), Charsets.UTF_8))
             runCatching { client.publishData("speech-service", mapOf("health" to health)) }
             val catalog = data.optJSONArray("catalog") ?: JSONArray()
-            val voices = (0 until catalog.length()).map { i -> catalog.getJSONObject(i).let { voice -> ServiceVoice(voice.getString("id"), voice.getString("name"), voice.optString("culture"), voice.optBoolean("installed"), voice.optLong("bytes"), voice.optJSONObject("license")?.optString("id") ?: "") } }
+            val voices = (0 until catalog.length()).map { i -> catalog.getJSONObject(i).let { voice -> ServiceVoice(voice.getString("id"), voice.getString("name"), voice.optString("culture"), voice.optBoolean("installed"), voice.optLong("bytes"), voice.optJSONObject("license")?.optString("id") ?: "", voice.optString("group")) } }
             mutable.update { it.copy(serviceVoices = voices, serviceStatus = "Companion-Dienst verbunden") }
         }.onFailure { error -> mutable.update { it.copy(serviceStatus = error.message ?: "Companion-Dienst nicht erreichbar") } }
     } }
@@ -193,6 +194,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.pairingCode.collectLatest { value -> mutable.update { it.copy(pairingCode = value) } } }
             viewModelScope.launch { stored.universalCaptionApiKey.collectLatest { value -> mutable.update { it.copy(universalCaptionApiKey = value) } } }
             viewModelScope.launch { stored.filterExternalSpeechTriggers.collectLatest { value -> mutable.update { it.copy(filterExternalSpeechTriggers = value) } } }
+            viewModelScope.launch { stored.externalSpeechTriggerCharacters.collectLatest { value -> mutable.update { it.copy(externalSpeechTriggerCharacters = value) } } }
             viewModelScope.launch { stored.gameMode.collectLatest { value -> mutable.update { it.copy(gameModeEnabled = value) } } }
             viewModelScope.launch { stored.ttsVoice.collectLatest { value -> mutable.update { it.copy(ttsVoice = value) } } }
         }
@@ -233,6 +235,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         )).toString(2)
     }
     fun setFilterExternalSpeechTriggers(enabled: Boolean) { mutable.update { it.copy(filterExternalSpeechTriggers = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setFilterExternalSpeechTriggers(enabled) } } }
+    fun setExternalSpeechTriggerCharacters(value: String) { val safe = ExternalSpeechTriggers.normalize(value); mutable.update { it.copy(externalSpeechTriggerCharacters = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setExternalSpeechTriggerCharacters(safe) } } }
     private fun scheduleChatRefresh() {
         chatRefreshJob?.cancel()
         if (!mutable.value.autoChatRefreshEnabled) return
@@ -408,7 +411,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to safe))
     }
     fun startRecommendationScan(limit: Int) {
-        val safe = limit.coerceIn(1, 50)
+        val safe = limit.coerceIn(1, 300)
         mutable.update { it.copy(recommendationStatus = "running", recommendationLimit = safe, recommendationScanned = 0, recommendationItems = emptyList()) }
         sendCommand?.invoke("scan-recommendations", mapOf("limit" to safe))
     }
@@ -436,7 +439,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
     private fun enqueueSpeech(line: ChatLine) {
         val current = mutable.value
-        if (current.filterExternalSpeechTriggers && line.content.trimStart().startsWith(".")) return
+        if (ExternalSpeechTriggers.matches(line.content, current.filterExternalSpeechTriggers, current.externalSpeechTriggerCharacters)) return
         val author = if (current.ttsShortenNames) line.author.take(24) else line.author
         val content = if (current.gameModeEnabled) line.content.replace(Regex("\\b[A-ZÄÖÜ]{3}\\b"), "").replace(Regex("\\s+"), " ").trim() else line.content
         val spoken = if (current.ttsSpeakNames && author.isNotBlank()) "$author sagt $content" else content
@@ -496,7 +499,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             "bridge-ready" -> {
                 sendCommand?.invoke("set-pipeline-enabled", mapOf("enabled" to mutable.value.universalCaptionApiKey.isNotBlank()))
                 pushRecovery()
-                pushLimiter()
+                // Let the automatically opened overview stream finish its initial setup.
+                viewModelScope.launch { delay(3_000L); pushLimiter() }
                 sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to mutable.value.autoReconnectDelaySeconds))
                 sendCommand?.invoke("set-player-expanded", mapOf("expanded" to mutable.value.videoExpanded))
                 if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap())
@@ -565,7 +569,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                     val url = item["url"]?.toString()?.takeIf { BridgeValidator.safeHttpsUrl(it) != null } ?: return@mapNotNull null
                     RecommendationItem(item["handle"]?.toString()?.take(128) ?: return@mapNotNull null, item["displayName"]?.toString()?.take(160) ?: "", item["title"]?.toString()?.take(300) ?: "", (item["viewerCount"] as? Number)?.toLong(), item["viewerLabel"]?.toString()?.take(32) ?: "", url, (item["position"] as? Number)?.toInt() ?: 0)
                 } ?: emptyList()
-                mutable.update { it.copy(recommendationStatus = envelope.payload["status"]?.toString()?.take(20) ?: "running", recommendationScanned = (envelope.payload["scanned"] as? Number)?.toInt() ?: items.size, recommendationItems = items.distinctBy { item -> item.handle.lowercase() }.take(50)) }
+                mutable.update { it.copy(recommendationStatus = envelope.payload["status"]?.toString()?.take(20) ?: "running", recommendationScanned = (envelope.payload["scanned"] as? Number)?.toInt() ?: items.size, recommendationItems = items.distinctBy { item -> item.handle.lowercase() }.take(300)) }
             }
             "live-stats" -> mutable.update { current ->
                 val numbers = current.liveNumbers.toMutableMap()

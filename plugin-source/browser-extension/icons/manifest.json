@@ -1,0 +1,302 @@
+[
+  {
+    "style": "plastisch",
+    "component": "auto-chat-refresh-counter",
+    "sha256": "1608855c6a72c3c15e7cc3b9254095e47364790375e3432381406b1da13e241c"
+  },
+  {
+    "style": "plastisch",
+    "component": "browser",
+    "sha256": "dc9b539c444b7657d482326a9b712482416d65e318b6db31c02f8d68cda40527"
+  },
+  {
+    "style": "plastisch",
+    "component": "captions",
+    "sha256": "826f69e103657e9723b7687aabf80dd44ebb05b55410f510fbd4b050fbf4639f"
+  },
+  {
+    "style": "plastisch",
+    "component": "chat-counter",
+    "sha256": "b265aeebc3f8b0b2d2bbf25b4b11543baf57ce1deae5d8403a77fafbe0dae211"
+  },
+  {
+    "style": "plastisch",
+    "component": "fullscreen",
+    "sha256": "aa6760251e59b058ed56733eb55aa08948b28cb07eea6b5484e558b866ad2a4f"
+  },
+  {
+    "style": "plastisch",
+    "component": "mute",
+    "sha256": "a73ee1e091c1c4f746f0fefc8bc9e42a6c36c9cc7f5e7d8dfce18bb75303d829"
+  },
+  {
+    "style": "plastisch",
+    "component": "off",
+    "sha256": "6b0f26f6d9bbb01a20f7c6281660a75b6259e14e70690ccff54c6f87e3d3b41e"
+  },
+  {
+    "style": "plastisch",
+    "component": "on",
+    "sha256": "dfdc3e43787fa9cd86a6e736e3f0165bf4214c5d4afe230490bf22e932ca6e7d"
+  },
+  {
+    "style": "plastisch",
+    "component": "pip",
+    "sha256": "f7ff20a4cd767668eb2da30b1fd14eba196de12b78a0ac61adde6ebc9c9fc0fc"
+  },
+  {
+    "style": "plastisch",
+    "component": "play",
+    "sha256": "ce63c45668dc305046defdd778fb0e29a38ed3ee3d3e296fec7dee200a58c112"
+  },
+  {
+    "style": "plastisch",
+    "component": "player",
+    "sha256": "93bae594894c49f70e94bdc320d801c3fc01db7965d84d031222d93f588d0483"
+  },
+  {
+    "style": "plastisch",
+    "component": "protection-slider",
+    "sha256": "687ca142f4a1e2ba2039182ccee66d1b18967d8bab9d2d4509f48c989059311f"
+  },
+  {
+    "style": "plastisch",
+    "component": "recommendation-counter",
+    "sha256": "af2f9f53917ed4faa921f7212fdbaa11db47c992e954a7e5b2e79adc684d895e"
+  },
+  {
+    "style": "plastisch",
+    "component": "report",
+    "sha256": "19929886a75eaef96e340cb521156fcd19f3b5ad6eb96e36152b24d9e65677cb"
+  },
+  {
+    "style": "plastisch",
+    "component": "reset",
+    "sha256": "4d87ad24058c4e3baf1030a7d8501302e4e9b7c70af61a2ebe714b17f71158f4"
+  },
+  {
+    "style": "plastisch",
+    "component": "settings",
+    "sha256": "2036f44e98a35a57686e7ff17d6cbeea4c549ed63930b4c9b4f9d071a91dbc5c"
+  },
+  {
+    "style": "plastisch",
+    "component": "status",
+    "sha256": "e56d3274d4079989708e7aea67ad509824cc18b80b003c04150962de34fe05a9"
+  },
+  {
+    "style": "plastisch",
+    "component": "stop",
+    "sha256": "10fab1dd6d599a624a0d6e83cd845a81a599c12a8706a37e7e31a6188c58fb59"
+  },
+  {
+    "style": "plastisch",
+    "component": "unmute",
+    "sha256": "82fc42a526ad55d11ace10c49855c8b072ed0b0ffdb2ef2e7832ad4736eae936"
+  },
+  {
+    "style": "plastisch",
+    "component": "volume-slider",
+    "sha256": "4cc8780045a46f8f452cb8402240aa4815e301fa581e419843eeb7af93b1bfe9"
+  },
+  {
+    "style": "glass",
+    "component": "auto-chat-refresh-counter",
+    "sha256": "0995dc0ef216a771f58e670e65b02a1bbf3b794a6980fccf921a38ccd8a3584a"
+  },
+  {
+    "style": "glass",
+    "component": "browser",
+    "sha256": "fe03bcae2a45262ae665a8ae1f81a2c78d0b3b00a576628933441a6592013215"
+  },
+  {
+    "style": "glass",
+    "component": "captions",
+    "sha256": "0c42201766ad914e30635495668afffc7e06e3f959c6d055637f85521dc31215"
+  },
+  {
+    "style": "glass",
+    "component": "chat-counter",
+    "sha256": "c298f5c5cb600904535a33d0a0b1da70168b2beaff10079709d5e371962942dc"
+  },
+  {
+    "style": "glass",
+    "component": "fullscreen",
+    "sha256": "3fc0a7d8cf87b51dce8e20ad8729a69ac822c8be300cc37fbb4b16deb0100660"
+  },
+  {
+    "style": "glass",
+    "component": "mute",
+    "sha256": "c9154e20573b6b1ed5bf15d794aa194b42c45195e4230fd9941b0cb5c0c9c366"
+  },
+  {
+    "style": "glass",
+    "component": "off",
+    "sha256": "59f4cb99b9665d819cf1e2ad4c5038e8aacbd79658387e86097e7e1368239534"
+  },
+  {
+    "style": "glass",
+    "component": "on",
+    "sha256": "56064cb31f69bf671a9e363e2db16d96ce68ca5fab6898f9337a73afde4e35b3"
+  },
+  {
+    "style": "glass",
+    "component": "pip",
+    "sha256": "ce10296d519204c793f33190b91759eee023a850732f73f91897ac2f388034ae"
+  },
+  {
+    "style": "glass",
+    "component": "play",
+    "sha256": "8e94db63d1a301248a86a328bcae6b598107dcf8753e88bf25b777277374510b"
+  },
+  {
+    "style": "glass",
+    "component": "player",
+    "sha256": "21ea06f49f98924321b733afa160bed3997bbced6ad9ac52ce547123bb4ae670"
+  },
+  {
+    "style": "glass",
+    "component": "protection-slider",
+    "sha256": "903bd9e1fc8ed869142b567b26cb1aaf8d88669346df793f852c7bcac282b25a"
+  },
+  {
+    "style": "glass",
+    "component": "recommendation-counter",
+    "sha256": "44dd162083aa8ff6d63dcd9e6e6d214c66e58a1140707e267aad579d2ebda09e"
+  },
+  {
+    "style": "glass",
+    "component": "report",
+    "sha256": "5649eaad198e898b38ba1620907839e8315c5c2c8c171b2c80a4957671ece2ff"
+  },
+  {
+    "style": "glass",
+    "component": "reset",
+    "sha256": "64710d388af219ae22701e22281fc9903bc342baad276d8a20322071eaea78a3"
+  },
+  {
+    "style": "glass",
+    "component": "settings",
+    "sha256": "e3d00f0e4ede57217bd68879b295d9cf9084a3138cd25aab3c82385bb92ba653"
+  },
+  {
+    "style": "glass",
+    "component": "status",
+    "sha256": "dbbfae10dccb64a64d20bd90ce0d4ace847e974a9940cbb459e4a12d56714798"
+  },
+  {
+    "style": "glass",
+    "component": "stop",
+    "sha256": "2989bafbc9a64bfdb5d09c54a5dbb86a1f00e9f819a0fa0f3df76e42434ffa6f"
+  },
+  {
+    "style": "glass",
+    "component": "unmute",
+    "sha256": "bd74d2e1e11fba7fc7ca134560331c16b51d3e235425e88a035aa81188e2d7d8"
+  },
+  {
+    "style": "glass",
+    "component": "volume-slider",
+    "sha256": "db9a915ee7e657853543afa6c57d086e9f649368ec96c45ad4372123e252ffe2"
+  },
+  {
+    "style": "linear",
+    "component": "auto-chat-refresh-counter",
+    "sha256": "5dc69494a3fc5ed7fd9a3f8b31fa1a7dfade2e4bb2f7b245e6bdd920bcde0682"
+  },
+  {
+    "style": "linear",
+    "component": "browser",
+    "sha256": "0b3864afe52835349dfbde64aa6315b651c020f0b5d30166873e38dc07126fd6"
+  },
+  {
+    "style": "linear",
+    "component": "captions",
+    "sha256": "45a158ca8f00ee4f6c4c672138396cd60ad5ef83cef9c890c787b4bccd749865"
+  },
+  {
+    "style": "linear",
+    "component": "chat-counter",
+    "sha256": "29dd9d890b5b8a9e2675e03d8df4f114bce6fe1ff409ed1f39e7ad7b8dd675b0"
+  },
+  {
+    "style": "linear",
+    "component": "fullscreen",
+    "sha256": "9c4baabb68b127b05e05aa4b279fc865c38899785ce3ed81957b7de92840d039"
+  },
+  {
+    "style": "linear",
+    "component": "mute",
+    "sha256": "f54ecaf024b1fed5580ca1ab185e914f8bfd98b71b16c55caea2a85e426bb041"
+  },
+  {
+    "style": "linear",
+    "component": "off",
+    "sha256": "2ea3a4208644a0fede1a06956f5477c68e3c6e984e42c575fcb00a8f4748e354"
+  },
+  {
+    "style": "linear",
+    "component": "on",
+    "sha256": "ce0ae46e95fd18ecb4ea6bb5c80f7c9109a9a7e80bb48ff0e3c6b8001e3c3f0c"
+  },
+  {
+    "style": "linear",
+    "component": "pip",
+    "sha256": "47148da94c953ae35c92f14949f8acd8b3152dd62d71bdfd439289974016c5a5"
+  },
+  {
+    "style": "linear",
+    "component": "play",
+    "sha256": "84f99f9c7ec4fe2f614d4855b0a9f47a783182335d1ee60c4ae676ceb36607e6"
+  },
+  {
+    "style": "linear",
+    "component": "player",
+    "sha256": "348148e622622da1a3d4fd95166c37275f644f93ff7fd99a5ec01196f926a218"
+  },
+  {
+    "style": "linear",
+    "component": "protection-slider",
+    "sha256": "9b68aa0f925518500a5adbf6af0342e6e7c43c4a8ea65c80f89cfc9e2c4dffec"
+  },
+  {
+    "style": "linear",
+    "component": "recommendation-counter",
+    "sha256": "dd009c60ba64f15dc2fa5f7f223b7da3ce8fdf2684a42e29ebe4fffb046543dc"
+  },
+  {
+    "style": "linear",
+    "component": "report",
+    "sha256": "02f6e223478e8deedac43a42c269bc21ac9336752de8139af3fa67ffa605574f"
+  },
+  {
+    "style": "linear",
+    "component": "reset",
+    "sha256": "08d639db6c6ae6a1430a7413d4f2f1d827514ab735def6e307a90438f39a81cb"
+  },
+  {
+    "style": "linear",
+    "component": "settings",
+    "sha256": "8c0564a3d9a94b3b345a15da8d089c4053c8a7d7cf4dcabd5c9250cb0d8d55a2"
+  },
+  {
+    "style": "linear",
+    "component": "status",
+    "sha256": "9caf566d5f34b889d020168a334dd95c2c85a55ecebd0423439dafe1e80447d1"
+  },
+  {
+    "style": "linear",
+    "component": "stop",
+    "sha256": "060d21c31acd3eb2dc635bf359c182f4b1f490ff5a54c4ebae55d6e41f14d504"
+  },
+  {
+    "style": "linear",
+    "component": "unmute",
+    "sha256": "ce2b2985c7caa843def3295e0841cfe677d18f42937533b24651c3c8cfe062ad"
+  },
+  {
+    "style": "linear",
+    "component": "volume-slider",
+    "sha256": "fec8130324a44d229bdfd3a306372b504f02f68c716b8d0feabb2312b446bb6c"
+  }
+]

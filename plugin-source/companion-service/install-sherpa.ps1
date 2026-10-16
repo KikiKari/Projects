@@ -1,14 +1,13 @@
 param([string]$VoiceId = "")
 $ErrorActionPreference = "Stop"
+# A Node process started from PowerShell 7 can inherit its module search path.
+# Load the utility module belonging to the interpreter running this installer.
+Import-Module (Join-Path $PSHOME "Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1") -Force
 
 $configDir = Join-Path $env:LOCALAPPDATA "TikTokLiveCompanion"
 $modelRoot = Join-Path $configDir "sherpa-onnx"
 $voiceConfigPath = Join-Path $configDir "sherpa-voices.json"
 $releaseBase = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
-$runtimeReleaseBase = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.2"
-$runtimeArchiveName = "sherpa-onnx-v1.13.2-win-x64-shared-MD-Release.tar.bz2"
-$runtimeArchiveBytes = 19164500
-$runtimeArchiveSha256 = "f91f488186e797dd9e9bc2a3dcbe18ddd244627af5d9fa3707f7a2f3bc4032ce"
 
 New-Item -ItemType Directory -Force -Path $modelRoot | Out-Null
 
@@ -60,32 +59,6 @@ function Expand-ApprovedArchive([string]$Archive, [long]$ExpectedBytes, [string]
   }
 }
 
-function Ensure-SherpaCommand {
-  $command = Get-Command sherpa-onnx-offline-tts -ErrorAction SilentlyContinue
-  if ($command) { return $command.Source }
-
-  $scriptCandidates = @(
-    (Join-Path $env:APPDATA "Python\Python314\Scripts\sherpa-onnx-offline-tts.exe"),
-    (Join-Path $env:LOCALAPPDATA "Programs\Python\Python314\Scripts\sherpa-onnx-offline-tts.exe")
-  )
-  foreach ($candidate in $scriptCandidates) {
-    if (Test-Path -LiteralPath $candidate) { return $candidate }
-  }
-
-  $runtimeDir = Join-Path $modelRoot "runtime-win-x64"
-  $runtimeExe = Get-ChildItem -LiteralPath $runtimeDir -Filter "sherpa-onnx-offline-tts.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($runtimeExe) { return $runtimeExe.FullName }
-
-  $runtimeArchive = Join-Path $modelRoot $runtimeArchiveName
-  $runtimeUrl = "$runtimeReleaseBase/$runtimeArchiveName"
-  Write-Host "Lade Sherpa-ONNX Windows-TTS-Binary."
-  Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimeArchive
-  Expand-ApprovedArchive $runtimeArchive $runtimeArchiveBytes $runtimeArchiveSha256 $runtimeDir
-  $runtimeExe = Get-ChildItem -LiteralPath $runtimeDir -Filter "sherpa-onnx-offline-tts.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($runtimeExe) { return $runtimeExe.FullName }
-  throw "sherpa-onnx wurde nach der Installation nicht gefunden."
-}
-
 function Install-Model($voice) {
   $name = [string]$voice.model
   $target = Join-Path $modelRoot $name
@@ -94,14 +67,35 @@ function Install-Model($voice) {
   $archive = Join-Path $modelRoot "$name.tar.bz2"
   $url = "$releaseBase/$name.tar.bz2"
   Write-Host "Lade Sherpa-Stimme: $name"
-  Invoke-WebRequest -Uri $url -OutFile $archive
+  if (-not (Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $url -OutFile $archive }
   Expand-ApprovedArchive $archive ([long]$voice.bytes) ([string]$voice.sha256) $target $name
   return $target
 }
 
-$sherpaCommand = Ensure-SherpaCommand
+$runtimePython = Join-Path $modelRoot "python-runtime\Scripts\python.exe"
+if (-not (Test-Path -LiteralPath $runtimePython)) {
+  $launcher = Get-Command py -ErrorAction SilentlyContinue
+  if (-not $launcher) { throw "Python 3 mit Windows-Python-Launcher wird für Unicode-Sherpa-Stimmen benötigt." }
+  & $launcher.Source -3 -m venv (Join-Path $modelRoot "python-runtime")
+  if ($LASTEXITCODE -ne 0) { throw "Sherpa-Python-Umgebung konnte nicht erstellt werden." }
+}
+$runtimeProbe = @'
+import sys
+try:
+    import sherpa_onnx, numpy
+    valid = sherpa_onnx.__version__ == '1.13.4' and numpy.__version__ == '2.5.4'
+except ImportError:
+    valid = False
+sys.exit(0 if valid else 1)
+'@
+& $runtimePython -c $runtimeProbe
+if ($LASTEXITCODE -ne 0) {
+  & $runtimePython -m pip install --only-binary=:all: -r (Join-Path $PSScriptRoot "sherpa-runtime-requirements.txt")
+  if ($LASTEXITCODE -ne 0) { throw "Sherpa-Python-Laufzeit konnte nicht installiert werden." }
+}
+$sherpaCommand = "sherpa-onnx-offline-tts"
 $catalogPath = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "voice-catalog.json"
-$catalog = Get-Content -Raw -LiteralPath $catalogPath | ConvertFrom-Json
+$catalog = Get-Content -Raw -Encoding UTF8 -LiteralPath $catalogPath | ConvertFrom-Json
 $voices = if ($VoiceId) {
   @($catalog.voices | Where-Object { $_.id -eq $VoiceId })
 } else {
@@ -111,11 +105,19 @@ if ($voices.Count -eq 0) { throw "Unbekannte oder nicht freigegebene Sherpa-Stim
 
 $voiceMap = @{}
 if (Test-Path -LiteralPath $voiceConfigPath) {
-  $existingConfig = Get-Content -Raw -LiteralPath $voiceConfigPath | ConvertFrom-Json
+  $existingConfig = Get-Content -Raw -Encoding UTF8 -LiteralPath $voiceConfigPath | ConvertFrom-Json
   foreach ($voice in @($existingConfig.voices)) { if ($voice.id) { $voiceMap[[string]$voice.id] = $voice } }
 }
 foreach ($voice in $voices) {
   $modelDir = Install-Model $voice
+  $sid = if ($null -ne $voice.sid) { [int]$voice.sid } else { 0 }
+  $speakers = if ($voice.speakers) { [int]$voice.speakers } elseif ($voice.family -eq "supertonic") { 10 } else { 1 }
+  if ($sid -lt 0 -or $sid -ge $speakers) { throw "Ungültige Sprecher-ID: $($voice.id)" }
+  $required = if ($voice.family -eq "supertonic") {
+    @("duration_predictor.int8.onnx", "text_encoder.int8.onnx", "vector_estimator.int8.onnx", "vocoder.int8.onnx", "tts.json", "unicode_indexer.bin", "voice.bin")
+  } else { @("tokens.txt") }
+  foreach ($file in $required) { if (-not (Test-Path -LiteralPath (Join-Path $modelDir $file) -PathType Leaf)) { throw "Modelldatei fehlt: $file" } }
+  if ($voice.family -ne "supertonic" -and -not (Get-ChildItem -LiteralPath $modelDir -Filter "*.onnx" -File)) { throw "ONNX-Modelldatei fehlt." }
   $voiceMap[[string]$voice.id] = [ordered]@{
     id = $voice.id
     name = $voice.name
@@ -124,6 +126,8 @@ foreach ($voice in $voices) {
     engine = "sherpa-onnx"
     family = if ($voice.family) { $voice.family } else { "vits-piper" }
     languageCode = if ($voice.languageCode) { $voice.languageCode } else { "" }
+    group = if ($voice.group) { $voice.group } else { "" }
+    speakers = $speakers
     sid = if ($null -ne $voice.sid) { [int]$voice.sid } else { 0 }
     model = $voice.model
     modelDir = $modelDir
@@ -131,7 +135,8 @@ foreach ($voice in $voices) {
 }
 
 $config = [ordered]@{
-  sherpaExecutable = $sherpaCommand
+  sherpaExecutable = if ($existingConfig -and $existingConfig.sherpaExecutable) { $existingConfig.sherpaExecutable } else { $sherpaCommand }
+  sherpaPython = $runtimePython
   voices = @($voiceMap.Values | Sort-Object culture, name)
 }
 

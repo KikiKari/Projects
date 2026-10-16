@@ -39,4 +39,16 @@ final class BridgeValidatorTests: XCTestCase {
         let data = String(data: ready, encoding: .utf8)!.replacingOccurrences(of: "bridge-ready", with: "recommendation-scan-progress").data(using: .utf8)!
         XCTAssertEqual(try BridgeValidator.decode(data: data, origin: "https://www.tiktok.com", isMainFrame: true).type, "recommendation-scan-progress")
     }
+    func testThreeHundredLargeRecommendationsAndUnchangedOtherLimits() throws {
+        let items = (1...300).map { ["handle": "creator\($0)", "title": String(repeating: "x", count: 300)] }
+        var object: [String: Any] = ["version": 1, "type": "recommendation-scan-progress", "streamId": "test", "sequence": 1, "timestamp": "2026-10-12", "payload": ["items": items]]
+        let data = try JSONSerialization.data(withJSONObject: object)
+        XCTAssertGreaterThan(data.count, BridgeValidator.maximumBytes)
+        XCTAssertEqual(try BridgeValidator.decode(data: data, origin: BridgeValidator.allowedOrigin, isMainFrame: true).payload["items"]?.arrayValue?.count, 300)
+        object["type"] = "chat"
+        XCTAssertThrowsError(try BridgeValidator.decode(data: JSONSerialization.data(withJSONObject: object), origin: BridgeValidator.allowedOrigin, isMainFrame: true))
+        object["type"] = "recommendation-scan-progress"
+        object["payload"] = ["items": items + [["handle": "extra"]]]
+        XCTAssertThrowsError(try BridgeValidator.decode(data: JSONSerialization.data(withJSONObject: object), origin: BridgeValidator.allowedOrigin, isMainFrame: true))
+    }
 }
