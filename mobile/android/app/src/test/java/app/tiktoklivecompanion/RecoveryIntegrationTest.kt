@@ -6,6 +6,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.json.JSONObject
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.resetMain
 
 private class RecoveryEngine : RecognitionEngine {
     override var onResult: ((RecognitionResult) -> Unit)? = null
@@ -21,6 +23,34 @@ private class RecoveryEngine : RecognitionEngine {
 class RecoveryIntegrationTest {
     private fun model() = CompanionViewModel(RecoveryEngine())
     private fun e(type: String, payload: Map<String, Any?>) = BridgeEnvelope(1, type, "/@private/live", 2, "2026-10-07T12:00:00Z", payload)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun startupLimiterWaitsForOverviewSetupButManualTogglesStayImmediate() {
+        val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
+        kotlinx.coroutines.Dispatchers.setMain(dispatcher)
+        try {
+            val m = model()
+            val commands = mutableListOf<Pair<String, Map<String, Any>>>()
+            m.sendCommand = { name, payload -> commands.add(name to payload) }
+            m.handle(e("bridge-ready", emptyMap()))
+            dispatcher.scheduler.runCurrent()
+            assertFalse(commands.any { it.first == "set-limiter" })
+            dispatcher.scheduler.advanceTimeBy(2_999)
+            dispatcher.scheduler.runCurrent()
+            assertFalse(commands.any { it.first == "set-limiter" })
+            dispatcher.scheduler.advanceTimeBy(1)
+            dispatcher.scheduler.runCurrent()
+            assertEquals(1, commands.count { it.first == "set-limiter" })
+            m.setLimiterEnabled(true)
+            assertEquals(true, commands.last().second["enabled"])
+            m.setLimiterEnabled(false)
+            assertEquals(false, commands.last().second["enabled"])
+            m.setLimiterEnabled(true)
+            assertEquals(true, commands.last().second["enabled"])
+        } finally {
+            kotlinx.coroutines.Dispatchers.resetMain()
+        }
+    }
+
     @Test fun hookAndPlayerTimersAreIndependent() {
         val m = model(); val commands = mutableListOf<Pair<String, Map<String, Any>>>()
         m.sendCommand = { n,p -> commands.add(n to p) }

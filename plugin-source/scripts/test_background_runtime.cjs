@@ -1078,6 +1078,27 @@ test("0PE-175: saved filter survives worker restart and is independent of Game-M
     assert.equal(spoken.length, filter ? 2 : 5);
   }
 });
+
+test("0PE-187: trigger characters persist independently and drive actual worker speech", async () => {
+  const first = worker();
+  assert.equal((await first.send("TLC_GET_SETTINGS", 7)).settings.externalSpeechTriggerCharacters, ".");
+  await first.send("TLC_SET_SPEECH_PREFERENCE",7,{externalSpeechTriggerCharacters:".,-;:!"});
+  for (const enabled of [true,false,true]) {
+    await first.send("TLC_SET_SPEECH_PREFERENCE",7,{filterExternalSpeechTriggers:enabled});
+    const restored=worker({local:first.local});
+    const settings=(await restored.send("TLC_GET_SETTINGS",7)).settings;
+    assert.equal(settings.externalSpeechTriggerCharacters,".,-;:");
+    assert.equal(settings.filterExternalSpeechTriggers,enabled);
+    const spoken=[];
+    restored.context.sendOffscreen=async message=>spoken.push(message);
+    for (const content of [".Hallo",",Hallo","- Hallo","; Hallo",":Hallo","Hallo, zusammen.","!Hallo"]) {
+      await restored.context.queueSpeechForTab(7,{speech:{enabled:true},participants:{},chatMessages:[]},{author:"Autor",content});
+    }
+    assert.equal(spoken.length,enabled?2:7);
+  }
+  await first.send("TLC_SET_SPEECH_PREFERENCE",7,{externalSpeechTriggerCharacters:""});
+  assert.equal((await worker({local:first.local}).send("TLC_GET_SETTINGS",7)).settings.externalSpeechTriggerCharacters,"");
+});
 test("0PE-176: failed Connection reload preserves the previous state", async () => {
   const w = worker({tabs:[{id:7,url:"https://www.tiktok.com/@creator/live"}]});
   await w.send("TLC_ENABLE_HOOK",7);
@@ -1085,4 +1106,21 @@ test("0PE-176: failed Connection reload preserves the previous state", async () 
   vm.runInContext('chrome.tabs.reload = async () => { throw new Error("reload failed"); }', w.context);
   await assert.rejects(w.send("TLC_DISABLE_HOOK",7), /reload failed/);
   assert.equal((await w.context.getState(7)).hook.armed,true);
+});
+
+
+test("0PE-184: scanner forwards boundaries and retains 300 sanitized entries and positions", async () => {
+  for (const n of [1, 50, 51, 299, 300, 301]) {
+    const w = worker({ tabs: [{id: 7, url: "https://www.tiktok.com/@creator/live"}], tabReply: async () => ({ok: true}) });
+    await w.send("TLC_SCAN_RECOMMENDATIONS", 7, {limit: n});
+    assert.equal(w.sent.at(-1).limit, Math.min(n, 300));
+  }
+  const w = worker();
+  const items = Array.from({length: 301}, (_, i) => ({handle: "creator"+i, position:i+1, title:"Title", url:`https://www.tiktok.com/@creator${i}/live`}));
+  const result = w.context.sanitizeRecommendationItems(items, 300);
+  assert.equal(result.length, 300);
+  assert.equal(result[299].position, 300);
+  assert.equal(result[299].handle, "creator299");
+  const restored=worker({session:{"tlc-tab-7":{recommendationScan:{requested:300,items:result}}}});
+  assert.equal((await restored.context.getState(7)).recommendationScan.items.length,300);
 });

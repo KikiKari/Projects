@@ -140,7 +140,8 @@
       "family": "vits-piper",
       "model": "vits-piper-ru_RU-irina-medium",
       "bytes": 67153308,
-      "sha256": "1fc0f54e5e084fe287c07909f2f6e0ba6d857864cf800e3ab80286a4e8233008"
+      "sha256": "1fc0f54e5e084fe287c07909f2f6e0ba6d857864cf800e3ab80286a4e8233008",
+      "group": "Kyrillisch"
     },
     {
       "id": "sherpa-uk-ukrainian",
@@ -150,7 +151,8 @@
       "family": "vits-piper",
       "model": "vits-piper-uk_UA-ukrainian_tts-medium",
       "bytes": 80355083,
-      "sha256": "92be6ff21ebb1cbcc0c71121a6437db8d060cee5785287aaa6a19a2548f59c03"
+      "sha256": "92be6ff21ebb1cbcc0c71121a6437db8d060cee5785287aaa6a19a2548f59c03",
+      "group": "Kyrillisch"
     },
     {
       "id": "sherpa-bg-supertonic",
@@ -161,7 +163,8 @@
       "languageCode": "bg",
       "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
       "bytes": 128774318,
-      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "group": "Kyrillisch"
     },
     {
       "id": "sherpa-sr-institut",
@@ -171,7 +174,8 @@
       "family": "vits-piper",
       "model": "vits-piper-sr_RS-serbski_institut-medium",
       "bytes": 80298557,
-      "sha256": "b8c100e5ff885d11ff96ad92a953f4b82e1cd649f9ac60a77ae4553d37507b2b"
+      "sha256": "b8c100e5ff885d11ff96ad92a953f4b82e1cd649f9ac60a77ae4553d37507b2b",
+      "group": "Kyrillisch"
     },
     {
       "id": "sherpa-kk-iseke",
@@ -181,7 +185,8 @@
       "family": "vits-piper",
       "model": "vits-piper-kk_KZ-iseke-x_low",
       "bytes": 26517675,
-      "sha256": "1a995dd9a0e0760942af5c7a3d84a688344ddb17dc51e95942848f855c9347eb"
+      "sha256": "1a995dd9a0e0760942af5c7a3d84a688344ddb17dc51e95942848f855c9347eb",
+      "group": "Kyrillisch"
     },
     {
       "id": "sherpa-zh-chaowen",
@@ -191,7 +196,8 @@
       "family": "vits-piper",
       "model": "vits-piper-zh_CN-chaowen-medium",
       "bytes": 60443846,
-      "sha256": "1b69bdcf10bb6331c7f8a7591940febeb175c6bb86caa3802d96531f8e4ad211"
+      "sha256": "1b69bdcf10bb6331c7f8a7591940febeb175c6bb86caa3802d96531f8e4ad211",
+      "group": "Asiatisch"
     },
     {
       "id": "sherpa-ja-supertonic",
@@ -202,7 +208,8 @@
       "languageCode": "ja",
       "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
       "bytes": 128774318,
-      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "group": "Asiatisch"
     },
     {
       "id": "sherpa-ko-supertonic",
@@ -213,7 +220,8 @@
       "languageCode": "ko",
       "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
       "bytes": 128774318,
-      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "group": "Asiatisch"
     },
     {
       "id": "sherpa-ar-kareem",
@@ -223,7 +231,8 @@
       "family": "vits-piper",
       "model": "vits-piper-ar_JO-kareem-medium",
       "bytes": 67177830,
-      "sha256": "9ebbcea30e0fbd588f7b2cb45ee897d6aeb1bf5791cbc037a7b5a3f641e3dbce"
+      "sha256": "9ebbcea30e0fbd588f7b2cb45ee897d6aeb1bf5791cbc037a7b5a3f641e3dbce",
+      "group": "Abjad"
     },
     {
       "id": "sherpa-fa-amir",
@@ -233,7 +242,8 @@
       "family": "vits-piper",
       "model": "vits-piper-fa_IR-amir-medium",
       "bytes": 67180373,
-      "sha256": "46af65c1cdd86ec300db3998f2bf31a68d9e38da930c0655c1ff6f610e84f864"
+      "sha256": "46af65c1cdd86ec300db3998f2bf31a68d9e38da930c0655c1ff6f610e84f864",
+      "group": "Abjad"
     },
     {
       "id": "sherpa-ur-fasih",
@@ -243,7 +253,8 @@
       "family": "vits-piper",
       "model": "vits-piper-ur_PK-fasih-medium",
       "bytes": 67227718,
-      "sha256": "de64e03109f3c896b7cf910db6d9ffd2703e3d665580d9a19bedbf3e0760d0e4"
+      "sha256": "de64e03109f3c896b7cf910db6d9ffd2703e3d665580d9a19bedbf3e0760d0e4",
+      "group": "Abjad"
     },
     {
       "id": "sherpa-hi-priyamvada",
@@ -253,7 +264,8 @@
       "family": "vits-piper",
       "model": "vits-piper-hi_IN-priyamvada-medium",
       "bytes": 67240610,
-      "sha256": "399d91cc97eb288725633261f26b715f9a971e3bf7ec4fa1d7910cd0080d37eb"
+      "sha256": "399d91cc97eb288725633261f26b715f9a971e3bf7ec4fa1d7910cd0080d37eb",
+      "group": "Indisch"
     },
     {
       "id": "sherpa-ne-chitwan",
@@ -263,7 +275,8 @@
       "family": "vits-piper",
       "model": "vits-piper-ne_NP-chitwan-medium",
       "bytes": 67213467,
-      "sha256": "65fa157c090844bbe5b38c1c3e4321535f569fdbb526c08aaa2ad22c09d51279"
+      "sha256": "65fa157c090844bbe5b38c1c3e4321535f569fdbb526c08aaa2ad22c09d51279",
+      "group": "Indisch"
     },
     {
       "id": "sherpa-ml-meera",
@@ -273,11 +286,12 @@
       "family": "vits-piper",
       "model": "vits-piper-ml_IN-meera-medium",
       "bytes": 67195010,
-      "sha256": "c8d870441e60870b7e8781c26eb22104aff51587b63bee94aba5e5f6c9fbb71f"
+      "sha256": "c8d870441e60870b7e8781c26eb22104aff51587b63bee94aba5e5f6c9fbb71f",
+      "group": "Indisch"
     },
     {
       "id": "vits-piper-fr_FR-siwis-medium",
-      "name": "siwis · fr-FR",
+      "name": "siwis Â· fr-FR",
       "culture": "fr-FR",
       "family": "vits-piper",
       "model": "vits-piper-fr_FR-siwis-medium",
@@ -307,7 +321,7 @@
     },
     {
       "id": "vits-piper-es_ES-davefx-medium",
-      "name": "davefx · es-ES",
+      "name": "davefx Â· es-ES",
       "culture": "es-ES",
       "family": "vits-piper",
       "model": "vits-piper-es_ES-davefx-medium",
@@ -337,7 +351,7 @@
     },
     {
       "id": "vits-piper-it_IT-paola-medium",
-      "name": "paola · it-IT",
+      "name": "paola Â· it-IT",
       "culture": "it-IT",
       "family": "vits-piper",
       "model": "vits-piper-it_IT-paola-medium",
@@ -368,7 +382,7 @@
     },
     {
       "id": "vits-piper-pt_BR-faber-medium",
-      "name": "faber · pt-BR",
+      "name": "faber Â· pt-BR",
       "culture": "pt-BR",
       "family": "vits-piper",
       "model": "vits-piper-pt_BR-faber-medium",
@@ -398,7 +412,7 @@
     },
     {
       "id": "vits-piper-nl_NL-pim-medium",
-      "name": "pim · nl-NL",
+      "name": "pim Â· nl-NL",
       "culture": "nl-NL",
       "family": "vits-piper",
       "model": "vits-piper-nl_NL-pim-medium",
@@ -428,7 +442,7 @@
     },
     {
       "id": "vits-piper-pl_PL-gosia-medium",
-      "name": "gosia · pl-PL",
+      "name": "gosia Â· pl-PL",
       "culture": "pl-PL",
       "family": "vits-piper",
       "model": "vits-piper-pl_PL-gosia-medium",
@@ -458,7 +472,7 @@
     },
     {
       "id": "vits-piper-tr_TR-dfki-medium",
-      "name": "dfki · tr-TR",
+      "name": "dfki Â· tr-TR",
       "culture": "tr-TR",
       "family": "vits-piper",
       "model": "vits-piper-tr_TR-dfki-medium",
@@ -485,6 +499,489 @@
         ]
       },
       "verifiedAt": "2026-10-09"
+    },
+    {
+      "id": "sherpa-ru-ruslan",
+      "name": "Sherpa Ruslan",
+      "culture": "ru-RU",
+      "family": "vits-piper",
+      "model": "vits-piper-ru_RU-ruslan-medium",
+      "group": "Kyrillisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67210684,
+      "sha256": "0690b1cad01f86e8db9ba988af24898bdc1af774e23cb2e46b9c730269b6fd83",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-ruslan-medium.tar.bz2",
+      "license": {
+        "id": "CC-BY-NC-SA-4.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/ruslan/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/ruslan/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-ru-dmitri",
+      "name": "Sherpa Dmitri",
+      "culture": "ru-RU",
+      "family": "vits-piper",
+      "model": "vits-piper-ru_RU-dmitri-medium",
+      "group": "Kyrillisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67188551,
+      "sha256": "c86d0803737de13d441923ff3b3f309482fab8d7af3ec85949942809eb9a3660",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-dmitri-medium.tar.bz2",
+      "license": {
+        "id": "CC0-1.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/dmitri/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/dmitri/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-ru-denis",
+      "name": "Sherpa Denis",
+      "culture": "ru-RU",
+      "family": "vits-piper",
+      "model": "vits-piper-ru_RU-denis-medium",
+      "group": "Kyrillisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67190991,
+      "sha256": "efa4c18e0b5e32b81d1b6df36b9d312831e5d545200e27848ef926a4cd930300",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ru_RU-denis-medium.tar.bz2",
+      "license": {
+        "id": "CC0-1.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/denis/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ru/ru_RU/denis/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-hi-rohan",
+      "name": "Sherpa Rohan",
+      "culture": "hi-IN",
+      "family": "vits-piper",
+      "model": "vits-piper-hi_IN-rohan-medium",
+      "group": "Indisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67221139,
+      "sha256": "f0bb7781724951e9c90c49f68abfe821cffcbc198a9ae0031366d045a6ad5488",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-hi_IN-rohan-medium.tar.bz2",
+      "license": {
+        "id": "IIT-Madras-Indic-TTS",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/hi/hi_IN/rohan/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/hi/hi_IN/rohan/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-hi-pratham",
+      "name": "Sherpa Pratham",
+      "culture": "hi-IN",
+      "family": "vits-piper",
+      "model": "vits-piper-hi_IN-pratham-medium",
+      "group": "Indisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67238438,
+      "sha256": "2084d321e1d2752f2b64ed3012ba27751df01a80da46f52920098cdcb7e35648",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-hi_IN-pratham-medium.tar.bz2",
+      "license": {
+        "id": "CC-BY-NC-SA-4.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/hi/hi_IN/pratham/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/hi/hi_IN/pratham/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-fa-reza-ibrahim",
+      "name": "Sherpa Reza Ibrahim",
+      "culture": "fa-IR",
+      "family": "vits-piper",
+      "model": "vits-piper-fa_IR-reza_ibrahim-medium",
+      "group": "Abjad",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67187249,
+      "sha256": "c5a6c1da647f93e284c7956013dd2262210365b80a4870bc28f1ba7bc1f00bfe",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fa_IR-reza_ibrahim-medium.tar.bz2",
+      "license": {
+        "id": "CC0-1.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/fa/fa_IR/reza_ibrahim/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/fa/fa_IR/reza_ibrahim/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-fa-gyro",
+      "name": "Sherpa Gyro",
+      "culture": "fa-IR",
+      "family": "vits-piper",
+      "model": "vits-piper-fa_IR-gyro-medium",
+      "group": "Abjad",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67183308,
+      "sha256": "75dc485f0c0528b1b07800464e5c72f4229339919525b3f634aa89690988d30e",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fa_IR-gyro-medium.tar.bz2",
+      "license": {
+        "id": "MIT",
+        "scope": "Upstream model card license",
+        "source": "https://huggingface.co/gyroing/Persian-Piper-Model-gyro"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/fa/fa_IR/gyro/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-fa-ganji",
+      "name": "Sherpa Ganji",
+      "culture": "fa-IR",
+      "family": "vits-piper",
+      "model": "vits-piper-fa_IR-ganji-medium",
+      "group": "Abjad",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 67186157,
+      "sha256": "6eae2acccd1b4460159fa5acdad4bb5d2df6d64d8da3e4029dbdff4db14e7a7a",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fa_IR-ganji-medium.tar.bz2",
+      "license": {
+        "id": "CC0-1.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/fa/fa_IR/ganji/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/fa/fa_IR/ganji/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-zh-xiao-ya",
+      "name": "Sherpa Xiao Ya",
+      "culture": "zh-CN",
+      "family": "vits-piper",
+      "model": "vits-piper-zh_CN-xiao_ya-medium",
+      "group": "Asiatisch",
+      "sid": 0,
+      "speakers": 1,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 60462944,
+      "sha256": "9396a3dffbb95b037acaa18094500f58d0db9a7c4f2689554e2539717cf0db65",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-zh_CN-xiao_ya-medium.tar.bz2",
+      "license": {
+        "id": "Non-commercial",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/zh/zh_CN/xiao_ya/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/zh/zh_CN/xiao_ya/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-ne-google",
+      "name": "Sherpa Google",
+      "culture": "ne-NP",
+      "family": "vits-piper",
+      "model": "vits-piper-ne_NP-google-medium",
+      "group": "Indisch",
+      "sid": 0,
+      "speakers": 18,
+      "sampleRate": 22050,
+      "defaultInstall": false,
+      "bytes": 80242801,
+      "sha256": "73c1e093451867779ec2b55cc3666de2db058019a2e7760e8c8f294a42caca2a",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ne_NP-google-medium.tar.bz2",
+      "license": {
+        "id": "CC-BY-SA-4.0",
+        "scope": "Dataset license documented by upstream model card",
+        "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ne/ne_NP/google/medium/MODEL_CARD"
+      },
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/main/ne/ne_NP/google/medium/MODEL_CARD",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-ja-supertonic-1",
+      "name": "Sherpa Japanisch · Sprecher 1",
+      "culture": "ja-JP",
+      "languageCode": "ja",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Asiatisch",
+      "sid": 1,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-ko-supertonic-2",
+      "name": "Sherpa Koreanisch · Sprecher 2",
+      "culture": "ko-KR",
+      "languageCode": "ko",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Asiatisch",
+      "sid": 2,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-de-supertonic-5",
+      "name": "Stil 1",
+      "culture": "de-DE",
+      "languageCode": "de",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Effekt Stimmen",
+      "sid": 5,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-de-supertonic-6",
+      "name": "Stil 2",
+      "culture": "de-DE",
+      "languageCode": "de",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Effekt Stimmen",
+      "sid": 6,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-de-supertonic-7",
+      "name": "Stil 3",
+      "culture": "de-DE",
+      "languageCode": "de",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Effekt Stimmen",
+      "sid": 7,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-de-supertonic-8",
+      "name": "Stil 4",
+      "culture": "de-DE",
+      "languageCode": "de",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Effekt Stimmen",
+      "sid": 8,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
+    },
+    {
+      "id": "sherpa-de-supertonic-9",
+      "name": "Stil 5",
+      "culture": "de-DE",
+      "languageCode": "de",
+      "family": "supertonic",
+      "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "bytes": 128774318,
+      "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+      "downloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+      "group": "Effekt Stimmen",
+      "sid": 9,
+      "speakers": 10,
+      "sampleRate": 44100,
+      "defaultInstall": false,
+      "license": {
+        "id": "OpenRAIL-M",
+        "scope": "Model license",
+        "source": "https://huggingface.co/Supertone/supertonic-3"
+      },
+      "source": "https://k2-fsa.github.io/sherpa/onnx/tts/all/Russian/supertonic-3-ru.html",
+      "runtime": {
+        "engine": "sherpa-onnx",
+        "version": "1.13.4",
+        "platform": "win-x64",
+        "device": "CPU",
+        "transport": "UTF-8 JSON via Python API"
+      }
     }
   ]
 }

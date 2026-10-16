@@ -263,6 +263,7 @@ export async function listSherpaVoices(configPath = sherpaVoicesPath) {
       engine: "sherpa-onnx",
       family: String(voice.family || "vits-piper"),
       languageCode: String(voice.languageCode || ""),
+      group: String(voice.group || ""),
       model: String(voice.model || "")
     });
   }
@@ -282,6 +283,7 @@ export async function listVoiceCatalog(catalogPath = voiceCatalogPath, installed
     culture: String(voice.culture || ""),
     gender: String(voice.gender || ""),
     family: String(voice.family || "vits-piper"),
+    group: String(voice.group || ""),
     bytes: Number(voice.bytes) || null,
     sha256: voice.sha256 || null,
     license: voice.license || null,
@@ -301,6 +303,11 @@ async function sherpaTts(text, language, voiceName) {
   const modelDir = String(model?.modelDir || "");
   const executable = String(payload.sherpaExecutable || "sherpa-onnx-offline-tts");
   const family = String(model?.family || "vits-piper");
+  const sid = Number(model?.sid ?? 0);
+  const speakers = Number(model?.speakers ?? (family === "supertonic" ? 10 : 1));
+  if (!Number.isInteger(sid) || sid < 0 || !Number.isInteger(speakers) || sid >= speakers) {
+    throw Object.assign(new Error("Ungültige Sherpa-Sprecher-ID."), { statusCode: 412 });
+  }
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tlc-sherpa-tts-"));
   const output = path.join(tempDir, "speech.wav");
   try {
@@ -324,7 +331,7 @@ async function sherpaTts(text, language, voiceName) {
         `--supertonic-tts-json=${path.join(modelDir, required.ttsJson)}`,
         `--supertonic-unicode-indexer=${path.join(modelDir, required.unicodeIndexer)}`,
         `--supertonic-voice-style=${path.join(modelDir, required.voiceStyle)}`,
-        `--sid=${Number(model?.sid || 0)}`,
+        `--sid=${sid}`,
         `--lang=${String(model?.languageCode || language || "en").split("-")[0]}`
       );
     } else {
@@ -335,8 +342,18 @@ async function sherpaTts(text, language, voiceName) {
       args.push(`--vits-model=${onnx}`, `--vits-tokens=${tokens}`);
       if (await fs.access(dataDir).then(() => true).catch(() => false)) args.push(`--vits-data-dir=${dataDir}`);
     }
-    args.push(text);
-    await runProcess(executable, args, "");
+    if (payload.sherpaPython) {
+      await runProcess(String(payload.sherpaPython), [path.join(root, "sherpa-tts.py")], JSON.stringify({
+        text, modelDir, family, sid, output,
+        language: String(model?.languageCode || language || "en").split("-")[0]
+      }));
+    } else {
+      if (process.platform === "win32" && /[^\x00-\x7f]/.test(text)) {
+        throw Object.assign(new Error("Sherpa-Stimme erneut installieren: UTF-8-Laufzeit erforderlich."), { statusCode: 412 });
+      }
+      args.push(text);
+      await runProcess(executable, args, "");
+    }
     return await fs.readFile(output);
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });

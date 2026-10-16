@@ -3,7 +3,7 @@
 
   const elements = Object.fromEntries([
     "page-title", "chat-list", "chat-count", "chat-led", "refresh-chat", "toggle-speech", "speech-led", "speech-status", "speech-volume", "speech-volume-output", "keep-speech-active",
-    "speech-language", "speech-voice", "speak-names", "game-mode", "filter-external-speech-triggers", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
+    "speech-language", "speech-voice", "speak-names", "game-mode", "filter-external-speech-triggers", "external-speech-trigger-characters", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "top-chatters-actions", "top-chatters-reset", "top-chatters-more", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
     "caption-status", "hook-status", "embed-startup-status", "cancel-embed-startup", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "player-recovery-status", "hook-reconnect", "hook-reconnect-seconds", "hook-reconnect-status", "media-list", "media-count", "caption-list", "caption-count",
@@ -26,7 +26,8 @@
     ["Kyrillisch", ["sherpa-bg-supertonic", "sherpa-kk-iseke", "sherpa-ru-irina", "sherpa-sr-institut", "sherpa-uk-ukrainian"]],
     ["Asiatisch", ["sherpa-zh-chaowen", "sherpa-ja-supertonic", "sherpa-ko-supertonic"]],
     ["Abjad", ["sherpa-ar-kareem", "sherpa-fa-amir", "sherpa-ur-fasih"]],
-    ["Indisch", ["sherpa-hi-priyamvada", "sherpa-ml-meera", "sherpa-ne-chitwan"]]
+    ["Indisch", ["sherpa-hi-priyamvada", "sherpa-ml-meera", "sherpa-ne-chitwan"]],
+    ["Effekt Stimmen", []]
   ];
   const core = globalThis.TLC_CONTENT_CORE;
   let activeTabId = null;
@@ -46,6 +47,7 @@
   let speakNames = true;
   let gameModeEnabled = false;
   let filterExternalSpeechTriggers = false;
+  let externalSpeechTriggerCharacters = ".";
   let shortenNames = false;
   let autoChatRefreshEnabled = false;
   let autoChatRefreshMinutes = 5;
@@ -294,6 +296,7 @@
         ...installedVoice,
         id,
         name: String(voice.name || installedVoice?.name || id),
+        group: String(voice.group || installedVoice?.group || ""),
         installed: Boolean(voice.installed || installedVoice)
       };
     }).filter((voice) => voice.id && voice.name);
@@ -329,6 +332,7 @@
       const group = document.createElement("optgroup");
       group.label = label;
       for (const id of ids) appendVoice(available.get(id), group);
+      for (const voice of available.values()) if (voice.group === label) appendVoice(voice, group);
       if (group.children.length) select.append(group);
     }
     for (const voice of available.values()) appendVoice(voice);
@@ -425,7 +429,7 @@
   }
 
   async function speakItem(item) {
-    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers)) return;
+    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers, externalSpeechTriggerCharacters)) return;
     const text = speechText(item);
     if (!text) return;
     const lang = speechLang(item, text);
@@ -447,7 +451,7 @@
   }
 
   function enqueueSpeech(item) {
-    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers)) return;
+    if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", filterExternalSpeechTriggers, externalSpeechTriggerCharacters)) return;
     if (!speechEnabled) return;
     if (speechQueue.length >= 5) speechQueue.shift();
     speechQueue.push(item);
@@ -687,8 +691,8 @@
     const limiterEnabled = booleanValue(playerState.limiterEnabled);
     const multiGuest = booleanValue(playerState.multiGuest);
     elements["player-time"].textContent = playerState.elapsedText || "–";
-    elements["player-play"].textContent = playing ? "Pause" : "Abspielen";
-    elements["player-mute"].textContent = muted ? "Ton an" : "Stumm";
+    elements["player-play"].textContent = playing ? "Stop" : "Play";
+    elements["player-mute"].textContent = muted ? "Unmute" : "Mute";
     elements["player-pip"].textContent = pipActive ? "PiP beenden" : "Bild-in-Bild";
     elements["player-fullscreen"].textContent = fullscreenActive ? "Vollbild beenden" : "Vollbild";
     const volumePercent = Number.isFinite(Number(playerState.volumePercent)) ? Number(playerState.volumePercent) : 100;
@@ -926,11 +930,10 @@
     elements["scan-recommendations"].hidden = running;
     elements["cancel-recommendations"].hidden = !running;
     const scanned = Number(scan.scanned || 0);
-    const requested = Number(scan.requested || 20);
     const found = Number(scan.found || 0);
     elements["recommendation-progress"].textContent = scan.status === "idle"
       ? "Noch kein Scan gestartet."
-      : scan.status === "running" ? `${scanned} von bis zu ${requested} geprüft · ${found} gefunden.`
+      : scan.status === "running" ? `${scanned} geprüft · ${found} gefunden.`
       : scan.status === "cancelled" ? `Abgebrochen · ${found} Empfehlungen behalten.`
       : scan.status === "error" ? `Scan fehlgeschlagen: ${scan.error || "Unbekannter Fehler"}`
       : `${found} Empfehlungen erfasst.`;
@@ -1071,6 +1074,8 @@
     gameModeEnabled = Boolean(response.settings?.gameModeEnabled);
     filterExternalSpeechTriggers = Boolean(response.settings?.filterExternalSpeechTriggers);
     elements["filter-external-speech-triggers"].checked = filterExternalSpeechTriggers;
+    externalSpeechTriggerCharacters = core.normalizeExternalSpeechTriggerCharacters(response.settings?.externalSpeechTriggerCharacters);
+    elements["external-speech-trigger-characters"].value = externalSpeechTriggerCharacters;
     shortenNames = Boolean(response.settings?.shortenNames);
     autoChatRefreshEnabled = Boolean(response.settings?.autoChatRefreshEnabled);
     autoChatRefreshMinutes = Math.max(1, Math.min(60, Math.round(Number(response.settings?.autoChatRefreshMinutes) || 5)));
@@ -1300,9 +1305,9 @@
     }
   }
 
-  elements.scan.dataset.normalText = "Seite prüfen";
+  elements.scan.dataset.normalText = "Status";
   elements.scan.dataset.busyText = "Prüfe …";
-  elements["enable-captions"].dataset.normalText = "Untertitel aktivieren";
+  elements["enable-captions"].dataset.normalText = "Untertitel";
   elements["enable-captions"].dataset.busyText = "Suche Schalter …";
   elements.scan.addEventListener("click", () => run("TLC_SCAN", null, elements.scan));
   elements["enable-captions"].addEventListener("click", () => run("TLC_ENABLE_CAPTIONS", null, elements["enable-captions"]));
@@ -1386,7 +1391,7 @@
     if (event.target === elements["speech-settings-modal"]) elements["close-speech-settings"].click();
   });
   elements["scan-recommendations"].addEventListener("click", async () => {
-    const limit = Math.max(1, Math.min(50, Math.round(Number(elements["recommendation-limit"].value) || 20)));
+    const limit = Math.max(1, Math.min(300, Math.round(Number(elements["recommendation-limit"].value) || 20)));
     elements["recommendation-limit"].value = String(limit);
     elements.notice.textContent = "";
     try {
@@ -1551,6 +1556,11 @@
   elements["filter-external-speech-triggers"].addEventListener("change", async () => {
     filterExternalSpeechTriggers = elements["filter-external-speech-triggers"].checked;
     await send("TLC_SET_SPEECH_PREFERENCE", { filterExternalSpeechTriggers });
+  });
+  elements["external-speech-trigger-characters"].addEventListener("input", async () => {
+    externalSpeechTriggerCharacters = core.normalizeExternalSpeechTriggerCharacters(elements["external-speech-trigger-characters"].value);
+    elements["external-speech-trigger-characters"].value = externalSpeechTriggerCharacters;
+    await send("TLC_SET_SPEECH_PREFERENCE", { externalSpeechTriggerCharacters });
   });
   elements["game-mode"].addEventListener("change", async () => {
     gameModeEnabled = elements["game-mode"].checked;

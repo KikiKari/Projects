@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <application android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@style/Theme.TikTokLiveCompanion" android:label="TikTok LIVE Companion">
+    <application android:allowBackup="false" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/network_security_config" android:theme="@style/Theme.TikTokLiveCompanion" android:label="TikTok LIVE Companion">
         <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true"/>
         <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="unspecified" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
             <intent-filter>

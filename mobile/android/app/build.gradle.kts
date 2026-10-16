@@ -6,6 +6,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val companionFallback = providers.gradleProperty("TLC_COMPANION_FALLBACK_URL").orElse("")
+
 val tokenUrl = providers.gradleProperty("TLC_SHAZAM_TOKEN_URL").orElse(providers.environmentVariable("TLC_SHAZAM_TOKEN_URL")).orElse("")
 
 android {
@@ -17,8 +19,9 @@ android {
         applicationId = "app.tiktoklivecompanion.android"
         minSdk = 21
         targetSdk = 36
-        versionCode = 12
+        versionCode = 20
         versionName = "0.8.2"
+        buildConfigField("String", "COMPANION_FALLBACK_URL", "\"${companionFallback.get().replace("\"", "\\\"")}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SHAZAM_TOKEN_URL", "\"${tokenUrl.get().replace("\"", "\\\"")}\"")
     }
