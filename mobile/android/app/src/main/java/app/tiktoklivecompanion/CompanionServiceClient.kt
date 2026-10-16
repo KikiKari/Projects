@@ -24,9 +24,9 @@ class CompanionServiceClient(context: Context) {
     private val flushMutex = Mutex()
     private val registeredDocuments = mutableSetOf<String>()
     private var currentDocument = sessionId
-    private val http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build()
+    internal var http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build()
     var baseUrl: String
-        get() = preferences.getString("baseUrl", "") ?: ""
+        get() = preferences.getString("baseUrl", "")?.takeIf { it.isNotBlank() } ?: BuildConfig.COMPANION_FALLBACK_URL
         set(value) { preferences.edit().putString("baseUrl", value.trim()).apply() }
     var pairingCode = ""
     var universalKey = ""
@@ -35,9 +35,19 @@ class CompanionServiceClient(context: Context) {
         capture(BridgeEnvelope(1, "pipeline-snapshot", "companion", 0, Instant.now().toString(), mapOf("pipeline" to pipeline, "data" to data, "documentId" to documentId)))
     }
     suspend fun request(route: String, body: JSONObject? = null): ByteArray = withContext(Dispatchers.IO) {
-        val uri = java.net.URI(baseUrl)
-        require(uri.scheme == "https" && uri.host != null && uri.userInfo == null && uri.rawQuery == null) { "Companion-Dienst benötigt eine HTTPS-Adresse" }
-        val builder = Request.Builder().url(baseUrl.trimEnd('/') + route).header("Authorization", "Bearer $pairingCode")
+        val selected = CompanionEndpoint.select(baseUrl) { endpoint ->
+            val probe = Request.Builder().url(endpoint + "/v1/health")
+                .header("Authorization", "Bearer $pairingCode").build()
+            val probeHttp = http.newBuilder().callTimeout(if (endpoint.startsWith("http:")) 1500 else 5000, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+            probeHttp.newCall(probe).execute().use { response ->
+                check(response.isSuccessful) { "Companion-Dienst HTTP ${response.code}" }
+                val health = JSONObject(response.body?.string() ?: "{}")
+                check(health.optBoolean("ok") && health.opt("version") is String && health.optBoolean("bootstrapPairing")) {
+                    "Adresse liefert keinen Companion-Dienst"
+                }
+            }
+        }
+        val builder = Request.Builder().url(selected + route).header("Authorization", "Bearer $pairingCode")
         if (body != null) builder.post(body.toString().toRequestBody("application/json".toMediaType()))
         http.newCall(builder.build()).execute().use { response ->
             check(response.isSuccessful) { "Companion-Dienst HTTP ${response.code}" }

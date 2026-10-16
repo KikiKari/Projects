@@ -154,19 +154,8 @@ private final class FakeRecognizer: RecognitionService {
         probe.receive = { response = $0 as? [String: Any]; finished.fulfill() }
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.add(probe, name: "audioProbe")
-        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 320, height: 480), configuration: configuration)
-        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-        let window = UIWindow(windowScene: scene)
-        let controller = UIViewController()
-        controller.view = webView
-        window.rootViewController = controller
-        window.makeKeyAndVisible()
-        defer {
-            webView.stopLoading()
-            configuration.userContentController.removeScriptMessageHandler(forName: "audioProbe")
-            window.isHidden = true
-            window.rootViewController = nil
-        }
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        defer { webView.stopLoading(); configuration.userContentController.removeScriptMessageHandler(forName: "audioProbe") }
         let script = """
         (async () => {
           try {
@@ -217,6 +206,25 @@ private final class FakeRecognizer: RecognitionService {
         XCTAssertEqual(state.speechText("ABC", author: "Autor"), "Autor: ABC")
         XCTAssertTrue(CompanionState(recognizer: FakeRecognizer(), defaults: defaults).filterExternalSpeechTriggers)
         defaults.removePersistentDomain(forName: #function)
+    }
+    func testCustomTriggerSelectionPersistsIndependently() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+        defer { defaults.removePersistentDomain(forName: #function) }
+        let state = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+        XCTAssertEqual(state.externalSpeechTriggerCharacters, ".")
+        state.externalSpeechTriggerCharacters = ".,-;:!"
+        for enabled in [true, false, true] {
+            state.filterExternalSpeechTriggers = enabled
+            let restored = CompanionState(recognizer: FakeRecognizer(), defaults: defaults)
+            XCTAssertEqual(restored.externalSpeechTriggerCharacters, ".,-;:")
+            XCTAssertEqual(restored.filterExternalSpeechTriggers, enabled)
+            for text in [".Hallo", ",Hallo", "- Hallo", ";Hallo", "Hallo, zusammen."] {
+                XCTAssertEqual(restored.speechText(text, author: "Autor") == nil, enabled && text != "Hallo, zusammen.")
+            }
+        }
+        state.externalSpeechTriggerCharacters = ""
+        XCTAssertEqual(CompanionState(recognizer: FakeRecognizer(), defaults: defaults).externalSpeechTriggerCharacters, "")
     }
     func testRecognitionRequiresExplicitActionAndSelectedSource() {
         let fake = FakeRecognizer()

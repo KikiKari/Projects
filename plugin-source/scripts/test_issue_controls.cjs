@@ -13,12 +13,37 @@ function controls() {
 }
 test('175 manual and automatic speech reject raw point triggers before author prefixes',async()=>{
  for(const enabled of [false,true]) {
-  const spoken=[];const s={core,filterExternalSpeechTriggers:enabled,speechEnabled:true,speechQueue:[],elements:{'speech-status':{}},pumpSpeech(){},speechText:item=>`Autor sagt ${item.content}`,speechLang:()=> 'de',serviceSpeech:async text=>spoken.push(text),browserSpeech:async()=>assert.fail('unexpected fallback')};
+  const spoken=[];const s={core,filterExternalSpeechTriggers:enabled,externalSpeechTriggerCharacters:'.',speechEnabled:true,speechQueue:[],elements:{'speech-status':{}},pumpSpeech(){},speechText:item=>`Autor sagt ${item.content}`,speechLang:()=> 'de',serviceSpeech:async text=>spoken.push(text),browserSpeech:async()=>assert.fail('unexpected fallback')};
   const ctx=vm.createContext(s);
   vm.runInContext(fragment('  async function speakItem(', '  async function pumpSpeech('),ctx);
   vm.runInContext(fragment('  function enqueueSpeech(', '  function ',),ctx);
   for(const content of ['.Text','. Text','  .Text','Normal','Ein Satz. Noch einer']) {await s.speakItem({content});s.enqueueSpeech({content});}
   assert.equal(spoken.length,enabled?2:5);assert.equal(s.speechQueue.length,enabled?2:5);
+ }
+});
+
+test('187 input truncates pasted values and checkbox preserves selection',async()=>{
+ const calls=[];
+ const s={...controls(),core,filterExternalSpeechTriggers:false,externalSpeechTriggerCharacters:'.',send:async(type,payload)=>calls.push({type,...payload})};
+ vm.runInNewContext(fragment('  elements["filter-external-speech-triggers"].addEventListener','  elements["game-mode"].addEventListener'),s);
+ const input=s.elements['external-speech-trigger-characters'];
+ input.value='.,-;:!';await input.handlers.input();assert.equal(input.value,'.,-;:');
+ assert.equal(calls.at(-1).externalSpeechTriggerCharacters,'.,-;:');
+ const toggle=s.elements['filter-external-speech-triggers'];toggle.checked=true;await toggle.handlers.change();
+ toggle.checked=false;await toggle.handlers.change();assert.equal(input.value,'.,-;:');assert.equal(input.disabled,false);
+ assert.equal(calls.at(-1).filterExternalSpeechTriggers,false);
+ input.value='😀😁😂😃😄😅';await input.handlers.input();assert.equal(input.value,'😀😁😂😃😄');
+ input.value='';await input.handlers.input();assert.equal(calls.at(-1).externalSpeechTriggerCharacters,'');
+});
+
+test('187 custom prefixes apply to manual and automatic speech before author prefixes',async()=>{
+ for(const enabled of [false,true]) {
+  const spoken=[];const s={core,filterExternalSpeechTriggers:enabled,externalSpeechTriggerCharacters:'.,-',speechEnabled:true,speechQueue:[],elements:{'speech-status':{}},pumpSpeech(){},speechText:item=>`Autor sagt ${item.content}`,speechLang:()=> 'de',serviceSpeech:async text=>spoken.push(text),browserSpeech:async()=>assert.fail('unexpected fallback')};
+  const ctx=vm.createContext(s);
+  vm.runInContext(fragment('  async function speakItem(', '  async function pumpSpeech('),ctx);
+  vm.runInContext(fragment('  function enqueueSpeech(', '  function '),ctx);
+  for(const content of ['.Hallo',',Hallo','- Hallo','Hallo, zusammen.']) {await s.speakItem({content});s.enqueueSpeech({content});}
+  assert.equal(spoken.length,enabled?1:4);assert.equal(s.speechQueue.length,enabled?1:4);
  }
 });
 test('176 speech switch commits On/Off only after a successful request',async()=>{

@@ -17,6 +17,23 @@ private class FakeEngine : RecognitionEngine {
 }
 
 class CompanionViewModelTest {
+    @Test fun customTriggersFilterOnlySelectedPrefixes() {
+        for (enabled in listOf(false,true)) for (text in listOf(".Hallo",",Hallo","- Hallo","Hallo, zusammen.")) {
+            val model=CompanionViewModel(FakeEngine())
+            model.setExternalSpeechTriggerCharacters(".,-")
+            model.setFilterExternalSpeechTriggers(enabled)
+            model.requestSpeak(ChatLine("Autor",text))
+            assertEquals(if (enabled && text != "Hallo, zusammen.") 0 else 1,model.state.value.speechQueue.size)
+            model.setFilterExternalSpeechTriggers(!enabled)
+            assertEquals(".,-",model.state.value.externalSpeechTriggerCharacters)
+        }
+        assertEquals(".,-;:",ExternalSpeechTriggers.normalize(".,-;:!"))
+        assertEquals("😀😁😂😃😄",ExternalSpeechTriggers.normalize("😀😁😂😃😄😅"))
+        assertEquals(".,-",ExternalSpeechTriggers.normalize(" a1 \"'.,- "))
+        assertFalse(ExternalSpeechTriggers.matches(".Hallo",true,""))
+        assertTrue(ExternalSpeechTriggers.matches(";Hallo",true,";"))
+        assertTrue(ExternalSpeechTriggers.matches("[Hallo",true,"["))
+    }
     @Test fun externalTriggerFilterIsIndependentOfGameModeAndNames() {
         for (game in listOf(false,true)) for (enabled in listOf(false,true)) {
             for (text in listOf(".Text", ". Text", "  .Text", "Normal", "Ein Satz. Noch einer")) {

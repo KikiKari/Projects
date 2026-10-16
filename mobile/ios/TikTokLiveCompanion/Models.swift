@@ -1,5 +1,23 @@
 import Foundation
 
+enum ExternalSpeechTriggers {
+    static func normalize(_ value: String?) -> String {
+        let selected = (value ?? ".").unicodeScalars.filter { scalar in
+            guard scalar.value != 34 && scalar.value != 39 else { return false }
+            switch scalar.properties.generalCategory {
+            case .connectorPunctuation, .dashPunctuation, .openPunctuation, .closePunctuation,
+                 .otherPunctuation, .mathSymbol, .currencySymbol, .modifierSymbol, .otherSymbol: return true
+            default: return false
+            }
+        }.prefix(5)
+        return String(String.UnicodeScalarView(selected))
+    }
+    static func matches(_ text: String, enabled: Bool, characters: String = ".") -> Bool {
+        guard enabled, let first = text.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars.first else { return false }
+        return normalize(characters).unicodeScalars.contains(first)
+    }
+}
+
 enum CompanionTab: String, CaseIterable, Identifiable {
     case live = "Live", chat = "Chat", song = "Songs", player = "Player", more = "Mehr"
     var id: String { rawValue }
@@ -109,5 +127,19 @@ enum JSONValue: Decodable, Equatable {
 extension BridgeEnvelope {
     var rawObject: [String: Any] {
         ["version": version, "type": type, "streamId": streamId, "sequence": sequence, "timestamp": timestamp, "payload": payload.mapValues { $0.foundationValue }]
+    }
+}
+
+struct ServiceVoice: Identifiable {
+    let id: String; let name: String; let culture: String; let installed: Bool; let bytes: Int; let license: String; var group: String = ""
+    var displayGroup: String {
+        if !group.isEmpty { return group }
+        switch culture.lowercased().split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? "" {
+        case "ru", "bg", "kk", "sr", "uk": return "Kyrillisch"
+        case "zh", "ja", "ko": return "Asiatisch"
+        case "ar", "fa", "ur": return "Abjad"
+        case "hi", "ml", "ne": return "Indisch"
+        default: return "Weitere Stimmen"
+        }
     }
 }

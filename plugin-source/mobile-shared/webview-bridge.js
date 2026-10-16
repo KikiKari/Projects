@@ -6,6 +6,7 @@
   try { isTop = root.top === root; } catch (_) { isTop = false; }
   const MAX_MESSAGE_BYTES = 64 * 1024;
   const MAX_CHAT = 50;
+  const MAX_RECOMMENDATION_BYTES = 1024 * 1024;
   const MAX_AUDIO_SECONDS = 12;
   const MAX_MEDIA_URLS = 12;
   const FORCE_RETURN_KEY = "tlc-force-return";
@@ -62,7 +63,7 @@
 
   function nativePost(message) {
     const serialized = JSON.stringify(message);
-    if (new TextEncoder().encode(serialized).byteLength > MAX_MESSAGE_BYTES) return;
+    if (new TextEncoder().encode(serialized).byteLength > (message.type === "recommendation-scan-progress" ? MAX_RECOMMENDATION_BYTES : MAX_MESSAGE_BYTES)) return;
     if (root.webkit?.messageHandlers?.tlcBridge?.postMessage) root.webkit.messageHandlers.tlcBridge.postMessage(message);
     else if (root.tlcBridge?.postMessage) root.tlcBridge.postMessage(serialized);
   }
@@ -120,7 +121,7 @@
     const values = [...entry.card.querySelectorAll("span,div,p,strong")].map((node) => text(node.innerText, 80)).filter((value) => /^[0-9]+(?:[.,][0-9]+)?[KMB]?$/i.test(value));
     const viewerLabel = values.find((value) => parseCompactCount(value) != null) || "";
     const lines = [...entry.card.querySelectorAll('a[href*="/live"]')].filter((link) => liveHandle(link) === entry.handle).flatMap((link) => String(link.innerText || "").split(/\r?\n/)).map((value) => text(value, 300)).filter((value) => value && !/^live$/i.test(value) && value !== viewerLabel);
-    return { handle: entry.handle, displayName: lines.at(-1) || entry.handle, title: text(entry.card.querySelector('a[title]')?.getAttribute("title") || lines[0] || "", 300), viewerCount: parseCompactCount(viewerLabel), viewerLabel, url: entry.url, position };
+    return { handle: entry.handle, displayName: lines.at(-1) || entry.handle, title: text(entry.card.querySelector('a[title]')?.getAttribute("title") || lines[0] || "", 300), viewerCount: parseCompactCount(viewerLabel), viewerLabel, url: `https://www.tiktok.com/@${encodeURIComponent(entry.handle)}/live`, position };
   }
 
   async function scanRecommendations(run) {
@@ -622,7 +623,7 @@
       else if (name === "stop-webview-audio") await stopAudioCapture();
       else if (name === "set-limiter") await applyLimiter(payload);
       else if (name === "set-auto-reconnect") { autoReconnectEnabled = payload.enabled === true; autoReconnectDelayMs = Math.max(1, Math.min(59, Number(payload.delaySeconds) || 3)) * 1000; }
-      else if (name === "scan-recommendations") { if (activeRecommendationScan) activeRecommendationScan.cancelled = true; activeRecommendationScan = { limit: Math.max(1, Math.min(50, Number(payload.limit) || 20)), cancelled: false }; scanRecommendations(activeRecommendationScan); }
+      else if (name === "scan-recommendations") { if (activeRecommendationScan) activeRecommendationScan.cancelled = true; activeRecommendationScan = { limit: Math.max(1, Math.min(300, Math.round(Number(payload.limit)) || 20)), cancelled: false }; scanRecommendations(activeRecommendationScan); }
       else if (name === "cancel-recommendation-scan" && activeRecommendationScan) activeRecommendationScan.cancelled = true;
       emit("command-result", { command: name, ok: true });
     } catch (error) {

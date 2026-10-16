@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TikTok LIVE Companion</title>
   <link rel="stylesheet" href="sidepanel.css">
+  <link rel="stylesheet" href="icon-controls.css">
 </head>
 <body>
   <header>
@@ -18,7 +19,7 @@
         <div class="title-actions">
           <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
           <button id="chat-count" class="count count-button" type="button" aria-haspopup="dialog" title="Gesammelte Chatzeilen öffnen">0</button>
-          <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Refresh</button>
+          <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Reset</button>
           <button id="toggle-speech" class="secondary compact" aria-pressed="false" aria-label="Vorlesen">On</button>
           <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
         </div>
@@ -30,13 +31,13 @@
       <div class="button-row">
         <button id="service-action" class="secondary">Sprachdienst</button>
         <button id="sherpa-action" class="secondary">Sherpa</button>
-        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Erweiterte Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen">⚙</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Erweiterte Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen"></button>
       </div>
       <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
       <div id="service-setup" class="inline-status" hidden>
         <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
       </div>
-      <label class="option-row"><input id="keep-speech-active" type="checkbox"> Permanent aktiv</label>
+      <label class="option-row"><input id="keep-speech-active" type="checkbox" aria-label="Permanent aktiv" title="Permanent aktiv"></label>
     </section>
 
     <section aria-labelledby="top-chatters-heading">
@@ -57,7 +58,7 @@
         <h2 id="page-info-heading">PROFIL-Information</h2>
         <div class="title-actions">
           <span id="page-info-source" class="live-indicator">Metadaten</span>
-          <button id="refresh-page-info" class="secondary compact">Refresh</button>
+          <button id="refresh-page-info" class="secondary compact" title="Refresh">Refresh</button>
           <button id="force-page-info" class="secondary compact danger-outline">Force</button>
         </div>
       </div>
@@ -81,16 +82,16 @@
       </div>
       <div class="button-row">
         <button id="toggle-hook" class="primary" aria-label="Connection" aria-pressed="false">On</button>
-        <button id="reset-tab" class="secondary danger-outline">Refresh</button>
+        <button id="reset-tab" class="secondary danger-outline">Reset</button>
         <button id="open-embed-live" class="secondary">Embed</button>
         <button id="open-normal-live" class="secondary">Browser</button>
         <button id="player-vlc-frame" class="secondary compact">Player</button>
-        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog">⚙</button>
+        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog"></button>
       </div>
       <p id="hook-status" class="inline-status"></p>
       <p id="embed-startup-status" class="inline-status" role="status" aria-live="polite" hidden></p>
       <button id="cancel-embed-startup" class="secondary" hidden>Embed-Start abbrechen</button>
-      <label class="option-row"><input id="hook-autostart" type="checkbox"> Permanent Hook</label>
+      <label class="option-row"><input id="hook-autostart" type="checkbox" aria-label="Permanent Hook" title="Permanent Hook"></label>
       <p id="hook-reconnect-status" class="inline-status" role="status">Hook-Reconnect: aus</p>
       <p id="player-recovery-status" class="inline-status" role="status">Player-Recovery: aus</p>
     </section>
@@ -101,7 +102,7 @@
         <span id="recommendation-status" class="live-indicator">bereit</span>
       </div>
       <div class="recommendation-controls">
-        <label><span>Anzahl</span><input id="recommendation-limit" type="number" min="1" max="50" step="1" value="20" inputmode="numeric"></label>
+        <label><span>Anzahl</span><input id="recommendation-limit" type="number" min="1" max="300" step="1" value="20" inputmode="numeric"></label>
         <label><span>Sortierung</span><select id="recommendation-sort"><option value="tiktok">TikTok-Reihenfolge</option><option value="viewers">Zuschauer*innen</option></select></label>
       </div>
       <div class="button-row">
@@ -118,10 +119,10 @@
     <section aria-labelledby="caption-heading">
       <div class="section-title">
         <h2 id="caption-heading">Titel</h2>
-        <button id="scan" class="secondary">Seite prüfen</button>
+        <button id="scan" class="secondary">Status</button>
       </div>
       <div id="caption-status" class="status-grid"></div>
-      <button id="enable-captions" class="primary">Untertitel aktivieren</button>
+      <button id="enable-captions" class="primary">Untertitel</button>
       <p id="caption-action-status" role="status" class="inline-status action-status"></p>
     </section>
 
@@ -131,18 +132,18 @@
         <span id="player-time" class="player-time">–</span>
       </div>
       <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
-        <button id="player-play" class="secondary compact">Pause</button>
+        <button id="player-play" class="secondary compact">Play</button>
         <button id="player-replay" class="secondary compact">Neu laden</button>
-        <button id="player-mute" class="secondary compact">Stumm</button>
+        <button id="player-mute" class="secondary compact">Mute</button>
         <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
         <button id="player-fullscreen" class="secondary compact">Vollbild</button>
-        <button id="player-report" class="secondary compact danger-outline">Melden öffnen</button>
+        <button id="player-report" class="secondary compact danger-outline">Meldung</button>
       </div>
       <div class="audio-controls">
         <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
         <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
         <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
-        <label class="option-row"><input id="limiter-enabled" type="checkbox"> Pegelschutz aktivieren</label>
+        <label class="option-row"><input id="limiter-enabled" type="checkbox" aria-label="Pegelschutz aktivieren" title="Pegelschutz aktivieren"></label>
         <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
         <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
       </div>
@@ -155,7 +156,7 @@
         <h2 id="song-heading">Songs</h2>
         <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
       </div>
-      <label class="option-row"><input id="song-enabled" type="checkbox"> Songerkennung aktivieren</label>
+      <label class="option-row"><input id="song-enabled" type="checkbox" aria-label="Songerkennung aktivieren" title="Songerkennung aktivieren"></label>
       <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
       <p id="song-status" class="inline-status"></p>
       <div id="song-result" class="song-result" hidden></div>
@@ -167,7 +168,6 @@
         <span id="media-count" class="count">0</span>
       </div>
       <div id="media-list" class="list empty">Noch keine FLV-/HLS-Links erkannt.</div>
-      <p class="hint">Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.</p>
     </section>
 
     <section aria-labelledby="log-heading">
@@ -214,6 +214,7 @@
           <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
         </div>
         <div class="settings-grid speech-integration-settings">
+<label class="icon-style-setting"><span>Icon-Stil</span><select id="icon-style"><option value="plastisch">3D / Plastisch</option><option value="glass">Glass / Realistisch</option><option value="linear">Minimal / Linear</option></select></label>
           <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
           <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
           <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
@@ -223,8 +224,8 @@
         <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
         <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
         <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
-        <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode</label>
-        <label class="option-row"><input id="filter-external-speech-triggers" type="checkbox"> Trigger externer Sprachdienste filtern</label>
+        <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode (Spam-, Emoji, usw. Chatfilter)</label>
+        <div class="option-row external-speech-trigger-row"><label><input id="filter-external-speech-triggers" type="checkbox"> Trigger filtern (ext. Sprachdienste)</label><input id="external-speech-trigger-characters" type="text" value="." maxlength="10" aria-label="Triggerzeichen, maximal fünf Sonderzeichen" autocomplete="off" spellcheck="false"></div>
       </section>
     </div>
 
@@ -262,5 +263,6 @@
 
   <script src="content-core.js"></script>
   <script src="sidepanel.js"></script>
+  <script src="icon-controls.js"></script>
 </body>
 </html>

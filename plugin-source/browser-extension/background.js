@@ -168,7 +168,7 @@ async function getState(tabId) {
     playerState: { ...defaults.playerState, ...(state.playerState || {}) },
     profileInfo: { ...defaults.profileInfo, ...(state.profileInfo || {}) },
     aiSummaryInfo: { ...defaults.aiSummaryInfo, ...(state.aiSummaryInfo || {}) },
-    recommendationScan: { ...defaults.recommendationScan, ...(state.recommendationScan || {}), items: (state.recommendationScan?.items || []).slice(0, 50) },
+    recommendationScan: { ...defaults.recommendationScan, ...(state.recommendationScan || {}), items: (state.recommendationScan?.items || []).slice(0, 300) },
     chatMessages: state.chatMessages || [],
     participants: state.participants || {},
     participantsTruncated: Boolean(state.participantsTruncated),
@@ -242,16 +242,16 @@ function sanitizeRecommendationItem(raw, fallbackPosition) {
     viewerCount: Number.isSafeInteger(numericCount) && numericCount >= 0 ? numericCount : null,
     viewerLabel: cleanRecommendationText(raw?.viewerLabel, 32),
     url: url || `https://www.tiktok.com/@${handle}/live`,
-    position: Math.max(1, Math.min(50, Math.round(Number(raw?.position) || fallbackPosition)))
+    position: Math.max(1, Math.min(300, Math.round(Number(raw?.position) || fallbackPosition)))
   };
 }
 
-function sanitizeRecommendationItems(items, limit = 50) {
+function sanitizeRecommendationItems(items, limit = 300) {
   const sanitized = (Array.isArray(items) ? items : [])
-    .slice(0, 100)
+    .slice(0, 300)
     .map((item, index) => sanitizeRecommendationItem(item, index + 1))
     .filter(Boolean);
-  return core.dedupeRecommendations(sanitized).slice(0, Math.max(1, Math.min(50, limit)));
+  return core.dedupeRecommendations(sanitized).slice(0, Math.max(1, Math.min(300, limit)));
 }
 
 function resetPageIdentityIfChanged(state, nextHandle) {
@@ -324,6 +324,7 @@ async function getSettings() {
     speechVoiceName: "",
     gameModeEnabled: false,
     filterExternalSpeechTriggers: false,
+    externalSpeechTriggerCharacters: ".",
     speakNames: true,
     shortenNames: false,
     autoChatRefreshEnabled: false,
@@ -638,7 +639,7 @@ async function sendOffscreen(message) {
 async function queueSpeechForTab(tabId, state, item) {
   if (!state.speech?.enabled || item.muted) return;
   const settings = await getSettings();
-  if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", settings.filterExternalSpeechTriggers)) return;
+  if (core.shouldFilterExternalSpeechTrigger(item.content || item.text || "", settings.filterExternalSpeechTriggers, settings.externalSpeechTriggerCharacters)) return;
   if (settings.gameModeEnabled && core.shouldFilterGameModeSpeech(item, state.participants || {}, state.chatMessages || [])) return;
   const text = cleanSpeechPayload(core.composeSpeechText(item, {
     teamTag: state.stream?.teamTag || "",
@@ -1517,6 +1518,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ...(message.auddApiToken == null ? {} : { auddApiToken: String(message.auddApiToken).trim().slice(0, 512) }),
           ...(message.universalCaptionApiKey == null ? {} : { universalCaptionApiKey: String(message.universalCaptionApiKey).trim().slice(0, 512) }),
           ...(message.filterExternalSpeechTriggers == null ? {} : { filterExternalSpeechTriggers: Boolean(message.filterExternalSpeechTriggers) }),
+          ...(message.externalSpeechTriggerCharacters == null ? {} : { externalSpeechTriggerCharacters: core.normalizeExternalSpeechTriggerCharacters(message.externalSpeechTriggerCharacters) }),
           ...(message.gameModeEnabled == null ? {} : { gameModeEnabled: Boolean(message.gameModeEnabled) }),
           ...(message.speakNames == null ? {} : { speakNames: Boolean(message.speakNames) }),
           ...(message.shortenNames == null ? {} : { shortenNames: Boolean(message.shortenNames) }),
@@ -1633,7 +1635,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const tab = await chrome.tabs.get(tabId);
         const sourceHandle = core.liveHandleFromUrl(tab.url);
         if (!sourceHandle) throw new Error("Der ausgewählte Tab zeigt keinen TikTok-Livestream.");
-        const limit = Math.max(1, Math.min(50, Math.round(Number(message.limit) || 20)));
+        const limit = Math.max(1, Math.min(300, Math.round(Number(message.limit) || 20)));
         const runId = newBrowserSessionId();
         const now = new Date().toISOString();
         const state = await getState(tabId);

@@ -91,6 +91,9 @@ input[type="url"], input[type="text"], input[type="password"], input[type="numbe
 .option-row { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .option-row input { margin: 1px 0 0; accent-color: var(--accent); }
 .auto-chat-refresh { align-items: center; }
+.external-speech-trigger-row { align-items: center; }
+.external-speech-trigger-row label { display: flex; align-items: center; gap: 7px; }
+.external-speech-trigger-row input[type="text"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .auto-chat-refresh input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .quick-recover-setting input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
 .audio-note { margin: 1px 0 0; }
