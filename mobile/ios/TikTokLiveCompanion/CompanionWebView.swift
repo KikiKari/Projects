@@ -25,6 +25,7 @@ struct CompanionWebView: UIViewRepresentable {
         view.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = view
         state.sendCommand = { [weak view] command, payload in
+            if ["play", "start-audible", "refresh"].contains(command) { BackgroundAudioController.shared.activatePlayback() }
             if command == "refresh" {
                 let dataTypes: Set<String> = [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache]
                 WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {
@@ -44,7 +45,10 @@ struct CompanionWebView: UIViewRepresentable {
                   let quoted = String(data: commandData, encoding: .utf8) else { return }
             view?.evaluateJavaScript("globalThis.TLC_MOBILE_BRIDGE?.command(\(quoted), \(json))")
         }
-        state.loadURL = { [weak view] target in view?.load(URLRequest(url: target)) }
+        state.loadURL = { [weak view] target in
+            BackgroundAudioController.shared.activatePlayback()
+            view?.load(URLRequest(url: target))
+        }
         view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
         return view
     }
@@ -71,7 +75,10 @@ struct CompanionWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             guard let url = navigationAction.request.url else { return decisionHandler(.cancel) }
-            if url.scheme == "https", url.host == "www.tiktok.com" { decisionHandler(.allow) }
+            if url.scheme == "https", url.host == "www.tiktok.com" {
+                if navigationAction.navigationType == .linkActivated, url.path.contains("/live") { BackgroundAudioController.shared.activatePlayback() }
+                decisionHandler(.allow)
+            }
             else { if url.scheme == "https" { UIApplication.shared.open(url) }; decisionHandler(.cancel) }
         }
     }

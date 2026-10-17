@@ -171,7 +171,6 @@ class MainActivity : ComponentActivity() {
 @Composable private fun SongTab(state: CompanionUiState, model: CompanionViewModel, recognize: () -> Unit) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Songs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Button(onClick = recognize, shape = CircleShape, modifier = Modifier.align(Alignment.CenterHorizontally).size(116.dp).semantics { contentDescription = "Jetzt erkennen; höchstens zwölf Sekunden" }) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(Icons.Default.Search, null, modifier = Modifier.size(34.dp)); Text("Jetzt erkennen", fontWeight = FontWeight.Bold) } }
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { RecognitionSource.entries.forEachIndexed { index, source -> SegmentedButton(selected = state.source == source, onClick = { model.selectSource(source) }, shape = SegmentedButtonDefaults.itemShape(index, RecognitionSource.entries.size)) { Text(source.label, maxLines = 1) } } }
         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Circle, null, tint = Color(0xFF009B5A), modifier = Modifier.size(10.dp)); Spacer(Modifier.width(8.dp)); Text(state.recognitionStatus, style = MaterialTheme.typography.bodySmall) }
@@ -184,9 +183,8 @@ class MainActivity : ComponentActivity() {
 @Composable private fun ChatTab(state: CompanionUiState, model: CompanionViewModel, ttsReady: Boolean, systemVoices: List<android.speech.tts.Voice>) {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Chat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); OutlinedButton(enabled = ttsReady, onClick = { model.setTtsEnabled(!state.ttsEnabled) }) { CompanionIconLabel(if (state.ttsEnabled && ttsReady) "Off" else "On", if (state.ttsEnabled && ttsReady) "off" else "on") } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsEnabled, model::setTtsEnabled, label = "Vorlesen", enabled = ttsReady) }
             Text("Lautstärke ${state.ttsVolume} %")
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
             OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Erweiterte Einstellungen", "settings") }
@@ -202,13 +200,21 @@ class MainActivity : ComponentActivity() {
     if (settingsOpen) SpeechSettingsDialog(state, model, systemVoices) { settingsOpen = false }
 }
 @Composable private fun SpeechSettingsDialog(state: CompanionUiState, model: CompanionViewModel, systemVoices: List<android.speech.tts.Voice>, close: () -> Unit) {
-    var serviceUrl by remember { mutableStateOf(model.serviceClient?.baseUrl ?: "") }
     AlertDialog(onDismissRequest = close, confirmButton = { TextButton(onClick = close) { Text("Schließen") } }, title = { Text("Erweiterte Einstellungen") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen sprechen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsSpeakNames, model::setTtsSpeakNames, label = "Chatnamen sprechen") }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsShortenNames, model::setTtsShortenNames, label = "Chatnamen kürzen") }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                CompanionIconSwitch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers, label = "Trigger filtern (ext. Sprachdienste)")
+                Text("Trigger filtern (ext. Sprachdienste)", Modifier.weight(1f))
+                OutlinedTextField(state.externalSpeechTriggerCharacters, model::setExternalSpeechTriggerCharacters, modifier = Modifier.width(64.dp), singleLine = true, textStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), label = { Text("Zeichen", fontSize = 10.sp) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Auto-Chat Refresh", Modifier.weight(1f)); CompanionIconSwitch(state.autoChatRefreshEnabled, model::setAutoChatRefreshEnabled, label = "Auto-Chat Refresh") }
+            OutlinedTextField(state.autoChatRefreshMinutes.toString(), { value -> value.toIntOrNull()?.let(model::setAutoChatRefreshMinutes) }, label = { Text("Auto-Chat-Refresh in min.") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("Game-Mode (Spam-, Emoji, usw. Chatfilter)", Modifier.weight(1f)); CompanionIconSwitch(state.gameModeEnabled, model::setGameMode, label = "Game-Mode") }
             OutlinedTextField(state.auddToken, model::setAuddToken, label = { Text("AudD API-Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             OutlinedTextField(state.pairingCode, model::setPairingCode, label = { Text("Pairing-Code") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             OutlinedTextField(state.universalCaptionApiKey, model::setUniversalCaptionApiKey, label = { Text("Universal API-Key") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-            OutlinedTextField(serviceUrl, { serviceUrl = it; model.serviceClient?.baseUrl = it }, label = { Text("Alternative Companion-Adresse (lokal zuerst)") }, singleLine = true)
             Text("Sprache", style = MaterialTheme.typography.labelMedium)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { TtsLanguage.entries.forEachIndexed { index, language -> SegmentedButton(state.ttsLanguage == language, { model.setTtsLanguage(language) }, SegmentedButtonDefaults.itemShape(index, TtsLanguage.entries.size)) { Text(language.label) } } }
             OutlinedTextField(state.ttsVoice, model::setTtsVoice, label = { Text("Stimme") }, singleLine = true)
@@ -225,16 +231,6 @@ class MainActivity : ComponentActivity() {
                 }
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen sprechen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsSpeakNames, model::setTtsSpeakNames) }
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Chatnamen kürzen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsShortenNames, model::setTtsShortenNames) }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                CompanionIconSwitch(state.filterExternalSpeechTriggers, model::setFilterExternalSpeechTriggers)
-                Text("Trigger filtern (ext. Sprachdienste)", Modifier.weight(1f))
-                OutlinedTextField(state.externalSpeechTriggerCharacters, model::setExternalSpeechTriggerCharacters, modifier = Modifier.width(64.dp), singleLine = true, textStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp), keyboardOptions = KeyboardOptions(autoCorrectEnabled = false), label = { Text("Zeichen", fontSize = 10.sp) })
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Auto-Chat Refresh", Modifier.weight(1f)); CompanionIconSwitch(state.autoChatRefreshEnabled, model::setAutoChatRefreshEnabled) }
-            OutlinedTextField(state.autoChatRefreshMinutes.toString(), { value -> value.toIntOrNull()?.let(model::setAutoChatRefreshMinutes) }, label = { Text("Auto-Chat-Refresh in min.") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Game-Mode (Spam-, Emoji, usw. Chatfilter)", Modifier.weight(1f)); CompanionIconSwitch(state.gameModeEnabled, model::setGameMode) }
         }
     })
 }
@@ -242,15 +238,8 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     var recommendationLimit by remember(state.recommendationLimit) { mutableStateOf(state.recommendationLimit.toString()) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("LIVE-Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        CapabilityRows(state)
-        if (state.liveValues.isEmpty()) Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
-        Text("Personen stummschalten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        val activeAuthors = state.chatEntries.map { it.author }.filter { it.isNotBlank() }.distinct().takeLast(20)
-        if (activeAuthors.isEmpty()) Text("Noch keine Personen aus dem LIVE-Chat verfügbar.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        activeAuthors.forEach { author -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(author, Modifier.weight(1f)); TextButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, null); Spacer(Modifier.width(6.dp)); Text("Stumm") } } } }
         Text("PROFIL-Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        OutlinedButton(onClick = { model.sendCommand?.invoke("inspect", emptyMap()) }) { CompanionIconLabel("Refresh", "reset") }
         if (state.pageInfo.isEmpty()) Text("Noch keine Seitenprüfung ausgeführt · „Status“ im Tab Mehr.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.pageInfo.forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) { Text(key, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(value, fontWeight = FontWeight.Bold) } } }
         Text("LIVE-Empfehlungen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -261,6 +250,13 @@ class MainActivity : ComponentActivity() {
         }
         Text("Status: ${state.recommendationStatus} · ${state.recommendationScanned} geprüft · ${state.recommendationItems.size} gefunden", style = MaterialTheme.typography.bodySmall)
         state.recommendationItems.take(300).forEach { item -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) { Text("@${item.handle}", fontWeight = FontWeight.Bold); Text(item.displayName); Text(item.viewerLabel.ifBlank { item.viewerCount?.toString() ?: "–" }); if (item.title.isNotBlank()) Text(item.title, style = MaterialTheme.typography.bodySmall); TextButton(onClick = { BridgeValidator.safeHttpsUrl(item.url)?.let { context.startActivity(Intent(Intent.ACTION_VIEW, it)) } }) { Text("Stream öffnen") } } } }
+        CapabilityRows(state)
+        if (state.liveValues.isEmpty()) Text("Der WebSocket-Hook liefert die Werte nach dem Laden des Streams.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        state.liveValues.toSortedMap().forEach { (key, value) -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp)) { Text(key); Spacer(Modifier.weight(1f)); Text(value, fontWeight = FontWeight.Bold) } } }
+        Text("Personen stummschalten", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        val activeAuthors = state.chatEntries.map { it.author }.filter { it.isNotBlank() }.distinct().takeLast(20)
+        if (activeAuthors.isEmpty()) Text("Noch keine Personen aus dem LIVE-Chat verfügbar.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        activeAuthors.forEach { author -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(author, Modifier.weight(1f)); TextButton(onClick = { model.muteAuthor(author) }) { Icon(Icons.Default.VolumeOff, null); Spacer(Modifier.width(6.dp)); Text("Stumm") } } } }
     }
 }
 @Composable private fun PlayerTab(state: CompanionUiState, model: CompanionViewModel) {
@@ -282,7 +278,6 @@ class MainActivity : ComponentActivity() {
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Player", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         listOf("play" to "Play", "pause" to "Stop", "mute" to "Mute", "unmute" to "Unmute").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel(label, when (command) { "pause" -> "stop"; else -> command }) } } } }
         if (state.playerMuted != false || state.audibleStartBlocked) Button(onClick = model::enableStreamSound, modifier = Modifier.fillMaxWidth()) { Text("Ton aktivieren") }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -294,7 +289,7 @@ class MainActivity : ComponentActivity() {
         OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(if (state.vlcReplacementUrl != null) state.nativeLimiterStatus else if (state.limiterEnabled) state.webLimiterStatus else "WebView · Pegelschutz aus", style = MaterialTheme.typography.bodySmall)
-        CompanionIconSwitch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled, label = "Pegelschutz aktivieren")
+        CompanionIconSwitch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled, label = "Pegelschutz")
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterStrength.toFloat(), onValueChange = { model.setLimiter(state.limiterEnabled, it.toInt()) }, valueRange = 0f..100f, enabled = state.limiterEnabled)
         Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
@@ -314,28 +309,26 @@ class MainActivity : ComponentActivity() {
         if (uri != null) context.contentResolver.openOutputStream(uri)?.use { it.write(pendingCaptionExport.toByteArray(Charsets.UTF_8)) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Mehr", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        CompanionIconStylePicker()
-        Text("Player-Recovery: ${if (!state.autoReconnectEnabled) "aus" else state.playerRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
-        Text("Hook-Reconnect: ${if (!state.hookReconnectEnabled) "aus" else state.hookRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
-        Text("Connection", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = { model.setConnectionEnabled(!state.connectionEnabled) }) { CompanionIconLabel(if (state.connectionEnabled) "Off" else "On", if (state.connectionEnabled) "off" else "on") }
+            CompanionIconSwitch(state.connectionEnabled, model::setConnectionEnabled, label = "Connection")
             OutlinedButton(onClick = model::openNormal) { CompanionIconLabel("Browser", "browser") }
             OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { CompanionIconLabel("Player", "player") }
             IconButton(onClick = { connectionSettingsOpen = true }) { CompanionIconLabel("Connection-Einstellungen", "settings") }
         }
+        listOf("inspect" to "Status", "captions" to "Untertitel", "refresh" to "Reset", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { if (command == "refresh") model.resetPage() else model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
+        CompanionIconStylePicker()
+        Text("Player-Recovery: ${if (!state.autoReconnectEnabled) "aus" else state.playerRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
+        Text("Hook-Reconnect: ${if (!state.hookReconnectEnabled) "aus" else state.hookRecovery["phase"]?.let { if (it == "native") "aktiv" else it } ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
         if (connectionSettingsOpen) AlertDialog(onDismissRequest = { connectionSettingsOpen = false }, title = { Text("Connection-Einstellungen") }, text = { Column {
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Player-Recovery", Modifier.weight(1f)); OutlinedTextField(reconnectDelay, { value -> reconnectDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setAutoReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); CompanionIconSwitch(state.autoReconnectEnabled, model::setAutoReconnect) }
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Hook-Reconnect", Modifier.weight(1f)); OutlinedTextField(hookDelay, { value -> hookDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setHookReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); CompanionIconSwitch(state.hookReconnectEnabled, model::setHookReconnect) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Player-Recovery", Modifier.weight(1f)); OutlinedTextField(reconnectDelay, { value -> reconnectDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setAutoReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); CompanionIconSwitch(state.autoReconnectEnabled, model::setAutoReconnect, label = "Player-Recovery") }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Hook-Reconnect", Modifier.weight(1f)); OutlinedTextField(hookDelay, { value -> hookDelay = value.filter(Char::isDigit).take(2); value.toIntOrNull()?.let(model::setHookReconnectDelay) }, label = { Text("Sek.") }, singleLine = true, modifier = Modifier.width(88.dp)); CompanionIconSwitch(state.hookReconnectEnabled, model::setHookReconnect, label = "Hook-Reconnect") }
         } }, confirmButton = { TextButton(onClick = { connectionSettingsOpen = false }) { Text("Schließen") } })
         OutlinedButton(onClick = model::openEmbed) { Text("Embed") }
         Text("Embed: ${state.embedPhase} · Versuch ${state.embedAttempt}/3", style = MaterialTheme.typography.bodySmall)
-        listOf("inspect" to "Status", "captions" to "Untertitel", "refresh" to "Reset", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
         OutlinedButton(onClick = model::startForce, enabled = !state.forceInProgress, modifier = Modifier.fillMaxWidth()) { Text(if (state.forceInProgress) "Force läuft …" else "Force") }
         state.forceRecoveryUrl?.let { OutlinedButton(onClick = { model.recoverForce() }, modifier = Modifier.fillMaxWidth()) { Text("Manuell zum LIVE-Stream zurück") } }
         Text("Debugmodus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Validierte Diagnoseereignisse protokollieren", Modifier.weight(1f)); CompanionIconSwitch(state.debugEnabled, model::setDebugEnabled) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Validierte Diagnoseereignisse protokollieren", Modifier.weight(1f)); CompanionIconSwitch(state.debugEnabled, model::setDebugEnabled, label = "Debugmodus") }
         Text("${state.debugEvents.size} bereinigte Diagnoseereignisse", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         state.debugEvents.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -349,7 +342,6 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = { pendingCaptionExport = model.captionRawJson(); exportCaption.launch("tiktok-live-caption-raw.json") }, enabled = state.captionRecords.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("RAW-JSON-Export") }
         }
         TextButton(onClick = model::clearCaptions, enabled = state.captionRecords.isNotEmpty()) { Text("Caption-Protokoll leeren") }
-        Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 

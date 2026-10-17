@@ -5,6 +5,8 @@
   let connectionEnabled = true;
   let sequence = 0, path = location.pathname, timer = null, video = null;
   let enabled = false, seconds = 3, pausedByUser = false, vlc = false;
+  let awaitingGesture = false, pauseIntentUntil = 0;
+  let reloadRequestedAt = 0;
   let lastTime = null, progressAt = Date.now(), attempt = null;
   const stamps = { websocket: 0, dom: 0, playerText: 0 };
   let sawProgress = false;
@@ -27,7 +29,7 @@
   }
   function mediaState() {
     const v = primary();
-    if (v !== video) { cancel("player-changed"); video = v; sawProgress = false; lastTime = v?.currentTime; progressAt = Date.now(); }
+    if (v !== video) { cancel("player-changed"); video = v; pausedByUser = false; awaitingGesture = false; pauseIntentUntil = 0; sawProgress = false; lastTime = v?.currentTime; progressAt = Date.now(); }
     if (v && Number.isFinite(v.currentTime) && v.currentTime !== lastTime) {
       sawProgress = true; lastTime = v.currentTime; progressAt = Date.now();
       if (attempt) { emit("player-recovery", { ...attempt, phase: "playing", completedAtMs: Date.now() }); if (timer !== null) clearTimeout(timer); timer = null; attempt = null; }
@@ -36,8 +38,20 @@
   }
   function recover(reason) {
     const v = mediaState();
-    if (!enabled || !v || pausedByUser || vlc || v.ended || timer !== null || (attempt?.startedAtMs && Date.now()-attempt.startedAtMs < 10000)) return;
-    attempt = { id: crypto.randomUUID(), detectedAtMs: progressAt, scheduledAtMs: Date.now()+seconds*1000,
+    if (!enabled || !v || pausedByUser || awaitingGesture || vlc || v.ended || timer !== null) return;
+    if (reloadRequestedAt && Date.now()-reloadRequestedAt < 30000) return;
+    if (attempt?.startedAtMs) {
+      if (Date.now()-attempt.startedAtMs < 10000) return;
+      emit("player-recovery", { ...attempt, phase: "failed", reason: "timeout", endedAtMs: Date.now() });
+      emit("quick-recover", { ...attempt, reason: "player-stall", stage: "page-reload" });
+      attempt = null;
+      reloadRequestedAt = Date.now();
+      // Escalate only after play() failed to restore progress; hook-only recovery never navigates.
+      location.reload();
+      return;
+    }
+    const remainingMs = Math.max(0, seconds*1000-(Date.now()-progressAt));
+    attempt = { id: crypto.randomUUID(), detectedAtMs: progressAt, scheduledAtMs: Date.now()+remainingMs,
       configuredDelayMs: seconds*1000, phase: "scheduled", reason };
     emit("player-recovery", attempt);
     const expected = attempt.id;
@@ -48,9 +62,13 @@
       attempt.startedAtMs = Date.now();
       emit("player-recovery", { ...attempt, phase: "connecting", actualWaitMs: Date.now()-attempt.detectedAtMs });
       try { await v.play(); }
-      catch (_) { emit("player-recovery", { ...attempt, phase: "awaiting-gesture", reason: "awaiting-gesture" }); cancel("awaiting-gesture"); pausedByUser = true; }
-      // Never reload or replace the document, player, native chat, or VLC source.
-    }, seconds*1000);
+      catch (error) {
+        if (!attempt || attempt.id !== expected || !enabled || current !== video) return;
+        awaitingGesture = error?.name === "NotAllowedError";
+        emit("player-recovery", { ...attempt, phase: awaitingGesture ? "awaiting-gesture" : "failed", reason: awaitingGesture ? "awaiting-gesture" : "error" });
+        if (awaitingGesture) attempt = null;
+      }
+    }, remainingMs);
   }
   function captionState() {
     const now = Date.now();
@@ -60,7 +78,7 @@
   root.addEventListener("message", (event) => {
     if (event.source !== root || event.origin !== location.origin || event.data?.source !== "tiktok-live-companion") return;
     const d = event.data;
-    if (d.type === "hook-status") emit("hook-status", { installed: d.hook?.installed === true, connected: d.hook?.connected === true });
+    if (d.type === "hook-status") emit("hook-status", { armed: d.hook?.armed === true, installed: d.hook?.installed === true, connected: d.hook?.connected === true });
     else if (d.type === "hook-recovery") emit("hook-recovery", { ...root.TLC_EXPORT_PRIVACY.hookRecovery(d.recovery), hookDocumentId: d.recovery?.documentId });
     else if (d.type === "socket-telemetry") emit("socket-telemetry", d.telemetry || {});
     else if (d.type === "chat-message") emit("chat", { ...d.chatMessage, language: d.chatMessage?.contentLanguage || "" });
@@ -70,27 +88,50 @@
     else if (d.type === "hook-recovery-ready") emit("recovery-ready", {});
   });
   function command(name, payload = {}) {
-    if (name === "set-connection") connectionEnabled = payload.enabled === true;
+    if (name === "set-connection") {
+      connectionEnabled = payload.enabled === true;
+      root.postMessage({source: "tiktok-live-companion-control", type: "hook-connection-config", enabled: connectionEnabled}, location.origin);
+    }
     if (name === "set-hook-reconnect") root.postMessage({source: "tiktok-live-companion-control", type: "hook-reconnect-config", enabled: payload.enabled === true, seconds: payload.delaySeconds}, location.origin);
-    if (name === "set-auto-reconnect") { cancel("configuration-changed"); enabled = payload.enabled === true; seconds = Math.max(1,Math.min(59,Number(payload.delaySeconds)||3)); }
+    if (name === "set-auto-reconnect") {
+      const nextEnabled = payload.enabled === true;
+      const nextSeconds = Math.max(1,Math.min(59,Number(payload.delaySeconds)||3));
+      if (enabled !== nextEnabled || seconds !== nextSeconds) cancel("configuration-changed");
+      enabled = nextEnabled; seconds = nextSeconds;
+      emit("capability", {feature: "player-recovery", available: true, enabled, delaySeconds: seconds});
+    }
     if (name === "pause") { pausedByUser = true; cancel("user-paused"); }
-    if (name === "play" || name === "start-audible") { pausedByUser = false; progressAt = Date.now(); }
-    if (name === "set-vlc-active") { vlc = payload.active === true; cancel("vlc-changed"); }
+    if (name === "play" || name === "start-audible") { pausedByUser = false; awaitingGesture = false; }
+    if (name === "set-vlc-active") { const next = payload.active === true; if (vlc !== next) cancel("vlc-changed"); vlc = next; }
   }
   root.TLC_MOBILE_RECOVERY = Object.freeze({documentId, recover, command, handles: name => ["set-hook-reconnect","set-vlc-active"].includes(name)});
   if (topFrame) {
-    const interval = setInterval(() => {
-      if (path !== location.pathname) { path = location.pathname; cancel("stream-changed"); for (const k of Object.keys(stamps)) stamps[k]=0; metadataPresent=false; lastCaption=""; }
+    function notePauseIntent(event) {
+      if (!event.isTrusted) return;
+      const v = primary();
+      const target = event.target;
+      if (!v || v.paused || !(target instanceof Element)) return;
+      const control = target.closest('button,[role="button"]');
+      const label = control?.getAttribute("aria-label") || control?.getAttribute("title") || control?.textContent || "";
+      const player = v.closest('[data-e2e="live-room-content"]') || v.parentElement;
+      const keyboard = event.type === "keydown" && [" ", "k", "K"].includes(event.key) && !target.matches('input,textarea,[contenteditable="true"]');
+      if ((event.type === "pointerup" && (target === v || (control && player?.contains(control) && /pause|pausieren|anhalten/i.test(label)))) || (keyboard && player?.contains(target))) pauseIntentUntil = Date.now() + 800;
+    }
+    root.addEventListener("pointerup", notePauseIntent, true);
+    root.addEventListener("keydown", notePauseIntent, true);
+    const observe = () => {
+      if (path !== location.pathname) { path = location.pathname; cancel("stream-changed"); pausedByUser=false; awaitingGesture=false; pauseIntentUntil=0; for (const k of Object.keys(stamps)) stamps[k]=0; metadataPresent=false; lastCaption=""; }
       const v = mediaState();
       if (v) {
         if (!v.dataset.tlcRecoveryObserved) {
           v.dataset.tlcRecoveryObserved="true";
-          v.addEventListener("pause", () => { if (v.readyState >= 3 && !v.ended) { pausedByUser=true; cancel("user-paused"); } });
-          v.addEventListener("playing", () => { pausedByUser=false; progressAt=Date.now(); });
+          v.addEventListener("pause", () => { if (Date.now() <= pauseIntentUntil && v.readyState >= 3 && !v.ended) { pauseIntentUntil=0; pausedByUser=true; cancel("user-paused"); } });
+          v.addEventListener("playing", () => { pausedByUser=false; awaitingGesture=false; pauseIntentUntil=0; progressAt=Date.now(); });
         }
         emit("player-observation", { playing: sawProgress && !v.paused && !v.ended && Date.now()-progressAt < 2000,
           paused: v.paused, ended: v.ended, currentTime: Number.isFinite(v.currentTime)?v.currentTime:null,
           userPaused: pausedByUser, vlcActive: vlc, mediaProgressAtMs: progressAt });
+        if (Date.now()-progressAt >= seconds*1000) recover("player-stall");
       }
       const body = document.body?.innerText || "";
       if (/\/embed\/live\//.test(location.pathname)) {
@@ -111,7 +152,11 @@
         }
       }
       captionState();
-    }, 1000);
-    root.addEventListener("pagehide",()=>{clearInterval(interval);cancel("document-ended");},{once:true});
+    };
+    const interval = setInterval(observe, 1000);
+    root.addEventListener("pageshow", observe);
+    root.addEventListener("online", observe);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) observe(); });
+    root.addEventListener("pagehide", event => { if (!event.persisted) { clearInterval(interval); cancel("document-ended"); } });
   }
 })(globalThis);

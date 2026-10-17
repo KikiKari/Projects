@@ -106,6 +106,7 @@
       failed: (token, reason) => fail(reason, token.generation),
       isCurrent: (token) => token.generation === generation && !disposed && validStream(),
       checkStream: validStream,
+      wake() { if (!disposed && validStream()) schedule("socket-close"); },
       stop(reason = "document-ended") { release(reason); enabled = false; publish("disabled", reason); },
       dispose() { this.stop(); disposed = true; template = null; }
     };

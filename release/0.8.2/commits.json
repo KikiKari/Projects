@@ -1,7 +1,8 @@
 {
   "version": "0.8.2",
-  "androidBuild": 12,
-  "iosBuild": 12,
-  "sourceCommit": "03ce9a236d3179f1df4c7f78cb69a54f860f2d99",
+  "androidBuild": 20,
+  "iosBuild": 20,
+  "sourceBaseCommit": "a88df791e4cc69be5b046d8451489cf3eeb82e7f",
+  "delivery": "Freigegebene Build-20-Nachlieferung; Quellen und Artefakte gemaess SHA256-Liste",
   "signingCertificateSha256": "e0823c1c0ffaee862569765e30b1c9ac0590066d912b04e5ca257d57f7c7a809"
 }
