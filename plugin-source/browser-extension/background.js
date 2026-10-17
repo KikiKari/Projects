@@ -22,7 +22,7 @@ function enqueueLiveMode(tabId, mode, task) {
   promise.then(clear, clear);
   return promise;
 }
-const SERIAL_TAB_EVENTS = new Set(["TLC_PAGE_STATE", "TLC_CAPTION", "TLC_MEDIA_FOUND", "TLC_CHAT_MESSAGE",
+const SERIAL_TAB_EVENTS = new Set(["TLC_PAGE_STATE", "TLC_CAPTION", "TLC_SET_LIVE_LOGS", "TLC_CLEAR_LIVE_LOGS", "TLC_MEDIA_FOUND", "TLC_CHAT_MESSAGE",
   "TLC_RECOVERY_MEDIA_OBSERVATION", "TLC_QUICK_RECOVER", "TLC_SET_HOOK_RECONNECT", "TLC_SET_QUICK_RECOVER", "TLC_HOOK_RECOVERY",
   "TLC_GIFT_MESSAGE", "TLC_LIVE_EVENT", "TLC_HOOK_STATUS", "TLC_PLAYER_STATE_PUSH", "TLC_DEBUG_EVENT"]);
 function enqueueTabEvent(tabId, task) {
@@ -104,6 +104,7 @@ function emptyState() {
       connectedStreams: 0, multiGuest: false
     },
     media: [],
+    liveLogsEnabled: false,
     captions: [],
     chatMessages: [],
     chatSourceTabId: null,
@@ -179,6 +180,7 @@ async function getState(tabId) {
     hookReconnect: { enabled: Boolean(state.hookReconnect?.enabled), seconds: normalizeRecoveryDelay(state.hookReconnect?.seconds) },
     speech: { ...defaults.speech, ...(state.speech || {}) },
     recovery: { ...defaults.recovery, ...(state.recovery || {}) },
+    liveLogsEnabled: state.liveLogsEnabled === true,
     captions: state.captions || [],
     media: state.media || [],
     debug: { ...defaults.debug, ...(state.debug || {}), entries: state.debug?.entries || [] }
@@ -569,6 +571,10 @@ async function addCaption(tabId, caption) {
   const entry = { ...caption, receivedAtUtc };
   state.captionSources = core.observeCaptionSource(state.captionSources, entry);
   state.captionInfo = core.summarizeCaptionSources(state.captionSources);
+  if (!state.liveLogsEnabled) {
+    await setState(tabId, state);
+    return;
+  }
   // Retain both observations even when their words overlap. Deduplicate only
   // exact repeats within a source; final/revised text for the same ID survives.
   const key = (item) => JSON.stringify([core.captionSource(item), item.sentenceId || null,
@@ -1977,6 +1983,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ ok: true, reloading: true, result });
         }
         break;
+      case "TLC_SET_LIVE_LOGS": {
+        const state = await getState(tabId);
+        state.liveLogsEnabled = message.enabled === true;
+        await setState(tabId, state);
+        sendResponse({ ok: true, state });
+        break;
+      }
+      case "TLC_CLEAR_LIVE_LOGS": {
+        const state = await getState(tabId);
+        state.captions = [];
+        await setState(tabId, state);
+        sendResponse({ ok: true, state });
+        break;
+      }
       case "TLC_CLEAR":
         {
           const state = await getState(tabId);
@@ -2118,6 +2138,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             captions: {
               rawJsonExportAvailable: true,
               jsonLinesExportAvailable: true,
+              loggingEnabled: state.liveLogsEnabled === true,
               protocolCount: state.captions.length,
               sources: captionSources,
               languages: captionLanguages

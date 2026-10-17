@@ -73,6 +73,7 @@ data class CompanionUiState(
     val pairingCode: String = "",
     val universalCaptionApiKey: String = "",
     val ttsVoice: String = "Systemstandard",
+    val liveLogsEnabled: Boolean = false,
     val captionRecords: List<CaptionRecord> = emptyList(),
     val recommendationStatus: String = "idle",
     val recommendationLimit: Int = 20,
@@ -439,6 +440,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     fun cancelRecommendationScan() { sendCommand?.invoke("cancel-recommendation-scan", emptyMap()) }
     fun captionJsonLines(): String = mutable.value.captionRecords.joinToString("\n") { it.rawJson }
     fun captionRawJson(): String = JSONArray(mutable.value.captionRecords.map { JSONObject(it.rawJson) }).toString(2)
+    fun setLiveLogsEnabled(enabled: Boolean) = mutable.update { it.copy(liveLogsEnabled = enabled) }
     fun clearCaptions() = mutable.update { it.copy(captionRecords = emptyList()) }
     fun setTtsEnabled(enabled: Boolean) { mutable.update { it.copy(ttsEnabled = enabled, speechQueue = if (enabled) it.speechQueue else emptyList()) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsEnabled(enabled) } } }
     fun setTtsVolume(volume: Int) { val value = volume.coerceIn(0, 100); mutable.update { it.copy(ttsVolume = value) }; preferences?.let { stored -> viewModelScope.launch { stored.setTtsVolume(value) } } }
@@ -484,7 +486,8 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             client.pairingCode = mutable.value.pairingCode
             client.universalKey = mutable.value.universalCaptionApiKey
             client.auddToken = mutable.value.auddToken
-            viewModelScope.launch { runCatching { client.capture(envelope) }.onFailure { error -> reportError(error.message ?: "Pipeline-Verbindung unterbrochen") } }
+            val recordLiveLogs = mutable.value.liveLogsEnabled
+            viewModelScope.launch { runCatching { client.capture(envelope, liveLogsEnabled = recordLiveLogs) }.onFailure { error -> reportError(error.message ?: "Pipeline-Verbindung unterbrochen") } }
         }
         if (connectionPaused && envelope.type in setOf("chat", "caption", "live-stats", "gift", "socket-open")) return
         val doc = envelope.payload["documentId"] as? String
@@ -590,7 +593,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 val language = (first?.get("lang") ?: envelope.payload["language"] ?: "").toString().take(24)
                 val value = (first?.get("text") ?: envelope.payload["text"] ?: "").toString().take(4_000)
                 val raw = JSONObject(mapOf("timestamp" to envelope.timestamp, "streamId" to envelope.streamId, "sentenceId" to (envelope.payload["sentenceId"] ?: ""), "definite" to (envelope.payload["definite"] ?: false), "language" to language, "text" to value, "source" to ((envelope.payload["source"] as? String)?.takeIf { it in setOf("websocket", "dom", "playerText") } ?: "websocket"))).toString()
-                mutable.update { it.copy(captionsAvailable = true, captionRecords = (it.captionRecords + CaptionRecord(envelope.timestamp, (envelope.payload["sentenceId"] ?: "").toString().take(64), envelope.payload["definite"] as? Boolean ?: false, language, value, raw)).takeLast(2000)) }
+                mutable.update { it.copy(captionsAvailable = true, captionRecords = if (it.liveLogsEnabled) (it.captionRecords + CaptionRecord(envelope.timestamp, (envelope.payload["sentenceId"] ?: "").toString().take(64), envelope.payload["definite"] as? Boolean ?: false, language, value, raw)).takeLast(2000) else it.captionRecords) }
                 captionExpiry?.cancel()
                 captionExpiry = viewModelScope.launch { delay(15_000); mutable.update { it.copy(captionsAvailable = false) } }
             }

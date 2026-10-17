@@ -85,11 +85,10 @@ struct ContentView: View {
     private func capability(_ label: String, _ available: Bool) -> some View { HStack { Text(label); Spacer(); Circle().fill(available ? Color.green : Color.red).frame(width: 10, height: 10) }.frame(minHeight: 46) }
     private var chatView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Chat").font(.headline)
-            Toggle("Vorlesen", isOn: Binding(get: { state.speechEnabled }, set: { state.setSpeechEnabled($0) })).toggleStyle(CompanionIconToggleStyle(hint: "Vorlesen"))
+            moduleHeader("Chat", count: state.chatLines.count, active: state.speechEnabled,
+                control: AnyView(Toggle("Vorlesen", isOn: Binding(get: { state.speechEnabled }, set: { state.setSpeechEnabled($0) })).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Vorlesen"))))
             Button { settingsOpen = true } label: { CompanionIconLabel(label: "Erweiterte Einstellungen", component: "settings") }.buttonStyle(.bordered)
             ForEach(Array(state.speechChatEntries.suffix(5).enumerated()), id: \.offset) { _, entry in HStack { Text(entry.author.isEmpty ? entry.content : "\(entry.author): \(entry.content)"); Spacer(); Button { state.speak(entry.content, author: entry.author) } label: { Image(systemName: "speaker.wave.2") }; if !entry.author.isEmpty { Button { state.muteAuthor(entry.author) } label: { Image(systemName: "speaker.slash") }.accessibilityLabel("Autor dauerhaft stummschalten") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
-            Text("Chatzeilen \(state.chatLines.count)")
             if state.chatLines.isEmpty { Text("Noch keine öffentlichen Chatzeilen empfangen.").foregroundStyle(.secondary) }
             HStack { Text("Top-Chatter").font(.subheadline.bold()); Spacer(); Button("Zurücksetzen", action: state.resetTopChatters).disabled(state.participants.isEmpty) }
             ForEach(Array(state.topChatters.prefix(20))) { chatter in HStack { Text(chatter.author); Spacer(); Text("\(chatter.messages) N · \(chatter.words) W").monospacedDigit(); Button { state.muteAuthor(chatter.author) } label: { Image(systemName: "speaker.slash") } }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
@@ -150,7 +149,22 @@ struct ContentView: View {
             ForEach(state.recommendationItems) { item in VStack(alignment: .leading) { Text("@\(item.handle)").bold(); Text(item.displayName); Text(item.viewerLabel.isEmpty ? item.viewerCount.map(String.init) ?? "–" : item.viewerLabel); if !item.title.isEmpty { Text(item.title).font(.footnote) }; Link("Stream öffnen", destination: item.url) }.padding().background(Design.surface).clipShape(RoundedRectangle(cornerRadius: 10)) }
         }
     }
-    private var playerView: some View { VStack(alignment: .leading, spacing: 12) { Text("Player").font(.headline); HStack { commandButton("Play", "play", "play.fill"); commandButton("Stop", "pause", "pause.fill"); commandButton("Mute", "mute", "speaker.slash.fill") }; HStack { commandButton("Unmute", "unmute", "speaker.wave.2.fill"); commandButton("Vollbild", "fullscreen", "arrow.up.left.and.arrow.down.right"); commandButton("PiP", "picture-in-picture", "pip") }; commandButton("Neu laden", "reload-player", "arrow.clockwise"); Button(action: state.toggleVlcReplacement) { CompanionIconLabel(label: "Player", component: "player") }.buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Button("VLC Player", action: openExternalVlc).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Text(state.vlcReplacementURL != nil ? state.nativeLimiterStatus : (state.limiterEnabled ? state.webLimiterStatus : "WebView · Pegelschutz aus")).font(.caption); Toggle("Pegelschutz", isOn: Binding(get: { state.limiterEnabled }, set: { state.setLimiter(enabled: $0) })).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Pegelschutz")); HStack { Text("Schutzstärke"); Slider(value: Binding(get: { Double(state.limiterStrength) }, set: { state.setLimiter(strength: Int($0)) }), in: 0...100); Text("\(state.limiterStrength)%").monospacedDigit() }; Text("HAR-Logs").font(.headline); ForEach(state.mediaLinks) { link in Link("\(link.label) · \(link.type)", destination: link.url).buttonStyle(.bordered) } } }
+    private var playerView: some View { VStack(alignment: .leading, spacing: 12) { moduleHeader("Player", active: state.limiterEnabled, reset: { state.sendCommand?("reload-player", [:]) }, resetLabel: "Neu laden", control: AnyView(Toggle("Pegelschutz", isOn: Binding(get: { state.limiterEnabled }, set: { state.setLimiter(enabled: $0) })).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Pegelschutz")))); HStack { commandButton("Play", "play", "play.fill"); commandButton("Stop", "pause", "pause.fill"); commandButton("Mute", "mute", "speaker.slash.fill") }; HStack { commandButton("Unmute", "unmute", "speaker.wave.2.fill"); commandButton("Vollbild", "fullscreen", "arrow.up.left.and.arrow.down.right"); commandButton("PiP", "picture-in-picture", "pip") }; Button(action: state.toggleVlcReplacement) { CompanionIconLabel(label: "Player", component: "player") }.buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Button("VLC Player", action: openExternalVlc).buttonStyle(.bordered).frame(maxWidth: .infinity).disabled(state.mediaLinks.isEmpty); Text(state.vlcReplacementURL != nil ? state.nativeLimiterStatus : (state.limiterEnabled ? state.webLimiterStatus : "WebView · Pegelschutz aus")).font(.caption); HStack { Text("Schutzstärke"); Slider(value: Binding(get: { Double(state.limiterStrength) }, set: { state.setLimiter(strength: Int($0)) }), in: 0...100); Text("\(state.limiterStrength)%").monospacedDigit() }; Text("HAR-Logs").font(.headline); ForEach(state.mediaLinks) { link in Link("\(link.label) · \(link.type)", destination: link.url).buttonStyle(.bordered) } } }
+    private func moduleHeader(_ title: String, count: Int? = nil, active: Bool? = nil, reset: (() -> Void)? = nil, resetLabel: String = "Reset", control: AnyView = AnyView(EmptyView())) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(.headline)
+            Spacer(minLength: 0)
+            if let count = count {
+                CounterActivityDot(count: count)
+                Text(String(count)).monospacedDigit().font(.caption)
+            }
+            if let reset = reset { Button(action: reset) { CompanionIconLabel(label: resetLabel, component: "reset") }.buttonStyle(.plain) }
+            control.fixedSize()
+            if let active = active {
+                Circle().fill(active ? Color.green : Color.red).frame(width: 11, height: 11).accessibilityLabel(active ? "aktiviert" : "deaktiviert")
+            }
+        }.frame(maxWidth: .infinity, alignment: .trailing)
+    }
     private func openExternalVlc() {
         guard let mediaURL = state.bestVlcMediaURL() else { return }
         var components = URLComponents(string: "vlc-x-callback://x-callback-url/stream")
@@ -174,17 +188,17 @@ struct ContentView: View {
             Text("Mehr").font(.headline)
             Text("Player-Recovery: \(state.autoReconnectEnabled ? state.playerRecovery["phase"] as? String ?? "aktiv" : "aus")").font(.footnote)
             Text("Hook-Reconnect: \(state.hookReconnectEnabled ? (state.hookRecovery["phase"] as? String).map { $0 == "native" ? "aktiv" : $0 } ?? "aktiv" : "aus")").font(.footnote)
-            Text("Connection").font(.headline)
+            moduleHeader("Connection", active: state.connectionEnabled, reset: { state.sendCommand?("refresh", [:]) },
+                control: AnyView(Toggle("Connection", isOn: Binding(get: { state.connectionEnabled }, set: { state.setConnectionEnabled($0) })).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Connection"))))
             HStack {
-                Toggle("Connection", isOn: Binding(get: { state.connectionEnabled }, set: { state.setConnectionEnabled($0) })).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Connection"))
                 Button(action: state.openNormal) { CompanionIconLabel(label: "Browser", component: "browser").frame(minHeight: 44) }
                 Button(action: state.toggleVlcReplacement) { CompanionIconLabel(label: "Player", component: "player") }.disabled(state.mediaLinks.isEmpty)
                 Button { connectionSettingsOpen = true } label: { CompanionIconLabel(label: "Connection-Einstellungen", component: "settings").frame(width: 44, height: 44) }.accessibilityLabel("Connection-Einstellungen")
             }.sheet(isPresented: $connectionSettingsOpen) { connectionSettingsView.environment(\.companionIconStyle, iconStyle).toggleStyle(CompanionIconToggleStyle()) }
             Button("Embed", action: state.openEmbed)
             Text("Embed: \(state.embedPhase) · Versuch \(state.embedAttempt)/3").font(.footnote)
-            Toggle("Debugmodus", isOn: $state.debugEnabled).toggleStyle(CompanionIconToggleStyle(hint: "Debugmodus"))
-            Text("\(state.debugEvents.count) bereinigte Diagnoseereignisse").font(.footnote).foregroundStyle(.secondary)
+            moduleHeader("Debugmodus", count: state.debugEvents.count, active: state.debugEnabled, reset: state.clearDebugEvents,
+                control: AnyView(Toggle("Diagnoseereignisse für diesen Tab protokollieren", isOn: $state.debugEnabled).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "Diagnoseereignisse für diesen Tab protokollieren"))))
             ForEach(Array(state.debugEvents.enumerated()), id: \.offset) { _, event in
                 Text(String(data: (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys])) ?? Data(), encoding: .utf8) ?? "{}")
                     .font(.caption2.monospaced())
@@ -194,22 +208,37 @@ struct ContentView: View {
                     let installed = UIApplication.shared.canOpenURL(URL(string: "vlc-x-callback://x-callback-url/stream")!)
                     UIPasteboard.general.string = state.debugReport(vlcInstalled: installed)
                 }.disabled(state.debugEvents.isEmpty)
-                Button("Leeren", action: state.clearDebugEvents).disabled(state.debugEvents.isEmpty)
             }
-            Text("LIVE-Logs").font(.headline)
-            Text("\(state.captionRecords.count) RAW-Untertitelereignisse").font(.footnote).foregroundStyle(.secondary)
+            moduleHeader("LIVE-Logs", count: state.captionRecords.count, active: state.liveLogsEnabled, reset: state.clearCaptions,
+                control: AnyView(Toggle("LIVE-Logs", isOn: $state.liveLogsEnabled).toggleStyle(CompanionIconToggleStyle(hideLabel: true, hint: "LIVE-Logs"))))
             HStack {
                 Button("JSON-L-Export") { captionExportDocument = CaptionExportDocument(content: state.captionJSONLines()); captionExportName = "tiktok-live-captions.jsonl"; captionExportOpen = true }.disabled(state.captionRecords.isEmpty)
                 Button("RAW-JSON-Export") { captionExportDocument = CaptionExportDocument(content: state.captionRawJSON()); captionExportName = "tiktok-live-caption-raw.json"; captionExportOpen = true }.disabled(state.captionRecords.isEmpty)
             }
-            Button("Caption-Protokoll leeren", action: state.clearCaptions).disabled(state.captionRecords.isEmpty)
             Button { state.sendCommand?("inspect", [:]) } label: { CompanionIconLabel(label: "Status", component: "status") }.buttonStyle(.borderedProminent)
             Button { state.sendCommand?("captions", [:]) } label: { CompanionIconLabel(label: "Untertitel", component: "captions") }.buttonStyle(.bordered)
-            Button { state.sendCommand?("refresh", [:]) } label: { CompanionIconLabel(label: "Reset", component: "reset") }.buttonStyle(.bordered)
             Button("Force") { state.sendCommand?("force-profile", [:]) }.buttonStyle(.bordered)
             Button { state.sendCommand?("open-report", [:]) } label: { CompanionIconLabel(label: "Meldung", component: "report") }.buttonStyle(.bordered)
             Text("Reset leert App- und WebView-Cache, behält Cookies bei und startet den Stream erneut.").font(.footnote).foregroundStyle(.secondary)
             Text("Nicht verfügbare WebView-Funktionen werden als Status angezeigt. Eine Meldung wird nie automatisch ausgefüllt oder abgesendet.").font(.footnote).foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct CounterActivityDot: View {
+    let count: Int
+    @State private var previous: Int?
+    @State private var receiving = false
+    var body: some View {
+        Circle().fill(receiving ? Color.green : Color.red).frame(width: 11, height: 11)
+            .accessibilityLabel(receiving ? "Counter: neue Einträge" : "Counter: keine neuen Einträge")
+            .task(id: count) {
+                receiving = previous.map { count > $0 } ?? false
+                previous = count
+                if receiving {
+                    try? await Task.sleep(nanoseconds: 30_000_000_000)
+                    if !Task.isCancelled { receiving = false }
+                }
+            }
     }
 }

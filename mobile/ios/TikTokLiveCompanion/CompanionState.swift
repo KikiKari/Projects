@@ -91,6 +91,7 @@ import Foundation
     @Published var universalCaptionApiKey = "" { didSet { defaults.set(String(universalCaptionApiKey.prefix(4096)), forKey: Self.universalApiKey); sendCommand?("set-pipeline-enabled", ["enabled": !universalCaptionApiKey.isEmpty]) } }
     @Published var speechLanguage = "Auto" { didSet { defaults.set(speechLanguage, forKey: Self.speechLanguageKey) } }
     @Published var speechVoice = "Systemstandard" { didSet { defaults.set(speechVoice, forKey: Self.speechVoiceKey) } }
+    @Published var liveLogsEnabled = false
     @Published var captionRecords: [CaptionRecord] = []
     @Published var recommendationStatus = "idle"
     @Published var recommendationLimit = 20
@@ -177,7 +178,8 @@ import Foundation
     func handle(_ envelope: BridgeEnvelope) {
         if !universalCaptionApiKey.isEmpty {
             let url = serviceURL, pairing = pairingCode, key = universalCaptionApiKey, audd = auddToken
-            Task { do { try await serviceClient.capture(envelope, baseURL: url, pairing: pairing, key: key, secrets: [audd]) } catch { lastError = "Pipeline-Verbindung unterbrochen; Daten bleiben vorgemerkt." } }
+            let recordLiveLogs = liveLogsEnabled
+            Task { do { try await serviceClient.capture(envelope, baseURL: url, pairing: pairing, key: key, secrets: [audd], liveLogsEnabled: recordLiveLogs) } catch { lastError = "Pipeline-Verbindung unterbrochen; Daten bleiben vorgemerkt." } }
         }
         if connectionPaused && ["chat", "caption", "live-stats", "gift", "socket-open"].contains(envelope.type) { return }
         if envelope.payload["frameKind"]?.stringValue != "sub", let doc = envelope.payload["documentId"]?.stringValue {
@@ -251,8 +253,10 @@ import Foundation
             let first = contents?.first?.objectValue
             let language = first?["lang"]?.stringValue ?? envelope.payload["language"]?.stringValue ?? ""
             let text = first?["text"]?.stringValue ?? envelope.payload["text"]?.stringValue ?? ""
-            captionRecords.append(CaptionRecord(timestamp: envelope.timestamp, sentenceId: envelope.payload["sentenceId"]?.stringValue ?? "", definite: envelope.payload["definite"]?.boolValue == true, language: language, text: text, raw: ["timestamp": envelope.timestamp, "sentenceId": envelope.payload["sentenceId"]?.stringValue ?? "", "language": language, "text": text, "definite": envelope.payload["definite"]?.boolValue == true]))
-            captionRecords = Array(captionRecords.suffix(2000))
+            if liveLogsEnabled {
+                captionRecords.append(CaptionRecord(timestamp: envelope.timestamp, sentenceId: envelope.payload["sentenceId"]?.stringValue ?? "", definite: envelope.payload["definite"]?.boolValue == true, language: language, text: text, raw: ["timestamp": envelope.timestamp, "sentenceId": envelope.payload["sentenceId"]?.stringValue ?? "", "language": language, "text": text, "definite": envelope.payload["definite"]?.boolValue == true]))
+                captionRecords = Array(captionRecords.suffix(2000))
+            }
             captionsAvailable = true; captionTask?.cancel()
             captionTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 15_000_000_000)
@@ -595,13 +599,14 @@ private enum RecoveryProjection {
         guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else { throw URLError(.badServerResponse) }
         return data
     }
-    func capture(_ envelope: BridgeEnvelope, baseURL: String, pairing: String, key: String, secrets: [String]) async throws {
+    func capture(_ envelope: BridgeEnvelope, baseURL: String, pairing: String, key: String, secrets: [String], liveLogsEnabled: Bool = false) async throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let mapping = ["caption": "title", "chat": "chat", "live-stats": "live", "inspection": "profile", "media-links": "media-links", "media-url": "media-links", "pipeline-document": "browser-tab"]
         let pipeline = ["pipeline-record", "pipeline-snapshot"].contains(envelope.type) ? (envelope.payload["pipeline"]?.stringValue ?? "debug-logs") : (mapping[envelope.type] ?? "debug-logs")
+        if pipeline == "live-logs" && !liveLogsEnabled { return }
         var types = [pipeline]
         if pipeline != "debug-logs" { types.append("debug-logs") }
-        if pipeline == "title" { types.append("live-logs") }
+        if pipeline == "title" && liveLogsEnabled { types.append("live-logs") }
         let document = envelope.payload["documentId"]?.stringValue ?? sessionID
         let initial = registeredDocuments.insert(document).inserted ? ["title", "chat", "speech-service", "sherpa", "top-chatters", "profile", "live", "songs", "media-links", "live-logs", "debug-logs", "browser-tab"].filter { !types.contains($0) } : []
         types = initial + types
