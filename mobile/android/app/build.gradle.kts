@@ -19,7 +19,7 @@ android {
         applicationId = "app.tiktoklivecompanion.android"
         minSdk = 21
         targetSdk = 36
-        versionCode = 20
+        versionCode = 21
         versionName = "0.8.2"
         buildConfigField("String", "COMPANION_FALLBACK_URL", "\"${companionFallback.get().replace("\"", "\\\"")}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

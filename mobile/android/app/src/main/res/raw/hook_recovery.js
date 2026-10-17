@@ -6,7 +6,7 @@
     later = setTimeout, cancel = clearTimeout }) {
     let enabled = false, seconds = 3, template = null, nativeReady = false;
     let generation = 0, timer = null, deadline = null, owned = null, attempt = null;
-    let failures = 0, disconnectedAtMs = null, disposed = false;
+    let failures = 0, disconnectedAtMs = null, disposed = false, scheduledAction = null;
     let currentIdentity = identity();
     function publish(phase, reason, extra = {}) {
       emit({ controller: "hook-reconnect", phase, reason, enabled, configuredDelayMs: seconds * 1000,
@@ -15,7 +15,7 @@
     function clearTimers() {
       if (timer != null) cancel(timer);
       if (deadline != null) cancel(deadline);
-      timer = deadline = null;
+      timer = deadline = null; scheduledAction = null;
     }
     function release(reason) {
       generation++;
@@ -43,8 +43,9 @@
         scheduledAtMs: now() + effectiveDelayMs, configuredDelayMs: seconds * 1000, effectiveDelayMs };
       publish("scheduled", reason);
       const expected = generation;
-      timer = later(() => {
-        timer = null;
+      scheduledAction = () => {
+        if (timer != null) cancel(timer);
+        timer = null; scheduledAction = null;
         if (expected !== generation || !enabled || !validStream() || nativeReady) return;
         attempt.startedAtMs = now();
         attempt.actualWaitMs = now() - detected;
@@ -53,7 +54,8 @@
         deadline = later(() => fail("timeout", expected), 10000);
         try { owned = connect(template, { id: attempt.id, generation: expected }); }
         catch (_) { fail("connect-error", expected); }
-      }, effectiveDelayMs);
+      };
+      timer = later(scheduledAction, effectiveDelayMs);
     }
     function fail(reason, expected) {
       if (expected !== generation || !attempt) return;
@@ -106,7 +108,12 @@
       failed: (token, reason) => fail(reason, token.generation),
       isCurrent: (token) => token.generation === generation && !disposed && validStream(),
       checkStream: validStream,
-      wake() { if (!disposed && validStream()) schedule("socket-close"); },
+      wake() {
+        if (disposed || !validStream()) return;
+        if (deadline != null && attempt?.startedAtMs != null && !attempt.completedAtMs && now() - attempt.startedAtMs >= 10000) fail("timeout", generation);
+        else if (timer != null && scheduledAction && now() >= attempt?.scheduledAtMs) scheduledAction();
+        else schedule("socket-close");
+      },
       stop(reason = "document-ended") { release(reason); enabled = false; publish("disabled", reason); },
       dispose() { this.stop(); disposed = true; template = null; }
     };

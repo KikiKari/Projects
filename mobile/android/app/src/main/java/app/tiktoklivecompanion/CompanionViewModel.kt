@@ -147,6 +147,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     private var bridgeReady = false
     private var hookReconnectRequested = false
     private var playerRecoveryRequested = false
+    private var nativePlayerStalledAt = 0L
+    private var nativePlayerTime: Double? = null
+    private var nativePlayerDocument: String? = null
+    private var nativePlayerAttempt = 0
     private var startupLimiterPending = false
     private var currentDocument: String? = null
     private val retiredDocuments = mutableSetOf<String>()
@@ -243,13 +247,15 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     }
     fun setFilterExternalSpeechTriggers(enabled: Boolean) { mutable.update { it.copy(filterExternalSpeechTriggers = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setFilterExternalSpeechTriggers(enabled) } } }
     fun setExternalSpeechTriggerCharacters(value: String) { val safe = ExternalSpeechTriggers.normalize(value); mutable.update { it.copy(externalSpeechTriggerCharacters = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setExternalSpeechTriggerCharacters(safe) } } }
+    fun clearChat() = mutable.update { it.copy(chats = emptyList(), chatEntries = emptyList()) }
+
     private fun scheduleChatRefresh() {
         chatRefreshJob?.cancel()
         if (!mutable.value.autoChatRefreshEnabled) return
         chatRefreshJob = viewModelScope.launch {
             while (true) {
                 delay(mutable.value.autoChatRefreshMinutes * 60_000L)
-                mutable.update { it.copy(chats = emptyList(), chatEntries = emptyList()) }
+                clearChat()
             }
         }
     }
@@ -272,9 +278,10 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val dispatch = sendCommand ?: return reportError("Connection ist noch nicht bereit")
         dispatch("set-connection", mapOf("enabled" to enabled))
     }
-    fun resetPage() {
+    fun resetPage() = reloadWebPage(enableConnection = true)
+    private fun reloadWebPage(enableConnection: Boolean) {
         val reload = reloadPage ?: return reportError("Browser ist noch nicht bereit")
-        connectionRequested = true
+        if (enableConnection) connectionRequested = true
         backgroundPlaybackChanged?.invoke(true)
         reload()
     }
@@ -321,6 +328,9 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         recovery?.let { currentWebUrl = it; loadUrl?.invoke(it) }
     }
     fun noteNavigation(url: String) {
+        nativePlayerStalledAt = 0L
+        nativePlayerTime = null
+        nativePlayerDocument = null
         bridgeReady = false
         startupLimiterPending = false
         currentDocument?.let { retiredDocuments.add(it) }
@@ -380,6 +390,53 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         }
         pushLimiter()
     }
+    fun observeNativeRecovery(snapshot: JSONObject, pageUrl: String?) {
+        val s = mutable.value
+        val document = snapshot.optString("documentId")
+        if (!snapshot.optBoolean("ready") || document.isBlank() || document in retiredDocuments) return
+        if (currentDocument != null && currentDocument != document) return
+        if (pageUrl?.startsWith("https://www.tiktok.com/") != true) return
+        val hasLiveTarget = StreamNameNormalizer.liveUrl(s.streamName) != null && currentWebUrl.contains("/live")
+        if (!hasLiveTarget || !playerRecoveryRequested || s.vlcReplacementUrl != null || s.forceInProgress || snapshot.optBoolean("pausedByUser") || snapshot.optBoolean("awaitingGesture") || snapshot.optBoolean("vlcActive")) {
+            nativePlayerStalledAt = 0L
+            nativePlayerTime = null
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (nativePlayerDocument != document || nativePlayerStalledAt == 0L) {
+            nativePlayerDocument = document
+            nativePlayerStalledAt = now
+            nativePlayerTime = null
+        }
+        val time = snapshot.optDouble("currentTime", Double.NaN).takeIf { it.isFinite() }
+        val previous = nativePlayerTime
+        nativePlayerTime = time
+        if (time != null && previous != null && time > previous + 0.001) {
+            nativePlayerStalledAt = now
+            nativePlayerAttempt = 0
+            return
+        }
+        val needsPage = !snapshot.optBoolean("videoPresent") || snapshot.optBoolean("ended")
+        val waitMs = s.autoReconnectDelaySeconds * 1000L + if (needsPage) 0L else 10_000L
+        if (now - nativePlayerStalledAt < waitMs) return
+        nativePlayerStalledAt = now
+        nativePlayerAttempt++
+        mutable.update { it.copy(playerRecovery = mapOf("phase" to "reloading", "reason" to if (needsPage) "video-unavailable" else "player-stall", "attempt" to nativePlayerAttempt, "configuredDelayMs" to s.autoReconnectDelaySeconds * 1000L)) }
+        // Use the same native WebView reload as the working manual action, without changing Hook On/Off.
+        val onLivePage = pageUrl.contains("/live")
+        if (onLivePage) reloadWebPage(enableConnection = false)
+        else loadUrl?.invoke(currentWebUrl)
+    }
+
+    fun recoveryConfiguration(): Map<String, Any?> = mutable.value.let { state -> mapOf(
+        "connection" to connectionRequested,
+        "hook" to hookReconnectRequested,
+        "hookSeconds" to state.hookReconnectDelaySeconds,
+        "player" to playerRecoveryRequested,
+        "playerSeconds" to state.autoReconnectDelaySeconds,
+        "vlc" to (state.vlcReplacementUrl != null)
+    ) }
+
     private fun pushRecovery() {
         if (!bridgeReady) return
         val s = mutable.value
