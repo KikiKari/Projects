@@ -305,6 +305,10 @@ private final class FakeRecognizer: RecognitionService {
         state.pairingCode = "pair"
         state.universalCaptionApiKey = "caption"
         state.autoReconnectDelaySeconds = 59
+        XCTAssertFalse(state.liveLogsEnabled)
+        state.handle(BridgeEnvelope(version: 1, type: "caption", streamId: "live", sequence: 1, timestamp: "2026-08-13T12:00:00Z", payload: ["sentenceId": .string("1"), "definite": .bool(true), "contents": .array([.object(["lang": .string("de"), "text": .string("Hallo")])])]))
+        XCTAssertTrue(state.captionRecords.isEmpty)
+        state.liveLogsEnabled = true
         state.handle(BridgeEnvelope(version: 1, type: "caption", streamId: "live", sequence: 1, timestamp: "2026-08-13T12:00:00Z", payload: ["sentenceId": .string("1"), "definite": .bool(true), "contents": .array([.object(["lang": .string("de"), "text": .string("Hallo")])])]))
         XCTAssertEqual(state.captionRecords.count, 1)
         XCTAssertTrue(state.captionJSONLines().contains("Hallo"))
@@ -347,6 +351,8 @@ private final class FakeRecognizer: RecognitionService {
     func testDiagnosisExcludesCaptionAndCredentialsButExplicitCaptionExportKeepsText() {
         let state = recoveryState(#function)
         state.debugEnabled = true
+        XCTAssertFalse(state.liveLogsEnabled)
+        state.liveLogsEnabled = true
         state.handle(event("caption", ["text": .string("private-caption"), "token": .string("private-token")]))
         state.handle(event("hook-recovery", ["phase": .string("failed"), "url": .string("https://secret.invalid/signed")]))
         let report = state.debugReport(vlcInstalled: false)
