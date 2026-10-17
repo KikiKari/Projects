@@ -46,9 +46,47 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
     }
 }
 
+private class RecoveryWebView(context: Context) : WebView(context) {
+    var navigationGeneration = 0
+    var pageLoaded = false
+    private var disposed = false
+    private var monitor: Runnable? = null
+
+    fun monitorRecovery(script: () -> String, observed: (JSONObject) -> Unit = {}) {
+        val task = object : Runnable {
+            private var pendingAt = 0L
+            override fun run() {
+                if (disposed) return
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (pageLoaded && (pendingAt == 0L || now - pendingAt >= 5_000L)) {
+                    val generation = navigationGeneration
+                    val ticket = now
+                    pendingAt = ticket
+                    evaluateJavascript(script()) { result ->
+                        if (pendingAt != ticket) return@evaluateJavascript
+                        pendingAt = 0L
+                        if (!disposed && pageLoaded && generation == navigationGeneration) {
+                            runCatching { JSONObject(result) }.getOrNull()?.let(observed)
+                        }
+                    }
+                }
+                postDelayed(this, 1_000L)
+            }
+        }
+        monitor = task
+        post(task)
+    }
+    fun disposeRecovery() {
+        disposed = true
+        monitor?.let { removeCallbacks(it) }
+        stopLoading()
+        destroy()
+    }
+}
+
 @Composable fun CompanionWebView(viewModel: CompanionViewModel, modifier: Modifier = Modifier, onTap: () -> Unit = {}) {
     AndroidView(modifier = modifier, factory = { context ->
-        val webView = WebView(context).apply {
+        val webView = RecoveryWebView(context).apply {
             val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.hook_recovery, R.raw.export_privacy, R.raw.android_recovery, R.raw.recovery_hook, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -72,11 +110,15 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             }
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                    navigationGeneration++
+                    pageLoaded = false
                     url?.let(viewModel::noteNavigation)
                     super.onPageStarted(view, url, favicon)
                 }
                 override fun onPageFinished(view: WebView, url: String?) {
                     super.onPageFinished(view, url)
+                    if (view.url != url) return
+                    pageLoaded = true
                     // Older WebViews may lack document-start injection. Do not leave commands as silent no-ops.
                     view.evaluateJavascript("typeof globalThis.TLC_MOBILE_BRIDGE?.command === 'function'") { ready ->
                         if (ready != "true" && view.url == url && url?.startsWith("https://www.tiktok.com/") == true) {
@@ -121,8 +163,33 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             } }
             viewModel.loadUrl = { url -> post { loadUrl(url) } }
             viewModel.reloadPage = { post { reload() } }
+            val hookSource = listOf(R.raw.proto_main, R.raw.hook_recovery, R.raw.recovery_hook).joinToString("\n") { context.raw(it) }
+            val repairBridge = """(function(){
+                if (location.origin !== 'https://www.tiktok.com') return;
+                if (!globalThis.TLC_MOBILE_RECOVERY) { ${context.raw(R.raw.android_recovery)} }
+                if (!globalThis[Symbol.for('tiktok-live-companion.ws-hook')]) { $hookSource }
+                if (typeof globalThis.TLC_MOBILE_BRIDGE?.command !== 'function') { ${context.raw(R.raw.webview_bridge)} }
+            })()""".trimIndent()
+            monitorRecovery(script = {
+                val config = JSONObject(viewModel.recoveryConfiguration()).toString()
+                """(function(){
+                    if (location.origin !== 'https://www.tiktok.com') return {ready:false};
+                    const bridge = globalThis.TLC_MOBILE_BRIDGE;
+                    if (typeof bridge?.command !== 'function' || !globalThis.TLC_MOBILE_RECOVERY?.snapshot || !globalThis[Symbol.for('tiktok-live-companion.ws-hook')]) return {ready:false};
+                    const config = $config;
+                    bridge.command('set-connection', {enabled:config.connection});
+                    bridge.command('set-hook-reconnect', {enabled:config.hook, delaySeconds:config.hookSeconds});
+                    bridge.command('set-auto-reconnect', {enabled:config.player, delaySeconds:config.playerSeconds});
+                    bridge.command('set-vlc-active', {active:config.vlc});
+                    globalThis.TLC_MOBILE_RECOVERY?.wake?.();
+                    return globalThis.TLC_MOBILE_RECOVERY.snapshot();
+                })()""".trimIndent()
+            }, observed = { snapshot ->
+                if (!snapshot.optBoolean("ready") && url?.startsWith("https://www.tiktok.com/") == true) evaluateJavascript(repairBridge, null)
+                else viewModel.observeNativeRecovery(snapshot, url)
+            })
             loadUrl(viewModel.currentWebUrl)
         }
         TapDetectingFrameLayout(context, onTap).apply { addView(webView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)) }
-    })
+    }, onRelease = { holder -> (holder.getChildAt(0) as? RecoveryWebView)?.disposeRecovery() })
 }

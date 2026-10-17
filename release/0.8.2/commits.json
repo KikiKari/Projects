@@ -1,9 +1,8 @@
 {
   "version": "0.8.2",
-  "androidBuild": 20,
-  "iosBuild": 20,
-  "sourceBaseCommit": "0a5d8bfb4fdc688370ca9c7f6c0de284c81d78e3",
-  "androidSourceCommit": "1e9a80baafaee05a7519d77811c1524cf1db6cc8",
-  "delivery": "Freigegebene Build-20-Nachlieferung; exakte gelieferte Quellen und Artefakte gemaess SHA256-Liste",
+  "androidBuild": 21,
+  "iosBuild": 21,
+  "acceptedSourceCommit": "fde797f6e511935256f9783a91628513aedf8ae9",
+  "buildSourceCommit": "589c38b4fb3c20d2b7af358d0a5314e236a39aad",
   "signingCertificateSha256": "e0823c1c0ffaee862569765e30b1c9ac0590066d912b04e5ca257d57f7c7a809"
 }

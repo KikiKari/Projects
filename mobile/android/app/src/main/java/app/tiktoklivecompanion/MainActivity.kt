@@ -22,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardActions
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -184,10 +186,14 @@ class MainActivity : ComponentActivity() {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CompanionModuleHeader(count = state.chatEntries.size, active = state.ttsEnabled) {
-                CompanionIconSwitch(state.ttsEnabled, model::setTtsEnabled, label = "Vorlesen", enabled = ttsReady)
-            }
-            Text("Lautstärke ${state.ttsVolume} %")
+            CompanionAdaptiveHeader(
+                leading = { Text("Lautstärke ${state.ttsVolume} %") },
+                actions = {
+                    CompanionModuleActions(count = state.chatEntries.size, active = state.ttsEnabled, reset = model::clearChat) {
+                        CompanionIconSwitch(state.ttsEnabled, model::setTtsEnabled, label = "Vorlesen", enabled = ttsReady)
+                    }
+                }
+            )
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
             OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Erweiterte Einstellungen", "settings") }
         } }
@@ -282,14 +288,14 @@ class MainActivity : ComponentActivity() {
         CompanionModuleHeader(active = state.limiterEnabled, reset = { model.sendCommand?.invoke("reload-player", emptyMap()) }, resetLabel = "Neu laden") {
             CompanionIconSwitch(state.limiterEnabled, model::setLimiterEnabled, label = "Pegelschutz")
         }
+        OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Player", "player") }
+        OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         listOf("play" to "Play", "pause" to "Stop", "mute" to "Mute", "unmute" to "Unmute").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel(label, when (command) { "pause" -> "stop"; else -> command }) } } } }
         if (state.playerMuted != false || state.audibleStartBlocked) Button(onClick = model::enableStreamSound, modifier = Modifier.fillMaxWidth()) { Text("Ton aktivieren") }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Vollbild nativ: Bridge-„fullscreen" greift im mobilen WebView nicht (0PE-54); PiP ist Nicht-Ziel.
             OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { CompanionIconLabel("Vollbild", "fullscreen") }
         }
-        OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Player", "player") }
-        OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(if (state.vlcReplacementUrl != null) state.nativeLimiterStatus else if (state.limiterEnabled) state.webLimiterStatus else "WebView · Pegelschutz aus", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
@@ -311,14 +317,20 @@ class MainActivity : ComponentActivity() {
         if (uri != null) context.contentResolver.openOutputStream(uri)?.use { it.write(pendingCaptionExport.toByteArray(Charsets.UTF_8)) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        CompanionModuleHeader(active = state.connectionEnabled, reset = model::resetPage) {
-            CompanionIconSwitch(state.connectionEnabled, model::setConnectionEnabled, label = "Connection")
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = model::openNormal) { CompanionIconLabel("Browser", "browser") }
-            OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { CompanionIconLabel("Player", "player") }
-            IconButton(onClick = { connectionSettingsOpen = true }) { CompanionIconLabel("Connection-Einstellungen", "settings") }
-        }
+        CompanionAdaptiveHeader(
+            leading = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = model::openNormal, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel("Browser", "browser") }
+                    OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel("Player", "player") }
+                }
+            },
+            actions = {
+                CompanionModuleActions(active = state.connectionEnabled, reset = model::resetPage) {
+                    CompanionIconSwitch(state.connectionEnabled, model::setConnectionEnabled, label = "Connection")
+                }
+            }
+        )
+        OutlinedButton(onClick = { connectionSettingsOpen = true }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Connection-Einstellungen", "settings") }
         listOf("inspect" to "Status", "captions" to "Untertitel", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { if (command == "refresh") model.resetPage() else model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
         CompanionIconStylePicker()
         Text("Player-Recovery: ${if (!state.autoReconnectEnabled) "aus" else state.playerRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
@@ -361,6 +373,37 @@ inline fun <reified T : androidx.lifecycle.ViewModel> simpleViewModelFactory(cro
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         else Spacer(Modifier.weight(1f))
+        CompanionModuleActions(count, active, reset, resetLabel, control)
+    }
+}
+
+@Composable private fun CompanionAdaptiveHeader(leading: @Composable () -> Unit, actions: @Composable () -> Unit) {
+    Layout(content = {
+        Box { leading() }
+        Box { actions() }
+    }, modifier = Modifier.fillMaxWidth()) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val leadingPlaceable = measurables[0].measure(loose)
+        val actionsPlaceable = measurables[1].measure(loose)
+        val gap = 8.dp.roundToPx()
+        val width = constraints.maxWidth
+        val sameLine = leadingPlaceable.width + gap + actionsPlaceable.width <= width
+        val height = constraints.constrainHeight(if (sameLine) maxOf(leadingPlaceable.height, actionsPlaceable.height) else leadingPlaceable.height + gap + actionsPlaceable.height)
+        layout(width, height) {
+            leadingPlaceable.placeRelative(0, if (sameLine) (height - leadingPlaceable.height) / 2 else 0)
+            actionsPlaceable.placeRelative(width - actionsPlaceable.width, if (sameLine) (height - actionsPlaceable.height) / 2 else leadingPlaceable.height + gap)
+        }
+    }
+}
+
+@Composable private fun CompanionModuleActions(
+    count: Int? = null,
+    active: Boolean? = null,
+    reset: (() -> Unit)? = null,
+    resetLabel: String = "Reset",
+    control: @Composable () -> Unit = {}
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (count != null) {
             var previousCount by remember { mutableStateOf(count) }
             var receiving by remember { mutableStateOf(false) }

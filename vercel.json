@@ -40,7 +40,7 @@
   "redirects": [
     {
       "source": "/downloads/tiktok-live-companion-android-0.8.2.apk",
-      "destination": "https://github.com/KikiKari/Projects/releases/download/tlc-android-v0.8.2-build20/tiktok-live-companion-android-0.8.2.apk",
+      "destination": "https://github.com/KikiKari/Projects/releases/download/tlc-android-v0.8.2-build21/tiktok-live-companion-android-0.8.2.apk",
       "permanent": false
     }
   ]
