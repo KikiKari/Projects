@@ -977,7 +977,7 @@
     elements["hook-reconnect"].checked = Boolean(state.hookReconnect?.enabled);
     elements["hook-reconnect-seconds"].value = String(state.hookReconnect?.seconds ?? 3);
     const phases = { disabled: "aus", waiting: "wartet", unavailable: "Protokoll noch nicht bestätigt",
-      scheduled: "Versuch geplant", connecting: "verbindet", native: "TikTok-Verbindung aktiv",
+      scheduled: "Versuch geplant", connecting: "verbindet", native: "aktiv",
       "socket-open": "Socket offen", "first-frame": "erster Frame empfangen",
       "first-decoded-message": "Daten empfangen", connected: "wieder verbunden",
       failed: "Versuch fehlgeschlagen", cancelled: "Versuch beendet" };

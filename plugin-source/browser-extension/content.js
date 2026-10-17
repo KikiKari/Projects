@@ -51,6 +51,7 @@
   let nativePauseIntent = null;
   let lastQuickRecoverReason = "";
   let quickRecoverPending = false;
+  let quickRecoverPendingSince = 0;
   let fullscreenWasActive = false;
   let liveProSeenHandle = "";
   let sponsoredContentSeenHandle = "";
@@ -1065,7 +1066,12 @@
   }
 
   async function tryQuickRecover(reason) {
-    if (quickRecoverPending) return;
+    if (quickRecoverPending) {
+      if (Date.now() - quickRecoverPendingSince < Math.max(30000, quickRecoverConfirmMs + 10000)) return;
+      quickRecoverPending = false;
+      quickRecoverReasonSince = Date.now();
+      quickRecoverAttemptId = crypto.randomUUID();
+    }
     dismissTimedLiveInterruption();
     quickRecoverFailures += 1;
     const now = Date.now();
@@ -1079,17 +1085,25 @@
     if (now - quickRecoverReasonSince < quickRecoverConfirmMs) return;
     quickRecoverFailures = 0;
     quickRecoverPending = true;
+    quickRecoverPendingSince = now;
+    const requestId = quickRecoverAttemptId;
+    const retry = () => {
+      if (quickRecoverAttemptId !== requestId) return;
+      quickRecoverPending = false;
+      quickRecoverReasonSince = Date.now();
+      quickRecoverAttemptId = crypto.randomUUID();
+    };
     chrome.runtime.sendMessage({ type: "TLC_QUICK_RECOVER", reason, recoveryAttempt: {
       id: quickRecoverAttemptId, documentId: embedDocumentId,
       detectedAtMs: quickRecoverReasonSince, scheduledAtMs: quickRecoverReasonSince + quickRecoverConfirmMs,
       requestedAtMs: now, configuredDelayMs: quickRecoverConfirmMs
     } })
-      .then((response) => { if (!response?.reloading) quickRecoverPending = false; })
-      .catch(() => { quickRecoverPending = false; });
+      .then((response) => { if (!response?.reloading) retry(); })
+      .catch(retry);
   }
 
   function monitorQuickRecover() {
-    setInterval(() => {
+    const observe = () => {
       // Embed startup has its own bounded controller. Never race it with the
       // normal-mode quick-recovery reload loop.
       if (/^\/embed\/live\//i.test(location.pathname)) return;
@@ -1103,7 +1117,11 @@
         return;
       }
       tryQuickRecover(reason).catch((error) => debug("quick-recover-error", { reason, error: String(error?.message || error).slice(0, 300) }));
-    }, QUICK_RECOVER_INTERVAL_MS);
+    };
+    setInterval(observe, QUICK_RECOVER_INTERVAL_MS);
+    window.addEventListener("pageshow", observe);
+    window.addEventListener("online", observe);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) observe(); });
   }
 
   function pushFullscreenState(reason) {

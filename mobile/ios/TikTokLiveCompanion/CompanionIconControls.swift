@@ -27,7 +27,7 @@ struct CompanionIconToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         let control = Button { configuration.isOn.toggle() } label: {
             HStack { if !hideLabel { configuration.label; Spacer() }; CompanionControlIcon(component: configuration.isOn ? "on" : "off").frame(width: 48, height: 48) }
-        }.buttonStyle(.plain).accessibilityElement(children: .combine).accessibilityValue(configuration.isOn ? "On" : "Off").help(hint.isEmpty ? (configuration.isOn ? "Off" : "On") : hint)
+        }.buttonStyle(.plain).accessibilityElement(children: .combine).accessibilityValue(configuration.isOn ? "On" : "Off").help(hint.isEmpty ? (configuration.isOn ? "On" : "Off") : "\(hint): \(configuration.isOn ? "On" : "Off")")
         if hideLabel { control.accessibilityLabel(hint) } else { control }
     }
 }

@@ -25,9 +25,7 @@ class CompanionServiceClient(context: Context) {
     private val registeredDocuments = mutableSetOf<String>()
     private var currentDocument = sessionId
     internal var http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build()
-    var baseUrl: String
-        get() = preferences.getString("baseUrl", "")?.takeIf { it.isNotBlank() } ?: BuildConfig.COMPANION_FALLBACK_URL
-        set(value) { preferences.edit().putString("baseUrl", value.trim()).apply() }
+    val baseUrl: String = CompanionEndpoint.local
     var pairingCode = ""
     var universalKey = ""
     var auddToken = ""

@@ -137,10 +137,16 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
     val state: StateFlow<CompanionUiState> = mutable
     var sendCommand: ((String, Map<String, Any>) -> Unit)? = null
     var loadUrl: ((String) -> Unit)? = null
+    var reloadPage: (() -> Unit)? = null
     var backgroundPlaybackChanged: ((Boolean) -> Unit)? = null
     var currentWebUrl: String = "https://www.tiktok.com/live"
         private set
     private var connectionPaused = false
+    private var connectionRequested = true
+    private var bridgeReady = false
+    private var hookReconnectRequested = false
+    private var playerRecoveryRequested = false
+    private var startupLimiterPending = false
     private var currentDocument: String? = null
     private val retiredDocuments = mutableSetOf<String>()
     private var embedJob: Job? = null
@@ -186,9 +192,9 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
             viewModelScope.launch { stored.ttsLanguage.collectLatest { value -> mutable.update { it.copy(ttsLanguage = value) } } }
             viewModelScope.launch { stored.ttsSpeakNames.collectLatest { value -> mutable.update { it.copy(ttsSpeakNames = value) } } }
             viewModelScope.launch { stored.ttsShortenNames.collectLatest { value -> mutable.update { it.copy(ttsShortenNames = value) } } }
-            viewModelScope.launch { stored.autoReconnect.collectLatest { value -> mutable.update { it.copy(autoReconnectEnabled = value) }; pushRecovery() } }
+            viewModelScope.launch { stored.autoReconnect.collectLatest { value -> playerRecoveryRequested = value; pushRecovery() } }
             viewModelScope.launch { stored.autoReconnectDelay.collectLatest { value -> mutable.update { it.copy(autoReconnectDelaySeconds = value) }; pushRecovery() } }
-            viewModelScope.launch { stored.hookEnabled.collectLatest { value -> mutable.update { it.copy(hookReconnectEnabled = value) }; pushRecovery() } }
+            viewModelScope.launch { stored.hookEnabled.collectLatest { value -> hookReconnectRequested = value; pushRecovery() } }
             viewModelScope.launch { stored.hookDelay.collectLatest { value -> mutable.update { it.copy(hookReconnectDelaySeconds = value) }; pushRecovery() } }
             viewModelScope.launch { stored.auddToken.collectLatest { value -> mutable.update { it.copy(auddToken = value) } } }
             viewModelScope.launch { stored.pairingCode.collectLatest { value -> mutable.update { it.copy(pairingCode = value) } } }
@@ -256,8 +262,20 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         preferences?.let { stored -> viewModelScope.launch { stored.setAutoChatRefreshMinutes(safe) } }
     }
     fun setConnectionEnabled(enabled: Boolean) {
+        connectionRequested = enabled
+        if (enabled) {
+            // Capture the site's new sockets from document start, as in the browser extension.
+            resetPage()
+            return
+        }
         val dispatch = sendCommand ?: return reportError("Connection ist noch nicht bereit")
         dispatch("set-connection", mapOf("enabled" to enabled))
+    }
+    fun resetPage() {
+        val reload = reloadPage ?: return reportError("Browser ist noch nicht bereit")
+        connectionRequested = true
+        backgroundPlaybackChanged?.invoke(true)
+        reload()
     }
     fun setGameMode(enabled: Boolean) { mutable.update { it.copy(gameModeEnabled = enabled) }; preferences?.let { stored -> viewModelScope.launch { stored.setGameMode(enabled) } } }
     fun setAuddToken(value: String) { val safe = value.take(4096); mutable.update { it.copy(auddToken = safe) }; preferences?.let { stored -> viewModelScope.launch { stored.setAuddToken(safe) } } }
@@ -302,10 +320,12 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         recovery?.let { currentWebUrl = it; loadUrl?.invoke(it) }
     }
     fun noteNavigation(url: String) {
+        bridgeReady = false
+        startupLimiterPending = false
         currentDocument?.let { retiredDocuments.add(it) }
         currentDocument = null
         captionExpiry?.cancel()
-        mutable.update { it.copy(captionsAvailable = false, captionSources = emptyMap(), hookRecovery = emptyMap(), playerRecovery = emptyMap()) }
+        mutable.update { it.copy(connected = false, connectionEnabled = false, hookAvailable = false, hookReconnectEnabled = false, autoReconnectEnabled = false, captionsAvailable = false, captionSources = emptyMap(), hookRecovery = emptyMap(), playerRecovery = emptyMap()) }
         if (url.matches(Regex("https://www\\.tiktok\\.com/@[^/]+/live(?:[/?#].*)?"))) currentWebUrl = url
     }
     fun openStream() {
@@ -360,13 +380,14 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         pushLimiter()
     }
     private fun pushRecovery() {
+        if (!bridgeReady) return
         val s = mutable.value
-        sendCommand?.invoke("set-hook-reconnect", mapOf("enabled" to s.hookReconnectEnabled, "delaySeconds" to s.hookReconnectDelaySeconds))
-        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to s.autoReconnectEnabled, "delaySeconds" to s.autoReconnectDelaySeconds))
+        sendCommand?.invoke("set-hook-reconnect", mapOf("enabled" to hookReconnectRequested, "delaySeconds" to s.hookReconnectDelaySeconds))
+        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to playerRecoveryRequested, "delaySeconds" to s.autoReconnectDelaySeconds))
         sendCommand?.invoke("set-vlc-active", mapOf("active" to (s.vlcReplacementUrl != null)))
     }
     fun setHookReconnect(enabled: Boolean) {
-        mutable.update { it.copy(hookReconnectEnabled = enabled) }; pushRecovery()
+        hookReconnectRequested = enabled; pushRecovery()
         preferences?.let { viewModelScope.launch { it.setHookEnabled(enabled) } }
     }
     fun setHookReconnectDelay(seconds: Int) {
@@ -400,7 +421,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         noteNavigation(currentWebUrl); loadUrl?.invoke(currentWebUrl)
     }
     fun setAutoReconnect(enabled: Boolean) {
-        mutable.update { it.copy(autoReconnectEnabled = enabled) }
+        playerRecoveryRequested = enabled
         preferences?.let { stored -> viewModelScope.launch { stored.setAutoReconnect(enabled) } }
         sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to enabled, "delaySeconds" to mutable.value.autoReconnectDelaySeconds))
     }
@@ -408,7 +429,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         val safe = seconds.coerceIn(1, 59)
         mutable.update { it.copy(autoReconnectDelaySeconds = safe) }
         preferences?.let { stored -> viewModelScope.launch { stored.setAutoReconnectDelay(safe) } }
-        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to safe))
+        sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to playerRecoveryRequested, "delaySeconds" to safe))
     }
     fun startRecommendationScan(limit: Int) {
         val safe = limit.coerceIn(1, 300)
@@ -448,6 +469,7 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         mutable.update { it.copy(speechQueue = (it.speechQueue + request).takeLast(5)) }
     }
     private fun pushLimiter() {
+        startupLimiterPending = false
         val current = mutable.value
         sendCommand?.invoke("set-limiter", mapOf("enabled" to current.limiterEnabled, "strength" to current.limiterStrength))
     }
@@ -473,12 +495,16 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
         }
         mutable.update {
             val events = if (it.debugEnabled) (it.debugEvents + RecoveryDiagnostics.event(envelope)).takeLast(2000) else it.debugEvents
-            it.copy(connected = true, debugEvents = events)
+            it.copy(debugEvents = events)
         }
         when (envelope.type) {
             "recovery-ready" -> pushRecovery()
-            "hook-status" -> mutable.update { it.copy(hookAvailable = envelope.payload["installed"] == true) }
-            "hook-recovery" -> mutable.update { it.copy(hookRecovery = RecoveryDiagnostics.hook(envelope.payload)) }
+            "hook-status" -> mutable.update { it.copy(
+                hookAvailable = envelope.payload["installed"] == true,
+                connectionEnabled = connectionRequested && !connectionPaused && envelope.payload["installed"] == true && envelope.payload["armed"] == true,
+                connected = !connectionPaused && envelope.payload["connected"] == true
+            ) }
+            "hook-recovery" -> mutable.update { it.copy(hookRecovery = RecoveryDiagnostics.hook(envelope.payload), hookReconnectEnabled = envelope.payload["enabled"] == true) }
             "player-recovery" -> {
                 mutable.update { it.copy(playerRecovery = RecoveryDiagnostics.project(envelope.payload)) }
                 if (mutable.value.embedMode && envelope.payload["phase"] == "awaiting-gesture") {
@@ -493,22 +519,27 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                 embedJob?.cancel()
                 mutable.update { it.copy(embedPhase = if (envelope.payload["reason"] == "ended") "ended" else "login-required") }
             }
-            "player-observation" -> if (mutable.value.embedMode && mutable.value.embedPhase in setOf("loading", "awaiting-gesture") && envelope.payload["playing"] == true) {
-                embedJob?.cancel(); mutable.update { it.copy(embedPhase = "playing") }
+            "player-observation" -> if (envelope.payload["playing"] == true) {
+                if (startupLimiterPending && mutable.value.vlcReplacementUrl == null) pushLimiter()
+                if (mutable.value.embedMode && mutable.value.embedPhase in setOf("loading", "awaiting-gesture")) {
+                    embedJob?.cancel(); mutable.update { it.copy(embedPhase = "playing") }
+                }
             }
             "bridge-ready" -> {
+                bridgeReady = true
+                sendCommand?.invoke("set-connection", mapOf("enabled" to connectionRequested))
                 sendCommand?.invoke("set-pipeline-enabled", mapOf("enabled" to mutable.value.universalCaptionApiKey.isNotBlank()))
                 pushRecovery()
-                // Let the automatically opened overview stream finish its initial setup.
-                viewModelScope.launch { delay(3_000L); pushLimiter() }
-                sendCommand?.invoke("set-auto-reconnect", mapOf("enabled" to mutable.value.autoReconnectEnabled, "delaySeconds" to mutable.value.autoReconnectDelaySeconds))
+                // Restore protection only after this document reports actual playback.
+                startupLimiterPending = true
                 sendCommand?.invoke("set-player-expanded", mapOf("expanded" to mutable.value.videoExpanded))
                 if (mutable.value.audibleStartRequested) sendCommand?.invoke("start-audible", emptyMap())
             }
             "capability" -> {
                 val feature = envelope.payload["feature"] as? String
                 val available = envelope.payload["available"] as? Boolean ?: false
-                if (feature == "connection") { connectionPaused = !available; mutable.update { it.copy(connectionEnabled = available) } }
+                if (feature == "connection") { connectionPaused = !available; mutable.update { it.copy(connectionEnabled = available && connectionRequested && it.hookAvailable, connected = available && it.connected) } }
+                if (feature == "player-recovery") mutable.update { it.copy(autoReconnectEnabled = available && envelope.payload["enabled"] == true) }
                 if (feature == "websocket-hook") mutable.update { it.copy(hookAvailable = available || it.hookAvailable) }
                 if (feature == "webview-audio" && !available && mutable.value.source == RecognitionSource.WEBVIEW) {
                     recognizer.cancel(); mutable.update { it.copy(recognitionStatus = "WebView-Audio nicht verfügbar · Mikrofon wählen") }
@@ -626,6 +657,9 @@ class CompanionViewModel(private val recognizer: RecognitionEngine, private val 
                     val next = (current.mediaUrls.filterNot { it.url == safe } + StreamMediaUrl(safe, kind)).takeLast(12)
                     current.copy(mediaUrls = next, vlcReplacementUrl = current.vlcReplacementUrl)
                 }
+            }
+            "command-result" -> if (envelope.payload["ok"] == false) {
+                reportError("${envelope.payload["command"]}: ${envelope.payload["error"] ?: "Befehl fehlgeschlagen"}")
             }
             "bridge-error" -> mutable.update { it.copy(error = envelope.payload["message"] as? String ?: "WebView-Bridge-Fehler") }
         }
