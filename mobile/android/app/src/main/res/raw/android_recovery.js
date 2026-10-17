@@ -104,7 +104,16 @@
     if (name === "play" || name === "start-audible") { pausedByUser = false; awaitingGesture = false; }
     if (name === "set-vlc-active") { const next = payload.active === true; if (vlc !== next) cancel("vlc-changed"); vlc = next; }
   }
-  root.TLC_MOBILE_RECOVERY = Object.freeze({documentId, recover, command, handles: name => ["set-hook-reconnect","set-vlc-active"].includes(name)});
+  function snapshot() {
+    const v = primary();
+    return { ready: true, documentId, path: location.pathname, videoPresent: Boolean(v),
+      currentTime: v && Number.isFinite(v.currentTime) ? v.currentTime : null,
+      pausedByUser, awaitingGesture, vlcActive: vlc, ended: Boolean(v?.ended) };
+  }
+  function wake() {
+    root.postMessage({source: "tiktok-live-companion-control", type: "hook-reconnect-wake"}, location.origin);
+  }
+  root.TLC_MOBILE_RECOVERY = Object.freeze({documentId, recover, command, snapshot, wake, handles: name => ["set-hook-reconnect","set-vlc-active"].includes(name)});
   if (topFrame) {
     function notePauseIntent(event) {
       if (!event.isTrusted) return;

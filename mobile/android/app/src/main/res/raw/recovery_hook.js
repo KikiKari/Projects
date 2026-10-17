@@ -278,6 +278,7 @@
     window.addEventListener("message", (event) => {
       if (event.source !== window || event.origin !== location.origin ||
           event.data?.source !== "tiktok-live-companion-control") return;
+      if (event.data.type === "hook-reconnect-wake") { controller.wake(); publishStatus(); }
       if (event.data.type === "hook-reconnect-config") {
         reconnectConfig = {enabled: event.data.enabled === true, seconds: event.data.seconds};
         controller.configure({...reconnectConfig, enabled: connectionArmed && reconnectConfig.enabled});
