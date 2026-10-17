@@ -29,17 +29,8 @@ internal object CompanionEndpoint {
         for (candidate in candidates) {
             try { probe(candidate); return candidate }
             catch (error: CancellationException) { throw error }
-            catch (_: Exception) { /* Try the other loopback address before the configured service. */ }
+            catch (_: Exception) { /* Only the two local loopback addresses are used. */ }
         }
-        require(configured.isNotBlank()) {
-            "Kein lokaler Companion-Dienst auf diesem Gerät erreichbar. Alternative Dienstadresse und Kopplungscode eintragen; Systemstimmen bleiben verfügbar."
-        }
-        val alternative = normalize(configured)
-        try { probe(alternative) }
-        catch (error: CancellationException) { throw error }
-        catch (error: Exception) {
-            throw IllegalStateException("Lokaler und alternativer Companion-Dienst nicht erreichbar: ${error.message}", error)
-        }
-        return alternative
+        throw IllegalStateException("Kein lokaler Companion-Dienst auf diesem Gerät erreichbar; Systemstimmen bleiben verfügbar.")
     }
 }

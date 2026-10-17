@@ -10,7 +10,7 @@
   const fixed = {"open-normal-live":"browser", "player-vlc-frame":"player", "player-fullscreen":"fullscreen", "player-pip":"pip", "player-report":"report", "scan":"status", "enable-captions":"captions", "player-replay":"reset", "refresh-chat":"reset", "top-chatters-reset":"reset", "reset-tab":"reset", "refresh-page-info":"reset", "open-speech-settings":"settings", "open-connection-settings":"settings"};
   function decorate() {
     for (const [id, icon] of Object.entries(fixed)) { const el = document.getElementById(id); if (el) el.dataset.controlIcon = icon; }
-    for (const id of ["toggle-speech", "toggle-hook"]) { const el=document.getElementById(id); if(el) el.dataset.controlIcon=el.textContent.trim()==="Off" ? "off" : "on"; }
+    for (const id of ["toggle-speech", "toggle-hook"]) { const el=document.getElementById(id); if(el) { const enabled = el.textContent.trim()==="Off"; el.dataset.controlIcon=enabled ? "on" : "off"; el.setAttribute("aria-pressed", String(enabled)); } }
     for (const [id, pair] of [["player-play", ["Play", "play", "stop"]], ["player-mute", ["Mute", "mute", "unmute"]]]) {
       const el = document.getElementById(id); if (el) { const icon = el.textContent.trim() === pair[0] ? pair[1] : pair[2]; if (el.dataset.controlIcon !== icon) el.dataset.controlIcon = icon; }
     }
@@ -19,11 +19,18 @@
       if (!el) continue;
       const text = el.textContent.trim();
       const context = id === "toggle-speech" ? "Vorlesen: " : id === "toggle-hook" ? "Connection: " : "";
-      const label = id === "refresh-page-info" ? "Refresh" : id === "open-speech-settings" ? "Erweiterte Einstellungen öffnen" : id === "open-connection-settings" ? "Connection-Einstellungen öffnen" : context + text;
+      const stateText = context ? (el.getAttribute("aria-pressed") === "true" ? "On" : "Off") : text;
+      const label = id === "refresh-page-info" ? "Refresh" : id === "open-speech-settings" ? "Erweiterte Einstellungen öffnen" : id === "open-connection-settings" ? "Connection-Einstellungen öffnen" : context + stateText;
       el.setAttribute("aria-label", label);
       el.setAttribute("title", label);
     }
     for (const el of document.querySelectorAll('button,input[type="checkbox"]')) {
+      if (el.type === "checkbox") {
+        const names = {"keep-speech-active":"Vorlesen dauerhaft", "hook-autostart":"Hook dauerhaft", "limiter-enabled":"Pegelschutz", "song-enabled":"Songerkennung"};
+        const name = names[el.id] || el.getAttribute("aria-label") || el.closest("label")?.textContent.trim();
+        if (name) { el.setAttribute("aria-label", name); el.setAttribute("title", `${name}: ${el.checked ? "On" : "Off"}`); }
+        continue;
+      }
       if (!el.getAttribute("title")) {
         const label = el.getAttribute("aria-label") || el.textContent.trim() || el.closest("label")?.textContent.trim();
         if (label) el.setAttribute("title", label);
@@ -31,5 +38,6 @@
     }
   }
   decorate();
+  document.addEventListener("change", decorate);
   new MutationObserver(decorate).observe(document.body, {subtree:true, childList:true, characterData:true});
 })();

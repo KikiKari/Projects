@@ -9,6 +9,8 @@
   const documentId = crypto.randomUUID();
   const openSockets = new Map();
   const recentMessages = new Map();
+  let connectionArmed = true;
+  let reconnectConfig = {enabled: false, seconds: 3};
   const recoveryFactory = window[Symbol.for("tiktok-live-companion.hook-recovery")];
   const identity = () => currentLiveHandle() ? `${location.pathname}|${currentLiveHandle()}` : "";
   const controller = recoveryFactory?.create({ identity,
@@ -31,6 +33,9 @@
   }
 
   function post(type, payload) {
+    if (!connectionArmed && ["chat-message", "caption", "live-event", "gift-message"].includes(type)) return;
+    if (type === "hook-status") payload = { ...payload, hook: { ...payload.hook,
+      armed: connectionArmed, connected: connectionArmed && payload.hook?.connected === true } };
     window.postMessage({ source: "tiktok-live-companion", version: 1, type, ...payload }, location.origin);
   }
 
@@ -94,7 +99,7 @@
         .some((records) => records?.length > 0);
       if (carriesLiveData && socketState.open && !socketState.qualified) {
         socketState.qualified = true;
-        openSockets.set(socketState.id, { endpoint, stream: socketState.stream });
+        openSockets.set(socketState.id, { endpoint, stream: socketState.stream, socketState });
         if (socketState.token) {
           controller.stage(socketState.token, "first-decoded-message");
           controller.connected(socketState.token);
@@ -190,7 +195,7 @@
       const stream = streamIdentity(args[0]);
       const socketState = { id: crypto.randomUUID(), started: performance.now(), firstFrame: false, decoded: new Set(),
         stream, open: false, qualified: false, identity: identity(), socket, token, profile,
-        responses: new Map(), controls: [], heartbeat: null };
+        responses: new Map(), controls: [], heartbeat: null, lastInboundAtMs: performance.now() };
       try {
         const parsed = new URL(String(args[0]));
         socketState.allowed = parsed.protocol === "wss:" && /(^|\.)(tiktok\.com|tiktokv\.com)$/.test(parsed.hostname);
@@ -249,6 +254,7 @@
       });
       socket.addEventListener("error", () => trace(socketState, "socket-error"));
       socket.addEventListener("message", (event) => {
+        socketState.lastInboundAtMs = performance.now();
         if (!socketState.firstFrame) {
           socketState.firstFrame = true;
           trace(socketState, "first-frame");
@@ -272,10 +278,40 @@
     window.addEventListener("message", (event) => {
       if (event.source !== window || event.origin !== location.origin ||
           event.data?.source !== "tiktok-live-companion-control") return;
-      if (event.data.type === "hook-reconnect-config") controller.configure(event.data);
+      if (event.data.type === "hook-reconnect-config") {
+        reconnectConfig = {enabled: event.data.enabled === true, seconds: event.data.seconds};
+        controller.configure({...reconnectConfig, enabled: connectionArmed && reconnectConfig.enabled});
+      }
+      if (event.data.type === "hook-connection-config") {
+        connectionArmed = event.data.enabled === true;
+        controller.configure({...reconnectConfig, enabled: connectionArmed && reconnectConfig.enabled});
+        publishStatus();
+      }
     });
-    window.addEventListener("pagehide", () => controller.dispose(), { once: true });
-    setInterval(() => { if (!controller.checkStream()) { openSockets.clear(); recentMessages.clear(); publishStatus(); } }, 250);
+    window.addEventListener("pagehide", event => { if (!event.persisted) controller.dispose(); });
+    window.addEventListener("pageshow", () => { controller.wake(); publishStatus(); });
+    window.addEventListener("online", () => controller.wake());
+    setInterval(() => {
+      if (!controller.checkStream()) { openSockets.clear(); recentMessages.clear(); publishStatus(); return; }
+      let lostNative = false, lostSocket = false;
+      for (const [id, value] of openSockets) {
+        const state = value.socketState;
+        if (!state.open || !connectionArmed || !reconnectConfig.enabled) continue;
+        const heartbeat = Number(state.profile.heartbeatIntervalMs);
+        // Use the site's observed transport cadence, never silence in chat alone.
+        if (!(heartbeat > 0) || performance.now()-state.lastInboundAtMs < Math.max(30000, heartbeat*3)) continue;
+        state.qualified = false;
+        openSockets.delete(id);
+        trace(state, "socket-error");
+        lostSocket = true;
+        if (state.token) controller.failed(state.token, "timeout");
+        else lostNative = true;
+      }
+      if (lostSocket) {
+        publishStatus();
+        if (lostNative && ![...openSockets.values()].some(value => !value.socketState.token)) controller.nativeDisconnected();
+      }
+    }, 250);
     post("hook-recovery-ready", {});
   }
   post("hook-status", { hook: { armed: true, installed: true, connected: false, lastError: null } });

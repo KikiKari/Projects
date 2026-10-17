@@ -49,6 +49,7 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
 @Composable fun CompanionWebView(viewModel: CompanionViewModel, modifier: Modifier = Modifier, onTap: () -> Unit = {}) {
     AndroidView(modifier = modifier, factory = { context ->
         val webView = WebView(context).apply {
+            val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.hook_recovery, R.raw.export_privacy, R.raw.android_recovery, R.raw.recovery_hook, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             // Desktop-Layout erzwingen: Die mobile TikTok-Seite öffnet den Webcast-WebSocket nicht zuverlässig (0PE-52).
@@ -63,7 +64,6 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
             if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) WebViewCompat.startSafeBrowsing(context) {}
-            val bridgeSource = listOf(R.raw.content_core, R.raw.proto_main, R.raw.hook_recovery, R.raw.export_privacy, R.raw.android_recovery, R.raw.recovery_hook, R.raw.webview_bridge).joinToString("\n") { context.raw(it) }
             if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(this, bridgeSource, setOf(BridgeValidator.ALLOWED_ORIGIN))
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
                 WebViewCompat.addWebMessageListener(this, "tlcBridge", setOf(BridgeValidator.ALLOWED_ORIGIN)) { _, message, sourceOrigin, isMainFrame, _ ->
@@ -77,6 +77,14 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                 }
                 override fun onPageFinished(view: WebView, url: String?) {
                     super.onPageFinished(view, url)
+                    // Older WebViews may lack document-start injection. Do not leave commands as silent no-ops.
+                    view.evaluateJavascript("typeof globalThis.TLC_MOBILE_BRIDGE?.command === 'function'") { ready ->
+                        if (ready != "true" && view.url == url && url?.startsWith("https://www.tiktok.com/") == true) {
+                            view.evaluateJavascript("(function(){if (!globalThis.TLC_MOBILE_BRIDGE) {\n$bridgeSource\n} return typeof globalThis.TLC_MOBILE_BRIDGE?.command === 'function';})()") { installed ->
+                                if (installed != "true") viewModel.reportError("WebView-Bridge konnte nicht geladen werden")
+                            }
+                        }
+                    }
                     for (delayMs in listOf(500L, 1_500L, 3_000L)) view.postDelayed({
                         view.evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command('reject-cookies', {})") {
                             CookieManager.getInstance().flush()
@@ -106,8 +114,13 @@ private class TapDetectingFrameLayout(context: Context, private val onTap: () ->
                     return true
                 }
             }
-            viewModel.sendCommand = { command, payload -> post { evaluateJavascript("globalThis.TLC_MOBILE_BRIDGE?.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()})", null) } }
+            viewModel.sendCommand = { command, payload -> post {
+                evaluateJavascript("(function(){const bridge = globalThis.TLC_MOBILE_BRIDGE; if (typeof bridge?.command !== 'function') return false; bridge.command(${JSONObject.quote(command)}, ${JSONObject(payload).toString()}); return true;})()") { dispatched ->
+                    if (dispatched != "true") viewModel.reportError("${command}: WebView-Bridge ist nicht bereit")
+                }
+            } }
             viewModel.loadUrl = { url -> post { loadUrl(url) } }
+            viewModel.reloadPage = { post { reload() } }
             loadUrl(viewModel.currentWebUrl)
         }
         TapDetectingFrameLayout(context, onTap).apply { addView(webView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)) }

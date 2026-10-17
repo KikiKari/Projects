@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 
 private val LocalIconStyle = staticCompositionLocalOf { "plastisch" }
@@ -38,9 +39,11 @@ private val LocalSetIconStyle = staticCompositionLocalOf<(String) -> Unit> { {} 
 @Composable fun CompanionIconLabel(label: String, component: String) {
     CompanionIconHint(label) { Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { CompanionControlIcon(component, label) } }
 }
-@Composable fun CompanionIconSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: String = if (checked) "Off" else "On") {
-    CompanionIconHint(label) {
-        Box(Modifier.size(48.dp).semantics { contentDescription = label }.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange), contentAlignment = Alignment.Center) {
+@Composable fun CompanionIconSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: String = "", enabled: Boolean = true) {
+    val stateLabel = if (checked) "On" else "Off"
+    val hint = if (label.isBlank()) stateLabel else "$label: $stateLabel"
+    CompanionIconHint(hint) {
+        Box(Modifier.size(48.dp).semantics { contentDescription = label.ifBlank { "Schalter" }; stateDescription = stateLabel }.toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange), contentAlignment = Alignment.Center) {
             CompanionControlIcon(if (checked) "on" else "off")
         }
     }
