@@ -6,7 +6,7 @@
     "speech-language", "speech-voice", "speak-names", "game-mode", "filter-external-speech-triggers", "external-speech-trigger-characters", "shorten-names", "auto-chat-refresh", "auto-chat-refresh-minutes", "audd-token", "audd-token-label", "audd-token-setting", "pairing-code", "pairing-code-setting", "universal-caption-api-key", "service-action", "sherpa-action", "open-speech-settings", "speech-settings-modal", "close-speech-settings", "service-status", "service-setup", "copy-service-setup",
     "top-chatters", "top-chatters-actions", "top-chatters-reset", "top-chatters-more", "team-tag-status", "open-audience", "audience-modal", "close-audience", "audience-list", "audience-limit", "chat-history-modal", "close-chat-history", "chat-history-list", "chat-history-limit",
     "song-enabled", "song-led", "recognize-song", "song-status", "song-result",
-    "caption-status", "hook-status", "embed-startup-status", "cancel-embed-startup", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "player-recovery-status", "hook-reconnect", "hook-reconnect-seconds", "hook-reconnect-status", "media-list", "media-count", "caption-list", "caption-count",
+    "caption-status", "hook-status", "embed-startup-status", "cancel-embed-startup", "hook-led", "hook-autostart", "quick-recover", "quick-recover-seconds", "player-recovery-status", "hook-reconnect", "hook-reconnect-seconds", "hook-reconnect-status", "media-list", "media-count", "caption-list", "caption-count", "live-logs-enabled",
     "notice", "caption-action-status", "live-stats", "stats-status", "stats-live",
     "player-time", "player-status", "player-play", "player-replay", "player-mute", "player-pip", "player-fullscreen", "player-report", "player-vlc-frame",
     "player-volume", "player-volume-output", "player-peak", "limiter-enabled", "limiter-strength", "limiter-strength-output", "multi-guest-status",
@@ -1016,6 +1016,7 @@
     renderMedia(state.media || []);
     renderCaptions(state.captions || []);
     renderEmbedStartup(state.embedStartup);
+    elements["live-logs-enabled"].checked = state.liveLogsEnabled === true;
     elements["debug-enabled"].checked = Boolean(state.debug?.enabled);
     elements["debug-count"].textContent = String(state.debug?.entries?.length || 0);
     const hook = state.hook || {};
@@ -1043,7 +1044,7 @@
     previousTabId = activeTabId;
     const isTikTok = tab?.url?.startsWith("https://www.tiktok.com/");
     activeIsTikTok = Boolean(isTikTok);
-    for (const id of ["scan", "enable-captions", "toggle-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", "hook-reconnect", "hook-reconnect-seconds", "quick-recover", "quick-recover-seconds", ...PLAYER_BUTTONS]) {
+    for (const id of ["scan", "enable-captions", "toggle-hook", "reset-tab", "open-embed-live", "open-normal-live", "clear", "live-logs-enabled", "refresh-chat", "refresh-page-info", "force-page-info", "player-vlc-frame", "hook-reconnect", "hook-reconnect-seconds", "quick-recover", "quick-recover-seconds", ...PLAYER_BUTTONS]) {
       elements[id].disabled = !isTikTok;
     }
     elements["toggle-hook"].disabled = false;
@@ -1329,7 +1330,7 @@
   elements["open-embed-live"].addEventListener("click", () => run("TLC_OPEN_EMBED_LIVE", "Embed-LIVE wird geöffnet."));
   elements["cancel-embed-startup"].addEventListener("click", () => run("TLC_CANCEL_EMBED_STARTUP", "Embed-Start abgebrochen."));
   elements["open-normal-live"].addEventListener("click", () => run("TLC_OPEN_NORMAL_LIVE", "Normale LIVE-Seite wird geöffnet."));
-  elements.clear.addEventListener("click", () => run("TLC_CLEAR"));
+  elements.clear.addEventListener("click", () => run("TLC_CLEAR_LIVE_LOGS"));
   elements["refresh-chat"].addEventListener("click", clearChatDisplay);
   elements["refresh-page-info"].addEventListener("click", async () => {
     const button = elements["refresh-page-info"];
@@ -1740,6 +1741,17 @@
   elements["limiter-enabled"].addEventListener("change", applyLimiter);
   elements["limiter-strength"].addEventListener("change", () => {
     if (elements["limiter-enabled"].checked) applyLimiter();
+  });
+  elements["live-logs-enabled"].addEventListener("change", async () => {
+    const input = elements["live-logs-enabled"];
+    try {
+      const response = await send("TLC_SET_LIVE_LOGS", { enabled: input.checked });
+      if (response.state) render(response.state);
+    } catch (error) {
+      input.checked = currentState?.liveLogsEnabled === true;
+      input.title = `LIVE-Logs: ${input.checked ? "On" : "Off"}`;
+      elements.notice.textContent = error.message;
+    }
   });
   elements["debug-enabled"].addEventListener("change", async () => {
     const response = await send("TLC_SET_DEBUG", { enabled: elements["debug-enabled"].checked });

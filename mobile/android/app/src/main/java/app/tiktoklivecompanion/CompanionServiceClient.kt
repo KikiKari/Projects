@@ -52,7 +52,7 @@ class CompanionServiceClient(context: Context) {
             response.body?.bytes() ?: byteArrayOf()
         }
     }
-    suspend fun capture(envelope: BridgeEnvelope) = withContext(Dispatchers.IO) {
+    suspend fun capture(envelope: BridgeEnvelope, liveLogsEnabled: Boolean = false) = withContext(Dispatchers.IO) {
         if (universalKey.isBlank()) return@withContext
         mutex.withLock {
             val document = envelope.payload["documentId"] as? String ?: currentDocument
@@ -67,9 +67,10 @@ class CompanionServiceClient(context: Context) {
                 "pipeline-document" -> "browser-tab"
                 else -> "debug-logs"
             }
+            if (pipeline == "live-logs" && !liveLogsEnabled) return@withLock
             val raw = JSONObject(mapOf("type" to envelope.type, "payload" to envelope.payload, "sequence" to envelope.sequence))
             val initial = if (registeredDocuments.add(document)) listOf("title", "chat", "speech-service", "sherpa", "top-chatters", "profile", "live", "songs", "media-links", "live-logs", "debug-logs", "browser-tab").filter { it != pipeline && it != "debug-logs" && !(pipeline == "title" && it == "live-logs") } else emptyList()
-            val types = (initial + listOf(pipeline, "debug-logs") + if (pipeline == "title") listOf("live-logs") else emptyList()).distinct()
+            val types = (initial + listOf(pipeline, "debug-logs") + if (pipeline == "title" && liveLogsEnabled) listOf("live-logs") else emptyList()).distinct()
             for (type in types) {
                 val id = UUID.randomUUID().toString()
                 val sourceSequence = preferences.getLong("sequence", 0L) + 1
