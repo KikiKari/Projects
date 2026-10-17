@@ -7,8 +7,30 @@
   function apply(value) { style = styles.has(value) ? value : "plastisch"; document.documentElement.dataset.iconStyle = style; picker.value = style; }
   apply(style);
   picker.addEventListener("change", () => { apply(picker.value); try { localStorage.setItem("tlc-icon-style", style); } catch {} });
-  const fixed = {"open-normal-live":"browser", "player-vlc-frame":"player", "player-fullscreen":"fullscreen", "player-pip":"pip", "player-report":"report", "scan":"status", "enable-captions":"captions", "player-replay":"reset", "refresh-chat":"reset", "top-chatters-reset":"reset", "reset-tab":"reset", "refresh-page-info":"reset", "open-speech-settings":"settings", "open-connection-settings":"settings"};
+  const fixed = {"open-normal-live":"browser", "player-vlc-frame":"player", "player-fullscreen":"fullscreen", "player-pip":"pip", "player-report":"report", "scan":"status", "enable-captions":"captions", "player-replay":"reset", "clear":"reset", "clear-debug":"reset", "refresh-chat":"reset", "top-chatters-reset":"reset", "reset-tab":"reset", "refresh-page-info":"reset", "open-speech-settings":"settings", "open-connection-settings":"settings"};
+  const counters = new Map();
+  function setHeaderLed(dot, active, label) {
+    dot.classList.toggle("on", active);
+    dot.classList.toggle("off", !active);
+    dot.setAttribute("aria-label", label);
+    dot.title = label;
+  }
+  function decorateHeaders() {
+    for (const dot of document.querySelectorAll("[data-switch-status]")) {
+      const input = document.getElementById(dot.dataset.switchStatus);
+      if (input) setHeaderLed(dot, input.checked, `${input.getAttribute("aria-label")}: ${input.checked ? "aktiviert" : "deaktiviert"}`);
+    }
+    for (const dot of document.querySelectorAll("[data-counter-status]")) {
+      const id = dot.dataset.counterStatus;
+      const value = Number(document.getElementById(id)?.textContent || 0);
+      const previous = counters.get(id);
+      const changedAt = previous && value > previous.value ? Date.now() : previous?.changedAt || 0;
+      counters.set(id, { value, changedAt });
+      setHeaderLed(dot, value > 0 && Date.now() - changedAt < 30000, "Counter: " + (value > 0 && Date.now() - changedAt < 30000 ? "neue Einträge" : "keine neuen Einträge"));
+    }
+  }
   function decorate() {
+    decorateHeaders();
     for (const [id, icon] of Object.entries(fixed)) { const el = document.getElementById(id); if (el) el.dataset.controlIcon = icon; }
     for (const id of ["toggle-speech", "toggle-hook"]) { const el=document.getElementById(id); if(el) { const enabled = el.textContent.trim()==="Off"; el.dataset.controlIcon=enabled ? "on" : "off"; el.setAttribute("aria-pressed", String(enabled)); } }
     for (const [id, pair] of [["player-play", ["Play", "play", "stop"]], ["player-mute", ["Mute", "mute", "unmute"]]]) {
@@ -39,5 +61,6 @@
   }
   decorate();
   document.addEventListener("change", decorate);
+  setInterval(decorateHeaders, 1000);
   new MutationObserver(decorate).observe(document.body, {subtree:true, childList:true, characterData:true});
 })();

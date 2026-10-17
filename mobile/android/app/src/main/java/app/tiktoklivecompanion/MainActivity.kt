@@ -184,12 +184,13 @@ class MainActivity : ComponentActivity() {
     var settingsOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Vorlesen", Modifier.weight(1f)); CompanionIconSwitch(state.ttsEnabled, model::setTtsEnabled, label = "Vorlesen", enabled = ttsReady) }
+            CompanionModuleHeader(count = state.chatEntries.size, active = state.ttsEnabled) {
+                CompanionIconSwitch(state.ttsEnabled, model::setTtsEnabled, label = "Vorlesen", enabled = ttsReady)
+            }
             Text("Lautstärke ${state.ttsVolume} %")
             Slider(state.ttsVolume.toFloat(), { model.setTtsVolume(it.toInt()) }, valueRange = 0f..100f)
             OutlinedButton(onClick = { settingsOpen = true }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Erweiterte Einstellungen", "settings") }
         } }
-        Text("Chatzeilen ${state.chatEntries.size}")
         if (state.chatEntries.isEmpty()) Text("Noch keine öffentlichen Chatzeilen empfangen.", color = Color.Gray)
         state.chatEntries.takeLast(5).forEach { line -> ElevatedCard(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(line.visibleText, Modifier.weight(1f)); IconButton(onClick = { model.requestSpeak(line) }) { Icon(Icons.Default.VolumeUp, "Vorlesen") } } } }
         Text("Top-Chatter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -278,18 +279,19 @@ class MainActivity : ComponentActivity() {
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        CompanionModuleHeader(active = state.limiterEnabled, reset = { model.sendCommand?.invoke("reload-player", emptyMap()) }, resetLabel = "Neu laden") {
+            CompanionIconSwitch(state.limiterEnabled, model::setLimiterEnabled, label = "Pegelschutz")
+        }
         listOf("play" to "Play", "pause" to "Stop", "mute" to "Mute", "unmute" to "Unmute").chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { (command, label) -> OutlinedButton(onClick = { model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel(label, when (command) { "pause" -> "stop"; else -> command }) } } } }
         if (state.playerMuted != false || state.audibleStartBlocked) Button(onClick = model::enableStreamSound, modifier = Modifier.fillMaxWidth()) { Text("Ton aktivieren") }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Vollbild nativ: Bridge-„fullscreen" greift im mobilen WebView nicht (0PE-54); PiP ist Nicht-Ziel.
             OutlinedButton(onClick = model::toggleVideoExpanded, modifier = Modifier.weight(1f)) { CompanionIconLabel("Vollbild", "fullscreen") }
-            OutlinedButton(onClick = { model.sendCommand?.invoke("reload-player", emptyMap()) }, modifier = Modifier.weight(1f)) { CompanionIconLabel("Neu laden", "reset") }
         }
         OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Player", "player") }
         OutlinedButton(onClick = ::openExternalVlc, enabled = state.mediaUrls.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("VLC Player") }
         Text("Pegelschutz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(if (state.vlcReplacementUrl != null) state.nativeLimiterStatus else if (state.limiterEnabled) state.webLimiterStatus else "WebView · Pegelschutz aus", style = MaterialTheme.typography.bodySmall)
-        CompanionIconSwitch(checked = state.limiterEnabled, onCheckedChange = model::setLimiterEnabled, label = "Pegelschutz")
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Schutzstärke"); Spacer(Modifier.weight(1f)); Text("${state.limiterStrength}%", fontWeight = FontWeight.Bold) }
         Slider(value = state.limiterStrength.toFloat(), onValueChange = { model.setLimiter(state.limiterEnabled, it.toInt()) }, valueRange = 0f..100f, enabled = state.limiterEnabled)
         Text("dBFS ist ein digitaler Signalpegel, kein am Ohr messbarer dB-SPL-Wert. Der Schutz komprimiert Spitzen oberhalb des Grenzwerts lokal im WebView.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
@@ -309,13 +311,15 @@ class MainActivity : ComponentActivity() {
         if (uri != null) context.contentResolver.openOutputStream(uri)?.use { it.write(pendingCaptionExport.toByteArray(Charsets.UTF_8)) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        CompanionModuleHeader(active = state.connectionEnabled, reset = model::resetPage) {
             CompanionIconSwitch(state.connectionEnabled, model::setConnectionEnabled, label = "Connection")
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             OutlinedButton(onClick = model::openNormal) { CompanionIconLabel("Browser", "browser") }
             OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { CompanionIconLabel("Player", "player") }
             IconButton(onClick = { connectionSettingsOpen = true }) { CompanionIconLabel("Connection-Einstellungen", "settings") }
         }
-        listOf("inspect" to "Status", "captions" to "Untertitel", "refresh" to "Reset", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { if (command == "refresh") model.resetPage() else model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
+        listOf("inspect" to "Status", "captions" to "Untertitel", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { if (command == "refresh") model.resetPage() else model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
         CompanionIconStylePicker()
         Text("Player-Recovery: ${if (!state.autoReconnectEnabled) "aus" else state.playerRecovery["phase"] ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
         Text("Hook-Reconnect: ${if (!state.hookReconnectEnabled) "aus" else state.hookRecovery["phase"]?.let { if (it == "native") "aktiv" else it } ?: "aktiv"}", style = MaterialTheme.typography.bodySmall)
@@ -327,22 +331,52 @@ class MainActivity : ComponentActivity() {
         Text("Embed: ${state.embedPhase} · Versuch ${state.embedAttempt}/3", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = model::startForce, enabled = !state.forceInProgress, modifier = Modifier.fillMaxWidth()) { Text(if (state.forceInProgress) "Force läuft …" else "Force") }
         state.forceRecoveryUrl?.let { OutlinedButton(onClick = { model.recoverForce() }, modifier = Modifier.fillMaxWidth()) { Text("Manuell zum LIVE-Stream zurück") } }
-        Text("Debugmodus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Validierte Diagnoseereignisse protokollieren", Modifier.weight(1f)); CompanionIconSwitch(state.debugEnabled, model::setDebugEnabled, label = "Debugmodus") }
-        Text("${state.debugEvents.size} bereinigte Diagnoseereignisse", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        CompanionModuleHeader(title = "Debugmodus", count = state.debugEvents.size, active = state.debugEnabled, reset = model::clearDebugEvents) {
+            CompanionIconSwitch(state.debugEnabled, model::setDebugEnabled, label = "Diagnoseereignisse für diesen Tab protokollieren")
+        }
         state.debugEvents.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; val vlcInstalled = runCatching { context.packageManager.getPackageInfo("org.videolan.vlc", 0) }.isSuccess; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("TikTok LIVE Companion Debug", model.debugReport(vlcInstalled))) }, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Debug kopieren") }
-            OutlinedButton(onClick = model::clearDebugEvents, enabled = state.debugEvents.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Leeren") }
         }
-        Text("LIVE-Logs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text("${state.captionRecords.size} RAW-Untertitelereignisse", style = MaterialTheme.typography.bodySmall)
+        CompanionModuleHeader(title = "LIVE-Logs", count = state.captionRecords.size, active = state.liveLogsEnabled, reset = model::clearCaptions) {
+            CompanionIconSwitch(state.liveLogsEnabled, model::setLiveLogsEnabled, label = "LIVE-Logs")
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { pendingCaptionExport = model.captionJsonLines(); exportCaption.launch("tiktok-live-captions.jsonl") }, enabled = state.captionRecords.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("JSON-L-Export") }
             OutlinedButton(onClick = { pendingCaptionExport = model.captionRawJson(); exportCaption.launch("tiktok-live-caption-raw.json") }, enabled = state.captionRecords.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("RAW-JSON-Export") }
         }
-        TextButton(onClick = model::clearCaptions, enabled = state.captionRecords.isNotEmpty()) { Text("Caption-Protokoll leeren") }
     }
 }
 
 inline fun <reified T : androidx.lifecycle.ViewModel> simpleViewModelFactory(crossinline create: () -> T) = object : androidx.lifecycle.ViewModelProvider.Factory { override fun <R : androidx.lifecycle.ViewModel> create(modelClass: Class<R>): R = create() as R }
+
+@Composable private fun CompanionModuleHeader(
+    title: String? = null,
+    count: Int? = null,
+    active: Boolean? = null,
+    reset: (() -> Unit)? = null,
+    resetLabel: String = "Reset",
+    control: @Composable () -> Unit = {}
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        else Spacer(Modifier.weight(1f))
+        if (count != null) {
+            var previousCount by remember { mutableStateOf(count) }
+            var receiving by remember { mutableStateOf(false) }
+            LaunchedEffect(count) {
+                receiving = count > previousCount
+                previousCount = count
+                if (receiving) { kotlinx.coroutines.delay(30_000); receiving = false }
+            }
+            CompanionStatusDot(receiving, if (receiving) "Counter: neue Einträge" else "Counter: keine neuen Einträge")
+            Text(count.toString(), style = MaterialTheme.typography.labelMedium)
+        }
+        if (reset != null) CompanionIconHint(resetLabel) { IconButton(onClick = reset) { CompanionControlIcon("reset", resetLabel) } }
+        control()
+        if (active != null) CompanionStatusDot(active, if (active) "aktiviert" else "deaktiviert")
+    }
+}
+@Composable private fun CompanionStatusDot(active: Boolean, label: String) {
+    Icon(Icons.Default.Circle, label, tint = if (active) Color(0xFF009B5A) else Color(0xFFD82035), modifier = Modifier.size(11.dp))
+}

@@ -37,7 +37,15 @@
       <div id="service-setup" class="inline-status" hidden>
         <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
       </div>
-      <label class="option-row"><input id="keep-speech-active" type="checkbox" aria-label="Permanent aktiv" title="Permanent aktiv"></label>
+    </section>
+
+    <section aria-labelledby="stats-heading">
+      <div class="section-title">
+        <h2 id="stats-heading">LIVE-Information</h2>
+        <span id="stats-live" class="live-indicator">warte</span>
+      </div>
+      <div id="live-stats" class="status-grid stats-grid"></div>
+      <p id="stats-status" class="inline-status"></p>
     </section>
 
     <section aria-labelledby="top-chatters-heading">
@@ -66,34 +74,55 @@
       <div id="summary-info" class="summary-info"></div>
     </section>
 
-    <section aria-labelledby="stats-heading">
-      <div class="section-title">
-        <h2 id="stats-heading">LIVE-Information</h2>
-        <span id="stats-live" class="live-indicator">warte</span>
-      </div>
-      <div id="live-stats" class="status-grid stats-grid"></div>
-      <p id="stats-status" class="inline-status"></p>
-    </section>
-
     <section aria-labelledby="hook-heading">
-      <div class="section-title">
+      <div class="section-title header-controls">
         <h2 id="hook-heading">Connection</h2>
-        <span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span>
+        <div class="title-actions">
+          <button id="reset-tab" class="secondary compact danger-outline" title="Reset">Reset</button>
+          <input id="hook-autostart" type="checkbox" aria-label="Hook dauerhaft" title="Hook dauerhaft: Off">
+          <span class="status-led off" data-switch-status="hook-autostart" role="status"></span>
+        </div>
       </div>
       <div class="button-row">
         <button id="toggle-hook" class="primary" aria-label="Connection" aria-pressed="false">On</button>
-        <button id="reset-tab" class="secondary danger-outline">Reset</button>
+        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog"></button>
         <button id="open-embed-live" class="secondary">Embed</button>
         <button id="open-normal-live" class="secondary">Browser</button>
         <button id="player-vlc-frame" class="secondary compact">Player</button>
-        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog"></button>
       </div>
-      <p id="hook-status" class="inline-status"></p>
+      <div class="connection-status"><span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span><p id="hook-status" class="inline-status"></p></div>
       <p id="embed-startup-status" class="inline-status" role="status" aria-live="polite" hidden></p>
       <button id="cancel-embed-startup" class="secondary" hidden>Embed-Start abbrechen</button>
-      <label class="option-row"><input id="hook-autostart" type="checkbox" aria-label="Permanent Hook" title="Permanent Hook"></label>
       <p id="hook-reconnect-status" class="inline-status" role="status">Hook-Reconnect: aus</p>
       <p id="player-recovery-status" class="inline-status" role="status">Player-Recovery: aus</p>
+    </section>
+
+    <section aria-labelledby="player-heading">
+      <div class="section-title header-controls">
+        <h2 id="player-heading">Player</h2>
+        <div class="title-actions">
+          <button id="player-replay" class="secondary compact" title="Neu laden">Neu laden</button>
+          <input id="limiter-enabled" type="checkbox" aria-label="Pegelschutz" title="Pegelschutz: Off">
+          <span class="status-led off" data-switch-status="limiter-enabled" role="status"></span>
+        </div>
+      </div>
+      <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
+        <button id="player-play" class="secondary compact">Play</button>
+        <button id="player-mute" class="secondary compact">Mute</button>
+        <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
+        <button id="player-fullscreen" class="secondary compact">Vollbild</button>
+        <button id="player-report" class="secondary compact danger-outline">Meldung</button>
+      </div>
+      <div class="audio-controls">
+        <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
+        <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
+        <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
+        <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
+        <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
+      </div>
+      <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
+      <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
+      <span id="player-time" class="player-time" hidden>–</span>
     </section>
 
     <section id="recommendations-section" aria-labelledby="recommendations-heading">
@@ -126,37 +155,14 @@
       <p id="caption-action-status" role="status" class="inline-status action-status"></p>
     </section>
 
-    <section aria-labelledby="player-heading">
-      <div class="section-title">
-        <h2 id="player-heading">Player</h2>
-        <span id="player-time" class="player-time">–</span>
-      </div>
-      <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
-        <button id="player-play" class="secondary compact">Play</button>
-        <button id="player-replay" class="secondary compact">Neu laden</button>
-        <button id="player-mute" class="secondary compact">Mute</button>
-        <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
-        <button id="player-fullscreen" class="secondary compact">Vollbild</button>
-        <button id="player-report" class="secondary compact danger-outline">Meldung</button>
-      </div>
-      <div class="audio-controls">
-        <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
-        <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
-        <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
-        <label class="option-row"><input id="limiter-enabled" type="checkbox" aria-label="Pegelschutz aktivieren" title="Pegelschutz aktivieren"></label>
-        <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
-        <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
-      </div>
-      <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
-      <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
-    </section>
-
     <section aria-labelledby="song-heading">
-      <div class="section-title">
+      <div class="section-title header-controls">
         <h2 id="song-heading">Songs</h2>
-        <span id="song-led" class="status-led off" role="status" aria-label="Songerkennung inaktiv"></span>
+        <div class="title-actions">
+          <input id="song-enabled" type="checkbox" aria-label="Songerkennung" title="Songerkennung: Off">
+          <span id="song-led" class="status-led off" data-switch-status="song-enabled" role="status" aria-label="Songerkennung inaktiv"></span>
+        </div>
       </div>
-      <label class="option-row"><input id="song-enabled" type="checkbox" aria-label="Songerkennung aktivieren" title="Songerkennung aktivieren"></label>
       <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
       <p id="song-status" class="inline-status"></p>
       <div id="song-result" class="song-result" hidden></div>
@@ -171,27 +177,36 @@
     </section>
 
     <section aria-labelledby="log-heading">
-      <div class="section-title">
+      <div class="section-title header-controls">
         <h2 id="log-heading">LIVE-Logs</h2>
-        <span id="caption-count" class="count">0</span>
+        <div class="title-actions">
+          <span class="status-led off" data-counter-status="caption-count" role="status"></span>
+          <span id="caption-count" class="count">0</span>
+          <button id="clear" class="ghost compact" title="Reset">Reset</button>
+          <input id="live-logs-enabled" type="checkbox" aria-label="LIVE-Logs" title="LIVE-Logs: Off">
+          <span class="status-led off" data-switch-status="live-logs-enabled" role="status" aria-label="LIVE-Logs: deaktiviert"></span>
+        </div>
       </div>
       <div class="button-row">
         <button id="export-log" class="secondary">JSON-L-Export</button>
         <button id="export-caption-raw" class="secondary">RAW-JSON-Export</button>
-        <button id="clear" class="ghost">Anzeige leeren</button>
       </div>
       <div id="caption-list" class="list empty">Noch keine CaptionMessages empfangen.</div>
     </section>
 
     <section aria-labelledby="debug-heading">
-      <div class="section-title">
+      <div class="section-title header-controls">
         <h2 id="debug-heading">Debugmodus</h2>
-        <span id="debug-count" class="count">0</span>
+        <div class="title-actions">
+          <span class="status-led off" data-counter-status="debug-count" role="status"></span>
+          <span id="debug-count" class="count">0</span>
+          <button id="clear-debug" class="ghost compact" title="Reset">Reset</button>
+          <input id="debug-enabled" type="checkbox" aria-label="Diagnoseereignisse für diesen Tab protokollieren" title="Diagnoseereignisse für diesen Tab protokollieren: Off">
+          <span class="status-led off" data-switch-status="debug-enabled" role="status"></span>
+        </div>
       </div>
-      <label class="option-row"><input id="debug-enabled" type="checkbox"> Diagnoseereignisse für diesen Tab protokollieren</label>
       <div class="button-row">
         <button id="export-debug" class="secondary">Debug exportieren</button>
-        <button id="clear-debug" class="ghost">Debug leeren</button>
       </div>
       <p class="muted small"></p>
     </section>
@@ -226,6 +241,7 @@
         <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
         <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode (Spam-, Emoji, usw. Chatfilter)</label>
         <div class="option-row external-speech-trigger-row"><label><input id="filter-external-speech-triggers" type="checkbox"> Trigger filtern (ext. Sprachdienste)</label><input id="external-speech-trigger-characters" type="text" value="." maxlength="10" aria-label="Triggerzeichen, maximal fünf Sonderzeichen" autocomplete="off" spellcheck="false"></div>
+        <label class="option-row"><input id="keep-speech-active" type="checkbox" aria-label="Vorlesen dauerhaft" title="Vorlesen dauerhaft: Off"> Vorlesen dauerhaft</label>
       </section>
     </div>
 

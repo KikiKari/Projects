@@ -38,6 +38,10 @@ globalThis.TLCPipelines = (() => {
   async function enqueue(tabId, pipeline, structured, raw, source, documentId, availability = 'available') {
     const settings = (await chrome.storage.local.get('tlc-settings'))['tlc-settings'] || {};
     if (!settings.universalCaptionApiKey) return;
+    if (pipeline === 'live-logs' && availability === 'available') {
+      const state = (await chrome.storage.session.get(`tlc-tab-${tabId}`))[`tlc-tab-${tabId}`];
+      if (state?.liveLogsEnabled !== true) return;
+    }
     const snapshotKey = `${tabId}:${pipeline}:${source}`;
     const snapshot = source === 'companion-state' ? JSON.stringify(structured) : undefined;
     if (snapshot !== undefined && lastSnapshots.get(snapshotKey) === snapshot) return;
