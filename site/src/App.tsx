@@ -2,6 +2,7 @@ import { downloadChecksums } from "./download-checksums";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { featureData, pageSlugs, searchText, strings, type Language, type PageKey } from "./content";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const pageOrder = Object.keys(pageSlugs) as PageKey[];
 const Architecture3D = lazy(() => import("./Architecture3D"));
@@ -195,5 +196,5 @@ export default function App() {
   if (!parsed) return <Navigate to="/de" replace/>;
   const { lang, page } = parsed;
   const components: Record<PageKey, ReactNode> = { overview: <Home lang={lang}/>, installation: <Installation lang={lang}/>, features: <Features lang={lang}/>, architecture: <Architecture lang={lang}/>, security: <Security lang={lang}/>, troubleshooting: <Troubleshooting lang={lang}/>, downloads: <Downloads lang={lang}/> };
-  return <><a className="skip-link" href="#main-content">{strings[lang].skip}</a><Header lang={lang} page={page} onSearch={() => setSearchOpen(true)}/><div id="main-content" tabIndex={-1}>{components[page]}</div><Footer lang={lang}/><SearchDialog lang={lang} open={searchOpen} onClose={() => setSearchOpen(false)}/></>;
+  return <><a className="skip-link" href="#main-content">{strings[lang].skip}</a><Header lang={lang} page={page} onSearch={() => setSearchOpen(true)}/><div id="main-content" tabIndex={-1}>{components[page]}</div><Footer lang={lang}/><SearchDialog lang={lang} open={searchOpen} onClose={() => setSearchOpen(false)}/><SpeedInsights /></>;
 }
