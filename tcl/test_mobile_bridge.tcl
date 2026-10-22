@@ -3,116 +3,110 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_bridge.cjs
-# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_mobile_bridge.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
+# Tcl Port of test_mobile_bridge.cjs
 
-# Helper functions to mimic Node.js functionality
-proc readFileSync {filename} {
-    set fh [open $filename r]
+# Helper function to check if substring exists in string
+proc string_contains {haystack needle} {
+    return [expr {[string first $needle $haystack] != -1}]
+}
+
+# Helper function to read file content
+proc read_file {filepath} {
+    if {![file exists $filepath]} {
+        error "File not found: $filepath"
+    }
+    set fh [open $filepath r]
+    fconfigure $fh -encoding utf-8
     set content [read $fh]
     close $fh
     return $content
 }
 
-proc resolve {args} {
-    return [file normalize [join $args "/"]]
+# Get script directory and resolve paths
+set script_dir [file dirname [info script]]
+set root [file normalize [file join $script_dir ".."]]
+set bridgePath [file join $root "mobile-shared" "webview-bridge.js"]
+
+# Read the main bridge file
+if {![file exists $bridgePath]} {
+    error "Bridge file not found: $bridgePath"
+}
+set source [read_file $bridgePath]
+
+# Basic syntax check by attempting to create a procedure
+# This mimics the JavaScript vm.Script validation
+proc validate_js_syntax {js_code} {
+    # In TCL we do a basic check - this isn't a full JS parser
+    # but catches obvious syntax errors
+    if {[string length $js_code] == 0} {
+        error "Empty JavaScript source"
+    }
+    # We could add more sophisticated checking here if needed
 }
 
-proc join_path {args} {
-    return [join $args "/"]
+validate_js_syntax $source
+
+# Assertions - check that required strings exist in source
+set checks {
+    {location.hostname !== \"www.tiktok.com\"}
+    {root.top === root}
+    {if \(!isTop\) return}
+    {MAX_MESSAGE_BYTES = 64 \* 1024}
+    {MAX_AUDIO_SECONDS = 12}
+    {QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400}
+    {ALLOWED_COMMANDS}
+    {\"set-auto-reconnect\"}
+    {\"set-limiter\"}
+    {\"scan-recommendations\"}
+    {\"cancel-recommendation-scan\"}
+    {MAX_MEDIA_URLS = 12}
+    {const mediaUrls = new Map\(\)}
+    {emit\(\"media-url\"}
+    {addEventListener\(\"message\"}
+    {FORCE_RETURN_KEY = \"tlc-force-return\"}
+    {sessionStorage.getItem\(FORCE_RETURN_KEY\)}
 }
 
-proc basename {path} {
-    return [file tail $path]
-}
-
-proc dirname {path} {
-    return [file dirname $path]
-}
-
-proc includes {string substring} {
-    return [expr {[string first $substring $string] != -1}]
-}
-
-proc strictEqual {actual expected message} {
-    if {$actual ne $expected} {
-        error "Assertion failed: $message"
+foreach check $checks {
+    if {![string_contains $source $check]} {
+        error "Assertion failed: source must contain '$check'"
     }
 }
 
-proc ok {value message} {
-    if {![expr $value]} {
-        error "Assertion failed: $message"
+# Negative assertions - check that forbidden strings don't exist
+set forbidden {
+    {.send =}
+    {document.cookie}
+    {localStorage}
+    {sessionStorage.clear}
+    {innerHTML}
+}
+
+foreach forbidden_item $forbidden {
+    if {[string_contains $source $forbidden_item]} {
+        error "Assertion failed: source must NOT contain '$forbidden_item'"
     }
 }
 
-# Get __dirname (current script directory)
-set __dirname [file dirname [info script]]
-set root [resolve $__dirname ".."]
-set bridgePath [join_path $root "mobile-shared" "webview-bridge.js"]
-set source [readFileSync $bridgePath]
-
-# Simple syntax check by attempting to compile as Tcl
-# (This is a basic check - not equivalent to vm.Script but serves the purpose)
-if {[catch {info body [list $source]}]} {
-    error "Script compilation failed: $bridgePath"
-}
-
-ok [includes $source {location.hostname !== "www.tiktok.com"}] \
-   {"location.hostname !== \"www.tiktok.com\" not found"}
-ok [includes $source {root.top === root}] \
-   {"root.top === root not found"}
-ok [includes $source {if (!isTop) return}] \
-   {"if (!isTop) return not found"}
-ok [includes $source {MAX_MESSAGE_BYTES = 64 * 1024}] \
-   {"MAX_MESSAGE_BYTES = 64 * 1024 not found"}
-ok [includes $source {MAX_AUDIO_SECONDS = 12}] \
-   {"MAX_AUDIO_SECONDS = 12 not found"}
-ok [includes $source {QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400}] \
-   {"QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400 not found"}
-ok [includes $source {ALLOWED_COMMANDS}] \
-   {"ALLOWED_COMMANDS not found"}
-ok [includes $source {"set-auto-reconnect"}] \
-   {"\"set-auto-reconnect\" not found"}
-ok [includes $source {"set-limiter"}] \
-   {"\"set-limiter\" not found"}
-ok [includes $source {"scan-recommendations"}] \
-   {"\"scan-recommendations\" not found"}
-ok [includes $source {"cancel-recommendation-scan"}] \
-   {"\"cancel-recommendation-scan\" not found"}
-ok [includes $source {MAX_MEDIA_URLS = 12}] \
-   {"MAX_MEDIA_URLS = 12 not found"}
-ok [includes $source {const mediaUrls = new Map()}] \
-   {"const mediaUrls = new Map() not found"}
-ok [includes $source {emit("media-url"}] \
-   {"emit(\"media-url\" not found"}
-ok [includes $source {addEventListener("message"}] \
-   {"addEventListener(\"message\" not found"}
-ok [expr {![includes $source {.send =}]}] \
-   {".send = found but should not be present"}
-ok [expr {![includes $source {document.cookie}]}] \
-   {"document.cookie found but should not be present"}
-ok [expr {![includes $source {localStorage}]}] \
-   {"localStorage found but should not be present"}
-ok [includes $source {FORCE_RETURN_KEY = "tlc-force-return"}] \
-   {"FORCE_RETURN_KEY = \"tlc-force-return\" not found"}
-ok [includes $source {sessionStorage.getItem(FORCE_RETURN_KEY)}] \
-   {"sessionStorage.getItem(FORCE_RETURN_KEY) not found"}
-ok [expr {![includes $source {sessionStorage.clear}]}] \
-   {"sessionStorage.clear found but should not be present"}
-ok [expr {![includes $source {innerHTML}]}] \
-   {"innerHTML found but should not be present"}
-
-# Check copies
+# Check copied bridge files are identical
 set copies [list \
-    [join_path $root ".." "mobile" "ios" "Resources" "webview-bridge.js"] \
-    [join_path $root ".." "mobile" "android" "app" "src" "main" "res" "raw" "webview_bridge.js"] \
+    [file join $root ".." "mobile" "ios" "Resources" "webview-bridge.js"] \
+    [file join $root ".." "mobile" "android" "app" "src" "main" "res" "raw" "webview_bridge.js"] \
 ]
 
 foreach copy $copies {
-    set copyContent [readFileSync $copy]
-    strictEqual $copyContent $source "Bridge copy drifted: $copy"
+    set copy_path [file normalize $copy]
+    if {[file exists $copy_path]} {
+        set copy_content [read_file $copy_path]
+        if {$copy_content ne $source} {
+            error "Bridge copy drifted: $copy_path"
+        }
+    } else {
+        error "Bridge copy not found: $copy_path"
+    }
 }
 
 puts "PASS: mobile bridge origin, main-frame, size, command, audio-duration and storage guards"

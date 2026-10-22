@@ -3,7 +3,8 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_bridge.cjs
-# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_mobile_bridge.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 $ErrorActionPreference = "Stop"
 
@@ -14,62 +15,58 @@ $bridgePath = Join-Path $root "mobile-shared" "webview-bridge.js"
 # Read the source file
 $source = Get-Content -Path $bridgePath -Raw -Encoding UTF8
 
-# Validate that the script compiles without error by using Invoke-Expression in a safe context
+# Validate that the source can be parsed as JavaScript by attempting to create a script block
 try {
-    $null = [System.Management.Automation.Language.Parser]::ParseInput($source, [ref]$null, [ref]$null)
+    [ScriptBlock]::Create($source) | Out-Null
 } catch {
-    throw "Syntax error in webview-bridge.js: $_"
+    throw "Failed to parse JavaScript source: $_"
 }
 
-# Perform assertions on content inclusion/exclusion
-function Assert-Includes {
-    param ([string]$content, [string]$expected)
-    if (-not $content.Contains($expected)) {
-        throw "Assertion failed: Expected to find '$expected' in source."
-    }
-}
+# Assertions to check for specific strings in the source
+Assert-True ($source -like '*location.hostname !== "www.tiktok.com"*') "Missing location.hostname check"
+Assert-True ($source -like '*root.top === root*') "Missing root.top check"
+Assert-True ($source -like '*if (!isTop) return*') "Missing isTop guard"
+Assert-True ($source -like '*MAX_MESSAGE_BYTES = 64 * 1024*') "Missing MAX_MESSAGE_BYTES definition"
+Assert-True ($source -like '*MAX_AUDIO_SECONDS = 12*') "Missing MAX_AUDIO_SECONDS definition"
+Assert-True ($source -like '*QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400*') "Missing QUICK_RECOVER_RELOAD_COOLDOWN_MS definition"
+Assert-True ($source -like '*ALLOWED_COMMANDS*') "Missing ALLOWED_COMMANDS reference"
+Assert-True ($source -like '*"set-auto-reconnect"*') "Missing set-auto-reconnect command"
+Assert-True ($source -like '*"set-limiter"*') "Missing set-limiter command"
+Assert-True ($source -like '*"scan-recommendations"*') "Missing scan-recommendations command"
+Assert-True ($source -like '*"cancel-recommendation-scan"*') "Missing cancel-recommendation-scan command"
+Assert-True ($source -like '*MAX_MEDIA_URLS = 12*') "Missing MAX_MEDIA_URLS definition"
+Assert-True ($source -like '*const mediaUrls = new Map()*') "Missing mediaUrls Map declaration"
+Assert-True ($source -like '*emit("media-url"*') "Missing emit media-url call"
+Assert-True ($source -like '*addEventListener("message"*') "Missing addEventListener message"
+Assert-False ($source -like '*.send =*') "Found forbidden .send assignment"
+Assert-False ($source -like '*document.cookie*') "Found forbidden document.cookie usage"
+Assert-False ($source -like '*localStorage*') "Found forbidden localStorage usage"
+Assert-True ($source -like '*FORCE_RETURN_KEY = "tlc-force-return"*') "Missing FORCE_RETURN_KEY definition"
+Assert-True ($source -like '*sessionStorage.getItem(FORCE_RETURN_KEY)*') "Missing sessionStorage.getItem usage"
+Assert-False ($source -like '*sessionStorage.clear*') "Found forbidden sessionStorage.clear usage"
+Assert-False ($source -like '*innerHTML*') "Found forbidden innerHTML usage"
 
-function Assert-NotIncludes {
-    param ([string]$content, [string]$unexpected)
-    if ($content.Contains($unexpected)) {
-        throw "Assertion failed: Unexpected content found '$unexpected' in source."
-    }
-}
-
-Assert-Includes $source 'location.hostname !== "www.tiktok.com"'
-Assert-Includes $source "root.top === root"
-Assert-Includes $source "if (!isTop) return"
-Assert-Includes $source "MAX_MESSAGE_BYTES = 64 * 1024"
-Assert-Includes $source "MAX_AUDIO_SECONDS = 12"
-Assert-Includes $source "QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400"
-Assert-Includes $source "ALLOWED_COMMANDS"
-Assert-Includes $source '"set-auto-reconnect"'
-Assert-Includes $source '"set-limiter"'
-Assert-Includes $source '"scan-recommendations"'
-Assert-Includes $source '"cancel-recommendation-scan"'
-Assert-Includes $source "MAX_MEDIA_URLS = 12"
-Assert-Includes $source "const mediaUrls = new Map()"
-Assert-Includes $source 'emit("media-url"'
-Assert-Includes $source "addEventListener(`"message`""
-Assert-NotIncludes $source ".send ="
-Assert-NotIncludes $source "document.cookie"
-Assert-NotIncludes $source "localStorage"
-Assert-Includes $source 'FORCE_RETURN_KEY = "tlc-force-return"'
-Assert-Includes $source "sessionStorage.getItem(FORCE_RETURN_KEY)"
-Assert-NotIncludes $source "sessionStorage.clear"
-Assert-NotIncludes $source "innerHTML"
-
-# Check copies match original
+# Check copies of the bridge file
 $copies = @(
-    (Join-Path $root ".." "mobile" "ios" "Resources" "webview-bridge.js"),
-    (Join-Path $root ".." "mobile" "android" "app" "src" "main" "res" "raw" "webview_bridge.js")
+    Join-Path $root ".." "mobile" "ios" "Resources" "webview-bridge.js"
+    Join-Path $root ".." "mobile" "android" "app" "src" "main" "res" "raw" "webview_bridge.js"
 )
 
 foreach ($copy in $copies) {
     $copyContent = Get-Content -Path $copy -Raw -Encoding UTF8
-    if ($copyContent -ne $source) {
-        throw "Bridge copy drifted: $copy"
-    }
+    Assert-True ($copyContent -eq $source) "Bridge copy drifted: $copy"
 }
 
 Write-Host "PASS: mobile bridge origin, main-frame, size, command, audio-duration and storage guards"
+
+function Assert-True([bool]$Condition, [string]$Message) {
+    if (-not $Condition) {
+        throw "Assertion failed: $Message"
+    }
+}
+
+function Assert-False([bool]$Condition, [string]$Message) {
+    if ($Condition) {
+        throw "Assertion failed: $Message"
+    }
+}

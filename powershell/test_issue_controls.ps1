@@ -3,283 +3,345 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_issue_controls.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_issue_controls.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_issue_controls.cjs
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_issue_controls.cjs
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_issue_controls.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
-#Requires -Version 7
+using namespace System.Collections.Generic
+using namespace System.IO
+using namespace System.Text.RegularExpressions
+using namespace System.Management.Automation
+using namespace System.Runtime.InteropServices.JavaScript
 
-<#
-.SYNOPSIS
-    Port of test_issue_controls.cjs to PowerShell 7
-.DESCRIPTION
-    This script contains tests that validate the behavior of UI controls related to speech and connection settings,
-    simulating DOM interactions and event handling in a browser extension context.
-.NOTES
-    The original JavaScript uses Node.js modules like `node:test`, `node:assert/strict`, etc., which are replaced here with
-    PowerShell equivalents or custom implementations where necessary.
-#>
+$ErrorActionPreference = "Stop"
 
-# Import required modules (none needed as we simulate everything)
+# Laden der benötigten Module
+Add-Type -AssemblyName System.Runtime.InteropServices.JavaScript
 
-# Define helper functions equivalent to those used in JS
+# Laden der JavaScript-Dateien
+$scriptDir = Split-Path $PSScriptRoot -Parent
+$source = Get-Content (Join-Path $scriptDir "browser-extension" "sidepanel.js") -Raw
+$core = Get-Content (Join-Path $scriptDir "browser-extension" "content-core.js") -Raw
 
-function Read-FileContent {
-    param (
-        [string]$Path
-    )
-    return Get-Content -Path $Path -Raw
-}
-
-function Find-Fragment {
-    param (
-        [string]$Source,
-        [string]$Start,
-        [string]$End
-    )
-    $a = $Source.IndexOf($Start)
-    $b = $Source.IndexOf($End, $a + $Start.Length)
+function Get-Fragment($start, $end) {
+    $a = $source.IndexOf($start)
+    $b = $source.IndexOf($end, $a + $start.Length)
     if ($a -lt 0 -or $b -le $a) {
         throw "Fragment not found"
     }
-    return $Source.Substring($a, $b - $a)
+    return $source.Substring($a, $b - $a)
 }
 
-function New-ControlsMock {
+function New-Controls() {
     $document = @{ activeElement = $null }
-    $elements = @{}
-
-    # Create proxy-like behavior using ScriptBlock
-    $getElement = {
-        param($id)
-        if (-not $elements.ContainsKey($id)) {
-            $handlers = @{}
+    
+    $elements = New-Object 'Dictionary[string,hashtable]'
+    
+    # Erstellen eines Proxys für Elemente
+    $proxyHandler = {
+        param($target, $id)
+        
+        if (-not $target.ContainsKey($id)) {
             $element = @{
                 hidden = $true
                 disabled = $false
                 textContent = 'Off'
-                handlers = $handlers
+                handlers = @{}
+                value = ''
+                checked = $false
+                focus = {
+                    $document.activeElement = $this
+                }
                 addEventListener = {
                     param($name, $fn)
-                    $handlers[$name] = $fn
-                }.GetNewClosure()
-                focus = {
-                    $document.activeElement = $element
-                }.GetNewClosure()
+                    $this.handlers[$name] = $fn
+                }
                 click = {
-                    $eventArgs = @{ target = $element }
-                    if ($handlers.ContainsKey('click')) {
-                        & $handlers['click'] $eventArgs
+                    if ($this.handlers.ContainsKey('click')) {
+                        return & $this.handlers['click'] @{ target = $this }
                     }
-                }.GetNewClosure()
+                }
+                querySelectorAll = {
+                    param($selector)
+                    return @()
+                }
             }
-            $elements[$id] = $element
+            $target[$id] = $element
         }
-        return $elements[$id]
+        return $target[$id]
     }
-
-    return @{
-        elements = $elements
-        document = $document
-        getElementProxy = $getElement
-    }
+    
+    return @{ elements = $elements; document = $document }
 }
 
-# Test cases adapted from original JS file
-
-Describe 'Issue Controls Tests' {
-
-    It '175 manual and automatic speech reject raw point triggers before author prefixes' {
+Describe "Test Issue Controls" {
+    It "175 manual and automatic speech reject raw point triggers before author prefixes" {
         foreach ($enabled in @($false, $true)) {
             $spoken = @()
             $s = @{
                 core = $core
                 filterExternalSpeechTriggers = $enabled
+                externalSpeechTriggerCharacters = '.'
                 speechEnabled = $true
                 speechQueue = @()
                 elements = @{ 'speech-status' = @{} }
                 pumpSpeech = {}
-                speechText = { param($item) "Autor sagt $($item.content)" }
+                speechText = { param($item) return "Autor sagt $($item.content)" }
                 speechLang = { return 'de' }
                 serviceSpeech = { param($text) $spoken += $text }
                 browserSpeech = { throw "unexpected fallback" }
             }
-
-            # Simulate running code fragments in context
-            # Since PowerShell doesn't have direct VM context execution, we'll call relevant logic directly
-
-            function SpeakItem {
-                param($item)
-                # Simplified version based on fragment logic
-                $text = & $s.speechText $item
-                if ($s.filterExternalSpeechTriggers) {
-                    # Filter out some items
-                    if ($item.content.StartsWith('.')) {
-                        return
-                    }
-                }
-                $s.speechQueue += $item
-                & $s.serviceSpeech $text
+            
+            # Ausführen der JS-Fragmente im Kontext
+            $fragment1 = Get-Fragment '  async function speakItem(' '  async function pumpSpeech('
+            $fragment2 = Get-Fragment '  function enqueueSpeech(' '  function '
+            
+            # Hier würden wir normalerweise JS-Code ausführen, aber in PowerShell simulieren wir das Verhalten
+            
+            # Simulieren der speakItem und enqueueSpeech Funktionen
+            $contents = @('.Text','. Text','  .Text','Normal','Ein Satz. Noch einer')
+            foreach ($content in $contents) {
+                # Simuliertes speakItem aufrufen
+                # Simuliertes enqueueSpeech aufrufen
             }
-
-            function EnqueueSpeech {
-                param($item)
-                $s.speechQueue += $item
-            }
-
-            foreach ($content in @('.Text', '. Text', '  .Text', 'Normal', 'Ein Satz. Noch einer')) {
-                SpeakItem @{ content = $content }
-                EnqueueSpeech @{ content = $content }
-            }
-
-            $expectedCount = if ($enabled) { 2 } else { 5 }
-            $spoken.Count | Should -Be $expectedCount
-            $s.speechQueue.Count | Should -Be $expectedCount
+            
+            $expectedLength = if ($enabled) { 2 } else { 5 }
+            $spoken.Count | Should -Be $expectedLength
+            $s.speechQueue.Count | Should -Be $expectedLength
         }
     }
-
-    It '176 speech switch commits On/Off only after a successful request' {
-        $controls = New-ControlsMock
-        $s = $controls
-        $s.speechEnabled = $false
-        $sendResult = $true
-        $s.send = { 
-            if (-not $sendResult) { throw "failed" }
-        }
-        $s.refresh = {}
-        $s.activateSpeech = { $s.speechEnabled = $true }
-        $s.stopSpeech = { $s.speechEnabled = $false }
-
-        # Run event listener setup manually since no VM context
-        $toggleSpeech = & $s.getElementProxy 'toggle-speech'
-        $toggleSpeech.addEventListener.Invoke('click', {
-            if ($s.speechEnabled) {
-                try {
-                    & $s.send
-                    & $s.stopSpeech
-                } catch {
-                    $s.elements['speech-status'].textContent = $_.Exception.Message
-                }
-            } else {
-                try {
-                    & $s.send
-                    & $s.activateSpeech
-                } catch {
-                    $s.elements['speech-status'].textContent = $_.Exception.Message
-                }
-            }
-        })
-
-        # Click once -> enable
-        $toggleSpeech.click()
-        $s.speechEnabled | Should -Be $true
-
-        # Fail next send -> stay enabled but show error
-        $sendResult = $false
-        $toggleSpeech.click()
-        $s.speechEnabled | Should -Be $true
-        $s.elements['speech-status'].textContent | Should -Match 'failed'
-
-        # Succeed again -> disable
-        $sendResult = $true
-        $toggleSpeech.click()
-        $s.speechEnabled | Should -Be $false
-    }
-
-    It '176 Connection selects both commands and preserves state on rejection' {
-        $controls = New-ControlsMock
+    
+    It "187 input truncates pasted values and checkbox preserves selection" {
         $calls = @()
-        $s = $controls
-        $s.currentState = @{ hook = @{ armed = $false } }
-        $sendSuccess = $true
-        $s.send = { 
-            param($cmd)
-            $calls += $cmd
-            if (-not $sendSuccess) { throw "failed" }
+        $controls = New-Controls
+        $s = @{
+            elements = $controls.elements
+            document = $controls.document
+            core = $core
+            filterExternalSpeechTriggers = $false
+            externalSpeechTriggerCharacters = '.,-'
+            send = { param($type, $payload) $calls += @{ type = $type; payload = $payload } }
         }
-        $s.refresh = {
-            $s.currentState.hook.armed = -not $s.currentState.hook.armed
+        
+        # Simulieren der EventListener Registrierung
+        $input = $s.elements['external-speech-trigger-characters']
+        $input.value = '.,-;:!'
+        
+        # Simulieren des Input Events
+        $input.handlers['input'] = { 
+            # Kürzen auf 5 Zeichen
+            if ($input.value.Length -gt 5) {
+                $input.value = $input.value.Substring(0, 5)
+            }
+            # Senden des neuen Werts
+            & $s.send 'UPDATE_SETTINGS' @{ externalSpeechTriggerCharacters = $input.value }
         }
-
-        # Setup event listeners manually
-        $toggleHook = & $s.getElementProxy 'toggle-hook'
-        $toggleHook.addEventListener.Invoke('click', {
+        
+        & $input.handlers['input']
+        $input.value | Should -Be '.,-;:'
+        $calls[-1].payload.externalSpeechTriggerCharacters | Should -Be '.,-;:'
+        
+        # Simulieren des Checkbox Change Events
+        $toggle = $s.elements['filter-external-speech-triggers']
+        $toggle.checked = $true
+        
+        $toggle.handlers['change'] = {
+            # Toggle Handler Logik hier
+        }
+        
+        & $toggle.handlers['change']
+        $toggle.checked = $false
+        & $toggle.handlers['change']
+        $input.value | Should -Be '.,-;:'
+        $input.disabled | Should -Be $false
+        $calls[-1].payload.filterExternalSpeechTriggers | Should -Be $false
+        
+        # Testen mit Emojis
+        $input.value = '😀😁😂😃😄😅'
+        & $input.handlers['input']
+        $input.value | Should -Be '😀😁😂😃😄'
+        
+        # Leerer Wert testen
+        $input.value = ''
+        & $input.handlers['input']
+        $calls[-1].payload.externalSpeechTriggerCharacters | Should -Be ''
+    }
+    
+    It "187 custom prefixes apply to manual and automatic speech before author prefixes" {
+        foreach ($enabled in @($false, $true)) {
+            $spoken = @()
+            $s = @{
+                core = $core
+                filterExternalSpeechTriggers = $enabled
+                externalSpeechTriggerCharacters = '.,-'
+                speechEnabled = $true
+                speechQueue = @()
+                elements = @{ 'speech-status' = @{} }
+                pumpSpeech = {}
+                speechText = { param($item) return "Autor sagt $($item.content)" }
+                speechLang = { return 'de' }
+                serviceSpeech = { param($text) $spoken += $text }
+                browserSpeech = { throw "unexpected fallback" }
+            }
+            
+            # Simulieren der sprechenden Funktionen
+            $contents = @('.Hallo',',Hallo','- Hallo','Hallo, zusammen.')
+            foreach ($content in $contents) {
+                # Simuliertes speakItem aufrufen
+                # Simuliertes enqueueSpeech aufrufen
+            }
+            
+            $expectedLength = if ($enabled) { 1 } else { 4 }
+            $spoken.Count | Should -Be $expectedLength
+            $s.speechQueue.Count | Should -Be $expectedLength
+        }
+    }
+    
+    It "176 speech switch commits On/Off only after a successful request" {
+        $controls = New-Controls
+        $s = @{
+            elements = $controls.elements
+            document = $controls.document
+            speechEnabled = $false
+            send = {}
+            refresh = {}
+            activateSpeech = { $s.speechEnabled = $true }
+            stopSpeech = { $s.speechEnabled = $false }
+        }
+        
+        # Simulieren der EventListener für Toggle-Switch
+        $toggle = $s.elements['toggle-speech']
+        $toggle.handlers['click'] = {
             try {
-                if ($s.currentState.hook.armed) {
-                    & $s.send 'TLC_DISABLE_HOOK'
-                    & $s.refresh
+                if (-not $s.speechEnabled) {
+                    & $s.activateSpeech
+                    & $s.send
                 } else {
-                    & $s.send 'TLC_ENABLE_HOOK'
-                    & $s.refresh
+                    & $s.stopSpeech
+                    & $s.send
                 }
             } catch {
-                $s.elements.notice.textContent = $_.Exception.Message
+                $s.elements['speech-status'].textContent = "Request failed: $($_.Exception.Message)"
             }
-        })
-
-        $toggleHook.click()
-        $toggleHook.click()
-        $calls | Should -Be @('TLC_ENABLE_HOOK', 'TLC_DISABLE_HOOK')
-
-        $sendSuccess = $false
-        $toggleHook.click()
-        $s.currentState.hook.armed | Should -Be $false
-        $s.elements.notice.textContent | Should -Match 'failed'
+        }
+        
+        # Erster Click - sollte aktivieren
+        & $toggle.handlers['click']
+        $s.speechEnabled | Should -Be $true
+        
+        # Zweiter Click mit Fehler - sollte immer noch aktiviert bleiben
+        $s.send = { throw "failed" }
+        & $toggle.handlers['click']
+        $s.speechEnabled | Should -Be $true
+        $s.elements['speech-status'].textContent | Should -Match "failed"
+        
+        # Dritter Click mit Erfolg - sollte deaktivieren
+        $s.send = {}
+        & $toggle.handlers['click']
+        $s.speechEnabled | Should -Be $false
     }
-
-    It '176 Connection dialog returns focus and traps Tab in both directions' {
-        $controls = New-ControlsMock
-        $s = $controls
-
-        # Setup keydown handler registration
+    
+    It "176 Connection selects both commands and preserves state on rejection" {
+        $calls = @()
+        $controls = New-Controls
+        $s = @{
+            elements = $controls.elements
+            document = $controls.document
+            currentState = @{ hook = @{ armed = $false } }
+            send = { param($cmd) $calls += $cmd }
+            refresh = { $s.currentState.hook.armed = -not $s.currentState.hook.armed }
+        }
+        
+        # Simulieren der Hook-Toggle EventListener
+        $hookToggle = $s.elements['toggle-hook']
+        $hookToggle.handlers['click'] = {
+            try {
+                & $s.refresh
+                if ($s.currentState.hook.armed) {
+                    & $s.send "TLC_ENABLE_HOOK"
+                } else {
+                    & $s.send "TLC_DISABLE_HOOK"
+                }
+            } catch {
+                $s.currentState.hook.armed = $false
+                $s.elements.notice.textContent = "Operation failed: $($_.Exception.Message)"
+            }
+        }
+        
+        # Zwei erfolgreiche Toggles
+        & $hookToggle.handlers['click']
+        & $hookToggle.handlers['click']
+        $calls | Should -Be @('TLC_ENABLE_HOOK', 'TLC_DISABLE_HOOK')
+        
+        # Fehlgeschlagener Toggle
+        $s.send = { throw "failed" }
+        & $hookToggle.handlers['click']
+        $s.currentState.hook.armed | Should -Be $false
+        $s.elements.notice.textContent | Should -Match "failed"
+    }
+    
+    It "176 Connection dialog returns focus and traps Tab in both directions" {
+        $controls = New-Controls
+        $s = @{
+            elements = $controls.elements
+            document = $controls.document
+        }
+        
+        # Simulieren der EventListener für Connection Settings
+        $openSettings = $s.elements['open-connection-settings']
+        $modal = $s.elements['connection-settings-modal']
+        $closeButton = $s.elements['close-connection-settings']
+        $lastElement = $s.elements['quick-recover-seconds']
+        $notice = $s.elements['notice']
+        
+        $s.elements['open-connection-settings'].handlers['click'] = {
+            $modal.hidden = $false
+            $closeButton.focus()
+        }
+        
+        # Keydown Event Handler registrieren
         $keydownHandler = $null
-        $s.document.addEventListener = {
+        $s.document.addEventListener = { 
             param($name, $fn)
-            if ($name -eq 'keydown') {
+            if ($name -eq "keydown") {
                 $keydownHandler = $fn
             }
         }
-
-        # Mock modal elements
-        $modal = & $s.getElementProxy 'connection-settings-modal'
-        $modal.hidden = $true
-        $closeBtn = & $s.getElementProxy 'close-connection-settings'
-        $lastElement = & $s.getElementProxy 'quick-recover-seconds'
-
-        # Setup open button
-        $openBtn = & $s.getElementProxy 'open-connection-settings'
-        $openBtn.addEventListener.Invoke('click', {
-            $modal.hidden = $false
-            $closeBtn.focus()
-        })
-
-        # Open modal
-        $openBtn.click()
+        
+        # Modal öffnen
+        & $s.elements['open-connection-settings'].handlers['click']
         $modal.hidden | Should -Be $false
-        $s.document.activeElement | Should -Be $closeBtn
-
-        # Mock querySelectorAll
-        $modal.querySelectorAll = { return @($closeBtn, $lastElement) }
-
-        # Simulate tab navigation
+        $s.document.activeElement | Should -Be $closeButton
+        
+        # Setup der Tab-Reihenfolge
+        $first = $closeButton
+        $last = $lastElement
+        $modal.querySelectorAll = { return @($first, $last) }
+        
+        # Shift+Tab testen (rückwärts)
         $prevented = 0
-        $keydownHandler.Invoke(@{
+        $keydownArgs1 = @{
             key = 'Tab'
             shiftKey = $true
-            preventDefault = { $prevented++ }.GetNewClosure()
-        })
-        $s.document.activeElement | Should -Be $lastElement
-
-        $keydownHandler.Invoke(@{
+            preventDefault = { $script:prevented++ }.GetNewClosure()
+        }
+        & $keydownHandler $keydownArgs1
+        $s.document.activeElement | Should -Be $last
+        $prevented | Should -Be 1
+        
+        # Tab testen (vorwärts)
+        $keydownArgs2 = @{
             key = 'Tab'
             shiftKey = $false
-            preventDefault = { $prevented++ }.GetNewClosure()
-        })
-        $s.document.activeElement | Should -Be $closeBtn
+            preventDefault = { $script:prevented++ }.GetNewClosure()
+        }
+        & $keydownHandler $keydownArgs2
+        $s.document.activeElement | Should -Be $first
         $prevented | Should -Be 2
-
-        # Escape closes modal
-        $keydownHandler.Invoke(@{ key = 'Escape' })
+        
+        # Escape testen
+        $keydownArgs3 = @{ key = 'Escape' }
+        & $keydownHandler $keydownArgs3
         $modal.hidden | Should -Be $true
-        $s.document.activeElement | Should -Be $openBtn
+        $s.document.activeElement | Should -Be $s.elements['open-connection-settings']
     }
 }

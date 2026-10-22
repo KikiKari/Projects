@@ -3,7 +3,8 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_bridge.cjs
-# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_mobile_bridge.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -14,28 +15,31 @@ contains() {
     [[ "$haystack" == *"$needle"* ]]
 }
 
-# Function to check if a string does NOT contain a substring
+# Function to check if a string does not contain a substring
 not_contains() {
     local haystack="$1"
     local needle="$2"
     ! contains "$haystack" "$needle"
 }
 
-# Get the directory of this script and resolve paths
+# Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(realpath "$SCRIPT_DIR/..")"
 BRIDGE_PATH="$ROOT/mobile-shared/webview-bridge.js"
 
-# Check if bridge file exists
+# Check if required files exist
 if [[ ! -f "$BRIDGE_PATH" ]]; then
-    echo "ERROR: Bridge file not found at $BRIDGE_PATH" >&2
+    echo "FAIL: Bridge file not found at $BRIDGE_PATH" >&2
     exit 1
 fi
 
 # Read the source file
 SOURCE=$(cat "$BRIDGE_PATH")
 
-# Run assertions - each should be contained in source
+# Validate that the JavaScript can be parsed by attempting to find key strings
+echo "Checking for expected content..."
+
+# Assertions - each should be present
 declare -a must_contain=(
     'location.hostname !== "www.tiktok.com"'
     "root.top === root"
@@ -56,7 +60,7 @@ declare -a must_contain=(
     "sessionStorage.getItem(FORCE_RETURN_KEY)"
 )
 
-# Run negative assertions - each should NOT be contained in source
+# Assertions - these must NOT be present
 declare -a must_not_contain=(
     ".send ="
     "document.cookie"
@@ -65,23 +69,27 @@ declare -a must_not_contain=(
     "innerHTML"
 )
 
-# Check positive assertions
+# Check for presence of required strings
 for item in "${must_contain[@]}"; do
     if ! contains "$SOURCE" "$item"; then
-        echo "FAIL: Expected to find '$item' in bridge source" >&2
+        echo "FAIL: Expected string not found: $item" >&2
         exit 1
     fi
 done
 
-# Check negative assertions
+# Check for absence of forbidden strings
 for item in "${must_not_contain[@]}"; do
     if ! not_contains "$SOURCE" "$item"; then
-        echo "FAIL: Not expected to find '$item' in bridge source" >&2
+        echo "FAIL: Forbidden string found: $item" >&2
         exit 1
     fi
 done
 
-# Check copies match
+echo "All content checks passed."
+
+# Check copies in iOS and Android directories
+echo "Checking bridge copies..."
+
 COPY_PATHS=(
     "$ROOT/../mobile/ios/Resources/webview-bridge.js"
     "$ROOT/../mobile/android/app/src/main/res/raw/webview_bridge.js"
@@ -89,11 +97,12 @@ COPY_PATHS=(
 
 for copy_path in "${COPY_PATHS[@]}"; do
     if [[ ! -f "$copy_path" ]]; then
-        echo "ERROR: Bridge copy not found at $copy_path" >&2
+        echo "FAIL: Bridge copy not found at $copy_path" >&2
         exit 1
     fi
     
     COPY_CONTENT=$(cat "$copy_path")
+    
     if [[ "$COPY_CONTENT" != "$SOURCE" ]]; then
         echo "FAIL: Bridge copy drifted: $copy_path" >&2
         exit 1

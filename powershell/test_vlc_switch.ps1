@@ -3,195 +3,171 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_vlc_switch.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_vlc_switch.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_vlc_switch.cjs
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_vlc_switch.cjs
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_vlc_switch.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 # PowerShell 7 translation of test_vlc_switch.cjs
 # This script tests VLC switching functionality by simulating browser environment
 
-$ErrorActionPreference = "Stop"
-
-# Helper functions to simulate JavaScript behavior
-function New-JSObject {
-    param([hashtable]$Properties = @{})
-    $obj = New-Object PSObject
-    foreach ($key in $Properties.Keys) {
-        $obj | Add-Member -NotePropertyName $key -NotePropertyValue $Properties[$key]
+# Helper functions to mimic JavaScript behavior
+function New-ObjectFromTemplate($template) {
+    $newObj = @{}
+    $template.PSObject.Properties | ForEach-Object {
+        $newObj[$_.Name] = $_.Value
     }
-    return $obj
+    return $newObj
 }
 
-function New-JSArray {
-    param([array]$Items = @())
-    return [System.Collections.ArrayList]$Items
-}
-
-# Simulate Node.js path operations
-function Get-JoinPath {
-    param([string]$Path1, [string]$Path2)
-    return Join-Path $Path1 $Path2
-}
-
-# Get current directory and read content.js
-$scriptDir = Split-Path $MyInvocation.MyCommand.Path
-$contentJsPath = Get-JoinPath (Get-JoinPath $scriptDir "..") "browser-extension/content.js"
-$source = Get-Content $contentJsPath -Raw
-
-# Create mock objects
-$listeners = @{}
-$native = New-JSObject @{
-    muted = $false
-    paused = $false
-    pause = { 
-        $this.paused = $true
-    }
-    play = {
-        $task = Start-ThreadJob { Start-Sleep -Milliseconds 10 }
-        return $task
-    }
-}
-$fallback = New-JSObject @{
-    muted = $false
-    paused = $false
-}
-$media = @($native, $fallback)
-$unrelatedVideo = $native | ConvertTo-Json -Depth 10 | ConvertFrom-Json
-$speechAudio = $native | ConvertTo-Json -Depth 10 | ConvertFrom-Json
-
-$surface = New-JSObject @{
-    querySelectorAll = {
-        param($selector)
-        if ($selector -ne "video") {
-            throw "Assertion failed: Expected selector 'video', got '$selector'"
-        }
-        return $media
+function Assert-Equal($actual, $expected, $message = "") {
+    if ($actual -ne $expected) {
+        throw "Assertion failed: expected '$expected', got '$actual'. $message"
     }
 }
 
-$fallback.closest = {
-    return @{ parentElement = $surface }
+function Assert-Match($text, $pattern, $message = "") {
+    if (-not ($text -match $pattern)) {
+        throw "Assertion failed: text does not match pattern '$pattern'. $message"
+    }
 }
 
-$gain = @{ value = 0.7 }
-$changed = $null
-
-# Create context object to simulate VM context
-$context = @{
-    audioPipeline = @{
-        video = $native
-        outputGain = @{ gain = $gain }
+function Assert-DoesNotMatch($text, $pattern, $message = "") {
+    if ($text -match $pattern) {
+        throw "Assertion failed: text should not match pattern '$pattern'. $message"
     }
-    document = @{
+}
+
+try {
+    # Get script directory
+    $scriptDir = Split-Path $MyInvocation.MyCommand.Path
+    $projectRoot = Join-Path $scriptDir ".."
+    
+    # Read content.js
+    $contentJsPath = Join-Path $projectRoot "browser-extension" "content.js"
+    $source = Get-Content $contentJsPath -Raw
+    
+    # Setup mock objects
+    $listeners = @{}
+    $native = @{ 
+        muted = $false
+        paused = $false
+        pause = { $this.paused = $true }
+        play = { $this.paused = $false; return [PSCustomObject]@{ } }
+    }
+    
+    $fallback = @{ 
+        muted = $false
+        paused = $false
+        closest = $null
+    }
+    
+    $media = @($native, $fallback)
+    $unrelatedVideo = New-ObjectFromTemplate($native)
+    $speechAudio = New-ObjectFromTemplate($native)
+    
+    $surface = @{
         querySelectorAll = {
-            throw "Must not globally suppress page media"
-        }
-        documentElement = @{}
-        addEventListener = {
-            param($name, $fn)
-            $listeners[$name] = $fn
-        }
-        removeEventListener = {
-            param($name)
-            $listeners.Remove($name)
+            param($selector)
+            Assert-Equal $selector "video"
+            return $media
         }
     }
-    MutationObserver = {
-        param($fn)
-        $script:changed = $fn
-        return @{
+    
+    $fallback.closest = { return @{ parentElement = $surface } }
+    
+    $gain = @{ value = 0.7 }
+    $changed = $null
+    
+    # Create context simulation
+    $context = @{
+        audioPipeline = @{
+            video = $native
+            outputGain = @{ gain = $gain }
+        }
+        document = @{
+            querySelectorAll = {
+                throw "Must not globally suppress page media"
+            }
+            documentElement = @{}
+            addEventListener = {
+                param($name, $fn)
+                $listeners[$name] = $fn
+            }
+            removeEventListener = {
+                param($name)
+                $null = $listeners.Remove($name)
+            }
+        }
+        MutationObserver = [PSCustomObject]@{
             observe = {}
             disconnect = {}
         }
     }
-}
-
-# Extract and run relevant code from content.js
-$startIndex = $source.IndexOf("  function suppressNativeAudio(")
-$endIndex = $source.IndexOf("  async function playMediaFallback(")
-$codeToRun = $source.Substring($startIndex, $endIndex - $startIndex)
-
-# Define suppressNativeAudio function in PowerShell context
-function suppressNativeAudio {
-    param($fallbackArg)
     
-    # Store original state
-    $originalMuted = $native.muted
-    $originalPaused = $native.paused
-    $originalGain = $gain.value
+    # Extract and run suppressNativeAudio function
+    $startPos = $source.IndexOf("  function suppressNativeAudio(")
+    $endPos = $source.IndexOf("  async function playMediaFallback(")
+    $suppressFunctionCode = $source.Substring($startPos, $endPos - $startPos)
     
-    # Apply suppression
-    $native.muted = $true
-    $native.pause()
-    $gain.value = 0
+    # Execute the function code in context (simulated)
+    Invoke-Expression $suppressFunctionCode
     
-    # Return release function
-    return {
-        $native.muted = $originalMuted
-        $native.paused = $originalPaused
-        $gain.value = $originalGain
-    }.GetNewClosure()
-}
-
-# Test assertions
-$release = suppressNativeAudio $fallback
-if ($native.muted -ne $true) { throw "Assertion failed: native.muted should be true" }
-if ($native.paused -ne $true) { throw "Assertion failed: native.paused should be true" }
-if ($gain.value -ne 0) { throw "Assertion failed: gain.value should be 0" }
-if ($fallback.muted -ne $false) { throw "Assertion failed: fallback.muted should be false" }
-if ($fallback.paused -ne $false) { throw "Assertion failed: fallback.paused should be false" }
-
-$native.paused = $false
-& $listeners["play"]
-if ($native.paused -ne $true) { throw "Assertion failed: native.paused should be true after play event" }
-
-$replacement = New-JSObject @{
-    muted = $false
-    paused = $false
-}
-$media += $replacement
-& $changed
-if ($replacement.muted -ne $true) { throw "Assertion failed: replacement.muted should be true" }
-if ($replacement.paused -ne $true) { throw "Assertion failed: replacement.paused should be true" }
-
-& $release
-if ($native.muted -ne $false) { throw "Assertion failed: native.muted should be false after release" }
-if ($native.paused -ne $false) { throw "Assertion failed: native.paused should be false after release" }
-if ($gain.value -ne 0.7) { throw "Assertion failed: gain.value should be 0.7 after release" }
-if ($listeners.Count -ne 0) { throw "Assertion failed: listeners should be empty" }
-if ($unrelatedVideo.paused -ne $false) { throw "Assertion failed: unrelatedVideo.paused should be false" }
-if ($speechAudio.paused -ne $false) { throw "Assertion failed: speechAudio.paused should be false" }
-
-# Test unrelated audio pipeline
-$context.audioPipeline.video = $unrelatedVideo
-$releaseUnrelated = suppressNativeAudio $fallback
-if ($gain.value -ne 0.7) { throw "Assertion failed: Unrelated audio pipeline must remain unchanged" }
-& $releaseUnrelated
-
-# Read background.js and test normal live functionality
-$backgroundJsPath = Get-JoinPath (Get-JoinPath $scriptDir "..") "browser-extension/background.js"
-$background = Get-Content $backgroundJsPath -Raw
-
-$normalStart = $background.IndexOf("async function openNormalLive(")
-$normalEnd = $background.IndexOf("chrome.sidePanel.setPanelBehavior")
-$normal = $background.Substring($normalStart, $normalEnd - $normalStart)
-
-# Basic string checks since we can't execute the JS directly
-if (-not ($normal -match "await chrome.tabs.update\(tabId, \{ url: normalLiveUrl\(handle\) \}\)")) {
-    throw "Assertion failed: Normal should contain tab update call"
-}
-if ($normal -match "if \(reloading\)") {
-    throw "Assertion failed: Normal should not contain reloading check"
-}
-if (-not ($source -match "if \(holder\?\.isConnected\) return holder.querySelector\(`"video`"\)")) {
-    throw "Assertion failed: Source should contain holder.isConnected check"
-}
-
-Write-Host "PASS: VLC isolates native audio, suppresses restarted/replaced media, restores on failure; Normal navigates even at same URL; existing fallback reused"
-
-# Exercise switch functionality
-function exerciseSwitch {
-    # Read sidepanel.js
-    $sidepanelJsPath = Get-JoinPath (Get-JoinPath $scriptDir "..") "browser-extension/sidepanel.js"
+    # Call suppressNativeAudio
+    $release = suppressNativeAudio $fallback
+    
+    # Assertions
+    Assert-Equal $native.muted $true
+    Assert-Equal $native.paused $true
+    Assert-Equal $gain.value 0
+    Assert-Equal $fallback.muted $false
+    Assert-Equal $fallback.paused $false
+    
+    $native.paused = $false
+    (& $listeners['play'])
+    Assert-Equal $native.paused $true
+    
+    $replacement = New-ObjectFromTemplate($native)
+    $replacement.muted = $false
+    $replacement.paused = $false
+    $media += $replacement
+    
+    # Simulate change callback
+    if ($changed) { & $changed }
+    
+    Assert-Equal $replacement.muted $true
+    Assert-Equal $replacement.paused $true
+    
+    # Release and verify restoration
+    & $release
+    Assert-Equal $native.muted $false
+    Assert-Equal $native.paused $false
+    Assert-Equal $gain.value 0.7
+    Assert-Equal $listeners.Count 0
+    Assert-Equal $unrelatedVideo.paused $false
+    Assert-Equal $speechAudio.paused $false
+    
+    # Test with unrelated video
+    $context.audioPipeline.video = $unrelatedVideo
+    $releaseUnrelated = suppressNativeAudio $fallback
+    Assert-Equal $gain.value 0.7 "Unrelated audio pipeline must remain unchanged"
+    & $releaseUnrelated
+    
+    # Read background.js
+    $backgroundJsPath = Join-Path $projectRoot "browser-extension" "background.js"
+    $background = Get-Content $backgroundJsPath -Raw
+    
+    $normalStart = $background.IndexOf("async function openNormalLive(")
+    $normalEnd = $background.IndexOf("chrome.sidePanel.setPanelBehavior")
+    $normal = $background.Substring($normalStart, $normalEnd - $normalStart)
+    
+    # Assertions on normal function
+    Assert-Match $normal "await chrome.tabs.update\(tabId, \{ url: normalLiveUrl\(handle\) \}\)"
+    Assert-DoesNotMatch $normal "if \(reloading\)"
+    Assert-Match $source "if \(holder\?\.isConnected\) return holder.querySelector\(`"video`"\)"
+    
+    Write-Host "PASS: VLC isolates native audio, suppresses restarted/replaced media, restores on failure; Normal navigates even at same URL; existing fallback reused"
+    
+    # Exercise switch functionality
+    $sidepanelJsPath = Join-Path $projectRoot "browser-extension" "sidepanel.js"
     $panel = Get-Content $sidepanelJsPath -Raw
     
     $clickStart = $panel.IndexOf('  elements["player-vlc-frame"].addEventListener("click"')
@@ -200,37 +176,40 @@ function exerciseSwitch {
     $click = $null
     $starts = 0
     
-    $button = New-JSObject @{
+    $button = @{
         addEventListener = {
             param($event, $fn)
-            $script:click = $fn
+            $click = $fn
         }
     }
     
     $panelContext = @{
-        elements = @{ "player-vlc-frame" = $button }
+        elements = @{ 'player-vlc-frame' = $button }
         installVlcIfNeeded = {
             throw "Internal replacement must not wait for desktop installation"
         }
         runPlayer = {
             param($action, $target)
-            if ($action -ne "play-vlc-source") { throw "Assertion failed: action should be 'play-vlc-source'" }
-            if ($target -ne $button) { throw "Assertion failed: target mismatch" }
-            $script:starts++
+            Assert-Equal $action "play-vlc-source"
+            Assert-Equal $target $button
+            $starts++
         }
     }
     
-    # Simulate click event
+    $clickCode = $panel.Substring($clickStart, $clickEnd - $clickStart)
+    Invoke-Expression $clickCode
+    
+    # Simulate click
     & $click
-    if ($starts -ne 1) { throw "Assertion failed: VLC click dispatches internal player immediately" }
+    Assert-Equal $starts 1 "VLC click dispatches internal player immediately"
     
     # Test primaryVideo selection logic
-    $largeNative = New-JSObject @{
+    $largeNative = @{
         closest = { return $null }
         getBoundingClientRect = { return @{ width = 1000; height = 1000 } }
     }
     
-    $smallReplacement = New-JSObject @{
+    $smallReplacement = @{
         closest = { return @{} }
         getBoundingClientRect = { return @{ width = 100; height = 100 } }
     }
@@ -244,25 +223,20 @@ function exerciseSwitch {
         }
     }
     
-    # primaryVideo function logic
-    function primaryVideo {
-        if ($selection.activeMediaFallbackItem -and $selection.mediaFallbackRunning) {
-            return $smallReplacement
-        } elseif ($selection.activeMediaFallbackItem) {
-            return $smallReplacement
-        } else {
-            return $largeNative
-        }
-    }
+    $primaryVideoStart = $source.IndexOf("  function primaryVideo(")
+    $primaryVideoEnd = $source.IndexOf("  function playerToggleControl(")
+    $primaryVideoCode = $source.Substring($primaryVideoStart, $primaryVideoEnd - $primaryVideoStart)
     
-    if ((primaryVideo) -ne $smallReplacement) { throw "Assertion failed: Active replacement wins regardless of video size" }
+    Invoke-Expression $primaryVideoCode
+    
+    Assert-Equal (primaryVideo) $smallReplacement "Active replacement wins regardless of video size"
     
     $selection.activeMediaFallbackItem = $null
     $selection.mediaFallbackRunning = $true
-    if ((primaryVideo) -ne $smallReplacement) { throw "Assertion failed: Starting replacement owns player controls" }
+    Assert-Equal (primaryVideo) $smallReplacement "Starting replacement owns player controls"
     
     $selection.mediaFallbackRunning = $false
-    if ((primaryVideo) -ne $largeNative) { throw "Assertion failed: Inactive replacement excluded from native selection" }
+    Assert-Equal (primaryVideo) $largeNative "Inactive replacement excluded from native selection"
     
     # Test navigation
     $navigated = 0
@@ -270,76 +244,82 @@ function exerciseSwitch {
         chrome = @{
             tabs = @{
                 get = { return @{ url = "https://www.tiktok.com/@test/live" } }
-                update = { $script:navigated++ }
+                update = { $navigated++ }
             }
         }
         getState = { return @{} }
         pageHandle = { return "test" }
-        cancelEmbedSession = {}
-        cancelRecoveryForModeChange = {}
-        closeEmbedChatSource = {}
-        armLiveTab = {}
+        cancelEmbedSession = { }
+        cancelRecoveryForModeChange = { }
+        closeEmbedChatSource = { }
+        armLiveTab = { }
         normalLiveUrl = { return "https://www.tiktok.com/@test/live" }
     }
     
-    # Simulate openNormalLive execution
-    # This is a simplified version since we can't execute the actual JS function
-    & $ctx.chrome.tabs.update
-    if ($navigated -ne 1) { throw "Assertion failed: Normal must navigate even from the same LIVE URL" }
+    Invoke-Expression $normal
+    
+    openNormalLive 1
+    Assert-Equal $navigated 1 "Normal must navigate even from the same LIVE URL"
     
     # Test media fallback failure handling
     $released = 0
     $removed = 0
     $created = 0
     
-    $video = New-JSObject @{
-        pause = {}
-        removeAttribute = {}
-        load = {}
+    $video = @{
+        pause = { }
+        removeAttribute = { }
+        load = { }
     }
     
     $player = @{
         mediaFallbackRunning = $false
         mediaFallbackPageUrl = "live"
         location = @{ href = "live" }
-        attemptedMediaFallbackUrls = New-Object System.Collections.Generic.HashSet[string]
+        attemptedMediaFallbackUrls = @()
         activeMediaFallbackItem = $null
         releaseNativeAudio = $null
         mediaFallbackCandidates = { param($x) return $x }
         mediaFallbackKey = { param($x) return $x.url }
-        ensureMediaFallbackVideo = { $script:created++; return $video }
-        suppressNativeAudio = { return { $script:released++ } }
-        setMediaFallbackStatus = {}
-        destroyMediaFallbackPlayer = {}
-        tryMediaUrl = { return @{ ok = $false; reason = "test failure" } }
+        ensureMediaFallbackVideo = {
+            $created++
+            return $video
+        }
+        suppressNativeAudio = {
+            return {
+                $released++
+            }
+        }
+        setMediaFallbackStatus = { }
+        destroyMediaFallbackPlayer = { }
+        tryMediaUrl = {
+            return @{ ok = $false; reason = "test failure" }
+        }
         getPlayerState = { return @{} }
-        document = @{ getElementById = { return @{ remove = { $script:removed++ } } } }
+        document = @{
+            getElementById = {
+                return @{ remove = { $removed++ } }
+            }
+        }
     }
     
-    # Simulate playMediaFallback with empty sources
-    if ($created -ne 0) { throw "Assertion failed: No sources must not cover the native player" }
+    $playMediaFallbackStart = $source.IndexOf("  async function playMediaFallback(")
+    $playMediaFallbackEnd = $source.IndexOf("  async function configureLimiter(")
+    $playMediaFallbackCode = $source.Substring($playMediaFallbackStart, $playMediaFallbackEnd - $playMediaFallbackStart)
     
-    # Simulate playMediaFallback with failing source
-    $result = & {
-        $player.attemptedMediaFallbackUrls.Add("test") | Out-Null
-        $player.mediaFallbackRunning = $true
-        & $player.suppressNativeAudio
-        $tryResult = & $player.tryMediaUrl
-        $player.mediaFallbackRunning = $false
-        return @{ activated = $tryResult.ok }
-    }
+    Invoke-Expression $playMediaFallbackCode
     
-    if ($result.activated -ne $false) { throw "Assertion failed: Result should not be activated" }
-    if ($released -ne 1) { throw "Assertion failed: Failed startup restores native audio" }
-    if ($removed -ne 1) { throw "Assertion failed: Failed startup removes replacement" }
-    if ($player.mediaFallbackRunning -ne $false) { throw "Assertion failed: mediaFallbackRunning should be false" }
+    playMediaFallback @()
+    Assert-Equal $created 0 "No sources must not cover the native player"
+    
+    $result = playMediaFallback @(@{ url = "test"; quality = "test" })
+    Assert-Equal $result.activated $false
+    Assert-Equal $released 1 "Failed startup restores native audio"
+    Assert-Equal $removed 1 "Failed startup removes replacement"
+    Assert-Equal $player.mediaFallbackRunning $false
     
     Write-Host "PASS: actual Normal handler navigates same URL; failed VLC startup restores native player; empty sources create no overlay"
-}
-
-# Run exerciseSwitch and handle errors
-try {
-    exerciseSwitch
+    
 } catch {
     Write-Error $_.Exception.Message
     exit 1

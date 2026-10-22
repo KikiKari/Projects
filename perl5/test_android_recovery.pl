@@ -3,35 +3,92 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_android_recovery.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_android_recovery.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_android_recovery.cjs
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_android_recovery.cjs
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_android_recovery.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use Test2::V0;
 use File::Spec;
 use File::Basename;
+use JSON;
 
-# Helper to resolve paths like Node.js path.resolve
-sub resolve_path {
-    my @parts = @_;
-    my $resolved = File::Spec->rel2abs(File::Spec->catfile(@parts));
-    return $resolved;
+# Simulate Node.js modules and functions
+sub require_module {
+    my ($module) = @_;
+    # In a real scenario, this would load the module
+    # For now, we'll just return a hashref with the required functions
+    if ($module eq 'node:test') {
+        return { test => \&test };
+    } elsif ($module eq 'node:assert/strict') {
+        return { equal => \&assert_equal, ok => \&assert_ok, match => \&assert_match, deepEqual => \&assert_deep_equal };
+    } elsif ($module eq 'node:vm') {
+        return { runInNewContext => \&run_in_new_context };
+    } elsif ($module eq 'node:fs') {
+        return { readFileSync => \&read_file_sync };
+    } elsif ($module eq 'node:path') {
+        return { resolve => \&path_resolve, join => \&path_join };
+    }
+    return {};
 }
 
-# Get __dirname equivalent
-my $script_path = __FILE__;
-my $dirname = dirname($script_path);
+# Mock functions for Node.js built-ins
+sub test {
+    my ($name, $callback) = @_;
+    print "Running test: $name\n";
+    $callback->();
+}
 
-# Raw directory path
-my $raw_dir = resolve_path($dirname, '../../mobile/android/app/src/main/res/raw');
+sub assert_equal {
+    my ($actual, $expected, $message) = @_;
+    die "Assertion failed: $message\n" unless $actual eq $expected;
+}
 
-# Setup function
+sub assert_ok {
+    my ($value, $message) = @_;
+    die "Assertion failed: $message\n" unless $value;
+}
+
+sub assert_match {
+    my ($value, $regex, $message) = @_;
+    die "Assertion failed: $message\n" unless $value =~ /$regex/;
+}
+
+sub assert_deep_equal {
+    my ($actual, $expected, $message) = @_;
+    die "Assertion failed: $message\n" unless $actual eq $expected;
+}
+
+sub run_in_new_context {
+    my ($code, $context) = @_;
+    # This is a simplified version - in reality, you'd need a proper VM
+    # For now, we'll just return the context
+    return $context;
+}
+
+sub read_file_sync {
+    my ($path, $encoding) = @_;
+    open my $fh, '<', $path or die "Cannot read file $path: $!";
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    return $content;
+}
+
+sub path_resolve {
+    my @parts = @_;
+    return File::Spec->rel2abs(File::Spec->catfile(@parts));
+}
+
+sub path_join {
+    my @parts = @_;
+    return File::Spec->catfile(@parts);
+}
+
+# Main code
+my $raw = path_resolve(dirname(__FILE__), '../../mobile/android/app/src/main/res/raw');
+
 sub setup {
     my ($ios) = @_;
-    $ios //= 0;
-
-    # State variables
     my $now = 10000;
     my $plays = 0;
     my $seq = 0;
@@ -40,7 +97,6 @@ sub setup {
     my %listeners = ();
     my @events = ();
 
-    # Video mock
     my $video = {
         clientWidth => 100,
         clientHeight => 100,
@@ -57,23 +113,15 @@ sub setup {
             $plays++;
             return Promise->new(sub { $_[0]->('resolved') });
         },
-        textTracks => [],
+        textTracks => []
     };
 
-    # Root object
     my $root = {
-        location => {
-            origin => 'https://www.tiktok.com',
-            pathname => '/@creator/live',
+        location => { origin => 'https://www.tiktok.com', pathname => '/@creator/live' },
+        crypto => { randomUUID => sub { return sprintf("11111111-1111-1111-1111-%012d", ++$seq) } },
+        Date => {
+            now => sub { return $now }
         },
-        crypto => {
-            randomUUID => sub {
-                $seq++;
-                my $uuid_suffix = sprintf("%012d", $seq);
-                return "11111111-1111-1111-1111-$uuid_suffix";
-            }
-        },
-        Date => 'DateMock', # Placeholder for Date class override
         document => {
             scripts => [],
             body => { innerText => '' },
@@ -81,12 +129,12 @@ sub setup {
                 my ($s) = @_;
                 return $s eq 'video' ? [$video] : [];
             },
-            querySelector => sub { return undef; }
+            querySelector => sub { return undef }
         },
         tlcBridge => {
             postMessage => sub {
                 my ($s) = @_;
-                push @events, ref($s) ? $s : eval { decode_json($s) };
+                push @events, decode_json($s);
             }
         },
         addEventListener => sub {
@@ -102,12 +150,12 @@ sub setup {
             push @intervals, $f;
             return scalar(@intervals);
         },
-        clearInterval => sub { },
+        clearInterval => sub {},
         setTimeout => sub {
             my ($f, $ms) = @_;
-            $seq++;
-            $timers{$seq} = { f => $f, at => $now + $ms };
-            return $seq;
+            my $id = ++$seq;
+            $timers{$id} = { f => $f, at => $now + $ms };
+            return $id;
         },
         clearTimeout => sub {
             my ($id) = @_;
@@ -131,32 +179,14 @@ sub setup {
 
     $root->{top} = $root;
 
-    # Load script content
-    my $script_file = File::Spec->catfile($raw_dir, 'android_recovery.js');
-    open my $fh, '<:encoding(UTF-8)', $script_file or die "Cannot read file $script_file: $!";
-    my $script_content = do { local $/; <$fh> };
-    close $fh;
+    my $code = read_file_sync(path_join($raw, 'android_recovery.js'), 'utf8');
+    run_in_new_context($code, $root);
 
-    # Mock vm.runInNewContext - we'll just execute the code directly here
-    # In a real scenario, you'd need a JS interpreter or sandbox
-    # For now, we assume it populates $root with TLC_MOBILE_RECOVERY
-
-    # Simulate loading script into context (placeholder)
-    # This is where actual JavaScript execution would happen
-    # We'll simulate by manually setting up the API if needed
-
-    # Return interface
     return {
         dispatch => sub {
             my ($data) = @_;
-            my $event = {
-                source => $root,
-                origin => $root->{location}->{origin},
-                data => { source => "tiktok-live-companion", %$data }
-            };
-            if (exists $listeners{message}) {
-                $listeners{message}->($event);
-            }
+            my $event_data = { source => $root, origin => $root->{location}->{origin}, data => { source => "tiktok-live-companion", %$data } };
+            $listeners{message}->($event_data);
         },
         root => $root,
         video => $video,
@@ -169,106 +199,95 @@ sub setup {
             for my $f (@intervals) {
                 $f->();
             }
-            my @to_delete = ();
             for my $id (keys %timers) {
                 my $t = $timers{$id};
                 if ($t->{at} <= $now) {
-                    push @to_delete, $id;
+                    delete $timers{$id};
                     $t->{f}->();
                 }
             }
-            for my $id (@to_delete) {
-                delete $timers{$id};
-            }
         },
-        api => $root->{TLC_MOBILE_RECOVERY} || {}
+        api => $root->{TLC_MOBILE_RECOVERY}
     };
 }
 
 # Test cases
-sub test_player_recovery_waits_configured_interval_once_and_never_touches_navigation {
+test('player recovery waits configured interval once and never touches navigation', sub {
     my $s = setup();
     $s->{api}->{command}('set-auto-reconnect', { enabled => 1, delaySeconds => 3 });
     $s->{api}->{recover}('stalled');
-    is(keys %{$s->{timers}}, 1, 'Timer should be set');
+    assert_equal(scalar(keys %{$s->{timers}}), 1, 'Timer should be set');
     $s->{tick}(2999);
-    is($s->{get_plays}(), 0, 'Should not have played yet');
+    assert_equal($s->{get_plays}(), 0, 'Should not have played yet');
     $s->{tick}(1);
-    is($s->{get_plays}(), 1, 'Should have played after delay');
-    is($s->{root}->{location}->{pathname}, '/@creator/live', 'Pathname unchanged');
-}
+    assert_equal($s->{get_plays}(), 1, 'Should have played');
+    assert_equal($s->{root}->{location}->{pathname}, '/@creator/live', 'Pathname should not change');
+});
 
-sub test_user_pause_and_vlc_cancel_pending_recovery {
+test('user pause and VLC cancel pending recovery', sub {
     for my $cmd ('pause', 'set-vlc-active') {
         my $s = setup();
         $s->{api}->{command}('set-auto-reconnect', { enabled => 1 });
         $s->{api}->{recover}('stalled');
         $s->{api}->{command}($cmd, { active => 1 });
         $s->{tick}(4000);
-        is($s->{get_plays}(), 0, "Recovery canceled by $cmd");
+        assert_equal($s->{get_plays}(), 0, "Should not play after $cmd");
     }
-}
+});
 
-sub test_media_progress_cancels_attempt_without_replacing_media {
+test('media progress cancels attempt without replacing media', sub {
     my $s = setup();
     $s->{api}->{command}('set-auto-reconnect', { enabled => 1 });
     $s->{api}->{recover}('waiting');
     $s->{video}->{currentTime} = 2;
     $s->{tick}(3000);
-    is($s->{get_plays}(), 0, 'Recovery canceled due to media progress');
-}
+    assert_equal($s->{get_plays}(), 0, 'Should not play after media progress');
+});
 
-sub test_caption_websocket_activity_expires_independently_from_menu {
+test('caption websocket activity expires independently from menu', sub {
     my $s = setup();
     $s->{dispatch}({ type => "caption", caption => { contents => [{ lang => "de", text => "test" }] } });
-    my @caption_events = grep { $_->{type} eq 'caption-state' } @{$s->{events}};
-    ok(@caption_events > 0, 'Caption state event exists');
+    my @caption_events = grep { $_->{type} eq "caption-state" } @{$s->{events}};
     my $last_event = $caption_events[-1];
-    is($last_event->{payload}->{websocket}, 1, 'Websocket active initially');
+    assert_equal($last_event->{payload}->{websocket}, 1, 'Websocket should be active');
     $s->{tick}(16000);
     @caption_events = grep { $_->{type} eq 'caption-state' } @{$s->{events}};
     $last_event = $caption_events[-1];
-    is($last_event->{payload}->{websocket}, '', 'Websocket inactive after timeout');
-    is($last_event->{payload}->{activityTtlMs}, 15000, 'Correct TTL');
-}
+    assert_equal($last_event->{payload}->{websocket}, 0, 'Websocket should be inactive');
+    assert_equal($last_event->{payload}->{activityTtlMs}, 15000, 'Activity TTL should be 15000');
+});
 
-sub test_android_uses_byte_identical_browser_controller_and_protocol_parser {
-    my @pairs = (
+test('Android uses byte-identical browser controller and protocol parser', sub {
+    my @files = (
         ['hook_recovery.js', 'hook-recovery.js'],
         ['recovery_hook.js', 'hook.js'],
         ['proto_main.js', 'proto-main.js']
     );
-    my $browser_ext_dir = resolve_path($dirname, '../browser-extension');
-    for my $pair (@pairs) {
+    
+    for my $pair (@files) {
         my ($mobile, $browser) = @$pair;
-        my $mobile_path = File::Spec->catfile($raw_dir, $mobile);
-        my $browser_path = File::Spec->catfile($browser_ext_dir, $browser);
-        open my $fh1, '<:raw', $mobile_path or die "Cannot read $mobile_path: $!";
-        open my $fh2, '<:raw', $browser_path or die "Cannot read $browser_path: $!";
-        my $content1 = do { local $/; <$fh1> };
-        my $content2 = do { local $/; <$fh2> };
-        close $fh1;
-        close $fh2;
-        is($content1, $content2, "$mobile matches $browser");
+        my $mobile_content = read_file_sync(path_join($raw, $mobile));
+        my $browser_content = read_file_sync(path_resolve(dirname(__FILE__), '../browser-extension', $browser));
+        assert_deep_equal($mobile_content, $browser_content, "Files $mobile and $browser should be identical");
     }
-}
+});
 
-sub test_ios_webkit_bridge_receives_correlated_recovery_observations {
+test('iOS WebKit bridge receives correlated recovery observations', sub {
     my $s = setup(1);
     $s->{tick}(1000);
     my ($e) = grep { $_->{type} eq 'player-observation' } @{$s->{events}};
-    ok($e, 'Player observation event found');
-    is($e->{payload}->{frameKind}, 'top', 'Frame kind correct');
-    like($e->{payload}->{documentId}, qr/^[a-f0-9-]{36}$/, 'Document ID valid UUID');
+    assert_ok($e, 'Should have player observation event');
+    assert_equal($e->{payload}->{frameKind}, 'top', 'Frame kind should be top');
+    assert_match($e->{payload}->{documentId}, qr/^[a-f0-9-]{36}$/, 'Document ID should be UUID format');
     $s->{dispatch}({ type => 'caption', caption => { text => 'ios-caption' } });
     my @caption_events = grep { $_->{type} eq 'caption' } @{$s->{events}};
     my $last_caption = $caption_events[-1];
-    is($last_caption->{payload}->{text}, 'ios-caption', 'Caption received correctly');
-}
+    assert_equal($last_caption->{payload}->{text}, 'ios-caption', 'Caption text should match');
+});
 
-sub test_ios_and_android_inject_identical_recovery_implementations {
-    my $ios_dir = resolve_path($dirname, '../../mobile/ios/Resources');
-    my @pairs = (
+test('iOS and Android inject identical recovery implementations', sub {
+    my $ios = path_resolve(dirname(__FILE__), '../../mobile/ios/Resources');
+    my @files = (
         ['android_recovery.js', 'mobile-recovery.js'],
         ['hook_recovery.js', 'hook-recovery.js'],
         ['recovery_hook.js', 'recovery-hook.js'],
@@ -276,43 +295,36 @@ sub test_ios_and_android_inject_identical_recovery_implementations {
         ['proto_main.js', 'proto-main.js'],
         ['content_core.js', 'content-core.js']
     );
-    for my $pair (@pairs) {
+    
+    for my $pair (@files) {
         my ($a, $b) = @$pair;
-        my $path_a = File::Spec->catfile($raw_dir, $a);
-        my $path_b = File::Spec->catfile($ios_dir, $b);
-        open my $fh1, '<:raw', $path_a or die "Cannot read $path_a: $!";
-        open my $fh2, '<:raw', $path_b or die "Cannot read $path_b: $!";
-        my $content1 = do { local $/; <$fh1> };
-        my $content2 = do { local $/; <$fh2> };
-        close $fh1;
-        close $fh2;
-        is($content1, $content2, "$a matches $b");
+        my $android_content = read_file_sync(path_join($raw, $a));
+        my $ios_content = read_file_sync(path_join($ios, $b));
+        assert_deep_equal($android_content, $ios_content, "Files $a and $b should be identical");
     }
-}
+});
 
-sub test_connection_off_stops_companion_chat_delivery_on_resumes_without_touching_player {
+test('Connection off stops Companion chat delivery, on resumes without touching player', sub {
     for my $ios (0, 1) {
         my $s = setup($ios);
         $s->{api}->{command}('set-connection', { enabled => 0 });
         $s->{dispatch}({ type => 'chat-message', chatMessage => { content => 'hidden from Companion' } });
         my @chat_events = grep { $_->{type} eq 'chat' } @{$s->{events}};
-        is(scalar(@chat_events), 0, 'Chat blocked when connection disabled');
+        assert_equal(scalar(@chat_events), 0, 'Should not deliver chat when connection is off');
         $s->{api}->{command}('set-connection', { enabled => 1 });
         $s->{dispatch}({ type => 'chat-message', chatMessage => { content => 'visible' } });
         @chat_events = grep { $_->{type} eq 'chat' } @{$s->{events}};
-        is(scalar(@chat_events), 1, 'Chat delivered when connection enabled');
-        is($s->{get_plays}(), 0, 'No playback triggered');
+        assert_equal(scalar(@chat_events), 1, 'Should deliver chat when connection is on');
+        assert_equal($s->{get_plays}(), 0, 'Should not affect player');
     }
+});
+
+# Simple Promise implementation for Perl
+package Promise;
+sub new {
+    my ($class, $executor) = @_;
+    my $self = {};
+    bless $self, $class;
+    $executor->(sub { $self->{resolved} = 1 });
+    return $self;
 }
-
-# Run tests
-test_player_recovery_waits_configured_interval_once_and_never_touches_navigation();
-test_user_pause_and_vlc_cancel_pending_recovery();
-test_media_progress_cancels_attempt_without_replacing_media();
-test_caption_websocket_activity_expires_independently_from_menu();
-test_android_uses_byte_identical_browser_controller_and_protocol_parser();
-test_ios_webkit_bridge_receives_correlated_recovery_observations();
-test_ios_and_android_inject_identical_recovery_implementations();
-test_connection_off_stops_companion_chat_delivery_on_resumes_without_touching_player();
-
-done_testing();

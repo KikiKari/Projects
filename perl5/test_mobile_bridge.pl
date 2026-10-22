@@ -3,75 +3,89 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_bridge.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_bridge.cjs
-# Erzeugt: 2026-08-20 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_mobile_bridge.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use File::Spec;
 use File::Slurp qw(read_file);
+use JavaScript::V8;
 
-# Get the root directory (parent of current script's directory)
-my $script_dir = dirname(__FILE__);
-my @root_parts = split('/', $script_dir);
-pop @root_parts; # remove last component (current dir)
-my $root = join('/', @root_parts);
+# Helper to resolve paths similar to path.resolve
+sub resolve_path {
+    my @parts = @_;
+    return File::Spec->rel2abs(File::Spec->catfile(@parts));
+}
 
-# Construct bridge path
-my $bridge_path = File::Spec->catfile($root, 'mobile-shared', 'webview-bridge.js');
+# Get the directory of the script (similar to __dirname)
+my $script_dir = dirname($0);
+my $root = resolve_path($script_dir, "..");
+my $bridge_path = File::Spec->catfile($root, "mobile-shared", "webview-bridge.js");
 
-# Read source file
+# Read the bridge file
 my $source = read_file($bridge_path);
 
-# Compile JavaScript source using Node.js (simulate vm.Script)
-# In Perl we can't compile JS, so we'll just check for substrings
+# Create a V8 context and compile the script
+my $context = JavaScript::V8::Context->new();
+$context->eval($source); # This will throw if syntax is bad
 
-# Assertions - check that certain strings are present
-assert($source =~ /location\.hostname !== "www\.tiktok\.com"/, 'Missing location.hostname check');
-assert($source =~ /root\.top === root/, 'Missing root.top check');
-assert($source =~ /if \(!isTop\) return/, 'Missing isTop guard');
-assert($source =~ /MAX_MESSAGE_BYTES = 64 \* 1024/, 'Missing MAX_MESSAGE_BYTES definition');
-assert($source =~ /MAX_AUDIO_SECONDS = 12/, 'Missing MAX_AUDIO_SECONDS definition');
-assert($source =~ /QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400/, 'Missing QUICK_RECOVER_RELOAD_COOLDOWN_MS definition');
-assert($source =~ /ALLOWED_COMMANDS/, 'Missing ALLOWED_COMMANDS');
-assert($source =~ /"set-auto-reconnect"/, 'Missing set-auto-reconnect command');
-assert($source =~ /"set-limiter"/, 'Missing set-limiter command');
-assert($source =~ /"scan-recommendations"/, 'Missing scan-recommendations command');
-assert($source =~ /"cancel-recommendation-scan"/, 'Missing cancel-recommendation-scan command');
-assert($source =~ /MAX_MEDIA_URLS = 12/, 'Missing MAX_MEDIA_URLS definition');
-assert($source =~ /const mediaUrls = new Map\(\)/, 'Missing mediaUrls Map');
-assert($source =~ /emit\("media-url"/, 'Missing emit media-url');
-assert($source =~ /addEventListener\("message"/, 'Missing addEventListener message');
-assert($source !~ /\.send =/, 'Found forbidden .send assignment');
-assert($source !~ /document\.cookie/, 'Found forbidden document.cookie');
-assert($source !~ /localStorage/, 'Found forbidden localStorage');
-assert($source =~ /FORCE_RETURN_KEY = "tlc-force-return"/, 'Missing FORCE_RETURN_KEY definition');
-assert($source =~ /sessionStorage\.getItem\(FORCE_RETURN_KEY\)/, 'Missing sessionStorage getItem');
-assert($source !~ /sessionStorage\.clear/, 'Found forbidden sessionStorage.clear');
-assert($source !~ /innerHTML/, 'Found forbidden innerHTML');
+# Assertions using basic Perl die/checks
+sub assert_contains {
+    my ($text, $needle, $msg) = @_;
+    die "$msg\n" unless index($text, $needle) != -1;
+}
 
-# Check copies in other locations
+sub assert_not_contains {
+    my ($text, $needle, $msg) = @_;
+    die "$msg\n" unless index($text, $needle) == -1;
+}
+
+sub assert_equals {
+    my ($a, $b, $msg) = @_;
+    die "$msg\n" unless $a eq $b;
+}
+
+# Run assertions
+assert_contains($source, 'location.hostname !== "www.tiktok.com"', 'Missing hostname check');
+assert_contains($source, "root.top === root", 'Missing frame check');
+assert_contains($source, "if (!isTop) return", 'Missing early return');
+assert_contains($source, "MAX_MESSAGE_BYTES = 64 * 1024", 'Missing message limit');
+assert_contains($source, "MAX_AUDIO_SECONDS = 12", 'Missing audio limit');
+assert_contains($source, "QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400", 'Missing reload cooldown');
+assert_contains($source, "ALLOWED_COMMANDS", 'Missing allowed commands list');
+assert_contains($source, '"set-auto-reconnect"', 'Missing auto-reconnect command');
+assert_contains($source, '"set-limiter"', 'Missing limiter command');
+assert_contains($source, '"scan-recommendations"', 'Missing scan command');
+assert_contains($source, '"cancel-recommendation-scan"', 'Missing cancel command');
+assert_contains($source, "MAX_MEDIA_URLS = 12", 'Missing media URL limit');
+assert_contains($source, "const mediaUrls = new Map()", 'Missing media URLs map');
+assert_contains($source, 'emit("media-url"', 'Missing media URL emit');
+assert_contains($source, 'addEventListener("message"', 'Missing message listener');
+assert_not_contains($source, ".send =", 'Forbidden send method found');
+assert_not_contains($source, "document.cookie", 'Forbidden cookie access found');
+assert_not_contains($source, "localStorage", 'Forbidden localStorage found');
+assert_contains($source, 'FORCE_RETURN_KEY = "tlc-force-return"', 'Missing force return key');
+assert_contains($source, "sessionStorage.getItem(FORCE_RETURN_KEY)", 'Missing session storage get');
+assert_not_contains($source, "sessionStorage.clear", 'Forbidden session clear found');
+assert_not_contains($source, "innerHTML", 'Forbidden innerHTML found');
+
+# Check copies
 my @copies = (
-    File::Spec->catfile($root, '..', 'mobile', 'ios', 'Resources', 'webview-bridge.js'),
-    File::Spec->catfile($root, '..', 'mobile', 'android', 'app', 'src', 'main', 'res', 'raw', 'webview_bridge.js')
+    File::Spec->catfile($root, "..", "mobile", "ios", "Resources", "webview-bridge.js"),
+    File::Spec->catfile($root, "..", "mobile", "android", "app", "src", "main", "res", "raw", "webview_bridge.js")
 );
 
-foreach my $copy (@copies) {
+for my $copy (@copies) {
     my $copy_content = read_file($copy);
-    assert($copy_content eq $source, "Bridge copy drifted: $copy");
+    assert_equals($copy_content, $source, "Bridge copy drifted: $copy");
 }
 
 print "PASS: mobile bridge origin, main-frame, size, command, audio-duration and storage guards\n";
 
-sub assert {
-    my ($condition, $message) = @_;
-    if (!$condition) {
-        die "Assertion failed: $message\n";
-    }
-}
-
+# Helper function to get dirname (since File::Basename is not used yet)
+use File::Basename;
 sub dirname {
-    my ($file) = @_;
-    $file =~ s/[^\/]+$//;
-    $file =~ s/\/$//;
-    return $file || '.';
+    my $path = shift;
+    return basename($path) eq '' ? dirname(dirname($path)) : dirname($path);
 }

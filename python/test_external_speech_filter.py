@@ -3,36 +3,51 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_external_speech_filter.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_external_speech_filter.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_external_speech_filter.cjs
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_external_speech_filter.cjs
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_external_speech_filter.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 import unittest
-from browser_extension.content_core import shouldFilterExternalSpeechTrigger as filter
+from content_core import shouldFilterExternalSpeechTrigger as filter_func, normalizeExternalSpeechTriggerCharacters as normalize
 
 class TestExternalSpeechFilter(unittest.TestCase):
-    def test_filter_combinations(self):
-        """Test all combinations of enabled flag and text inputs"""
-        test_cases = [
-            (False, '.Text'),
-            (False, '. Text'),
-            (False, '  .Text'),
-            (False, '\t\n. Text'),
-            (False, 'Normal'),
-            (False, 'Ein Satz. Noch einer'),
-            (False, ''),
-            (True, '.Text'),
-            (True, '. Text'),
-            (True, '  .Text'),
-            (True, '\t\n. Text'),
-            (True, 'Normal'),
-            (True, 'Ein Satz. Noch einer'),
-            (True, '')
-        ]
-        
-        for enabled, text in test_cases:
-            with self.subTest(enabled=enabled, text=text):
-                expected = enabled and text.lstrip().startswith('.')
-                self.assertEqual(filter(text, enabled), expected)
+    
+    def test_basic_filtering(self):
+        for enabled in [False, True]:
+            for text in ['.Text', '. Text', '  .Text', '\t\n. Text', 'Normal', 'Ein Satz. Noch einer', '']:
+                with self.subTest(enabled=enabled, text=text):
+                    expected = enabled and text.lstrip().startswith('.')
+                    self.assertEqual(filter_func(text, enabled), expected)
+
+    def test_0PE_187_literal_prefixes(self):
+        """0PE-187: individual literal prefixes, commas and semicolons are not separators"""
+        for enabled in [False, True]:
+            for text in ['.Hallo', ',Hallo', '- Hallo', '  , Hallo']:
+                with self.subTest(enabled=enabled, text=text):
+                    self.assertEqual(filter_func(text, enabled, '.,-'), enabled)
+            
+            for text in ['Hallo, zusammen.', 'Normal-Text', 'Hallo', '.']:
+                with self.subTest(enabled=enabled, text=text):
+                    self.assertEqual(filter_func(text, enabled, ',-'), False)
+            
+            with self.subTest(enabled=enabled, text=';Hallo'):
+                self.assertEqual(filter_func(';Hallo', enabled, ';'), enabled)
+                
+            with self.subTest(enabled=enabled, text='[Hallo'):
+                self.assertEqual(filter_func('[Hallo', enabled, '['), enabled)
+                
+            with self.subTest(enabled=enabled, text='Hallo'):
+                self.assertEqual(filter_func('Hallo', enabled, '['), False)
+
+    def test_0PE_187_unicode_triggers(self):
+        """0PE-187: five Unicode scalar triggers, paste sanitization and explicit empty selection"""
+        self.assertEqual(normalize(None), '.')
+        self.assertEqual(normalize(''), '')
+        self.assertEqual(normalize('.,-;:!='), '.,-;:')
+        self.assertEqual(normalize(' a1 "\'.,- '), '.,-')
+        self.assertEqual(normalize('😀😁😂😃😄😅'), '😀😁😂😃😄')
+        self.assertEqual(filter_func('😀Hallo', True, '😀'), True)
+        self.assertEqual(filter_func('.Hallo', True, ''), False)
+        self.assertEqual(filter_func('.Hallo', True, ','), False)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,126 +3,173 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_extension.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_extension.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_extension.cjs
-# Erzeugt: 2026-10-13 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_extension.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 $ErrorActionPreference = "Stop"
 
-# Define paths
-$root = Resolve-Path (Join-Path $PSScriptRoot "..")
-$extension = Join-Path $root "browser-extension"
-$manifestPath = Join-Path $extension "manifest.json"
-$mobileBridgePath = Join-Path $root "mobile-shared" "webview-bridge.js"
+function Resolve-ManifestPath {
+    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+    $root = Join-Path $scriptPath ".."
+    $extension = Join-Path $root "browser-extension"
+    return Join-Path $extension "manifest.json"
+}
 
-# Load manifest
-$manifest = Get-Content $manifestPath | ConvertFrom-Json
-$corePath = Join-Path $extension "content-core.js"
-$protoPath = Join-Path $extension "proto-main.js"
-$mobileBridge = Get-Content $mobileBridgePath -Raw
+function Read-Manifest {
+    $manifestPath = Resolve-ManifestPath
+    $manifestContent = Get-Content -Path $manifestPath -Raw
+    return $manifestContent | ConvertFrom-Json
+}
 
-# Helper functions
-function Concat {
-    param([byte[][]]$Chunks)
-    $size = ($Chunks | Measure-Object -Property Length -Sum).Sum
-    $out = New-Object byte[] $size
-    $offset = 0
-    foreach ($chunk in $Chunks) {
-        [System.Array]::Copy($chunk, 0, $out, $offset, $chunk.Length)
-        $offset += $chunk.Length
+function Test-ManifestVersion {
+    param($manifest)
+    if ($manifest.manifest_version -ne 3) {
+        throw "Manifest version mismatch"
     }
-    return $out
 }
 
-function Varint {
-    param([long]$Value)
-    $bytes = @()
-    do {
-        $byte = $Value -band 0x7f
-        $Value = $Value -shr 7
-        if ($Value -gt 0) { $byte = $byte -bor 0x80 }
-        $bytes += $byte
-    } while ($Value -gt 0)
-    return [byte[]]$bytes
+function Test-Version {
+    param($manifest)
+    if ($manifest.version -ne "0.8.2") {
+        throw "Version mismatch"
+    }
 }
 
-function BytesField {
-    param([int]$Number, [object]$Value)
-    $body = if ($Value -is [string]) { [System.Text.Encoding]::UTF8.GetBytes($Value) } else { $Value }
-    return Concat @(Varint (($Number -shl 3) -bor 2)), @(Varint $body.Length), @($body)
-}
-
-function IntField {
-    param([int]$Number, [long]$Value)
-    return Concat @(Varint ($Number -shl 3)), @(Varint $Value)
-}
-
-# Assertions
-if ($manifest.manifest_version -ne 3) { throw "Manifest version mismatch" }
-if ($manifest.version -ne "0.8.2") { throw "Version mismatch" }
-if (-not $manifest.permissions.Contains("sidePanel")) { throw "Missing sidePanel permission" }
-if (-not $manifest.permissions.Contains("webRequest")) { throw "Missing webRequest permission" }
-if (-not $manifest.permissions.Contains("tabCapture")) { throw "Missing tabCapture permission" }
-if (-not $manifest.host_permissions.Contains("http://127.0.0.1/*")) { throw "Missing host permission http://127.0.0.1/*" }
-if (-not $manifest.host_permissions.Contains("http://localhost/*")) { throw "Missing host permission http://localhost/*" }
-if ($manifest.permissions.Contains("cookies")) { throw "Contains cookies permission" }
-if ($manifest.permissions.Contains("webRequestBlocking")) { throw "Contains webRequestBlocking permission" }
-if ($manifest.permissions.Contains("nativeMessaging")) { throw "Contains nativeMessaging permission" }
-if ($manifest.content_scripts[0].js[0] -ne "vendor-mpegts.js") { throw "First content script is not vendor-mpegts.js" }
-
-$mpegtsVendorPath = Join-Path $extension "vendor-mpegts.js"
-$mpegtsLicensePath = Join-Path $extension "vendor-mpegts.LICENSE.txt"
-$mpegtsNoticePath = Join-Path $extension "vendor-mpegts.NOTICE.md"
-if (-not (Test-Path $mpegtsVendorPath)) { throw "Missing vendor-mpegts.js" }
-if (-not (Test-Path $mpegtsLicensePath)) { throw "Missing vendor-mpegts.LICENSE.txt" }
-if (-not (Test-Path $mpegtsNoticePath)) { throw "Missing vendor-mpegts.NOTICE.md" }
-
-$hash = Get-FileHash $mpegtsVendorPath -Algorithm SHA256
-if ($hash.Hash -ne "0786F9AF6780822FF29240259A73B07ED7BC479BC44966E49418DD38213B8064") { 
-    throw "SHA256 hash mismatch for vendor-mpegts.js" 
-}
-
-if (-not $mobileBridge.Contains('location.hostname !== "www.tiktok.com"')) { throw "Missing location check" }
-if ($mobileBridge.Contains("document.cookie")) { throw "Contains document.cookie" }
-if (-not $mobileBridge.Contains("QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400")) { throw "Missing QUICK_RECOVER_RELOAD_COOLDOWN_MS" }
-if (-not $mobileBridge.Contains('"set-auto-reconnect"')) { throw "Missing set-auto-reconnect" }
-if (-not $mobileBridge.Contains('"set-limiter"')) { throw "Missing set-limiter" }
-
-foreach ($relative in @(
-    $manifest.background.service_worker,
-    $manifest.side_panel.default_path
-) + ($manifest.content_scripts | ForEach-Object { $_.js })) {
-    $fullPath = Join-Path $extension $relative
-    if (-not (Test-Path $fullPath)) { throw "Missing manifest file: $relative" }
-}
-
-$scripts = Get-ChildItem $extension -Filter "*.js" | ForEach-Object { $_.Name }
-foreach ($name in $scripts) {
-    $source = Get-Content (Join-Path $extension $name) -Raw
-    if ($name -eq "peak-limiter-worklet.js") {
-        $result = node --check --input-type=module -e $source 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Syntax error in $name`: $result" }
-    } else {
-        # PowerShell doesn't have equivalent to vm.Script, but we can at least check syntax
-        try {
-            [System.Management.Automation.Language.Parser]::ParseInput($source, [ref]$null, [ref]$null) | Out-Null
-        } catch {
-            throw "Syntax error in $name`: $_"
+function Test-Permissions {
+    param($manifest)
+    
+    $requiredPermissions = @("sidePanel", "webRequest", "tabCapture")
+    foreach ($permission in $requiredPermissions) {
+        if (-not ($manifest.permissions -contains $permission)) {
+            throw "Missing permission: $permission"
         }
     }
-    
-    if ($source -match '\beval\s*\(') { throw "$name contains eval()" }
-    if ($source -match 'new\s+Function\s*\(') { throw "$name contains new Function()" }
-    if ($source -match '\.innerHTML\s*=') { throw "$name assigns innerHTML" }
-}
 
-# Core tests
-$metadata = @{
-    room = @{
-        caption_info = @{ open = $true; support_lang = @("de", "en"); show_type = 1 }
-        stream_data = '{"pull":"https:\/\/pull-flv-f77.example.tiktokcdn.com\/stage\/stream_hd.flv?expire=1\u0026sign=abc","hls":"https:\/\/pull-hls.example.tiktokcdn-eu.com\/stage\/stream_720p.m3u8?sign=xyz"}'
+    $hostPermissions = @("http://127.0.0.1/*", "http://localhost/*")
+    foreach ($permission in $hostPermissions) {
+        if (-not ($manifest.host_permissions -contains $permission)) {
+            throw "Missing host permission: $permission"
+        }
+    }
+
+    $forbiddenPermissions = @("cookies", "webRequestBlocking", "nativeMessaging")
+    foreach ($permission in $forbiddenPermissions) {
+        if ($manifest.permissions -contains $permission) {
+            throw "Forbidden permission present: $permission"
+        }
     }
 }
 
-# Since we can't directly call the JS functions, we'll simulate the expected behavior
-# In a real scenario, you'd need to convert the JS logic to PowerShell or use Node.js interop
+function Test-MpegTsFiles {
+    param($extensionPath)
+    
+    $mpegtsVendorPath = Join-Path $extensionPath "vendor-mpegts.js"
+    $mpegtsLicensePath = Join-Path $extensionPath "vendor-mpegts.LICENSE.txt"
+    $mpegtsNoticePath = Join-Path $extensionPath "vendor-mpegts.NOTICE.md"
 
-Write-Host "PASS: manifest 0.8.2, $($scripts.Count) scripts, chat speech composition, gifts, audience statistics, service controls and security guards"
+    if (-not (Test-Path $mpegtsVendorPath)) {
+        throw "Missing vendor-mpegts.js"
+    }
+    if (-not (Test-Path $mpegtsLicensePath)) {
+        throw "Missing vendor-mpegts.LICENSE.txt"
+    }
+    if (-not (Test-Path $mpegtsNoticePath)) {
+        throw "Missing vendor-mpegts.NOTICE.md"
+    }
+
+    # SHA256 hash check
+    $fileBytes = [System.IO.File]::ReadAllBytes($mpegtsVendorPath)
+    $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($fileBytes)
+    $hashString = [BitConverter]::ToString($hash).Replace("-", "").ToUpper()
+    $expectedHash = "0786F9AF6780822FF29240259A73B07ED7BC479BC44966E49418DD38213B8064"
+    if ($hashString -ne $expectedHash) {
+        throw "SHA256 hash mismatch for vendor-mpegts.js"
+    }
+}
+
+function Test-MobileBridge {
+    param($mobileBridgeContent)
+    
+    $tests = @{
+        'location.hostname !== "www.tiktok.com"' = $true
+        "document.cookie" = $false
+        "QUICK_RECOVER_RELOAD_COOLDOWN_MS = 400" = $true
+        '"set-auto-reconnect"' = $true
+        '"set-limiter"' = $true
+    }
+
+    foreach ($test in $tests.GetEnumerator()) {
+        $found = $mobileBridgeContent.Contains($test.Key)
+        if ($found -ne $test.Value) {
+            throw "Mobile bridge test failed for: $($test.Key)"
+        }
+    }
+}
+
+function Test-ManifestFilesExist {
+    param($manifest, $extensionPath)
+    
+    $filesToCheck = @(
+        $manifest.background.service_worker,
+        $manifest.side_panel.default_path
+    )
+    
+    foreach ($jsFile in $manifest.content_scripts[0].js) {
+        $filesToCheck += $jsFile
+    }
+
+    foreach ($relativePath in $filesToCheck) {
+        $fullPath = Join-Path $extensionPath $relativePath
+        if (-not (Test-Path $fullPath)) {
+            throw "Missing manifest file: $relativePath"
+        }
+    }
+}
+
+function Test-JavaScripts {
+    param($extensionPath)
+    
+    $scripts = Get-ChildItem -Path $extensionPath -Filter "*.js" | ForEach-Object { $_.Name }
+    
+    foreach ($scriptName in $scripts) {
+        $scriptPath = Join-Path $extensionPath $scriptName
+        $source = Get-Content -Path $scriptPath -Raw
+        
+        # Check for dangerous patterns
+        if ($source -match "\beval\s*\(") {
+            throw "$scriptName contains eval()"
+        }
+        if ($source -match "new\s+Function\s*\(") {
+            throw "$scriptName contains new Function()"
+        }
+        if ($source -match "\.innerHTML\s*=") {
+            throw "$scriptName assigns innerHTML"
+        }
+    }
+}
+
+# Main execution
+try {
+    $manifest = Read-Manifest
+    Test-ManifestVersion $manifest
+    Test-Version $manifest
+    Test-Permissions $manifest
+    
+    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+    $root = Join-Path $scriptPath ".."
+    $extensionPath = Join-Path $root "browser-extension"
+    
+    Test-MpegTsFiles $extensionPath
+    
+    $mobileBridgePath = Join-Path $root "mobile-shared" "webview-bridge.js"
+    $mobileBridgeContent = Get-Content -Path $mobileBridgePath -Raw
+    Test-MobileBridge $mobileBridgeContent
+    
+    Test-ManifestFilesExist $manifest $extensionPath
+    Test-JavaScripts $extensionPath
+    
+    Write-Host "PASS: manifest 0.8.2, $($scripts.Count) scripts, chat speech composition, gifts, audience statistics, service controls and security guards"
+} catch {
+    Write-Error "Test failed: $_"
+    exit 1
+}

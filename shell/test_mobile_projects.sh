@@ -3,8 +3,8 @@
 # Quelle: python, Projects@TikTok-Live-Companion:plugin-source/scripts/test_mobile_projects.py
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_mobile_projects.py
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_mobile_projects.py
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/scripts/test_mobile_projects.py
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_mobile_projects.py
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -19,8 +19,8 @@ SHARED="$ROOT/plugin-source/mobile-shared/webview-bridge.js"
 require() {
     local condition=$1
     local message=$2
-    if ! eval "$condition"; then
-        echo "Assertion failed: $message" >&2
+    if [[ $condition -eq 0 ]]; then
+        echo "AssertionError: $message" >&2
         exit 1
     fi
 }
@@ -30,64 +30,86 @@ if [[ -d "$ANDROID" ]]; then
     MANIFEST="$ANDROID/app/src/main/AndroidManifest.xml"
     GRADLE="$ANDROID/app/build.gradle.kts"
     ANDROID_WEBVIEW="$ANDROID/app/src/main/java/app/tiktoklivecompanion/CompanionWebView.kt"
-    ANDROID_BRIDGE_COPY="$ANDROID/app/src/main/res/raw/webview_bridge.js"
+    BRIDGE_JS="$ANDROID/app/src/main/res/raw/webview_bridge.js"
     AAR_LIBS=("$ANDROID/app/libs"/*.aar)
 
     # Check Gradle file contents
-    require 'grep -q "minSdk = 21" "$GRADLE"' "Android version contract"
-    require 'grep -q "versionName = \"0.8.2\"" "$GRADLE"' "Android version contract"
+    if ! grep -q 'minSdk = 21' "$GRADLE" || ! grep -q 'versionName = "0.8.2"' "$GRADLE"; then
+        require 0 "Android version contract"
+    fi
 
-    # Check Manifest for cleartext traffic setting
-    require 'grep -q "usesCleartextTraffic=\"false\"" "$MANIFEST"' "Android cleartext must be disabled"
+    # Check Manifest content
+    if ! grep -q 'usesCleartextTraffic="false"' "$MANIFEST"; then
+        require 0 "Android cleartext must be disabled"
+    fi
 
-    # Check WebView implementation security
-    require '! grep -q "addJavascriptInterface" "$ANDROID_WEBVIEW"' "insecure Android JavaScript interface"
-    require 'grep -q "addWebMessageListener" "$ANDROID_WEBVIEW" && grep -q "ALLOWED_ORIGIN" "$ANDROID_WEBVIEW"' "origin-restricted Android bridge"
+    # Check WebView security settings
+    if grep -q "addJavascriptInterface" "$ANDROID_WEBVIEW"; then
+        require 0 "insecure Android JavaScript interface"
+    fi
+
+    if ! grep -q "addWebMessageListener" "$ANDROID_WEBVIEW" || ! grep -q "ALLOWED_ORIGIN" "$ANDROID_WEBVIEW"; then
+        require 0 "origin-restricted Android bridge"
+    fi
 
     # Ensure no .aar files are committed
-    if [[ ${#AAR_LIBS[@]} -gt 0 ]] && [[ -f "${AAR_LIBS[0]}" ]]; then
-        echo "ShazamKit AAR must not be committed" >&2
-        exit 1
+    if compgen -G "$ANDROID/app/libs/*.aar" > /dev/null; then
+        require 0 "ShazamKit AAR must not be committed"
     fi
 
     # Compare shared JS file with Android copy
-    require 'cmp -s "$SHARED" "$ANDROID_BRIDGE_COPY"' "Android bridge copy drift"
+    if ! cmp --silent "$SHARED" "$BRIDGE_JS"; then
+        require 0 "Android bridge copy drift"
+    fi
 fi
 
 # iOS checks
 if [[ -d "$IOS" ]]; then
     IOS_WEBVIEW="$IOS/TikTokLiveCompanion/CompanionWebView.swift"
-    PBX="$IOS/TikTokLiveCompanion.xcodeproj/project.pbxproj"
-    IOS_BRIDGE_COPY="$IOS/Resources/webview-bridge.js"
+    PBXPROJ="$IOS/TikTokLiveCompanion.xcodeproj/project.pbxproj"
+    IOS_BRIDGE_JS="$IOS/Resources/webview-bridge.js"
     INFO_PLIST="$IOS/TikTokLiveCompanion/Info.plist"
 
-    # Check iOS webview restrictions
-    require 'grep -q "forMainFrameOnly: false" "$IOS_WEBVIEW" && grep -q "securityOrigin.host == \"www.tiktok.com\"" "$IOS_WEBVIEW"' "origin-restricted iOS subframe bridge"
+    # Check WebView security settings
+    if ! grep -q "forMainFrameOnly: false" "$IOS_WEBVIEW" || ! grep -q 'securityOrigin.host == "www.tiktok.com"' "$IOS_WEBVIEW"; then
+        require 0 "origin-restricted iOS subframe bridge"
+    fi
 
     # Check project settings
-    require 'grep -q "MARKETING_VERSION = 0.8.2" "$PBX" && grep -q "IPHONEOS_DEPLOYMENT_TARGET = 15.0" "$PBX"' "iOS version contract"
+    if ! grep -q "MARKETING_VERSION = 0.8.2" "$PBXPROJ" || ! grep -q "IPHONEOS_DEPLOYMENT_TARGET = 15.0" "$PBXPROJ"; then
+        require 0 "iOS version contract"
+    fi
 
     # Check source memberships
-    require 'grep -q "StreamNameNormalizer.swift in Sources" "$PBX" && grep -q "StreamNameNormalizerTests.swift in Sources" "$PBX" && grep -q "MobileUIStructureTests.swift in Sources" "$PBX"' "iOS source and XCTest membership"
+    for name in "StreamNameNormalizer.swift in Sources" "StreamNameNormalizerTests.swift in Sources" "MobileUIStructureTests.swift in Sources"; do
+        if ! grep -q "$name" "$PBXPROJ"; then
+            require 0 "iOS source and XCTest membership"
+        fi
+    done
 
     # Compare shared JS file with iOS copy
-    require 'cmp -s "$SHARED" "$IOS_BRIDGE_COPY"' "iOS bridge copy drift"
+    if ! cmp --silent "$SHARED" "$IOS_BRIDGE_JS"; then
+        require 0 "iOS bridge copy drift"
+    fi
 
-    # Parse Info.plist and verify version
-    INFO_VERSION=$(plutil -extract CFBundleShortVersionString raw "$INFO_PLIST" 2>/dev/null || true)
-    require '[[ "$INFO_VERSION" == "0.8.2" ]]' "iOS plist version"
+    # Check Info.plist version
+    PLIST_VERSION=$(plutil -extract CFBundleShortVersionString raw "$INFO_PLIST" 2>/dev/null || echo "")
+    if [[ "$PLIST_VERSION" != "0.8.2" ]]; then
+        require 0 "iOS plist version"
+    fi
 fi
 
-# Check that no Apple private keys are committed
-P8_FILES=$(find "$ROOT" -type f -name "*.p8" -print 2>/dev/null || true)
-if [[ -n "$P8_FILES" ]]; then
-    echo "Apple private key must not be committed" >&2
-    exit 1
+# Check for Apple private keys
+if find "$ROOT" -type f -name "*.p8" | grep -q .; then
+    require 0 "Apple private key must not be committed"
 fi
 
 # Schema validation
 SCHEMA_FILE="$ROOT/plugin-source/mobile-shared/recognition-result.schema.json"
-SOURCE_ENUM=$(jq -r '.properties.source.enum | join(",")' "$SCHEMA_FILE" 2>/dev/null || echo "")
-require '[[ "$SOURCE_ENUM" == "microphone,webview" ]]' "recognition source schema"
+SOURCE_ENUM=$(jq -r '.properties.source.enum[]' "$SCHEMA_FILE" 2>/dev/null || echo "")
+
+if [[ "$SOURCE_ENUM" != $'microphone\nwebview' ]]; then
+    require 0 "recognition source schema"
+fi
 
 echo "PASS: available mobile platform versions, bridge boundaries, policies, schema, source sync and secret exclusions"

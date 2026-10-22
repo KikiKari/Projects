@@ -3,75 +3,106 @@
 # Quelle: javascript, Projects@TikTok-Live-Companion:plugin-source/scripts/test_pipeline_client.cjs
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/scripts/test_pipeline_client.cjs
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/scripts/test_pipeline_client.cjs
-# Erzeugt: 2026-10-11 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/scripts/test_pipeline_client.cjs
+# Erzeugt: 2026-10-22 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use Test2::V0;
+use JSON::PP;
 use File::Spec;
-use File::Basename;
-use JSON qw(decode_json encode_json);
-use Digest::SHA qw(sha256_hex);
 
-# Simulate browser extension client environment
+# Simulate JavaScript environment
+package JSContext {
+    sub new {
+        my $class = shift;
+        my $self = {
+            globals => {},
+            code => '',
+        };
+        bless $self, $class;
+        return $self;
+    }
+
+    sub createContext {
+        my ($self, $globals) = @_;
+        $self->{globals} = $globals;
+        return $self;
+    }
+
+    sub runInContext {
+        my ($self, $code, $context) = @_;
+        $self->{code} = $code;
+        # In a real scenario, you would execute the JavaScript code here
+        # For now, we'll just store the code to be executed later
+    }
+}
+
+# Simulate Node.js modules
+sub require_module {
+    my ($module) = @_;
+    # This is a simplified version - in reality, you'd need proper module loading
+    return {} if $module eq 'node:test' || $module eq 'node:assert/strict';
+    return {} if $module eq 'node:fs';
+    return {} if $module eq 'node:path';
+    return {} if $module eq 'node:vm';
+    return {} if $module eq 'node:crypto';
+    return {};
+}
+
+# Client function
 sub client {
     my %local = ('tlc-settings' => { universalCaptionApiKey => 'universal-secret', pairingCode => 'pair-secret' });
     my %session = ();
     my %rows = ();
     my @received = ();
 
-    # Storage mock
     my $storage = sub {
-        my ($data_ref) = @_;
+        my ($data) = @_;
         return {
             get => sub {
                 my ($keys) = @_;
-                $keys = [$keys] unless ref $keys eq 'ARRAY';
+                $keys = [$keys] unless ref($keys) eq 'ARRAY';
                 my %result;
                 for my $key (@$keys) {
-                    $result{$key} = $data_ref->{$key} if exists $data_ref->{$key};
+                    $result{$key} = $data->{$key};
                 }
                 return \%result;
             },
             set => sub {
                 my ($values) = @_;
                 for my $key (keys %$values) {
-                    $data_ref->{$key} = $values->{$key};
+                    $data->{$key} = $values->{$key};
                 }
-                return;
+                return $data;
             }
         };
     };
 
-    # Database mock
     my $database = {
         transaction => sub {
             my $tx = {};
             my $operation = sub {
                 my ($fn) = @_;
-                # Simulate async with immediate execution
-                my $result = $fn->();
-                return { result => $result, onsuccess => undef };
+                # Simulate async operation
+                $fn->();
+                return { result => undef, onsuccess => sub {} };
             };
             $tx->{objectStore} = sub {
                 return {
                     put => sub {
                         my ($row) = @_;
-                        return $operation->(sub {
-                            $rows{$row->{eventId}} = {%$row};  # Deep copy simulation
-                        });
+                        $rows{$row->{eventId}} = {%$row};  # Deep copy simulation
+                        return $operation->(sub {});
                     },
                     delete => sub {
                         my ($id) = @_;
-                        return $operation->(sub {
-                            delete $rows{$id};
-                        });
+                        delete $rows{$id};
+                        return $operation->(sub {});
                     },
                     getAll => sub {
-                        return $operation->(sub {
-                            my @all_rows = map { {%$_} } values %rows;  # Deep copy simulation
-                            return \@all_rows;
-                        });
+                        my @values = map { {%$_} } values %rows;  # Deep copy simulation
+                        return $operation->(sub { return \@values; });
                     }
                 };
             };
@@ -79,30 +110,19 @@ sub client {
         }
     };
 
-    # IndexedDB mock
     my $indexedDB = {
         open => sub {
-            my $req = {};
-            # Simulate async callback
-            $req->{result} = $database;
-            $req->{onsuccess} = sub {};
-            return $req;
+            return {
+                result => $database,
+                onsuccess => sub {}
+            };
         }
     };
 
-    # Fetch mock
-    my $fetch = sub {
-        my ($url, $options) = @_;
-        if ($url =~ m{/events$}) {
-            push @received, decode_json($options->{body});
-        }
-        return { ok => 1, json => sub { return { cursor => scalar(@received) } } };
-    };
-
-    # Create context-like structure
-    my $context = {
-        crypto => {},  # Simplified crypto mock
+    my $context = JSContext->new->createContext({
+        crypto => {},  # Simplified crypto object
         indexedDB => $indexedDB,
+        AbortSignal => {},
         console => {},
         chrome => {
             storage => {
@@ -115,66 +135,26 @@ sub client {
                 onAlarm => { addListener => sub {} }
             }
         },
-        fetch => $fetch,
-        TLCPipelines => undef  # Will be populated after script execution
-    };
+        fetch => sub {
+            my ($url, $options) = @_;
+            if ($url =~ m{/events$}) {
+                push @received, decode_json($options->{body});
+                return { ok => 1, json => sub { return { cursor => scalar(@received) } } };
+            }
+            return { ok => 1, json => sub { return {} } };
+        }
+    });
 
-    # Read and execute pipeline-client.js in mock context
-    my $script_path = File::Spec->catfile(dirname(__FILE__), '..', 'browser-extension', 'pipeline-client.js');
-    open my $fh, '<', $script_path or die "Cannot read $script_path: $!";
-    my $script_content = do { local $/; <$fh> };
+    # Read and execute pipeline-client.js
+    my $pipeline_client_path = File::Spec->catfile(File::Spec->updir(), 'browser-extension', 'pipeline-client.js');
+    open my $fh, '<', $pipeline_client_path or die "Could not open file '$pipeline_client_path': $!";
+    my $js_code = do { local $/; <$fh> };
     close $fh;
 
-    # Evaluate the JavaScript-like code in Perl context (simplified)
-    # In a real scenario, you'd need a JS engine like JavaScript::V8
-    # For this test, we'll simulate the API methods directly
-
-    # Simulate TLCPipelines API
-    my $api = {};
-    $api->{start} = sub {
-        my ($tab_id, $document_id) = @_;
-        # Simulate async operation
-        return Promise->new(sub {
-            my ($resolve) = @_;
-            $resolve->();
-        });
-    };
-
-    $api->{publish} = sub {
-        my ($tab_id, $pipeline, $data, $pairing_code, $availability, $document_id) = @_;
-        $document_id //= 'default-doc';
-        my $event_id = sha256_hex(time() . rand());
-        my $row = {
-            eventId => $event_id,
-            tabId => $tab_id,
-            pipeline => $pipeline,
-            data => $data,
-            pairingCode => $pairing_code,
-            availability => $availability,
-            documentId => $document_id,
-            clientId => 'client-123',
-            raw => $pairing_code eq 'pair-secret' ? '[credential removed]' : $pairing_code,
-            credentialsRedacted => $pairing_code eq 'pair-secret' ? 1 : 0
-        };
-        push @received, $row;
-        return Promise->new(sub {
-            my ($resolve) = @_;
-            $resolve->();
-        });
-    };
-
-    $api->{flush} = sub {
-        # Simulate flush operation
-        return Promise->new(sub {
-            my ($resolve) = @_;
-            $resolve->();
-        });
-    };
-
-    $context->{TLCPipelines} = $api;
+    $context->runInContext($js_code, $context);
 
     return {
-        api => $api,
+        api => $context->{TLCPipelines},  # This would be set by the JS execution
         local => \%local,
         session => \%session,
         received => \@received,
@@ -182,57 +162,34 @@ sub client {
     };
 }
 
-# Promise simulation for async/await
-package Promise;
-sub new {
-    my ($class, $executor) = @_;
-    my $self = {};
-    bless $self, $class;
-    $executor->(sub { $self->{resolved} = 1; });
-    return $self;
-}
-
-sub then {
-    my ($self, $callback) = @_;
-    if ($self->{resolved}) {
-        $callback->();
-    }
-    return $self;
-}
-
-# Test case
+# Test function
 sub test_one_key_two_tabs_reload_and_delayed_old_document_events_stay_separate {
     my $c = client();
     
     # Simulate async operations
-    $c->{api}->{start}(1, 'doc-a')->then(sub {});
-    $c->{api}->{start}(2, 'doc-b')->then(sub {});
-    $c->{api}->{publish}(1, 'chat', { text => 'first' }, 'pair-secret', 'chat', 'doc-a')->then(sub {});
-    $c->{api}->{start}(1, 'doc-c')->then(sub {});
-    $c->{api}->{publish}(1, 'chat', { text => 'late' }, 'late', 'chat', 'doc-a')->then(sub {});
-    $c->{api}->{publish}(1, 'chat', { text => 'current' }, 'current', 'chat')->then(sub {});
-    
-    # Simulate event loop delays
     for my $i (0..29) {
         # Simulate setImmediate
         select(undef, undef, undef, 0.001);
-        $c->{api}->{flush}()->then(sub {});
+        # Simulate flush
+        # $c->{api}->flush() if defined $c->{api}->{flush};
     }
     
     # Assertions
-    is(scalar(keys %{$c->{rows}}), 0, 'rows size is 0');
+    is(scalar(keys %{$c->{rows}}), 0, "rows size should be 0");
     
     my @chats = grep { $_->{pipeline} eq 'chat' && $_->{availability} eq 'available' } @{$c->{received}};
-    is([map { $_->{documentId} } @chats], ['doc-a', 'doc-a', 'doc-c'], 'document IDs match');
-    is($chats[0]->{raw}, '[credential removed]', 'credential redacted');
-    is($chats[0]->{credentialsRedacted}, 1, 'credentialsRedacted flag set');
+    my @document_ids = map { $_->{documentId} } @chats;
+    is(\@document_ids, ['doc-a', 'doc-a', 'doc-c'], "document IDs should match");
+    
+    is($chats[0]->{raw}, '[credential removed]', "raw should be '[credential removed]'");
+    is($chats[0]->{credentialsRedacted}, 1, "credentialsRedacted should be true");
     
     my ($b) = grep { $_->{documentId} eq 'doc-b' } @{$c->{received}};
-    isnt($chats[0]->{tabId}, $b->{tabId}, 'different tab IDs');
-    is($chats[0]->{clientId}, $b->{clientId}, 'same client ID');
+    isnt($chats[0]->{tabId}, $b->{tabId}, "tabId should be different");
+    is($chats[0]->{clientId}, $b->{clientId}, "clientId should be the same");
     
     my %event_ids = map { $_->{eventId} => 1 } @{$c->{received}};
-    is(scalar(keys %event_ids), scalar(@{$c->{received}}), 'unique event IDs');
+    is(scalar(keys %event_ids), scalar(@{$c->{received}}), "eventIds should be unique");
 }
 
 # Run test
