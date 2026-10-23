@@ -3,15 +3,24 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/sidepanel-harness.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/sidepanel-harness.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/sidepanel-harness.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+<#
+.SYNOPSIS
+Generates a test harness HTML file for the sidepanel functionality.
+.DESCRIPTION
+This script creates an HTML file that serves as a test harness for the sidepanel,
+including mock data and interactive controls to simulate various states.
+.PARAMETER OutputPath
+The path where the generated HTML file will be saved.
+#>
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$OutputPath
 )
 
-# HTML-Inhalt generieren
 $htmlContent = @'
 <!doctype html>
 <html lang="de">
@@ -208,7 +217,7 @@ $htmlContent = @'
 </html>
 '@
 
-# HTML-Inhalt in Datei schreiben
-$htmlContent | Out-File -FilePath $OutputPath -Encoding utf8
+# Write the HTML content to the specified output path
+$htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8
 
-Write-Host "HTML-Datei wurde erfolgreich erstellt: $OutputPath"
+Write-Host "HTML file generated successfully at: $OutputPath"

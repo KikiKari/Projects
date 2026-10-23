@@ -1,24 +1,24 @@
 #!/bin/bash
 # offscreen.html — portiert nach shell
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
-# auch in: 2 weiteren Fundstellen
-# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/offscreen.html
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/browser-extension/offscreen.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter prüfen
-if [[ $# -ne 1 ]]; then
-  echo "Verwendung: $0 <ausgabedatei>" >&2
-  exit 1
+# Prüfe, ob ein Parameter übergeben wurde
+if [ $# -eq 0 ]; then
+    echo "Fehler: Kein Ausgabepfad angegeben" >&2
+    exit 1
 fi
 
-ausgabedatei="$1"
+# Speichere den übergebenen Pfad
+output_path="$1"
 
-# HTML-Dokument generieren
-cat > "$ausgabedatei" << 'EOF'
+# Erzeuge das HTML-Dokument strukturiert
+cat > "$output_path" << 'EOF'
 <!doctype html>
 <html lang="de">
 <head>
@@ -30,3 +30,5 @@ cat > "$ausgabedatei" << 'EOF'
 </body>
 </html>
 EOF
+
+echo "HTML-Dokument erfolgreich erstellt: $output_path"

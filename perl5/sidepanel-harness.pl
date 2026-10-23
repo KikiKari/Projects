@@ -3,22 +3,27 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/sidepanel-harness.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/sidepanel-harness.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/sidepanel-harness.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use JSON;
 
-# Portierung von sidepanel-harness.html nach Perl 5
-# Dieses Skript generiert das HTML-Dokument dynamisch
+# Command line argument for output file
+my $output_file = $ARGV[0] or die "Usage: $0 <output_file>\n";
+
+# Generate the HTML content
+my $html_content = generate_html();
+
+# Write to file
+open my $fh, '>', $output_file or die "Could not open file '$output_file' $!";
+print $fh $html_content;
+close $fh;
 
 sub generate_html {
-    my $output_file = shift // 'sidepanel-harness-generated.html';
-    
-    open(my $fh, '>', $output_file) or die "Kann Datei '$output_file' nicht öffnen: $!";
-    
-    print $fh <<'HTML_HEADER';
-<!DOCTYPE html>
+    my $html = <<'HTML_END';
+<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -211,18 +216,7 @@ sub generate_html {
   </script>
 </body>
 </html>
-HTML_HEADER
-    
-    close($fh);
-    print "HTML-Datei erfolgreich generiert: $output_file\n";
-}
+HTML_END
 
-# Hauptprogramm
-if (@ARGV && $ARGV[0] eq '--help') {
-    print "Verwendung: $0 [Ausgabedatei]\n";
-    print "Erzeugt eine HTML-Datei mit dem Sidepanel-Test-Harness.\n";
-    exit 0;
+    return $html_content;
 }
-
-my $output_filename = $ARGV[0] // 'sidepanel-harness-generated.html';
-generate_html($output_filename);

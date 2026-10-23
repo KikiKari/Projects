@@ -1,24 +1,24 @@
 #!/usr/bin/perl
 # offscreen.html — portiert nach perl5
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
-# auch in: 2 weiteren Fundstellen
-# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/offscreen.html
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/browser-extension/offscreen.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
 # Parameter prüfen
 if (@ARGV != 1) {
-    die "Usage: $0 <output_file>\n";
+    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
+    exit 1;
 }
 
-my $output_file = $ARGV[0];
+my $datei = $ARGV[0];
 
-# HTML-Struktur erstellen
-my $html = <<'EOF';
+# HTML-Struktur erzeugen
+my $html = <<'HTML';
 <!doctype html>
 <html lang="de">
 <head>
@@ -29,11 +29,11 @@ my $html = <<'EOF';
   <script src="offscreen.js"></script>
 </body>
 </html>
-EOF
+HTML
 
 # In Datei schreiben
-open my $fh, '>', $output_file or die "Kann Datei '$output_file' nicht öffnen: $!";
+open my $fh, '>', $datei or die "Kann Datei '$datei' nicht öffnen: $!";
 print $fh $html;
-close $fh or die "Fehler beim Schließen der Datei '$output_file': $!";
+close $fh or die "Fehler beim Schließen der Datei '$datei': $!";
 
-print "HTML-Datei erfolgreich erstellt: $output_file\n";
+print "HTML-Datei wurde erfolgreich erstellt: $datei\n";

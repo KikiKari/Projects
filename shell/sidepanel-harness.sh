@@ -3,21 +3,17 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/sidepanel-harness.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/sidepanel-harness.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/sidepanel-harness.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/sidepanel-harness.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter: Ausgabedatei
-output_file="${1:-}"
+# Portierte Version des HTML-Dokuments in Bash
+# Dieses Skript erzeugt dynamisch die HTML-Struktur und gibt sie in eine Datei aus
 
-if [[ -z "$output_file" ]]; then
-  echo "Usage: $0 <output-file>"
-  exit 1
-fi
-
-# Erzeuge das HTML-Dokument
-cat > "$output_file" << 'HTML_END'
+# Funktion zur Erstellung des HTML-Dokuments
+create_html_document() {
+cat << 'EOF'
 <!doctype html>
 <html lang="de">
 <head>
@@ -211,6 +207,18 @@ cat > "$output_file" << 'HTML_END'
   </script>
 </body>
 </html>
-HTML_END
+EOF
+}
 
-echo "HTML file created: $output_file"
+# Hauptlogik
+main() {
+    local output_file="${1:-sidepanel-harness.html}"
+    
+    # Erstelle das HTML-Dokument und schreibe es in die angegebene Datei
+    create_html_document > "$output_file"
+    
+    echo "HTML-Dokument wurde erfolgreich in '$output_file' erstellt."
+}
+
+# Skriptaufruf
+main "$@"

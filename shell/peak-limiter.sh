@@ -3,19 +3,19 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/peak-limiter.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/peak-limiter.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/peak-limiter.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Parameter: Ausgabedatei
 if [[ $# -ne 1 ]]; then
-  echo "Aufruf: $0 <ausgabedatei>" >&2
-  exit 1
+    echo "Aufruf: $0 <ausgabedatei>"
+    exit 1
 fi
 output_file="$1"
 
-# Erzeuge das HTML-Dokument
+# HTML-Dokument generieren
 cat > "$output_file" << 'EOF'
 <!doctype html>
 <html lang="de"><meta charset="utf-8"><title>Pegelschutz Audioprüfung</title>

@@ -1,49 +1,65 @@
 #!/usr/bin/env python3
 # offscreen.html — portiert nach python
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/offscreen.html
-# auch in: Projects@TikTok-Live-Companion-Android:release/0.7.1/tiktok-live-companion-extension-0.7.1/offscreen.html
-# auch in: 2 weiteren Fundstellen
-# Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/offscreen.html
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/browser-extension/offscreen.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-from html import escape
+import argparse
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom import minidom
 
 def create_offscreen_html():
-    """Erstellt das offscreen.html Dokument"""
-    html_content = '''<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>TikTok LIVE Companion Sprachausgabe</title>
-</head>
-<body>
-  <script src="offscreen.js"></script>
-</body>
-</html>
-'''
-    return html_content
+    """Erstellt die HTML-Struktur fuer TikTok LIVE Companion Sprachausgabe"""
+    
+    # Erstelle das root Element
+    html = Element('html')
+    html.set('lang', 'de')
+    
+    # Erstelle head
+    head = SubElement(html, 'head')
+    
+    # Fuege meta charset hinzu
+    meta = SubElement(head, 'meta')
+    meta.set('charset', 'utf-8')
+    
+    # Fuege title hinzu
+    title = SubElement(head, 'title')
+    title.text = 'TikTok LIVE Companion Sprachausgabe'
+    
+    # Erstelle body
+    body = SubElement(html, 'body')
+    
+    # Fuege script hinzu
+    script = SubElement(body, 'script')
+    script.set('src', 'offscreen.js')
+    
+    return html
+
+def prettify_xml(element):
+    """Formatiert das XML schoen"""
+    rough_string = tostring(element, encoding='unicode')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")[23:]  # Entferne XML-Deklaration
 
 def main():
-    # Prüfe ob ein Dateiname übergeben wurde
-    if len(sys.argv) != 2:
-        print("Usage: python3 offscreen.py <output_file>", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Erzeuge offscreen.html')
+    parser.add_argument('output_file', help='Ausgabedatei')
     
-    output_file = sys.argv[1]
+    args = parser.parse_args()
     
-    # Erzeuge den HTML-Inhalt
-    html_content = create_offscreen_html()
+    # Erstelle HTML-Struktur
+    html_doc = create_offscreen_html()
     
-    # Schreibe in die angegebene Datei
-    try:
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        print(f"HTML file successfully written to {output_file}")
-    except IOError as e:
-        print(f"Error writing to file {output_file}: {e}", file=sys.stderr)
-        sys.exit(1)
+    # Formatieren und DOCTYPE hinzufuegen
+    pretty_xml = prettify_xml(html_doc)
+    full_html = '<!doctype html>\n' + pretty_xml
+    
+    # Schreibe in Datei
+    with open(args.output_file, 'w', encoding='utf-8') as f:
+        f.write(full_html)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

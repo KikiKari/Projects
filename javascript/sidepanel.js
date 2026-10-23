@@ -1,610 +1,763 @@
 #!/usr/bin/env node
-// sidepanel.html — portiert nach javascript
-// Quelle: html, Projects@codex/0pe-177-peak-protection:plugin-source/browser-extension/sidepanel.html
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+// sidepanel.css — portiert nach javascript
+// Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.css
+// auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.css
+// auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/sidepanel.css
+// auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/browser-extension/sidepanel.css
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const fs = require('fs');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+function generateCSS() {
+  const root = {
+    'color-scheme': 'light dark',
+    'font-family': 'Inter, "Segoe UI", system-ui, sans-serif',
+    '--accent': '#fe2c55',
+    '--accent-dark': '#d91f46',
+    '--surface': 'color-mix(in srgb, Canvas 94%, CanvasText 6%)',
+    '--border': 'color-mix(in srgb, CanvasText 18%, transparent)',
+    '--muted': 'color-mix(in srgb, CanvasText 65%, transparent)',
+    '--good': '#147d45',
+    '--warn': '#a65f00',
+    '--bad': '#b42318'
+  };
 
-function createDocument() {
-  const doc = {
-    doctype: '<!doctype html>',
-    html: {
-      attributes: { lang: 'de' },
-      head: {
-        children: [
-          { tag: 'meta', attributes: { charset: 'utf-8' } },
-          { tag: 'meta', attributes: { name: 'viewport', content: 'width=device-width, initial-scale=1' } },
-          { tag: 'title', text: 'TikTok LIVE Companion' },
-          { tag: 'link', attributes: { rel: 'stylesheet', href: 'sidepanel.css' } }
-        ]
+  const rules = {
+    ':root': root,
+    '*': { 'box-sizing': 'border-box' },
+    'body': { 
+      margin: 0, 
+      background: 'Canvas', 
+      color: 'CanvasText', 
+      'min-width': '300px' 
+    },
+    'header': { 
+      padding: '11px 18px', 
+      background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, Canvas), Canvas)', 
+      'border-bottom': '1px solid var(--border)' 
+    },
+    'h2': { 
+      margin: 0, 
+      'font-size': '15px' 
+    },
+    'main': { 
+      padding: '14px', 
+      display: 'grid', 
+      'grid-template-columns': 'minmax(0, 1fr)', 
+      gap: '12px' 
+    },
+    'section': { 
+      'min-width': 0, 
+      padding: '14px', 
+      background: 'var(--surface)', 
+      border: '1px solid var(--border)', 
+      'border-radius': '13px', 
+      'box-shadow': '0 5px 20px color-mix(in srgb, CanvasText 6%, transparent)' 
+    },
+    '.section-title, .button-row': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      'justify-content': 'space-between', 
+      gap: '8px' 
+    },
+    '.section-title': { 
+      'min-width': 0, 
+      'flex-wrap': 'wrap' 
+    },
+    '.title-actions': { 
+      display: 'flex', 
+      'min-width': 0, 
+      'max-width': '100%', 
+      'align-items': 'center', 
+      'justify-content': 'flex-end', 
+      'flex-wrap': 'wrap', 
+      gap: '6px' 
+    },
+    '.status-led': { 
+      width: '11px', 
+      height: '11px', 
+      'flex': '0 0 11px', 
+      'border-radius': '50%', 
+      background: 'var(--bad)', 
+      'box-shadow': '0 0 0 3px color-mix(in srgb, var(--bad) 15%, transparent)' 
+    },
+    '.status-led.on': { 
+      background: 'var(--good)', 
+      'box-shadow': '0 0 0 3px color-mix(in srgb, var(--good) 17%, transparent)' 
+    },
+    '.status-led.off': { 
+      background: 'var(--bad)' 
+    },
+    '.button-row': { 
+      'justify-content': 'flex-start', 
+      'flex-wrap': 'wrap', 
+      'margin-top': '10px' 
+    },
+    'button': { 
+      border: '0', 
+      'border-radius': '9px', 
+      padding: '9px 11px', 
+      font: 'inherit', 
+      'font-size': '12px', 
+      'font-weight': '700', 
+      cursor: 'pointer' 
+    },
+    'button:disabled': { 
+      cursor: 'not-allowed', 
+      opacity: '.55' 
+    },
+    '.compact': { 
+      padding: '7px 9px' 
+    },
+    '.settings-button': { 
+      'min-width': '34px', 
+      'font-size': '17px', 
+      'line-height': '1' 
+    },
+    '.primary': { 
+      color: 'white', 
+      background: 'var(--accent)' 
+    },
+    '.primary:hover': { 
+      background: 'var(--accent-dark)' 
+    },
+    '.secondary': { 
+      color: 'CanvasText', 
+      background: 'color-mix(in srgb, CanvasText 9%, Canvas)', 
+      border: '1px solid var(--border)' 
+    },
+    '.ghost': { 
+      color: 'var(--muted)', 
+      background: 'transparent' 
+    },
+    '.danger-outline': { 
+      color: 'var(--bad)', 
+      'border-color': 'color-mix(in srgb, var(--bad) 45%, transparent)' 
+    },
+    '#enable-captions': { 
+      width: '100%', 
+      'margin-top': '11px' 
+    },
+    '.muted': { 
+      color: 'var(--muted)' 
+    },
+    '.small': { 
+      'font-size': '12px', 
+      'line-height': '1.45' 
+    },
+    '#page-title': { 
+      margin: 0, 
+      'font-size': '12px', 
+      'white-space': 'nowrap', 
+      overflow: 'hidden', 
+      'text-overflow': 'ellipsis' 
+    },
+    '.status-grid': { 
+      display: 'grid', 
+      'grid-template-columns': '1fr 1fr', 
+      gap: '7px', 
+      'margin-top': '11px' 
+    },
+    '.status': { 
+      padding: '9px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'Canvas' 
+    },
+    '.status-label': { 
+      display: 'block', 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'text-transform': 'uppercase', 
+      'letter-spacing': '.06em' 
+    },
+    '.status-value': { 
+      display: 'block', 
+      'margin-top': '3px', 
+      'font-size': '12px', 
+      'font-weight': '750' 
+    },
+    '.good .status-value': { 
+      color: 'var(--good)' 
+    },
+    '.warn .status-value': { 
+      color: 'var(--warn)' 
+    },
+    '.bad .status-value': { 
+      color: 'var(--bad)' 
+    },
+    '.count': { 
+      'min-width': '25px', 
+      padding: '3px 7px', 
+      'border-radius': '999px', 
+      background: 'color-mix(in srgb, var(--accent) 15%, Canvas)', 
+      color: 'var(--accent)', 
+      'text-align': 'center', 
+      'font-size': '11px', 
+      'font-weight': '800' 
+    },
+    '.count-button': { 
+      border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', 
+      cursor: 'pointer' 
+    },
+    '.count-button:hover, .count-button:focus-visible': { 
+      background: 'color-mix(in srgb, var(--accent) 25%, Canvas)' 
+    },
+    '.live-indicator': { 
+      padding: '3px 7px', 
+      'border-radius': '999px', 
+      background: 'color-mix(in srgb, var(--muted) 15%, Canvas)', 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'font-weight': '800', 
+      'text-transform': 'uppercase' 
+    },
+    '.live-indicator.active': { 
+      background: 'color-mix(in srgb, var(--good) 16%, Canvas)', 
+      color: 'var(--good)' 
+    },
+    '.stats-grid .status-value': { 
+      'font-size': '16px', 
+      'font-variant-numeric': 'tabular-nums' 
+    },
+    '.chat-list': { 
+      display: 'grid', 
+      gap: '6px', 
+      'margin-top': '11px' 
+    },
+    '.chat-list.empty': { 
+      color: 'var(--muted)', 
+      'font-size': '12px' 
+    },
+    '.chat-line': { 
+      margin: 0, 
+      padding: '7px 8px', 
+      'border-left': '3px solid color-mix(in srgb, var(--accent) 45%, var(--border))', 
+      'border-radius': '6px', 
+      background: 'Canvas', 
+      'font-size': '12px', 
+      'line-height': '1.4', 
+      'overflow-wrap': 'anywhere' 
+    },
+    '.chat-author': { 
+      'font-weight': '800' 
+    },
+    '.player-controls': { 
+      display: 'grid', 
+      'grid-template-columns': 'repeat(2, minmax(0, 1fr))', 
+      gap: '7px', 
+      'margin-top': '11px' 
+    },
+    '.player-controls button': { 
+      width: '100%' 
+    },
+    '.player-time': { 
+      'font-size': '13px', 
+      'font-weight': '800', 
+      'font-variant-numeric': 'tabular-nums' 
+    },
+    '.audio-controls': { 
+      display: 'grid', 
+      gap: '7px', 
+      'margin-top': '12px', 
+      'padding-top': '11px', 
+      'border-top': '1px solid var(--border)' 
+    },
+    '.control-label, .audio-meter-row': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      'justify-content': 'space-between', 
+      gap: '8px', 
+      'font-size': '11px' 
+    },
+    '.control-label output, .audio-meter-row strong': { 
+      'font-variant-numeric': 'tabular-nums' 
+    },
+    'input[type="range"]': { 
+      width: '100%', 
+      'accent-color': 'var(--accent)' 
+    },
+    '.settings-grid': { 
+      display: 'grid', 
+      gap: '7px', 
+      'margin-top': '10px' 
+    },
+    '.settings-grid label': { 
+      display: 'grid', 
+      gap: '4px', 
+      color: 'var(--muted)', 
+      'font-size': '10px' 
+    },
+    '.settings-grid label[hidden]': { 
+      display: 'none' 
+    },
+    'input[type="url"], input[type="text"], input[type="password"], input[type="number"], select': { 
+      width: '100%', 
+      'min-width': 0, 
+      padding: '7px 8px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '7px', 
+      background: 'Canvas', 
+      color: 'CanvasText', 
+      font: 'inherit', 
+      'font-size': '11px' 
+    },
+    '.top-chatters': { 
+      display: 'grid', 
+      gap: '6px', 
+      'margin-top': '8px' 
+    },
+    '.top-chatters.empty': { 
+      color: 'var(--muted)', 
+      'font-size': '12px' 
+    },
+    '.top-chatters-actions': { 
+      display: 'flex', 
+      'justify-content': 'flex-end', 
+      gap: '9px', 
+      'margin-top': '7px' 
+    },
+    '.top-chatters-actions[hidden]': { 
+      display: 'none' 
+    },
+    '.top-chatter-link': { 
+      padding: 0, 
+      color: 'var(--accent)', 
+      background: 'transparent', 
+      border: 0, 
+      'border-radius': 0, 
+      'font-weight': '700' 
+    },
+    '.top-chatter-link:hover': { 
+      'text-decoration': 'underline' 
+    },
+    '.chatter-row': { 
+      display: 'grid', 
+      'grid-template-columns': 'minmax(0, 1fr) auto auto', 
+      'align-items': 'center', 
+      gap: '7px', 
+      padding: '7px 8px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '8px', 
+      background: 'Canvas' 
+    },
+    '.chatter-name': { 
+      'min-width': 0, 
+      overflow: 'hidden', 
+      'text-overflow': 'ellipsis', 
+      'white-space': 'nowrap', 
+      'font-size': '11px', 
+      'font-weight': '800' 
+    },
+    '.chatter-metrics': { 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'white-space': 'nowrap' 
+    },
+    '.mute-toggle': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      gap: '4px', 
+      color: 'var(--muted)', 
+      'font-size': '10px' 
+    },
+    '#recognize-song': { 
+      width: '100%', 
+      'margin-top': '10px' 
+    },
+    '.song-result': { 
+      'margin-top': '9px', 
+      padding: '9px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'Canvas', 
+      'font-size': '11px', 
+      'line-height': '1.45' 
+    },
+    '.song-result strong, .song-result span, .song-result a': { 
+      display: 'block' 
+    },
+    '.song-result a': { 
+      'margin-top': '4px', 
+      color: 'var(--accent)', 
+      'overflow-wrap': 'anywhere' 
+    },
+    '.modal-backdrop': { 
+      position: 'fixed', 
+      inset: 0, 
+      'z-index': '100', 
+      padding: '14px', 
+      background: 'color-mix(in srgb, CanvasText 42%, transparent)', 
+      overflow: 'auto' 
+    },
+    '.modal': { 
+      width: 'min(520px, 100%)', 
+      'max-height': 'calc(100vh - 28px)', 
+      margin: '0 auto', 
+      overflow: 'auto', 
+      background: 'Canvas' 
+    },
+    '.audience-list, .chat-history-list, .recommendation-list': { 
+      display: 'grid', 
+      gap: '7px', 
+      'margin-top': '9px' 
+    },
+    '.chat-history-row': { 
+      padding: '8px 9px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'var(--surface)', 
+      'font-size': '11px', 
+      'line-height': '1.4', 
+      'overflow-wrap': 'anywhere' 
+    },
+    '.chat-history-meta': { 
+      display: 'block', 
+      'margin-bottom': '3px', 
+      color: 'var(--muted)', 
+      'font-size': '10px' 
+    },
+    '.audience-row': { 
+      display: 'grid', 
+      gap: '6px', 
+      padding: '9px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'var(--surface)' 
+    },
+    '.audience-row-head': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      'justify-content': 'space-between', 
+      gap: '8px' 
+    },
+    '.audience-row select': { 
+      width: 'auto', 
+      'max-width': '170px' 
+    },
+    '.audience-metrics': { 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'line-height': '1.45' 
+    },
+    '.option-row': { 
+      display: 'flex', 
+      'align-items': 'flex-start', 
+      gap: '7px', 
+      'margin-top': '8px', 
+      color: 'var(--muted)', 
+      'font-size': '11px', 
+      'line-height': '1.35' 
+    },
+    '.option-row input': { 
+      margin: '1px 0 0', 
+      'accent-color': 'var(--accent)' 
+    },
+    '.auto-chat-refresh': { 
+      'align-items': 'center' 
+    },
+    '.external-speech-trigger-row': { 
+      'align-items': 'center' 
+    },
+    '.external-speech-trigger-row label': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      gap: '7px' 
+    },
+    '.external-speech-trigger-row input[type="text"]': { 
+      width: '48px', 
+      'margin-left': '3px', 
+      padding: '3px 4px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '6px', 
+      background: 'Canvas', 
+      color: 'CanvasText', 
+      font: 'inherit', 
+      'font-size': '11px' 
+    },
+    '.auto-chat-refresh input[type="number"]': { 
+      width: '48px', 
+      'margin-left': '3px', 
+      padding: '3px 4px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '6px', 
+      background: 'Canvas', 
+      color: 'CanvasText', 
+      font: 'inherit', 
+      'font-size': '11px' 
+    },
+    '.quick-recover-setting input[type="number"]': { 
+      width: '48px', 
+      'margin-left': '3px', 
+      padding: '3px 4px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '6px', 
+      background: 'Canvas', 
+      color: 'CanvasText', 
+      font: 'inherit', 
+      'font-size': '11px' 
+    },
+    '.audio-note': { 
+      margin: '1px 0 0' 
+    },
+    '.profile-info': { 
+      display: 'grid', 
+      gap: '8px', 
+      'margin-top': '11px' 
+    },
+    '.profile-heading': { 
+      margin: 0, 
+      'font-size': '14px', 
+      'font-weight': '800' 
+    },
+    '.profile-handle, .profile-bio': { 
+      margin: 0, 
+      color: 'var(--muted)', 
+      'font-size': '11px', 
+      'line-height': '1.45', 
+      'white-space': 'pre-wrap' 
+    },
+    '.profile-stats': { 
+      display: 'grid', 
+      'grid-template-columns': 'repeat(3, minmax(0, 1fr))', 
+      gap: '6px' 
+    },
+    '.profile-stat': { 
+      padding: '7px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '8px', 
+      background: 'Canvas' 
+    },
+    '.profile-stat strong, .profile-stat span': { 
+      display: 'block' 
+    },
+    '.profile-stat span': { 
+      'margin-top': '2px', 
+      color: 'var(--muted)', 
+      'font-size': '9px', 
+      'text-transform': 'uppercase' 
+    },
+    '.summary-info': { 
+      'margin-top': '10px', 
+      'padding-top': '9px', 
+      'border-top': '1px solid var(--border)', 
+      'font-size': '11px', 
+      'line-height': '1.45' 
+    },
+    '.summary-text': { 
+      margin: '6px 0 0', 
+      'white-space': 'pre-wrap' 
+    },
+    '.recommendation-controls': { 
+      display: 'grid', 
+      'grid-template-columns': 'minmax(70px, .7fr) minmax(150px, 1.3fr)', 
+      gap: '8px', 
+      'margin-top': '10px' 
+    },
+    '.recommendation-controls label': { 
+      display: 'grid', 
+      gap: '4px', 
+      color: 'var(--muted)', 
+      'font-size': '10px' 
+    },
+    '.recommendation-list.empty': { 
+      display: 'block', 
+      color: 'var(--muted)', 
+      'font-size': '12px' 
+    },
+    '.recommendation-row': { 
+      padding: '9px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'Canvas' 
+    },
+    '.recommendation-head': { 
+      display: 'flex', 
+      'align-items': 'flex-start', 
+      'justify-content': 'space-between', 
+      gap: '8px' 
+    },
+    '.recommendation-name': { 
+      'min-width': 0, 
+      margin: 0, 
+      'font-size': '11px', 
+      'font-weight': '800', 
+      'overflow-wrap': 'anywhere' 
+    },
+    '.recommendation-viewers': { 
+      'flex': '0 0 auto', 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'font-variant-numeric': 'tabular-nums' 
+    },
+    '.recommendation-description': { 
+      'margin': '5px 0 0', 
+      color: 'var(--muted)', 
+      'font-size': '10px', 
+      'line-height': '1.4', 
+      'overflow-wrap': 'anywhere' 
+    },
+    '.recommendation-link': { 
+      display: 'inline-block', 
+      'margin-top': '6px', 
+      color: 'var(--accent)', 
+      'font-size': '11px', 
+      'font-weight': '700' 
+    },
+    '.list': { 
+      display: 'grid', 
+      gap: '8px', 
+      'margin-top': '11px', 
+      'max-height': '300px', 
+      overflow: 'auto' 
+    },
+    '.list.empty': { 
+      display: 'block', 
+      color: 'var(--muted)', 
+      'font-size': '12px' 
+    },
+    '.item': { 
+      padding: '10px', 
+      border: '1px solid var(--border)', 
+      'border-radius': '9px', 
+      background: 'Canvas' 
+    },
+    '.item-head': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      'justify-content': 'space-between', 
+      gap: '8px' 
+    },
+    '.item-title': { 
+      'font-size': '12px', 
+      'font-weight': '800' 
+    },
+    '.item-meta, .item-url, .caption-meta': { 
+      color: 'var(--muted)', 
+      'font-size': '10px' 
+    },
+    '.item-url': { 
+      'margin-top': '6px', 
+      'overflow-wrap': 'anywhere', 
+      'max-height': '42px', 
+      overflow: 'hidden' 
+    },
+    '.copy': { 
+      'flex': '0 0 auto', 
+      padding: '6px 8px' 
+    },
+    '.caption-text': { 
+      'margin': '5px 0 0', 
+      'white-space': 'pre-wrap', 
+      'font-size': '12px', 
+      'line-height': '1.4' 
+    },
+    '.inline-status, .notice': { 
+      'min-height': '17px', 
+      'margin': '9px 0 0', 
+      color: 'var(--muted)', 
+      'font-size': '11px' 
+    },
+    '.action-status': { 
+      'line-height': '1.4' 
+    },
+    '.reset-note': { 
+      'margin': '7px 0 0' 
+    },
+    '.notice': { 
+      margin: '0 3px 8px', 
+      color: 'var(--bad)' 
+    },
+    '@media (min-width: 430px)': {
+      '.speech-settings': { 
+        'grid-template-columns': '1fr 1fr' 
       },
-      body: {
-        children: [
-          { tag: 'header', children: [
-            { tag: 'p', attributes: { id: 'page-title', class: 'muted' }, text: 'Kein TikTok-Tab ausgewählt' }
-          ]},
-          { tag: 'main', children: [
-            createChatSection(),
-            createTopChattersSection(),
-            createPageInfoSection(),
-            createStatsSection(),
-            createHookSection(),
-            createRecommendationsSection(),
-            createCaptionSection(),
-            createPlayerSection(),
-            createSongSection(),
-            createLinksSection(),
-            createLogSection(),
-            createDebugSection(),
-            createModals()
-          ]},
-          { tag: 'script', attributes: { src: 'content-core.js' } },
-          { tag: 'script', attributes: { src: 'sidepanel.js' } }
-        ]
+      '.speech-settings label:first-child': { 
+        'grid-column': '1 / -1' 
       }
+    },
+    '@media (prefers-reduced-motion: reduce)': {
+      '*': { 
+        'scroll-behavior': 'auto !important' 
+      }
+    },
+    '/* Header controls remain in one ordered group at the upper right. */\n.section-title.header-controls': { 
+      'flex-wrap': 'nowrap', 
+      'align-items': 'flex-start' 
+    },
+    '.header-controls > .title-actions': { 
+      'margin-inline-start': 'auto', 
+      'flex-wrap': 'nowrap', 
+      'flex-shrink': '0' 
+    },
+    '.header-controls > .title-actions input[type="checkbox"]': { 
+      margin: '0' 
+    },
+    '.connection-status': { 
+      display: 'flex', 
+      'align-items': 'center', 
+      gap: '8px' 
     }
   };
-  return doc;
+
+  let css = '';
+  
+  // Add root variables
+  css += ':root {\n';
+  for (const [key, value] of Object.entries(root)) {
+    css += `  ${key}: ${value};\n`;
+  }
+  css += '}\n\n';
+
+  // Process each rule
+  for (const [selector, declarations] of Object.entries(rules)) {
+    if (selector.startsWith('@media')) {
+      css += `${selector} {`;
+      for (const [subSelector, subDeclarations] of Object.entries(declarations)) {
+        css += `\n  ${subSelector} {`;
+        for (const [prop, value] of Object.entries(subDeclarations)) {
+          css += `\n    ${prop}: ${value};`;
+        }
+        css += '\n  }';
+      }
+      css += '\n}\n\n';
+    } else if (selector.startsWith('/*')) {
+      css += `${selector}\n`;
+    } else {
+      css += `${selector} {`;
+      for (const [prop, value] of Object.entries(declarations)) {
+        css += `\n  ${prop}: ${value};`;
+      }
+      css += '\n}\n\n';
+    }
+  }
+
+  return css.trim();
 }
 
-function createChatSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'chat-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'chat-heading' }, text: 'Chat' },
-          {
-            tag: 'div',
-            attributes: { class: 'title-actions' },
-            children: [
-              { tag: 'span', attributes: { id: 'chat-led', class: 'status-led off', role: 'status', 'aria-label': 'Chat inaktiv', title: 'Chat inaktiv' } },
-              { tag: 'button', attributes: { id: 'chat-count', class: 'count count-button', type: 'button', 'aria-haspopup': 'dialog', title: 'Gesammelte Chatzeilen öffnen' }, text: '0' },
-              { tag: 'button', attributes: { id: 'refresh-chat', class: 'secondary compact', title: 'Chatanzeige leeren' }, text: 'Refresh' },
-              { tag: 'button', attributes: { id: 'toggle-speech', class: 'secondary compact', 'aria-pressed': 'false', 'aria-label': 'Vorlesen' }, text: 'On' },
-              { tag: 'span', attributes: { id: 'speech-led', class: 'status-led off', role: 'status', 'aria-label': 'Vorlesen inaktiv', title: 'Vorlesen inaktiv' } }
-            ]
-          }
-        ]
-      },
-      { tag: 'div', attributes: { id: 'chat-list', class: 'chat-list empty', role: 'log', 'aria-live': 'polite', 'aria-relevant': 'additions', 'aria-label': 'Die letzten fünf bereinigten Chatnachrichten' }, text: 'Noch keine Chatnachrichten erkannt.' },
-      { tag: 'p', attributes: { id: 'speech-status', role: 'status', class: 'inline-status' }, text: 'Vorlesen ist ausgeschaltet.' },
-      { tag: 'div', attributes: { class: 'control-label' }, children: [
-        { tag: 'label', attributes: { for: 'speech-volume' }, text: 'Vorleselautstärke' },
-        { tag: 'output', attributes: { id: 'speech-volume-output', for: 'speech-volume' }, text: '100%' }
-      ]},
-      { tag: 'input', attributes: { id: 'speech-volume', type: 'range', min: '0', max: '100', step: '5', value: '50' } },
-      { tag: 'div', attributes: { class: 'button-row' }, children: [
-        { tag: 'button', attributes: { id: 'service-action', class: 'secondary' }, text: 'Sprachdienst' },
-        { tag: 'button', attributes: { id: 'sherpa-action', class: 'secondary' }, text: 'Sherpa' },
-        { tag: 'button', attributes: { id: 'open-speech-settings', class: 'secondary compact settings-button', type: 'button', 'aria-label': 'Sprach- und Chat Einstellungen öffnen', 'aria-haspopup': 'dialog', title: 'Einstellungen' }, text: '⚙' }
-      ]},
-      { tag: 'p', attributes: { id: 'service-status', class: 'inline-status' }, text: 'Lokaler Sprachdienst noch nicht geprüft.' },
-      { tag: 'div', attributes: { id: 'service-setup', class: 'inline-status', hidden: true }, children: [
-        { tag: 'button', attributes: { id: 'copy-service-setup', class: 'secondary compact' }, text: 'Installation abschließen!' }
-      ]},
-      { tag: 'label', attributes: { class: 'option-row' }, children: [
-        { tag: 'input', attributes: { id: 'keep-speech-active', type: 'checkbox' } },
-        { tag: 'span', text: ' Permanent aktiv' }
-      ]}
-    ]
-  };
+function main() {
+  const args = process.argv.slice(2);
+  
+  if (args.length === 0) {
+    console.error('Please provide an output file path');
+    process.exit(1);
+  }
+  
+  const outputPath = args[0];
+  const cssContent = generateCSS();
+  
+  try {
+    fs.writeFileSync(outputPath, cssContent, 'utf8');
+    console.log(`CSS file generated successfully: ${outputPath}`);
+  } catch (error) {
+    console.error(`Error writing file: ${error.message}`);
+    process.exit(1);
+  }
 }
 
-function createTopChattersSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'top-chatters-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'top-chatters-heading' }, text: 'Top-Chatter' },
-          { tag: 'button', attributes: { id: 'open-audience', class: 'secondary compact' }, text: 'Zuschauer*innen' }
-        ]
-      },
-      { tag: 'p', attributes: { id: 'team-tag-status', class: 'inline-status' }, text: 'Teamkürzel: noch nicht erkannt.' },
-      { tag: 'div', attributes: { id: 'top-chatters', class: 'top-chatters empty' }, text: 'Noch keine Personen im Chat beobachtet.' },
-      { tag: 'div', attributes: { id: 'top-chatters-actions', class: 'top-chatters-actions', hidden: true }, children: [
-        { tag: 'button', attributes: { id: 'top-chatters-reset', class: 'top-chatter-link', type: 'button', hidden: true }, text: 'Reset' },
-        { tag: 'button', attributes: { id: 'top-chatters-more', class: 'top-chatter-link', type: 'button' }, text: 'mehr…' }
-      ]}
-    ]
-  };
+if (require.main === module) {
+  main();
 }
 
-function createPageInfoSection() {
-  return {
-    tag: 'section',
-    attributes: { id: 'page-info-section', 'aria-labelledby': 'page-info-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'page-info-heading' }, text: 'PROFIL-Information' },
-          {
-            tag: 'div',
-            attributes: { class: 'title-actions' },
-            children: [
-              { tag: 'span', attributes: { id: 'page-info-source', class: 'live-indicator' }, text: 'Metadaten' },
-              { tag: 'button', attributes: { id: 'refresh-page-info', class: 'secondary compact' }, text: 'Refresh' },
-              { tag: 'button', attributes: { id: 'force-page-info', class: 'secondary compact danger-outline' }, text: 'Force' }
-            ]
-          }
-        ]
-      },
-      { tag: 'div', attributes: { id: 'profile-info', class: 'profile-info', hidden: true } },
-      { tag: 'div', attributes: { id: 'summary-info', class: 'summary-info' } }
-    ]
-  };
-}
-
-function createStatsSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'stats-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'stats-heading' }, text: 'LIVE-Information' },
-          { tag: 'span', attributes: { id: 'stats-live', class: 'live-indicator' }, text: 'warte' }
-        ]
-      },
-      { tag: 'div', attributes: { id: 'live-stats', class: 'status-grid stats-grid' } },
-      { tag: 'p', attributes: { id: 'stats-status', class: 'inline-status' } }
-    ]
-  };
-}
-
-function createHookSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'hook-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'hook-heading' }, text: 'Connection' },
-          { tag: 'span', attributes: { id: 'hook-led', class: 'status-led off', role: 'status', 'aria-label': 'Hook inaktiv', title: 'Hook inaktiv' } }
-        ]
-      },
-      { tag: 'div', attributes: { class: 'button-row' }, children: [
-        { tag: 'button', attributes: { id: 'toggle-hook', class: 'primary', 'aria-label': 'Connection', 'aria-pressed': 'false' }, text: 'On' },
-        { tag: 'button', attributes: { id: 'reset-tab', class: 'secondary danger-outline' }, text: 'Refresh' },
-        { tag: 'button', attributes: { id: 'open-embed-live', class: 'secondary' }, text: 'Embed' },
-        { tag: 'button', attributes: { id: 'open-normal-live', class: 'secondary' }, text: 'Browser' },
-        { tag: 'button', attributes: { id: 'player-vlc-frame', class: 'secondary compact' }, text: 'Player' },
-        { tag: 'button', attributes: { id: 'open-connection-settings', class: 'secondary compact settings-button', type: 'button', 'aria-label': 'Connection-Einstellungen öffnen', 'aria-haspopup': 'dialog' }, text: '⚙' }
-      ]},
-      { tag: 'p', attributes: { id: 'hook-status', class: 'inline-status' } },
-      { tag: 'p', attributes: { id: 'embed-startup-status', class: 'inline-status', role: 'status', 'aria-live': 'polite', hidden: true } },
-      { tag: 'button', attributes: { id: 'cancel-embed-startup', class: 'secondary', hidden: true }, text: 'Embed-Start abbrechen' },
-      { tag: 'label', attributes: { class: 'option-row' }, children: [
-        { tag: 'input', attributes: { id: 'hook-autostart', type: 'checkbox' } },
-        { tag: 'span', text: ' Permanent Hook' }
-      ]},
-      { tag: 'p', attributes: { id: 'hook-reconnect-status', class: 'inline-status', role: 'status' }, text: 'Hook-Reconnect: aus' },
-      { tag: 'p', attributes: { id: 'player-recovery-status', class: 'inline-status', role: 'status' }, text: 'Player-Recovery: aus' }
-    ]
-  };
-}
-
-function createRecommendationsSection() {
-  return {
-    tag: 'section',
-    attributes: { id: 'recommendations-section', 'aria-labelledby': 'recommendations-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'recommendations-heading' }, text: 'LIVE-Empfehlungen' },
-          { tag: 'span', attributes: { id: 'recommendation-status', class: 'live-indicator' }, text: 'bereit' }
-        ]
-      },
-      { tag: 'div', attributes: { class: 'recommendation-controls' }, children: [
-        { tag: 'label', children: [
-          { tag: 'span', text: 'Anzahl' },
-          { tag: 'input', attributes: { id: 'recommendation-limit', type: 'number', min: '1', max: '50', step: '1', value: '20', inputmode: 'numeric' } }
-        ]},
-        { tag: 'label', children: [
-          { tag: 'span', text: 'Sortierung' },
-          { tag: 'select', attributes: { id: 'recommendation-sort' }, children: [
-            { tag: 'option', attributes: { value: 'tiktok' }, text: 'TikTok-Reihenfolge' },
-            { tag: 'option', attributes: { value: 'viewers' }, text: 'Zuschauer*innen' }
-          ]}
-        ]}
-      ]},
-      { tag: 'div', attributes: { class: 'button-row' }, children: [
-        { tag: 'button', attributes: { id: 'scan-recommendations', class: 'primary' }, text: 'Empfehlungen scannen' },
-        { tag: 'button', attributes: { id: 'cancel-recommendations', class: 'secondary', hidden: true }, text: 'Abbrechen' }
-      ]},
-      { tag: 'p', attributes: { id: 'recommendation-progress', class: 'inline-status', 'aria-live': 'polite' }, text: 'Noch kein Scan gestartet.' },
-      { tag: 'div', attributes: { id: 'recommendation-list', class: 'recommendation-list empty' }, text: 'Noch keine Empfehlungen erfasst.' },
-      { tag: 'div', attributes: { id: 'recommendation-actions', class: 'top-chatters-actions', hidden: true }, children: [
-        { tag: 'button', attributes: { id: 'recommendation-more', class: 'top-chatter-link', type: 'button' }, text: 'mehr…' }
-      ]}
-    ]
-  };
-}
-
-function createCaptionSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'caption-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'caption-heading' }, text: 'Titel' },
-          { tag: 'button', attributes: { id: 'scan', class: 'secondary' }, text: 'Seite prüfen' }
-        ]
-      },
-      { tag: 'div', attributes: { id: 'caption-status', class: 'status-grid' } },
-      { tag: 'button', attributes: { id: 'enable-captions', class: 'primary' }, text: 'Untertitel aktivieren' },
-      { tag: 'p', attributes: { id: 'caption-action-status', role: 'status', class: 'inline-status action-status' } }
-    ]
-  };
-}
-
-function createPlayerSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'player-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'player-heading' }, text: 'Player' },
-          { tag: 'span', attributes: { id: 'player-time', class: 'player-time' }, text: '–' }
-        ]
-      },
-      { tag: 'div', attributes: { class: 'player-controls', role: 'group', 'aria-label': 'TikTok-Player steuern' }, children: [
-        { tag: 'button', attributes: { id: 'player-play', class: 'secondary compact' }, text: 'Pause' },
-        { tag: 'button', attributes: { id: 'player-replay', class: 'secondary compact' }, text: 'Neu laden' },
-        { tag: 'button', attributes: { id: 'player-mute', class: 'secondary compact' }, text: 'Stumm' },
-        { tag: 'button', attributes: { id: 'player-pip', class: 'secondary compact' }, text: 'Bild-in-Bild' },
-        { tag: 'button', attributes: { id: 'player-fullscreen', class: 'secondary compact' }, text: 'Vollbild' },
-        { tag: 'button', attributes: { id: 'player-report', class: 'secondary compact danger-outline' }, text: 'Melden öffnen' }
-      ]},
-      { tag: 'div', attributes: { class: 'audio-controls' }, children: [
-        { tag: 'div', attributes: { class: 'control-label' }, children: [
-          { tag: 'label', attributes: { for: 'player-volume' }, text: 'Lautstärke' },
-          { tag: 'output', attributes: { id: 'player-volume-output', for: 'player-volume' }, text: '–' }
-        ]},
-        { tag: 'input', attributes: { id: 'player-volume', type: 'range', min: '0', max: '100', step: '1', value: '100' } },
-        { tag: 'div', attributes: { class: 'audio-meter-row' }, children: [
-          { tag: 'span', text: 'Spitzenpegel' },
-          { tag: 'strong', attributes: { id: 'player-peak' }, text: '–' }
-        ]},
-        { tag: 'label', attributes: { class: 'option-row' }, children: [
-          { tag: 'input', attributes: { id: 'limiter-enabled', type: 'checkbox' } },
-          { tag: 'span', text: ' Pegelschutz aktivieren' }
-        ]},
-        { tag: 'div', attributes: { class: 'control-label' }, children: [
-          { tag: 'label', attributes: { for: 'limiter-strength' }, text: 'Schutzstärke' },
-          { tag: 'output', attributes: { id: 'limiter-strength-output', for: 'limiter-strength' }, text: '30' }
-        ]},
-        { tag: 'input', attributes: { id: 'limiter-strength', type: 'range', min: '0', max: '100', step: '1', value: '30' } }
-      ]},
-      { tag: 'p', attributes: { id: 'multi-guest-status', class: 'inline-status' }, text: 'Verbundene Streams: noch nicht erkannt.' },
-      { tag: 'p', attributes: { id: 'player-status', role: 'status', class: 'inline-status' }, text: 'Warte auf den TikTok-Player.' }
-    ]
-  };
-}
-
-function createSongSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'song-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'song-heading' }, text: 'Songs' },
-          { tag: 'span', attributes: { id: 'song-led', class: 'status-led off', role: 'status', 'aria-label': 'Songerkennung inaktiv' } }
-        ]
-      },
-      { tag: 'label', attributes: { class: 'option-row' }, children: [
-        { tag: 'input', attributes: { id: 'song-enabled', type: 'checkbox' } },
-        { tag: 'span', text: ' Songerkennung aktivieren' }
-      ]},
-      { tag: 'button', attributes: { id: 'recognize-song', class: 'primary', disabled: true }, text: 'Jetzt erkennen' },
-      { tag: 'p', attributes: { id: 'song-status', class: 'inline-status' } },
-      { tag: 'div', attributes: { id: 'song-result', class: 'song-result', hidden: true } }
-    ]
-  };
-}
-
-function createLinksSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'links-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'links-heading' }, text: 'HAR-Logs' },
-          { tag: 'span', attributes: { id: 'media-count', class: 'count' }, text: '0' }
-        ]
-      },
-      { tag: 'div', attributes: { id: 'media-list', class: 'list empty' }, text: 'Noch keine FLV-/HLS-Links erkannt.' },
-      { tag: 'p', attributes: { class: 'hint' }, text: 'Extern gestarteter VLC liegt außerhalb des Companion-Pegelschutzes.' }
-    ]
-  };
-}
-
-function createLogSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'log-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'log-heading' }, text: 'LIVE-Logs' },
-          { tag: 'span', attributes: { id: 'caption-count', class: 'count' }, text: '0' }
-        ]
-      },
-      { tag: 'div', attributes: { class: 'button-row' }, children: [
-        { tag: 'button', attributes: { id: 'export-log', class: 'secondary' }, text: 'JSON-L-Export' },
-        { tag: 'button', attributes: { id: 'export-caption-raw', class: 'secondary' }, text: 'RAW-JSON-Export' },
-        { tag: 'button', attributes: { id: 'clear', class: 'ghost' }, text: 'Anzeige leeren' }
-      ]},
-      { tag: 'div', attributes: { id: 'caption-list', class: 'list empty' }, text: 'Noch keine CaptionMessages empfangen.' }
-    ]
-  };
-}
-
-function createDebugSection() {
-  return {
-    tag: 'section',
-    attributes: { 'aria-labelledby': 'debug-heading' },
-    children: [
-      {
-        tag: 'div',
-        attributes: { class: 'section-title' },
-        children: [
-          { tag: 'h2', attributes: { id: 'debug-heading' }, text: 'Debugmodus' },
-          { tag: 'span', attributes: { id: 'debug-count', class: 'count' }, text: '0' }
-        ]
-      },
-      { tag: 'label', attributes: { class: 'option-row' }, children: [
-        { tag: 'input', attributes: { id: 'debug-enabled', type: 'checkbox' } },
-        { tag: 'span', text: ' Diagnoseereignisse für diesen Tab protokollieren' }
-      ]},
-      { tag: 'div', attributes: { class: 'button-row' }, children: [
-        { tag: 'button', attributes: { id: 'export-debug', class: 'secondary' }, text: 'Debug exportieren' },
-        { tag: 'button', attributes: { id: 'clear-debug', class: 'ghost' }, text: 'Debug leeren' }
-      ]},
-      { tag: 'p', attributes: { class: 'muted small' } }
-    ]
-  };
-}
-
-function createModals() {
-  return [
-    {
-      tag: 'div',
-      attributes: { id: 'audience-modal', class: 'modal-backdrop', hidden: true },
-      children: [{
-        tag: 'section',
-        attributes: { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'audience-heading' },
-        children: [
-          {
-            tag: 'div',
-            attributes: { class: 'section-title' },
-            children: [
-              { tag: 'h2', attributes: { id: 'audience-heading' }, text: 'Im Chat beobachtete Personen' },
-              { tag: 'button', attributes: { id: 'close-audience', class: 'secondary compact', 'aria-label': 'Übersicht schließen' }, text: 'Schließen' }
-            ]
-          },
-          { tag: 'p', attributes: { id: 'audience-limit', class: 'inline-status' } },
-          { tag: 'div', attributes: { id: 'audience-list', class: 'audience-list' } }
-        ]
-      }]
-    },
-    {
-      tag: 'div',
-      attributes: { id: 'speech-settings-modal', class: 'modal-backdrop', hidden: true },
-      children: [{
-        tag: 'section',
-        attributes: { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'speech-settings-heading' },
-        children: [
-          {
-            tag: 'div',
-            attributes: { class: 'section-title' },
-            children: [
-              { tag: 'h2', attributes: { id: 'speech-settings-heading' }, text: 'Sprach- und Chat Einstellungen' },
-              { tag: 'button', attributes: { id: 'close-speech-settings', class: 'secondary compact', 'aria-label': 'Einstellungen schließen' }, text: 'Schließen' }
-            ]
-          },
-          {
-            tag: 'div',
-            attributes: { class: 'settings-grid speech-integration-settings' },
-            children: [
-              {
-                tag: 'label',
-                children: [
-                  { tag: 'span', text: 'Sprache' },
-                  {
-                    tag: 'select',
-                    attributes: { id: 'speech-language' },
-                    children: [
-                      { tag: 'option', attributes: { value: 'auto' }, text: 'Auto' },
-                      { tag: 'option', attributes: { value: 'de-DE' }, text: 'Deutsch' },
-                      { tag: 'option', attributes: { value: 'en-US' }, text: 'Englisch' },
-                      { tag: 'option', attributes: { value: 'ru-RU' }, text: 'Russisch' },
-                      { tag: 'option', attributes: { value: 'uk-UA' }, text: 'Ukrainisch' },
-                      { tag: 'option', attributes: { value: 'bg-BG' }, text: 'Bulgarisch' },
-                      { tag: 'option', attributes: { value: 'sr-RS' }, text: 'Serbisch' },
-                      { tag: 'option', attributes: { value: 'kk-KZ' }, text: 'Kasachisch' },
-                      { tag: 'option', attributes: { value: 'zh-CN' }, text: 'Chinesisch' },
-                      { tag: 'option', attributes: { value: 'ja-JP' }, text: 'Japanisch' },
-                      { tag: 'option', attributes: { value: 'ko-KR' }, text: 'Koreanisch' },
-                      { tag: 'option', attributes: { value: 'ar-JO' }, text: 'Arabisch' },
-                      { tag: 'option', attributes: { value: 'fa-IR' }, text: 'Persisch' },
-                      { tag: 'option', attributes: { value: 'ur-PK' }, text: 'Urdu' },
-                      { tag: 'option', attributes: { value: 'hi-IN' }, text: 'Hindi' },
-                      { tag: 'option', attributes: { value: 'ne-NP' }, text: 'Nepali' },
-                      { tag: 'option', attributes: { value: 'ml-IN' }, text: 'Malayalam' }
-                    ]
-                  }
-                ]
-              },
-              {
-                tag: 'label',
-                children: [
-                  { tag: 'span', text: 'Stimme' },
-                  {
-                    tag: 'select',
-                    attributes: { id: 'speech-voice' },
-                    children: [
-                      { tag: 'option', attributes: { value: '' }, text: 'Standard' }
-                    ]
-                  }
-                ]
-              },
-              {
-                tag: 'label',
-                attributes: { id: 'audd-token-setting' },
-                children: [
-                  {
-                    tag: 'span',
-                    attributes: { id: 'audd-token-label' },
-                    text: 'AudD API-Token (optional - '
-                  },
-                  {
-                    tag: 'a',
-                    attributes: { href: 'https://audd.io/', target: '_blank', rel: 'noopener noreferrer' },
-                    text: 'https://AudD.io'
-                  },
-                  { tag: 'span', text: ' Trial/Paid)' },
-                  { tag: 'input', attributes: { id: 'audd-token', type: 'password', autocomplete: 'off', spellcheck: 'false' } }
-                ]
-              },
-              {
-                tag: 'label',
-                attributes: { id: 'pairing-code-setting' },
-                children: [
-                  { tag: 'span', text: 'Pairing-Code' },
-                  { tag: 'input', attributes: { id: 'pairing-code', type: 'password', autocomplete: 'off', spellcheck: 'false' } }
-                ]
-              },
-              {
-                tag: 'label',
-                children: [
-                  { tag: 'span', text: 'Universal API-Key für Untertitel' },
-                  { tag: 'input', attributes: { id: 'universal-caption-api-key', type: 'password', autocomplete: 'off', spellcheck: 'false' } }
-                ]
-              }
-            ]
-          },
-          { tag: 'label', attributes: { class: 'option-row' }, children: [
-            { tag: 'input', attributes: { id: 'speak-names', type: 'checkbox', checked: true } },
-            { tag: 'span', text: ' Chatnamen sprechen' }
-          ]},
-          { tag: 'label', attributes: { class: 'option-row' }, children: [
-            { tag: 'input', attributes: { id: 'shorten-names', type: 'checkbox' } },
-            { tag: 'span', text: ' Chatnamen kürzen' }
-          ]},
-          { tag: 'label', attributes: { class: 'option-row auto-chat-refresh' }, children: [
-            { tag: 'input', attributes: { id: 'auto-chat-refresh', type: 'checkbox' } },
-            { tag: 'span', text: ' Auto-Chat Refresh ' },
-            { tag: 'input', attributes: { id: 'auto-chat-refresh-minutes', type: 'number', min: '1', max: '60', step: '1', value: '5', inputmode: 'numeric', 'aria-label': 'Auto-Chat-Refresh in Minuten' } },
-            { tag: 'span', text: 'min.' }
-          ]},
-          { tag: 'label', attributes: { class: 'option-row' }, children: [
-            { tag: 'input', attributes: { id: 'game-mode', type: 'checkbox' } },
-            { tag: 'span', text: ' Game-Mode' }
-          ]},
-          { tag: 'label', attributes: { class: 'option-row' }, children: [
-            { tag: 'input', attributes: { id: 'filter-external-speech-triggers', type: 'checkbox' } },
-            { tag: 'span', text: ' Trigger externer Sprachdienste filtern' }
-          ]}
-        ]
-      }]
-    },
-    {
-      tag: 'div',
-      attributes: { id: 'chat-history-modal', class: 'modal-backdrop', hidden: true },
-      children: [{
-        tag: 'section',
-        attributes: { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'chat-history-heading' },
-        children: [
-          {
-            tag: 'div',
-            attributes: { class: 'section-title' },
-            children: [
-              { tag: 'h2', attributes: { id: 'chat-history-heading' }, text: 'Gesammelte Chatnachrichten' },
-              { tag: 'button', attributes: { id: 'close-chat-history', class: 'secondary compact', 'aria-label': 'Chatzeilen schließen' }, text: 'Schließen' }
-            ]
-          },
-          { tag: 'p', attributes: { id: 'chat-history-limit', class: 'inline-status' } },
-          { tag: 'div', attributes: { id: 'chat-history-list', class: 'chat-history-list' } }
-        ]
-      }]
-    },
-    {
-      tag: 'div',
-      attributes: { id: 'recommendation-modal', class: 'modal-backdrop', hidden: true },
-      children: [{
-        tag: 'section',
-        attributes: { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'recommendation-modal-heading' },
-        children: [
-          {
-            tag: 'div',
-            attributes: { class: 'section-title' },
-            children: [
-              { tag: 'h2', attributes: { id: 'recommendation-modal-heading' }, text: 'Gescannte LIVE-Empfehlungen' },
-              { tag: 'button', attributes: { id: 'close-recommendations', class: 'secondary compact', 'aria-label': 'Empfehlungen schließen' }, text: 'Schließen' }
-            ]
-          },
-          { tag: 'div', attributes: { id: 'recommendation-modal-list', class: 'recommendation-list' } }
-        ]
-      }]
-    },
-    { tag: 'p', attributes: { id: 'notice', role: 'alert', class: 'notice' } },
-    {
-      tag: 'div',
-      attributes: { id: 'connection-settings-modal', class: 'modal-backdrop', hidden: true },
-      children: [{
-        tag: 'section',
-        attributes: { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'connection-settings-heading' },
-        children: [
-          {
-            tag: 'div',
-            attributes: { class: 'section-title' },
-            children: [
-              { tag: 'h2', attributes: { id: 'connection-settings-heading' }, text: 'Connection-Einstellungen' },
-              { tag: 'button', attributes: { id: 'close-connection-settings', class: 'secondary compact' }, text: 'Schließen' }
-            ]
-          },
-          { tag: 'label', attributes: { class: 'option-row quick-recover-setting' }, children: [
-            { tag: 'input', attributes: { id: 'hook-reconnect', type: 'checkbox' } },
-            { tag: 'span', text: ' Hook-Reconnect ' },
-            { tag: 'input', attributes: { id: 'hook-reconnect-seconds', type: 'number', min: '1', max: '59', step: '1', value: '3', inputmode: 'numeric', 'aria-label': 'Hook-Reconnect-Wartezeit in Sekunden' } },
-            { tag: 'span', text: 'Sek.' }
-          ]},
-          { tag: 'label', attributes: { class: 'option-row quick-recover-setting' }, children: [
-            { tag: 'input', attributes: { id: 'quick-recover', type: 'checkbox' } },
-            { tag: 'span', text: ' Player-Recovery ' },
-            { tag: '
+module.exports = { generateCSS };

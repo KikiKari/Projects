@@ -3,113 +3,256 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/peak-limiter.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/peak-limiter.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/peak-limiter.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# Tcl 8.6 Script zur Erzeugung der HTML-Datei peak-limiter.html
-# Dieses Skript generiert dynamisch die HTML-Struktur und simuliert
-# grundlegend die Funktionalität des originalen JavaScript-Codes,
-# allerdings ohne Web Audio API, da Tcl diese nicht bietet.
+# Tcl/Tk port of peak-limiter.html - synthetic web audio comparison test
 
-package require http
-package require json
-package require json::write
+package require Tk
 
-proc writeHtmlFile {filename} {
-    set fp [open $filename w]
-    fconfigure $fp -encoding utf-8
+# Create main window
+wm title . "Pegelschutz: synthetischer Web-Audio-Vergleich"
+wm geometry . 800x600
 
-    # HTML-Kopf und Metadaten
-    puts $fp {<!doctype html>}
-    puts $fp {<html lang="de"><meta charset="utf-8"><title>Pegelschutz Audioprüfung</title>}
+# Add styles
+font configure AppFont -family system -size 12
+option add *Font $AppFont
 
-    # CSS-Stildefinitionen
-    puts $fp {<style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:20px}pre{white-space:pre-wrap}button{padding:12px}</style>}
+# Create UI elements
+frame .header
+label .header.title -text "Pegelschutz: synthetischer Web-Audio-Vergleich" -font {system 16 bold}
+pack .header.title -side top -pady 10
 
-    # Überschrift und Beschreibung
-    puts $fp {<h1>Pegelschutz: synthetischer Web-Audio-Vergleich</h1>}
-    puts $fp {<p>Offline gerenderte Testsignale. Kein LIVE- oder Hörnachweis.</p>}
+label .info -text "Offline gerenderte Testsignale. Kein LIVE- oder Hörnachweis."
+pack .info -pady 5
 
-    # Button und Ausgabebereich
-    puts $fp {<button id="run">Audioprüfung starten</button><pre id="result">Bereit</pre>}
+button .run -text "Audioprüfung starten" -command startTest
+pack .run -pady 10
 
-    # Externer Skriptbezug (angenommen, dass content-core.js existiert)
-    puts $fp {<script src="../browser-extension/content-core.js"></script>}
+text .result -wrap word -height 20 -width 80
+.result insert end "Bereit"
+pack .result -fill both -expand yes -padx 10 -pady 10
 
-    # JavaScript-Codeblock
-    puts $fp {<script>}
-    puts $fp {const core = TLC_CONTENT_CORE;}
-    puts $fp {const peakDb = values => 20 * Math.log10(values.reduce((max, v) => Math.max(max, Math.abs(v)), 1e-10));}
-
-    # Render-Funktion
-    puts $fp {
-
-async function render(kind, strength, legacy) {
-  const rate = 48000, length = rate;
-  const context = new OfflineAudioContext(1, length, rate);
-  const buffer = context.createBuffer(1, length, rate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i++) {
-    if (kind === 'speech-band') data[i] = 0.01 * Math.sin(2 * Math.PI * 220 * i / rate);
-    else if (kind === 'short-high-tone' && i >= 5000 && i < 5100) data[i] = 0.95 * Math.sin(2 * Math.PI * 8000 * i / rate);
-    else if (kind === 'level-step' && i >= 5000 && i < 10000) data[i] = 0.95 * Math.sin(2 * Math.PI * 1000 * i / rate);
-  }
-  if (kind === 'impulse') data[5000] = 0.95;
-  const source = context.createBufferSource(); source.buffer = buffer;
-  if (strength === null) source.connect(context.destination);
-  else if (legacy) {
-    const compressor = context.createDynamicsCompressor(), makeup = context.createGain();
-    const threshold = core.limiterStrengthToDbfs(strength);
-    compressor.threshold.value = threshold; compressor.knee.value = 0.5;
-    compressor.ratio.value = 20; compressor.attack.value = 0.0015; compressor.release.value = 0.08;
-    makeup.gain.value = core.limiterMakeupCompensation(threshold, 20);
-    source.connect(compressor).connect(makeup).connect(context.destination);
-  } else {
-    const node = await core.createPeakLimiterNode(context);
-    node.setProtection({enabled:true, strength});
-    source.connect(node).connect(context.destination);
-  }
-  source.start();
-  const rendered = await context.startRendering();
-  return {kind, strength, path: strength === null ? 'off' : legacy ? '0.8.2-compressor' : 'candidate-lookahead',
-    inputDbfs: peakDb(data), outputDbfs: peakDb(rendered.getChannelData(0))};
-}
+proc peakDb {values} {
+    set max 1e-10
+    foreach v $values {
+        set abs_v [expr {abs($v)}]
+        if {$abs_v > $max} {
+            set max $abs_v
+        }
     }
-
-    # Eventhandler für den Button
-    puts $fp {
-document.getElementById('run').onclick = async () => {
-  const output = document.getElementById('result'); output.textContent = 'Läuft';
-  try {
-    const rows = [];
-    for (const kind of ['impulse','short-high-tone','level-step','speech-band']) {
-      rows.push(await render(kind, null, false));
-      for (const strength of [25,75,100]) {
-        rows.push(await render(kind, strength, true));
-        rows.push(await render(kind, strength, false));
-      }
+    if {$max <= 0} {
+        return -1000
     }
-    const failures = rows.filter(row => row.path === 'candidate-lookahead' &&
-      (row.outputDbfs > core.limiterStrengthToDbfs(row.strength) + 0.05 ||
-       (row.kind === 'speech-band' && Math.abs(row.outputDbfs-row.inputDbfs) > 0.05)));
-    output.textContent = JSON.stringify({passed: failures.length === 0, failures, rows}, null, 2);
-  } catch(error) { output.textContent = 'FEHLER: ' + error.stack; }
-};
-    }
-
-    # Abschluss des Script-Tags und HTML-Dokuments
-    puts $fp {</script>}
-    puts $fp {</html>}
-
-    close $fp
+    return [expr {20 * log10($max)}]
 }
 
-# Hauptprogramm: Prüfe Kommandozeilenargumente
-if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <ausgabedatei>"
-    exit 1
+proc limiterStrengthToDbfs {strength} {
+    return [expr {-0.002 * $strength * $strength}]
 }
 
-set outputFile [lindex $argv 0]
-writeHtmlFile $outputFile
-puts "HTML-Datei wurde erfolgreich erstellt: $outputFile"
+proc limiterMakeupCompensation {threshold ratio} {
+    set gain_reduction_db [expr {$threshold * (1 - 1/$ratio)}]
+    return [expr {pow(10, -$gain_reduction_db/20)}]
+}
+
+proc createSignal {kind length rate} {
+    set data {}
+    set pi 3.141592653589793
+    
+    for {set i 0} {$i < $length} {incr i} {
+        set value 0
+        if {$kind eq "speech-band"} {
+            set value [expr {0.01 * sin(2 * $pi * 220 * $i / $rate)}]
+        } elseif {$kind eq "short-high-tone" && $i >= 5000 && $i < 5100} {
+            set value [expr {0.95 * sin(2 * $pi * 8000 * $i / $rate)}]
+        } elseif {$kind eq "level-step" && $i >= 5000 && $i < 10000} {
+            set value [expr {0.95 * sin(2 * $pi * 1000 * $i / $rate)}]
+        } elseif {$kind eq "impulse" && $i == 5000} {
+            set value 0.95
+        }
+        lappend data $value
+    }
+    return $data
+}
+
+proc processSignal {data strength legacy} {
+    if {$strength eq "" || $strength eq "null"} {
+        return $data
+    }
+    
+    if {$legacy} {
+        # Simple compressor simulation
+        set threshold [limiterStrengthToDbfs $strength]
+        set ratio 20
+        set attack_coeff 0.9985 ;# approx 1 - 0.0015/(1/48000)
+        set release_coeff 0.92 ;# approx 1 - 0.08/(1/48000)
+        
+        set envelope 0
+        set makeup_gain [limiterMakeupCompensation $threshold $ratio]
+        set processed_data {}
+        
+        foreach sample $data {
+            set input_level [expr {abs($sample)}]
+            if {$input_level > $envelope} {
+                set envelope [expr {$attack_coeff * $envelope + (1 - $attack_coeff) * $input_level}]
+            } else {
+                set envelope [expr {$release_coeff * $envelope + (1 - $release_coeff) * $input_level}]
+            }
+            
+            if {$envelope > pow(10, $threshold/20)} {
+                set gain_reduction [expr {pow(10, ($threshold - 20 * log10($envelope))/20)}]
+                set processed_sample [expr {$sample * $gain_reduction * $makeup_gain}]
+            } else {
+                set processed_sample [expr {$sample * $makeup_gain}]
+            }
+            lappend processed_data $processed_sample
+        }
+        return $processed_data
+    } else {
+        # Peak limiter simulation (simplified lookahead)
+        set window_size 100
+        set processed_data {}
+        set max_peak 0
+        
+        # Find maximum in lookahead window
+        foreach sample $data {
+            set abs_sample [expr {abs($sample)}]
+            if {$abs_sample > $max_peak} {
+                set max_peak $abs_sample
+            }
+        }
+        
+        set target_max [expr {pow(10, [limiterStrengthToDbfs $strength]/20)}]
+        set gain_factor 1.0
+        if {$max_peak > $target_max && $max_peak > 0} {
+            set gain_factor [expr {$target_max / $max_peak}]
+        }
+        
+        foreach sample $data {
+            lappend processed_data [expr {$sample * $gain_factor}]
+        }
+        return $processed_data
+    }
+}
+
+proc render {kind strength legacy} {
+    set rate 48000
+    set length $rate
+    
+    # Generate signal
+    set data [createSignal $kind $length $rate]
+    
+    # Process signal
+    set processed_data [processSignal $data $strength $legacy]
+    
+    # Calculate peaks
+    set input_peak [peakDb $data]
+    set output_peak [peakDb $processed_data]
+    
+    # Determine path
+    set path "off"
+    if {$strength ne "" && $strength ne "null"} {
+        if {$legacy} {
+            set path "0.8.2-compressor"
+        } else {
+            set path "candidate-lookahead"
+        }
+    }
+    
+    return [list \
+        kind $kind \
+        strength $strength \
+        path $path \
+        inputDbfs $input_peak \
+        outputDbfs $output_peak]
+}
+
+proc startTest {} {
+    .result delete 1.0 end
+    .result insert end "Läuft\n"
+    update idletasks
+    
+    if {[catch {
+        set rows {}
+        
+        foreach kind {impulse short-high-tone level-step speech-band} {
+            lappend rows [render $kind "" false]
+            
+            foreach strength {25 75 100} {
+                lappend rows [render $kind $strength true]
+                lappend rows [render $kind $strength false]
+            }
+        }
+        
+        # Check for failures
+        set failures {}
+        foreach row $rows {
+            array set r $row
+            if {$r(path) eq "candidate-lookahead"} {
+                set limit_dbfs [limiterStrengthToDbfs $r(strength)]
+                set exceeded_limit [expr {$r(outputDbfs) > $limit_dbfs + 0.05}]
+                set speech_band_issue [expr {$r(kind) eq "speech-band" && abs($r(outputDbfs) - $r(inputDbfs)) > 0.05}]
+                
+                if {$exceeded_limit || $speech_band_issue} {
+                    lappend failures $row
+                }
+            }
+        }
+        
+        set passed [expr {[llength $failures] == 0}]
+        
+        # Format results as JSON-like string
+        set result "{\n  \"passed\": [expr {$passed ? "true" : "false"}],\n"
+        set result "$result  \"failures\": [\n"
+        
+        set first_failure 1
+        foreach failure $failures {
+            if {!$first_failure} {
+                set result "$result,\n"
+            }
+            array set f $failure
+            append result "    {\n"
+            append result "      \"kind\": \"$f(kind)\",\n"
+            append result "      \"strength\": $f(strength),\n"
+            append result "      \"path\": \"$f(path)\",\n"
+            append result "      \"inputDbfs\": [format "%.6f" $f(inputDbfs)],\n"
+            append result "      \"outputDbfs\": [format "%.6f" $f(outputDbfs)]\n"
+            append result "    }"
+            set first_failure 0
+        }
+        
+        set result "$result\n  ],\n  \"rows\": [\n"
+        
+        set first_row 1
+        foreach row $rows {
+            if {!$first_row} {
+                set result "$result,\n"
+            }
+            array set r $row
+            append result "    {\n"
+            append result "      \"kind\": \"$r(kind)\",\n"
+            if {$r(strength) eq ""} {
+                append result "      \"strength\": null,\n"
+            } else {
+                append result "      \"strength\": $r(strength),\n"
+            }
+            append result "      \"path\": \"$r(path)\",\n"
+            append result "      \"inputDbfs\": [format "%.6f" $r(inputDbfs)],\n"
+            append result "      \"outputDbfs\": [format "%.6f" $r(outputDbfs)]\n"
+            append result "    }"
+            set first_row 0
+        }
+        
+        set result "$result\n  ]\n}"
+        
+        .result delete 1.0 end
+        .result insert end $result
+    } error]} {
+        .result delete 1.0 end
+        .result insert end "FEHLER: $error"
+    }
+}
+
+# Start the event loop
+tkwait window .

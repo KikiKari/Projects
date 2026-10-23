@@ -3,22 +3,29 @@
 # Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/peak-limiter.html
 # auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/peak-limiter.html
-# auch in: Projects@codex/0pe-177-peak-protection:plugin-source/tests/peak-limiter.html
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/peak-limiter.html
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use JSON;
 
-# Generate peak-limiter.html content
+my $filename = $ARGV[0] || die "Usage: $0 <output-file>\n";
 
-my $content = <<'HTML_END';
+open my $fh, '>', $filename or die "Cannot open $filename: $!";
+
+print $fh <<'HTML_START';
 <!doctype html>
-<html lang="de"><meta charset="utf-8"><title>Pegelschutz Audioprüfung</title>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pegelschutz Audioprüfung</title>
 <style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:20px}pre{white-space:pre-wrap}button{padding:12px}</style>
+</head>
+<body>
 <h1>Pegelschutz: synthetischer Web-Audio-Vergleich</h1>
 <p>Offline gerenderte Testsignale. Kein LIVE- oder Hörnachweis.</p>
-<button id="run">Audioprüfung starten</button><pre id="result">Bereit</pre>
+<button id="run">Audioprüfung starten</button>
+<pre id="result">Bereit</pre>
 <script src="../browser-extension/content-core.js"></script>
 <script>
 const core = TLC_CONTENT_CORE;
@@ -70,16 +77,11 @@ document.getElementById('run').onclick = async () => {
     output.textContent = JSON.stringify({passed: failures.length === 0, failures, rows}, null, 2);
   } catch(error) { output.textContent = 'FEHLER: ' + error.stack; }
 };
-</script></html>
-HTML_END
+</script>
+</body>
+</html>
+HTML_START
 
-# Write to file if parameter provided
-if (@ARGV) {
-    my $filename = $ARGV[0];
-    open(my $fh, '>', $filename) or die "Cannot write to $filename: $!";
-    print $fh $content;
-    close($fh);
-    print "Written to $filename\n";
-} else {
-    print $content;
-}
+close $fh;
+
+print "HTML file created: $filename\n";
