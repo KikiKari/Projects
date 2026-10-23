@@ -1,0 +1,40 @@
+name: tlc-cde
+services:
+  arm64-build-control:
+    container_name: tlc-cde-cde-2-arm64-build
+    # Existing local AMD64 CDE image, pinned; compilation remains on ARM64.
+    image: ${TLC_CDE_IMAGE:?Set existing pinned local CDE image}
+    platform: linux/amd64
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+    environment:
+      TLC_ARM64_HOST: ${TLC_ARM64_HOST:?Set existing SSH host}
+      TLC_ARM64_PORT: ${TLC_ARM64_PORT:-2222}
+      TLC_ARM64_USER: ${TLC_ARM64_USER:-codex}
+      TLC_ARM64_HOST_KEY_ALIAS: ${TLC_ARM64_HOST_KEY_ALIAS:?Set existing SSH key alias}
+    working_dir: /workspace/android
+    cpus: 0.5
+    mem_limit: 512m
+    memswap_limit: 512m
+    tmpfs:
+      - /run/tlc-ssh:rw,noexec,nosuid,size=1m,mode=0700
+    volumes:
+      - type: bind
+        source: ${TLC_ANDROID_WORKTREE:?Set TLC_ANDROID_WORKTREE}
+        target: /workspace/android
+      - type: bind
+        source: ${TLC_ARM64_SUPPORT:?Set TLC_ARM64_SUPPORT}
+        target: /opt/tlc/arm64-support
+        read_only: true
+      - type: bind
+        source: ${TLC_SSH_KEY:?Set TLC_SSH_KEY}
+        target: /run/host-key/id_ed25519
+        read_only: true
+      - type: bind
+        source: ${TLC_SSH_KNOWN_HOSTS:?Set TLC_SSH_KNOWN_HOSTS}
+        target: /run/host-key/known_hosts
+        read_only: true
+    labels:
+      tlc.role: arm64-build-controller
+      tlc.execution-host: tlc-arm64
+      tlc.preserve: "true"

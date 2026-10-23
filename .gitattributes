@@ -4,3 +4,7 @@ plugin-source/browser-extension/vendor-mpegts.js -text
 *.pdf binary
 *.zip binary
 *.apk binary
+
+# Exact-byte ARM64 build contracts.
+cluster-integration/** -text
+docs/development/arm64-sdk35/** -text

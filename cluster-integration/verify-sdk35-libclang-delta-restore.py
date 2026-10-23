@@ -1,0 +1,25 @@
+"""Restore the appended libclang package; retain a hash-bound verified prefix."""
+import pathlib,json,hashlib,subprocess,shutil,argparse,time,uuid
+p=argparse.ArgumentParser();p.add_argument('--baseline-manifest',type=pathlib.Path,required=True);p.add_argument('--baseline-integration',type=pathlib.Path,required=True);p.add_argument('--native-id',required=True);a=p.parse_args();R=pathlib.Path('/runtime-build');C=pathlib.Path('/opt/tlc/sdk35-dev');sha=lambda f:hashlib.file_digest(f.open('rb'),'sha256').hexdigest()
+for f in [a.baseline_manifest,a.baseline_integration]:assert f.resolve().is_relative_to(R/'contract')
+baseline=json.loads(a.baseline_manifest.read_text());current=json.loads((C/'sdk35-dev-module-sources.json').read_text());old=baseline['native_toolchains'];new=current['native_toolchains'];assert len(old)==15 and new[:-1]==old and new[-1]['id']==a.native_id
+assert {k:v for k,v in current.items() if k!='native_toolchains'}=={k:v for k,v in baseline.items() if k!='native_toolchains'}
+P=a.baseline_integration;prior=json.loads((P/'result.json').read_text());assert prior['manifest_sha256']==sha(a.baseline_manifest) and not prior['errors'];assert all(e['process_exit']==e['container_exit']==e['wrapper_exit']==0 for e in prior['events'])
+for line in (P/'SHA256SUMS').read_text().splitlines():
+ h,n=line.split('  ',1);f=P/n;assert f.resolve().is_relative_to(P.resolve()) and sha(f)==h,n
+prior_manifest=json.loads((P/'before-manifest.json').read_text());assert baseline['native_toolchains'][:-1]==prior_manifest['native_toolchains']
+event=next(e for e in prior['events'] if e['stage'].startswith('stage-module-cache-restore-check-'));G=P/event['stage'];g=json.loads((G/'result.json').read_text());assert g['container_exit_code']==g['wrapper_exit_code']==0 and not g['container_state']['OOMKilled'];proof=json.loads((G/'stdout.log').read_text().splitlines()[-1]);assert proof['new_native_toolchain_restored_and_verified']==old[-1]['id'] and proof['unchanged_native_toolchains_reused']==14 and proof['new_artifact_corruption_rejected'];assert proof['baseline_manifest_sha256']==sha(P/'before-manifest.json')
+full=pathlib.Path(proof['baseline_full_restore_stage']);assert sha(full/'result.json')==proof['baseline_full_restore_result_sha256'];full_result=json.loads((full/'result.json').read_text());assert full_result['container_exit_code']==full_result['wrapper_exit_code']==0 and not full_result['container_state']['OOMKilled'];full_proof=json.loads((full/'stdout.log').read_text().splitlines()[-1]);checks=full_proof['native_integrity_negative_checks'];assert {e['id'] for e in checks}=={e['id'] for e in old[:-1]} and all(e['corruption_rejected'] and e['test_copy_restored_and_reverified'] for e in checks)
+root=pathlib.PurePosixPath(new[-1]['root'])
+for t in old:
+ other=pathlib.PurePosixPath(t['root']);assert not root.is_relative_to(other) and not other.is_relative_to(root)
+O=R/'cache'/('libclang-delta-restore-'+time.strftime('%Y%m%dT%H%M%SZ',time.gmtime())+'-'+uuid.uuid4().hex[:8]);(O/'contract').mkdir(parents=True);fixture=dict(current);fixture['projects']=[];fixture['native_toolchains']=[new[-1]];(O/'sdk35-dev-module-sources.json').write_text(json.dumps(fixture))
+for n in ['coherent-source-lock.json','build-tools-manufacturing-lock.xml']:shutil.copy2(C/'contract'/n,O/'contract'/n)
+command=['python3',str(R/'ensure-sdk35-dev-modules.py'),'--root',str(O),'--cache-root',str(C)];subprocess.run(command+['--restore-missing'],check=True);D=O/'aosp'/new[-1]['root'];probe=D/new[-1]['integrity_probe'];assert probe.resolve().is_relative_to(O.resolve())
+with probe.open('r+b') as f:original=f.read(1);f.seek(0);f.write(bytes([original[0]^1]))
+try:
+ q=subprocess.run(command,capture_output=True,text=True);assert q.returncode!=0 and 'Native toolchain content drift' in q.stderr
+finally:
+ with probe.open('r+b') as f:f.write(original)
+subprocess.run(command,check=True);subprocess.run(['python3',str(D/'native-probes/probe.py'),'--tool-root',str(D),'--output-root',str(O/'actual-binder-probe')],check=True);functional=json.loads((O/'actual-binder-probe/probe-result.json').read_text());expected=json.loads((D/'manufacturing-verification.json').read_text())['original_binder_probe'];assert functional['generated_binding_sha256']==expected['generated_binding_sha256']
+result={'isolated_root':str(O),'new_native_toolchain_restored_and_verified':new[-1]['id'],'source_projects_restored_in_delta_test':0,'unchanged_native_toolchains_reused':len(old),'baseline_manifest_sha256':sha(a.baseline_manifest),'baseline_integration':str(P),'baseline_integration_result_sha256':sha(P/'result.json'),'baseline_full_restore_stage':str(full),'baseline_full_restore_result_sha256':sha(full/'result.json'),'baseline_native_prefix_identical':True,'new_artifact_corruption_rejected':True,'restored_native_cindex_and_original_binder_bindgen_passed':True,'restored_binding_byte_equal_to_manufactured_probe':True,'functional_probe':functional,'network_fetch_used':False,'production_checkout_modified':False};(O/'restore-result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result),flush=True)

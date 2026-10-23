@@ -207,3 +207,7 @@ npm run build
 Android- und iOS-Builds benötigen die jeweiligen Hersteller-Toolchains. Das proprietäre ShazamKit-AAR und Apple-Schlüsselmaterial werden nicht im Repository gespeichert.
 
 Die Erweiterung liest keine Cookies. Chat, Statistik und TTS bleiben lokal; nur nach einem ausdrücklichen Klick wird ein kurzer Audioausschnitt über den lokalen Dienst an AudD gesendet. Signierte Stream-URLs sind zeitlich begrenzt und während ihrer Gültigkeit sensibel.
+
+## Native ARM64 Android development
+
+[SDK35 build support and persistent development contract](docs/development/arm64-sdk35/README.md). Local controller: `tlc-cde-cde-2-arm64-build`; native execution remains on `tlc-arm64`. Complete internal technical reference: private Notion Development Ops.

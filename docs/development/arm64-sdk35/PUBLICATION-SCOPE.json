@@ -1,0 +1,13 @@
+{
+  "public_scope": "native build source support, unchanged public-source provider catalog, local controller integration and development contract",
+  "excluded_private_data": [
+    "host/container inspection metadata",
+    "complete native binary inventories",
+    "raw build logs",
+    "generated full Ninja graph",
+    "linked runtime binary",
+    "private Notion page URLs",
+    "credential material"
+  ],
+  "catalog_sha256": "19d90f00928ab31a815884373e83bff297b789bf35ca88e0c410eae9d4e3646f"
+}
