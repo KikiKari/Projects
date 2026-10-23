@@ -14,7 +14,7 @@ This branch contains the native ARM64 build support and the unmodified operation
 
 ## Retained development environment
 
-Existing ARM64 containers, bind-mounted source/build/manufacturing directories, source-cache volumes, images, tags and proof records must be retained. Successful compilation is not permission to delete or prune them. Native build/test limits: at most 8 CPUs and 16 GiB including swap; stop below 42,949,672,960 free disk bytes.
+Existing ARM64 containers, bind-mounted source/build/manufacturing directories, source-cache volumes, images, tags and proof records must be retained. Successful compilation is not permission to delete or prune them. Future working profile: 6 CPUs, 12 GiB RAM plus 8 GiB swap (Docker total 20 GiB). Maximum: 8 CPUs, 16 GiB RAM plus 8 GiB swap (Docker total 24 GiB). Existing ARM64 runtime containers and their historical limits remain unchanged. Stop below 42,949,672,960 free disk bytes.
 
 The actual `libandroid_runtime.so` host-runtime compile/link succeeded as AArch64 DYN, 11,767,800 bytes, SHA-256 `e84f7159a146ef6ccae239d2340bb0ad976a728b5a49b53bd9d68e292fd484b5`. This does not establish JNI behavior, Robolectric regression, an Android APK release or device acceptance.
 
@@ -31,3 +31,9 @@ The controller supports `status`, `inventory` and `graph` through `sh /opt/tlc/a
 Changes to source providers, host ports, compiler recipes or build configuration require new exact-byte inventories and appropriate restore/profile/graph checks. Actual variant selections must come from suitable generated artifacts. No substitute modules, architecture spoofing, missing-dependency bypasses, SDK downgrades or skipped tests.
 
 Public source support and private operational data are complementary. Recovering from host loss requires the private reference and persistent source/tool binary stores or rebuilding from their pinned recipes; this repository alone is not a verified disaster-recovery backup.
+
+## Shared resource policy
+
+The validated policy is `cluster-integration/resource-profiles.json`; `resource_profiles.py` maps it to Docker options. `Set-TLCResourceProfile.ps1` applies a selected profile only to the named local/primary AMD64 project containers. It does not alter ARM64 or other workloads. Host/VM capacity and actual host swap must be verified separately. A per-container swap ceiling does not create or reserve host swap.
+
+`run-codex-profile.py` starts new Linux Codex processes in a bounded user-systemd scope. Existing sessions and the native Windows Codex frontend are not reconfigured or restarted. Resource policy is independent of compiler and JNI acceptance.

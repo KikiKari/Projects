@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "default_profile": "work",
+  "units": "GiB = 1073741824 bytes; memory_swap is RAM plus swap",
+  "profiles": {
+    "work": {"cpus": 6, "memory_gib": 12, "swap_gib": 8, "memory_swap_gib": 20},
+    "maximum": {"cpus": 8, "memory_gib": 16, "swap_gib": 8, "memory_swap_gib": 24}
+  },
+  "disk_floor_bytes": 42949672960,
+  "arm64_current_runtime": "Preserve existing containers and installed limits; profiles describe future work only",
+  "controller": {"cpus": 0.5, "memory_mib": 512, "swap_mib": 0},
+  "concurrency": "Profiles are per active build; simultaneous builds share host resources and are not additive capacity guarantees"
+}
