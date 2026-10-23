@@ -1,13 +1,16 @@
 #!/usr/bin/env node
-// 1781743218784_0e397c.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0e397c.sh
+// 1781743218784_0e397c_534d3c.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_534d3c.pl
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e397c.sh — portiert nach JavaScript fuer Node 20
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
 // Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
 function generateHTML() {
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -215,21 +218,28 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function main(args) {
-  if (args.length !== 1) {
-    console.log("Usage: node script.js <output-file>");
-    process.exit(1);
-  }
-
-  const outputFile = args[0];
-
-  try {
-    const htmlContent = generateHTML();
-    fs.writeFileSync(outputFile, htmlContent, 'utf8');
-    console.log(`HTML file generated: ${outputFile}`);
-  } catch (error) {
-    console.error("Error generating HTML file");
-    process.exit(1);
-  }
+    if (args.length !== 1) {
+        console.log("Usage: node script.js <output-file>");
+        process.exit(1);
+    }
+    
+    const outputFile = args[0];
+    
+    // Generate HTML content and write to file
+    try {
+        fs.writeFileSync(outputFile, generateHTML());
+        
+        // Check if file was written successfully
+        if (fs.existsSync(outputFile)) {
+            console.log(`HTML file generated: ${outputFile}`);
+        } else {
+            console.log("Error generating HTML file");
+            process.exit(1);
+        }
+    } catch (error) {
+        console.error(`Could not write to file '${outputFile}': ${error.message}`);
+        process.exit(1);
+    }
 }
 
 main(process.argv.slice(2));

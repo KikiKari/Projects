@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# 1781743218784_0e397c.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_c03494.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_c03494.ps1
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-generateHTML() {
-    cat <<'HTML_END'
+generate_html() {
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -212,31 +212,30 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
 }
 
 main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
+    if [[ $# -ne 1 ]]; then
         echo "Usage: bash script.sh <output-file>"
         exit 1
     fi
     
-    local output_file="${args[0]}"
+    local output_file="$1"
     
-    {
-        local html_content
-        html_content=$(generateHTML)
-        echo "$html_content" > "$output_file"
-        echo "HTML file generated: $output_file"
-    } || {
-        local error=$?
-        echo "Error generating HTML file: $error"
-        exit 1
-    }
+    # Create temporary file to capture output
+    local temp_file=$(mktemp)
+    
+    # Generate HTML content and save to temp file
+    generate_html > "$temp_file"
+    
+    # Move temp file to final destination
+    mv "$temp_file" "$output_file"
+    
+    echo "HTML file generated: $output_file"
 }
 
+# Only run main if script is executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi

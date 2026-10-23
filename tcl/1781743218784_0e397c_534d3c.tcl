@@ -1,10 +1,14 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e397c.sh — portiert nach tcl
+# 1781743218784_0e397c_534d3c.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_534d3c.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0e397c.sh
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
-    set html {<!DOCTYPE html>
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -209,7 +213,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>}
-    return $html
 }
 
 proc main {args} {
@@ -217,27 +220,19 @@ proc main {args} {
         puts "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
-    
-    set output_file [lindex $args 0]
-    
-    # Generate HTML content and write to file
-    set html_content [generateHTML]
-    if {[catch {set fd [open $output_file w]} error]} {
-        puts "Error opening file for writing: $error"
-        exit 1
-    }
-    
-    puts -nonewline $fd $html_content
-    close $fd
-    
-    # Check if file was written successfully
-    if {[file exists $output_file] && [file size $output_file] > 0} {
-        puts "HTML file generated: $output_file"
-    } else {
+
+    set outputFile [lindex $args 0]
+
+    if {[catch {
+        set htmlContent [generateHTML]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
+        close $fh
+        puts "HTML file generated: $outputFile"
+    } error]} {
         puts "Error generating HTML file"
         exit 1
     }
 }
 
-# Call main with command line arguments
 main {*}$argv

@@ -1,11 +1,27 @@
 #!/usr/bin/env node
 // 1781743218784_0e4dc0.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0e4dc0.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784_0e4dc0.js — portiert nach perl5
 // Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-// Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+// Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784.sh — portiert nach JavaScript
+// Quelle: shell, Projects@abstractions:shell/1781743218784.sh
+// Erzeugt: 2026-08-18 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784.html — portiert nach JavaScript
+// Quelle: html, Projects@secret-vault-public:secret-vault-public/versions/1781743218784.html
+// Erzeugt: 2026-08-08 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
@@ -222,13 +238,17 @@ function main(args) {
     console.error("Usage: node script.js <output-file>");
     process.exit(1);
   }
-  
+
   const outputFile = args[0];
   
-  // Generate HTML content and write to file
-  const htmlContent = generateHTML();
-  fs.writeFileSync(outputFile, htmlContent, 'utf8');
-  console.log(`HTML file generated: ${outputFile}`);
+  try {
+    const htmlContent = generateHTML();
+    fs.writeFileSync(outputFile, htmlContent, { encoding: 'utf8' });
+    console.log(`HTML file generated: ${outputFile}`);
+  } catch (error) {
+    console.error(`Could not write file '${outputFile}': ${error.message}`);
+    process.exit(1);
+  }
 }
 
 main(process.argv.slice(2));

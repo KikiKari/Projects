@@ -1,17 +1,17 @@
 #!/usr/bin/env pwsh
-# 1781743218784.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if ($args.Count -ne 1) {
-    Write-Error "Usage: script.ps1 <OutputPath>"
+    Write-Error "Usage: pwsh script.ps1 <OutputPath>"
     exit 1
 }
 
-$outputPath = $args[0]
+$output_path = $args[0]
 
-$htmlContent = @'
+$html_content = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,6 +217,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 
-$htmlContent | Out-File -FilePath $outputPath -Encoding UTF8
+$html_content | Out-File -FilePath $output_path -Encoding UTF8

@@ -1,13 +1,20 @@
-#!/usr/bin/env perl
-# 1781743218784_0e397c.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e397c_581d49.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_581d49.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use File::Slurp qw(write_file);
 
-sub generate_html {
-    my $html = <<'HTML';
+# 1781743218784_0e397c.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+sub generateHTML {
+  my $html = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -213,32 +220,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
-    return $html;
+  return $html;
 }
 
 sub main {
-    my @args = @_;
-    
-    if (@args != 1) {
-        print "Usage: perl script.pl <output-file>\n";
-        exit 1;
-    }
-    
-    my $output_file = $args[0];
-    
-    eval {
-        my $html_content = generate_html();
-        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
-        print $fh $html_content;
-        close($fh);
-        print "HTML file generated: $output_file\n";
-    };
-    if ($@) {
-        print "Error generating HTML file: $@\n";
-        exit 1;
-    }
+  my @args = @_;
+  if (@args != 1) {
+    print "Usage: perl script.pl <output-file>\n";
+    exit 1;
+  }
+
+  my $outputFile = $args[0];
+  
+  eval {
+    my $htmlContent = generateHTML();
+    write_file($outputFile, {binmode => ':utf8'}, $htmlContent);
+    print "HTML file generated: $outputFile\n";
+  };
+  if ($@) {
+    print "Error generating HTML file: $@\n";
+    exit 1;
+  }
 }
 
 main(@ARGV);

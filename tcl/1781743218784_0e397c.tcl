@@ -1,10 +1,14 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
 # 1781743218784_0e397c.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 proc generateHTML {} {
-    set html {<!DOCTYPE html>
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -208,9 +212,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
-    return $html
+</html>}
 }
 
 proc main {} {
@@ -223,16 +225,22 @@ proc main {} {
     
     set outputFile [lindex $argv 0]
     
-    if {[catch {
+    try {
         set htmlContent [generateHTML]
         set fh [open $outputFile w]
         puts -nonewline $fh $htmlContent
         close $fh
         puts "HTML file generated: $outputFile"
-    } error]} {
+    } trap {POSIX} {error} {
         puts "Error generating HTML file: $error"
         exit 1
     }
 }
 
-main
+# Prüfe ob das Skript direkt aufgerufen wird
+if {[info script] eq $::argv0} {
+    main
+}
+
+# Exportiere die Funktionen (ähnlich wie module.exports)
+# In Tcl gibt es kein direktes Äquivalent, aber wir stellen die Funktionen zur Verfügung

@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-# 1781743218784_0e397c.tcl — portiert nach python
+# 1781743218784_0e397c_0c8080.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784.py — portiert nach tcl
 # Quelle: python, Projects@abstractions:python/1781743218784.py
 # Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
+
+import sys
+import json
 
 def generateHTML():
     html = '''<!DOCTYPE html>
@@ -217,13 +224,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
     return html
 
 def main():
-    import sys
+    args = sys.argv[1:]
     
-    if len(sys.argv) != 2:
+    if len(args) != 1:
         print("Usage: python3 script.py <output-file>")
         sys.exit(1)
     
-    output_file = sys.argv[1]
+    output_file = args[0]
     
     try:
         html_content = generateHTML()

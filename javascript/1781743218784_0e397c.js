@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // 1781743218784_0e397c.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
 function generateHTML() {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -214,27 +214,23 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function main() {
-    const args = process.argv.slice(2);
-    
-    if (args.length !== 1) {
-        console.log("Usage: node script.js <output-file>");
-        process.exit(1);
-    }
-    
-    const outputFile = args[0];
-    
-    try {
-        const htmlContent = generateHTML();
-        fs.writeFileSync(outputFile, htmlContent, 'utf8');
-        console.log(`HTML file generated: ${outputFile}`);
-    } catch (error) {
-        console.error(`Error generating HTML file: ${error.message}`);
-        process.exit(1);
-    }
+  const args = process.argv.slice(2);
+  
+  if (args.length !== 1) {
+    console.log("Usage: node script.js <output-file>");
+    process.exit(1);
+  }
+  
+  const outputFile = args[0];
+  
+  try {
+    const htmlContent = generateHTML();
+    fs.writeFileSync(outputFile, htmlContent);
+    console.log(`HTML file generated: ${outputFile}`);
+  } catch (error) {
+    console.log(`Error generating HTML file: ${error.message}`);
+    process.exit(1);
+  }
 }
 
-if (require.main === module) {
-    main();
-}
-
-module.exports = { generateHTML, main };
+main();

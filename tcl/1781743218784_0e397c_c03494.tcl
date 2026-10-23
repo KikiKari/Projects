@@ -1,9 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e397c.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_c03494.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_c03494.ps1
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-proc generateHTML {} {
+proc generate_html {} {
     set html {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -214,25 +214,24 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 proc main {args} {
     if {[llength $args] != 1} {
-        puts "Usage: perl script.pl <output-file>"
+        puts "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set output_file [lindex $args 0]
+    set outputFile [lindex $args 0]
     
     if {[catch {
-        set html_content [generateHTML]
-        set fh [open $output_file w]
-        fconfigure $fh -encoding utf-8
-        puts -nonewline $fh $html_content
+        set htmlContent [generate_html]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
         close $fh
-        puts "HTML file generated: $output_file"
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts "Error generating HTML file: $error"
         exit 1
     }
 }
 
-if {!$tcl_interactive} {
-    main {*}$argv
+if {$::argv0 eq [info script]} {
+    main {*}$::argv
 }

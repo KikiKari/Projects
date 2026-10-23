@@ -1,9 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e397c.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_581d49.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_581d49.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-proc GenerateHTML {} {
+proc generateHTML {} {
     set html {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -208,30 +208,28 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
     return $html
 }
 
-proc Main {argv} {
-    if {[llength $argv] != 1} {
+proc main {args} {
+    if {[llength $args] != 1} {
         puts "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
+
+    set outputFile [lindex $args 0]
     
-    set outputFile [lindex $argv 0]
-    
-    if {[catch {
-        set htmlContent [GenerateHTML]
+    try {
+        set htmlContent [generateHTML]
         set fh [open $outputFile w]
-        fconfigure $fh -encoding utf-8
         puts -nonewline $fh $htmlContent
         close $fh
         puts "HTML file generated: $outputFile"
-    } error]} {
+    } trap error {error} {
         puts "Error generating HTML file: $error"
         exit 1
     }
 }
 
-Main $argv
+main {*}$argv

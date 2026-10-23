@@ -1,28 +1,21 @@
 #!/usr/bin/env python3
 # 1781743218784_0e397c.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c.js
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-08-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-21 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach JavaScript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-08-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import json
+import base64
+import hashlib
+import secrets
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.backends import default_backend
+import argparse
 
 def generate_html():
-    html = '''<!DOCTYPE html>
+    return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -226,27 +219,22 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
-    return html
+</html>'''
 
 def main():
-    args = sys.argv[1:]
+    parser = argparse.ArgumentParser(description='Generate HTML file for Secret-Vault')
+    parser.add_argument('output_file', help='Output HTML file path')
     
-    if len(args) != 1:
-        print("Usage: python script.py <output-file>")
-        sys.exit(1)
-    
-    output_file = args[0]
+    args = parser.parse_args()
     
     try:
         html_content = generate_html()
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(args.output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print(f"HTML file generated: {output_file}")
-    except Exception as error:
-        print(f"Error generating HTML file: {str(error)}")
+        print(f'HTML file generated: {args.output_file}')
+    except Exception as e:
+        print(f'Error generating HTML file: {str(e)}')
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

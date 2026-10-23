@@ -1,27 +1,10 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e397c.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0e397c.sh
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_534d3c.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_534d3c.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-<#
-.SYNOPSIS
-    Generates an HTML file containing a Secret Vault application.
-.DESCRIPTION
-    This script generates a self-contained HTML file for a Secret Vault application.
-    The application allows encryption/decryption of secrets using WebCrypto APIs.
-.PARAMETER OutputFile
-    The path where the HTML file should be saved.
-.EXAMPLE
-    .\script.ps1 -OutputFile "vault.html"
-#>
-
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputFile
-)
-
-function Generate-Html {
-    return @'
+function Generate-HTML {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -102,7 +85,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -227,22 +210,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
-try {
-    # Generate HTML content and write to file
-    $htmlContent = Generate-Html
-    Set-Content -Path $OutputFile -Value $htmlContent -Encoding UTF8
-    
-    # Check if file was written successfully
-    if (Test-Path $OutputFile) {
-        Write-Host "HTML file generated: $OutputFile"
-    } else {
+function Main {
+    param(
+        [string[]]$Args
+    )
+
+    if ($Args.Count -ne 1) {
+        Write-Host "Usage: pwsh script.ps1 <output-file>"
+        exit 1
+    }
+
+    $outputFile = $Args[0]
+
+    try {
+        $htmlContent = Generate-HTML
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
         Write-Error "Error generating HTML file"
         exit 1
     }
-} catch {
-    Write-Error "Error generating HTML file: $_"
-    exit 1
 }
+
+Main -Args $args

@@ -1,7 +1,27 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0e397c.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_c03494.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0e397c_c03494.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+<#
+.SYNOPSIS
+Generates an HTML file containing a Secret Vault application.
+
+.DESCRIPTION
+This script generates a self-contained HTML file that implements a client-side encrypted secret vault using WebCrypto APIs.
+The output file contains all necessary HTML, CSS, and JavaScript code for the application to run in a browser.
+
+.PARAMETER OutputFile
+The path where the generated HTML file will be saved.
+
+.EXAMPLE
+.\script.ps1 -OutputFile "secret-vault.html"
+#>
+
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputFile
+)
 
 function Generate-Html {
     $html = @'
@@ -28,7 +48,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 4px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -211,34 +231,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 '@
-
     return $html
 }
 
-function Main {
-    param(
-        [string[]]$Args
-    )
-    
-    if ($Args.Count -ne 1) {
-        Write-Output "Usage: powershell script.ps1 <output-file>"
-        exit 1
-    }
-    
-    $outputFile = $Args[0]
-    
-    try {
-        $htmlContent = Generate-Html
-        $htmlContent | Out-File -FilePath $outputFile -Encoding utf8
-        Write-Output "HTML file generated: $outputFile"
-    }
-    catch {
-        $error = $_.Exception.Message
-        Write-Output "Error generating HTML file: $error"
-        exit 1
-    }
-}
-
-if ($MyInvocation.InvocationName -NE '.') {
-    Main -Args $args
+try {
+    $htmlContent = Generate-Html
+    Set-Content -Path $OutputFile -Value $htmlContent -Encoding UTF8
+    Write-Host "HTML file generated: $OutputFile"
+} catch {
+    Write-Error "Error generating HTML file: $_"
+    exit 1
 }

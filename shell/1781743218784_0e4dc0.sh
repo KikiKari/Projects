@@ -1,21 +1,20 @@
 #!/bin/bash
 # 1781743218784_0e4dc0.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Argumente
-if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 <output-file>" >&2
-    exit 1
-fi
+# 1781743218784_0e4dc0.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e4dc0.pl
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-output_file="$1"
+# 1781743218784_0e4dc0.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e4dc0.js
+# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
-# Generiere HTML-Inhalt
-generate_html() {
-    cat <<'EOF'
+generateHTML() {
+cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,7 +223,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-# Schreibe HTML-Inhalt in Ausgabedatei
-generate_html > "$output_file"
+main() {
+  local args=("$@")
+  
+  if [[ ${#args[@]} -ne 1 ]]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+  fi
+  
+  local outputFile="${args[0]}"
+  
+  # Generate HTML content and write to file
+  generateHTML > "$outputFile"
+  echo "HTML file generated: $outputFile"
+}
 
-echo "HTML file generated: $output_file"
+main "$@"

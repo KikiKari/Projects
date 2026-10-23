@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0e397c.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-import sys
-import base64
-import json
-from datetime import datetime
+# 1781743218784_0e397c_581d49.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_581d49.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 def generate_html():
     html = '''<!DOCTYPE html>
@@ -217,10 +212,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
     return html
 
 def main(args):
+    import sys
     if len(args) != 1:
-        print("Usage: python script.py <output-file>")
+        print("Usage: python3 script.py <output-file>")
         sys.exit(1)
-    
+
     output_file = args[0]
     
     try:
@@ -228,9 +224,10 @@ def main(args):
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         print(f"HTML file generated: {output_file}")
-    except Exception as e:
-        print(f"Error generating HTML file: {e}")
+    except Exception as error:
+        print(f"Error generating HTML file: {error}")
         sys.exit(1)
 
 if __name__ == "__main__":
+    import sys
     main(sys.argv[1:])

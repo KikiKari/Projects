@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-// 1781743218784.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_03b8fe.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 // Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js <OutputPath>");
-    process.exit(1);
+  console.error("Usage: node script.js <OutputPath>");
+  process.exit(1);
 }
 
 const fs = require('fs');
-const output_path = process.argv[2];
+const outputPath = process.argv[2];
 
-const html_content = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,4 +218,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-fs.writeFileSync(output_path, html_content, 'utf-8');
+fs.writeFileSync(outputPath, htmlContent, 'utf8');

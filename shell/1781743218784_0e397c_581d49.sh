@@ -1,12 +1,16 @@
 #!/bin/bash
-# 1781743218784_0e397c.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0e397c_581d49.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_581d49.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-generate_html() {
-    cat << 'EOF'
+# 1781743218784_0e397c.ps1 — portiert nach bash
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+generateHTML() {
+  cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -216,25 +220,23 @@ EOF
 }
 
 main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
-        echo "Usage: bash script.sh <output-file>"
-        exit 1
-    fi
-    
-    local output_file="${args[0]}"
-    
-    # Create temporary file to hold the HTML content
-    local temp_file=$(mktemp)
-    
-    # Generate HTML content into temporary file
-    generate_html > "$temp_file"
-    
-    # Move to final destination
-    mv "$temp_file" "$output_file"
-    
-    echo "HTML file generated: $output_file"
+  if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>"
+    exit 1
+  fi
+
+  local outputFile="$1"
+  
+  # Schreibe den generierten HTML-Inhalt in die Ausgabedatei
+  generateHTML > "$outputFile"
+  
+  # Prüfe, ob das Schreiben erfolgreich war
+  if [[ $? -eq 0 ]]; then
+    echo "HTML file generated: $outputFile"
+  else
+    echo "Error generating HTML file"
+    exit 1
+  fi
 }
 
 main "$@"

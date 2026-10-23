@@ -1,9 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# Prüfen der Argumente
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -11,6 +11,7 @@ if {$argc != 1} {
 
 set output_path [lindex $argv 0]
 
+# HTML-Inhalt definieren
 set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,7 +218,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-set f [open $output_path w]
-fconfigure $f -encoding utf-8
-puts -nonewline $f $html_content
-close $f
+# Schreiben der Datei
+set fd [open $output_path w]
+puts -nonewline $fd $html_content
+close $fd

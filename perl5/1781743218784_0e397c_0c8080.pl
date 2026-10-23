@@ -1,10 +1,14 @@
-#!/usr/bin/env perl
-# 1781743218784_0e397c.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0e397c_0c8080.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use Encode qw(encode decode);
+use MIME::Base64 qw(encode_base64 decode_base64);
 
 sub generateHTML {
     my $html = <<'HTML_END';
@@ -214,24 +218,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 HTML_END
+
     return $html;
 }
 
 sub main {
     my @args = @ARGV;
-    my $output_file = shift @args;
     
-    if (@ARGV != 0) {
+    if (@args != 1) {
         print "Usage: perl script.pl <output-file>\n";
         exit 1;
     }
     
+    my $outputFile = $args[0];
+    
     eval {
-        my $html_content = generateHTML();
-        open(my $f, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
-        print $f $html_content;
-        close($f);
-        print "HTML file generated: $output_file\n";
+        my $htmlContent = generateHTML();
+        open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
+        print $fh $htmlContent;
+        close($fh);
+        print "HTML file generated: $outputFile\n";
     };
     if ($@) {
         print "Error generating HTML file: $@\n";

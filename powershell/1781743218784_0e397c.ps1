@@ -1,10 +1,14 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0e397c.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
 
-function Generate-HTML {
-    $html = @'
+function GenerateHTML {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -210,28 +214,32 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
-    return $html
+"@
 }
 
 function Main {
     $args = $args
     
     if ($args.Count -ne 1) {
-        Write-Output "Usage: pwsh script.ps1 <output-file>"
+        Write-Host "Usage: pwsh script.ps1 <output-file>"
         exit 1
     }
     
     $outputFile = $args[0]
     
     try {
-        $htmlContent = Generate-HTML
+        $htmlContent = GenerateHTML
         Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Output "HTML file generated: $outputFile"
+        Write-Host "HTML file generated: $outputFile"
     } catch {
-        Write-Output "Error generating HTML file: $($_.Exception.Message)"
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }
 
-Main @args
+# Prüfe ob das Skript direkt aufgerufen wird
+if ($MyInvocation.InvocationName -eq "&") {
+    Main @args
+}
+
+# Export-Funktionen werden in PowerShell nicht benötigt
