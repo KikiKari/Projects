@@ -3,14 +3,13 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
-if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-    exit 1
-}
-$output_path = $args[0]
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# Portiert nach PowerShell 7
 
-$html_content = @"
+function Generate-Html {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,6 +216,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 "@
+}
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-$html_content | Out-File -FilePath $output_path -Encoding UTF8
+function Main {
+    $args = $args
+    
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: powershell script.ps1 <output-file>"
+        exit 1
+    }
+    
+    $output_file = $args[0]
+    
+    try {
+        $html_content = Generate-Html
+        Set-Content -Path $output_file -Value $html_content -Encoding UTF8
+        Write-Host "HTML file generated: $output_file"
+    } catch {
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+Main

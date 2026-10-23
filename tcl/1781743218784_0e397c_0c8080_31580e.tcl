@@ -1,14 +1,12 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0e397c_0c8080.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
+# 1781743218784_0e397c_0c8080_31580e.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080_31580e.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e397c.tcl — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c.ps1
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+package require Tcl 8.6
 
-proc GenerateHTML {} {
-    set html {<!DOCTYPE html>
+proc generateHTML {} {
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -212,30 +210,29 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
-    return $html
+</html>}
 }
 
-proc Main {argv} {
+proc main {} {
+    global argv
+    
     if {[llength $argv] != 1} {
         puts "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set OutputFile [lindex $argv 0]
+    set outputFile [lindex $argv 0]
     
     if {[catch {
-        set htmlContent [GenerateHTML]
-        set fh [open $OutputFile w]
-        fconfigure $fh -encoding utf-8
+        set htmlContent [generateHTML]
+        set fh [open $outputFile w]
         puts -nonewline $fh $htmlContent
         close $fh
-        puts "HTML file generated: $OutputFile"
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts "Error generating HTML file: $error"
         exit 1
     }
 }
 
-Main $argv
+main

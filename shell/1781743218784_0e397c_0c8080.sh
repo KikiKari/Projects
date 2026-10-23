@@ -1,17 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # 1781743218784_0e397c_0c8080.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_0e397c.tcl — portiert nach javascript
+# 1781743218784_0e397c_0c8080.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_0c8080.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.tcl — portiert nach perl5
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 generateHTML() {
     cat <<'EOF'
@@ -225,22 +225,23 @@ EOF
 
 main() {
     local args=("$@")
+    local outputFile
     
     if [[ ${#args[@]} -ne 1 ]]; then
         echo "Usage: $0 <output-file>"
         exit 1
     fi
     
-    local outputFile="${args[0]}"
+    outputFile="${args[0]}"
     
     # Generate HTML content and write to file
     generateHTML > "$outputFile"
     
-    # Check if write was successful
-    if [[ $? -eq 0 ]]; then
+    # Check if the operation was successful
+    if [[ $? -eq 0 && -f "$outputFile" ]]; then
         echo "HTML file generated: $outputFile"
     else
-        echo "Error generating HTML file"
+        echo "Error generating HTML file: Failed to write to $outputFile"
         exit 1
     fi
 }

@@ -3,15 +3,20 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0e397c_0c8080.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_0c8080.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.tcl — portiert nach perl5
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
-use Encode qw(encode decode);
-use MIME::Base64 qw(encode_base64 decode_base64);
+use File::Slurp qw(write_file);
 
 sub generateHTML {
-    my $html = <<'HTML_END';
+    my $html = <<'EOF';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -35,7 +40,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 10px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -217,26 +222,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
-
+EOF
     return $html;
 }
 
 sub main {
     my @args = @ARGV;
+    my $outputFile = shift @args;
     
-    if (@args != 1) {
+    if (@args != 0) {
         print "Usage: perl script.pl <output-file>\n";
         exit 1;
     }
     
-    my $outputFile = $args[0];
-    
     eval {
         my $htmlContent = generateHTML();
-        open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
-        print $fh $htmlContent;
-        close($fh);
+        write_file($outputFile, $htmlContent);
         print "HTML file generated: $outputFile\n";
     };
     if ($@) {

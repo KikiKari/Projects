@@ -3,18 +3,18 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e397c.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
-
 import sys
 import json
+import base64
+import hashlib
+import os
+from datetime import datetime
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.backends import default_backend
 
-def generateHTML():
+def generate_html():
     html = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,13 +219,65 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
     return html
+
+def derive_key(password, salt):
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=210000,
+        backend=default_backend()
+    )
+    key = kdf.derive(password.encode())
+    return key
+
+def encrypt_obj(obj, password):
+    salt = os.urandom(16)
+    iv = os.urandom(12)
+    key = derive_key(password, salt)
+    
+    # Convert object to JSON string and encode to bytes
+    json_data = json.dumps(obj, indent=2).encode('utf-8')
+    
+    # Encrypt using AES-GCM
+    cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(json_data) + encryptor.finalize()
+    tag = encryptor.tag
+    
+    # Construct output: magic + salt + iv + tag + ciphertext
+    magic = b"SVPB1"
+    out = magic + salt + iv + tag + ciphertext
+    
+    # Encode to base64
+    return base64.b64encode(out).decode('utf-8')
+
+def decrypt_b64(b64_data, password):
+    try:
+        raw = base64.b64decode(b64_data.strip())
+        if raw[:5].decode('utf-8') != "SVPB1":
+            raise Exception("magic")
+        
+        salt = raw[5:21]
+        iv = raw[21:33]
+        tag = raw[33:49]
+        ciphertext = raw[49:]
+        
+        key = derive_key(password, salt)
+        
+        # Decrypt using AES-GCM
+        cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
+        decryptor = cipher.decryptor()
+        plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+        
+        return json.loads(plaintext.decode('utf-8'))
+    except Exception as e:
+        raise Exception("Decryption failed")
 
 def main():
     args = sys.argv[1:]
-    
     if len(args) != 1:
         print("Usage: python3 script.py <output-file>")
         sys.exit(1)
@@ -233,12 +285,12 @@ def main():
     output_file = args[0]
     
     try:
-        html_content = generateHTML()
+        html_content = generate_html()
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         print(f"HTML file generated: {output_file}")
-    except Exception as error:
-        print(f"Error generating HTML file: {error}")
+    except Exception as e:
+        print(f"Error generating HTML file: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-#!/usr/bin/env perl
-# 1781743218784_03b8fe.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe.ps1
+#!/usr/bin/perl
+# 1781743218784_03b8fe_ce5320.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_ce5320.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
@@ -8,9 +8,13 @@ use warnings;
 use utf8;
 use open qw(:std :utf8);
 
+# 1781743218784_03b8fe.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe.ps1
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
 # Parameter verarbeiten
 if (@ARGV != 1) {
-    warn "Usage: script.pl <OutputPath>\n";
+    print STDERR "Usage: script.pl <OutputPath>\n";
     exit 1;
 }
 
@@ -224,6 +228,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot write to '$outputPath': $!";
+open my $fh, '>:encoding(UTF-8)', $outputPath or die "Could not open file '$outputPath' for writing: $!";
 print $fh $htmlContent;
 close $fh;

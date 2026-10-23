@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_0e397c_0c8080.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
+// 1781743218784_0e397c_0c8080_31580e.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_0c8080_31580e.pl
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0e397c.tcl — portiert nach powershell — portiert nach JavaScript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0e397c_0c8080.ps1 — portiert nach perl5 — portiert nach JavaScript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
@@ -217,19 +217,17 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 }
 
-function main() {
-    const args = process.argv.slice(2);
+function main(args) {
+    const outputFile = args[0];
     
     if (args.length !== 1) {
         console.log("Usage: node script.js <output-file>");
         process.exit(1);
     }
     
-    const outputFile = args[0];
-    
     try {
         const htmlContent = generateHTML();
-        fs.writeFileSync(outputFile, htmlContent, 'utf8');
+        fs.writeFileSync(outputFile, htmlContent, { encoding: 'utf8' });
         console.log(`HTML file generated: ${outputFile}`);
     } catch (error) {
         console.log(`Error generating HTML file: ${error.message}`);
@@ -237,4 +235,4 @@ function main() {
     }
 }
 
-main();
+main(process.argv.slice(2));

@@ -3,14 +3,13 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
-if {$argc != 1} {
-    puts stderr "Aufruf: tclsh [info script] <Ausgabedatei>"
-    exit 1
-}
-set output_path [lindex $argv 0]
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# Portiert nach Tcl 8.6
 
-set html_content {<!DOCTYPE html>
+proc generate_html {} {
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -214,10 +213,29 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
+</html>}
 }
 
-# Schreibe HTML-Inhalt in Ausgabedatei
-set fd [open $output_path w]
-puts -nonewline $fd $html_content
-close $fd
+proc main {} {
+    global argv
+    
+    if {[llength $argv] != 1} {
+        puts stderr "Usage: tclsh script.tcl <output-file>"
+        exit 1
+    }
+    
+    set output_file [lindex $argv 0]
+    
+    try {
+        set html_content [generate_html]
+        set fh [open $output_file w]
+        puts -nonewline $fh $html_content
+        close $fh
+        puts "HTML file generated: $output_file"
+    } trap {POSIX} {error} {
+        puts stderr "Error generating HTML file: $error"
+        exit 1
+    }
+}
+
+main

@@ -1,10 +1,16 @@
-#!/usr/bin/env perl
-# 1781743218784_03b8fe.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe.tcl
+#!/usr/bin/perl
+# 1781743218784_03b8fe_3fdce6.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_3fdce6.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+
+# 1781743218784_03b8fe.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe.tcl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if (@ARGV != 1) {
@@ -222,6 +228,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open my $fh, '>:encoding(UTF-8)', $output_path or die "Cannot write to '$output_path': $!";
+open my $fh, '>:encoding(UTF-8)', $output_path or die "Could not open file '$output_path' $!";
 print $fh $html_content;
 close $fh;

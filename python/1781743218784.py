@@ -4,15 +4,12 @@
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import base64
+import json
+import os
 
-# Prüfe Aufrufparameter
-if len(sys.argv) != 2:
-    print(f"Aufruf: python3 {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
-    sys.exit(1)
-
-output_path = sys.argv[1]
-
-html_content = '''<!DOCTYPE html>
+def generate_html():
+    return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -216,8 +213,25 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-with open(output_path, 'w', encoding='utf-8') as f:
-    f.write(html_content)
+def main():
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print("Usage: python3 script.py <output-file>", file=sys.stderr)
+        sys.exit(1)
+    
+    output_file = args[0]
+    
+    try:
+        html_content = generate_html()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f"HTML file generated: {output_file}")
+    except Exception as error:
+        print(f"Error generating HTML file: {error}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

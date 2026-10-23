@@ -4,15 +4,7 @@
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
-import base64
-import hashlib
-import secrets
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.backends import default_backend
-import argparse
+import os
 
 def generate_html():
     return '''<!DOCTYPE html>
@@ -222,19 +214,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate HTML file for Secret-Vault')
-    parser.add_argument('output_file', help='Output HTML file path')
+    args = sys.argv[1:]
     
-    args = parser.parse_args()
+    if len(args) != 1:
+        print("Usage: python3 script.py <output-file>")
+        sys.exit(1)
+    
+    output_file = args[0]
     
     try:
         html_content = generate_html()
-        with open(args.output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print(f'HTML file generated: {args.output_file}')
-    except Exception as e:
-        print(f'Error generating HTML file: {str(e)}')
+        print(f"HTML file generated: {output_file}")
+    except Exception as error:
+        print(f"Error generating HTML file: {str(error)}")
         sys.exit(1)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

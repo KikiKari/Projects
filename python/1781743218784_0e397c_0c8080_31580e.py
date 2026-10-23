@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
-# 1781743218784_0e397c_0c8080.ps1 — portiert nach python
+# 1781743218784_0e397c_0c8080_31580e.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080_31580e.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c_0c8080.ps1 — portiert nach javascript — portiert nach Python 3.12
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0e397c.tcl — portiert nach powershell — portiert nach JavaScript — portiert nach Python 3.12
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
 import sys
-import os
+
 
 def generate_html():
-    html = '''<!DOCTYPE html>
+    return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -211,26 +219,27 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
-    return html
+</html>'''
 
-def main(output_file):
-    if len(sys.argv) != 2:
-        print("Usage: python3 script.py <output-file>")
+
+def main():
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print("Usage: python script.py <output-file>")
         sys.exit(1)
+    
+    output_file = args[0]
     
     try:
         html_content = generate_html()
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         print(f"HTML file generated: {output_file}")
-    except Exception as e:
-        print(f"Error generating HTML file: {e}")
+    except Exception as error:
+        print(f"Error generating HTML file: {str(error)}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 script.py <output-file>")
-        sys.exit(1)
-    main(sys.argv[1])
+    main()

@@ -1,9 +1,13 @@
 #!/bin/bash
-# 1781743218784_0e397c_0c8080.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_0e397c_0c8080.py
+# 1781743218784_0e397c_0c8080_42f447.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080_42f447.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
+
+# 1781743218784_0e397c_0c8080.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784_0e397c_0c8080.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_0e397c.tcl — portiert nach python
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
@@ -224,24 +228,28 @@ EOF
 }
 
 main() {
-    if [[ $# -ne 1 ]]; then
+    local args=("$@")
+    
+    if [[ ${#args[@]} -ne 1 ]]; then
         echo "Usage: $0 <output-file>"
         exit 1
     fi
-
-    local output_file="$1"
+    
+    local outputFile="${args[0]}"
     
     # Generate HTML content and write to file
-    generateHTML > "$output_file"
+    generateHTML > "$outputFile"
     
     # Check if file was written successfully
-    if [[ $? -eq 0 ]]; then
-        echo "HTML file generated: $output_file"
+    if [[ $? -eq 0 && -f "$outputFile" ]]; then
+        echo "HTML file generated: $outputFile"
     else
-        echo "Error generating HTML file"
+        echo "Error generating HTML file: Failed to write to $outputFile"
         exit 1
     fi
 }
 
-# Call main function with all arguments
-main "$@"
+# Only run main if script is executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

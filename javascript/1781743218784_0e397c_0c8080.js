@@ -3,14 +3,8 @@
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_0c8080.pl
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0e397c.tcl — portiert nach perl5
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
-// Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
-
 function generateHTML() {
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -215,19 +209,20 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>`;
-    return html;
 }
 
 function main() {
     const args = process.argv.slice(2);
-    const outputFile = args.shift();
     
-    if (args.length !== 0) {
+    if (args.length !== 1) {
         console.log("Usage: node script.js <output-file>");
         process.exit(1);
     }
     
+    const outputFile = args[0];
+    
     try {
+        const fs = require('fs');
         const htmlContent = generateHTML();
         fs.writeFileSync(outputFile, htmlContent, 'utf8');
         console.log(`HTML file generated: ${outputFile}`);

@@ -1,20 +1,12 @@
 #!/usr/bin/perl
-# 1781743218784_0e397c_0c8080.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0e397c_0c8080.py
+# 1781743218784_0e397c_0c8080_42f447.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080_42f447.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-# 1781743218784_0e397c.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
-
-sub generateHTML {
+sub generate_html {
     my $html = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -227,16 +219,18 @@ HTML_END
 }
 
 sub main {
-    if (@ARGV != 1) {
+    my @args = @ARGV;
+    
+    if (@args != 1) {
         print "Usage: perl script.pl <output-file>\n";
         exit 1;
     }
-
-    my $output_file = $ARGV[0];
-
+    
+    my $output_file = $args[0];
+    
     eval {
-        my $html_content = generateHTML();
-        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
+        my $html_content = generate_html();
+        open(my $fh, '>', $output_file) or die "Could not open file '$output_file': $!";
         print $fh $html_content;
         close($fh);
         print "HTML file generated: $output_file\n";

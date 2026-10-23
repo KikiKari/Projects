@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
+# 1781743218784_03b8fe_384251.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Parameter verarbeiten
 if len(sys.argv) != 2:
@@ -216,11 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
 try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
-    print(f"Could not open file '{output_path}': {e}", file=sys.stderr)
+    print(f"Could not write to file '{output_path}': {e}", file=sys.stderr)
     sys.exit(1)

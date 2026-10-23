@@ -5,8 +5,10 @@
 
 use strict;
 use warnings;
+use MIME::Base64 qw(encode_base64 decode_base64);
+use JSON qw(encode_json decode_json);
 
-sub generateHTML {
+sub generate_html {
     return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -224,22 +226,19 @@ sub main {
         exit 1;
     }
     
-    my $outputFile = $args[0];
+    my $output_file = $args[0];
     
     eval {
-        my $htmlContent = generateHTML();
-        open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
-        print $fh $htmlContent;
+        my $html_content = generate_html();
+        open(my $fh, '>', $output_file) or die "Cannot open file '$output_file': $!";
+        print $fh $html_content;
         close($fh);
-        print "HTML file generated: $outputFile\n";
+        print "HTML file generated: $output_file\n";
     };
     if ($@) {
-        print STDERR "Error generating HTML file: $@\n";
+        print "Error generating HTML file: $@\n";
         exit 1;
     }
 }
 
-main() unless caller;
-
-1; # True value for module inclusion check
-__END__
+main();

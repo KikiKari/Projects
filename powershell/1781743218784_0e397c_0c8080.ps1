@@ -3,13 +3,13 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0e397c.tcl — portiert nach javascript
+# 1781743218784_0e397c_0c8080.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c_0c8080.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.tcl — portiert nach perl5
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
 # Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-08-24 durch ABSTRACTIONS_MANAGER.py
 
 function GenerateHTML {
     $html = @"
@@ -223,14 +223,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function Main {
-    $args = $args
+    param(
+        [string[]]$Args
+    )
     
-    if ($args.Count -ne 1) {
+    $outputFile = $Args[0]
+    
+    if ($Args.Count -ne 1) {
         Write-Host "Usage: powershell script.ps1 <output-file>"
         exit 1
     }
-    
-    $outputFile = $args[0]
     
     try {
         $htmlContent = GenerateHTML
@@ -242,4 +244,4 @@ function Main {
     }
 }
 
-Main @args
+Main -Args $args

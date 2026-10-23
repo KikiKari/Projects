@@ -5,12 +5,12 @@
 
 set -euo pipefail
 
-# 1781743218784_0e397c.pl — portiert nach javascript
+# 1781743218784_0e397c.pl — portiert nach bash
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0e397c.pl
-# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 generateHTML() {
-    cat <<'EOF'
+  cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,28 +220,25 @@ EOF
 }
 
 main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
-        echo "Usage: $0 <output-file>" >&2
-        exit 1
-    fi
-    
-    local outputFile="${args[0]}"
-    
-    # Generate HTML content and write to file
-    generateHTML > "$outputFile"
-    
-    # Check if file was written successfully
-    if [[ $? -eq 0 && -f "$outputFile" ]]; then
-        echo "HTML file generated: $outputFile"
-    else
-        echo "Error generating HTML file" >&2
-        exit 1
-    fi
+  local args=("$@")
+  
+  if [[ ${#args[@]} -ne 1 ]]; then
+    echo "Usage: $0 <output-file>"
+    exit 1
+  fi
+  
+  local outputFile="${args[0]}"
+  
+  # Write HTML content to file
+  generateHTML > "$outputFile"
+  
+  # Check if write was successful
+  if [[ $? -eq 0 ]]; then
+    echo "HTML file generated: $outputFile"
+  else
+    echo "Error generating HTML file: Failed to write to $outputFile"
+    exit 1
+  fi
 }
 
-# Only run main if script is executed directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+main "$@"

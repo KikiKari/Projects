@@ -9,9 +9,9 @@ if ($args.Count -ne 1) {
     exit 1
 }
 
-$output_path = $args[0]
+$outputPath = $args[0]
 
-$html_content = @"
+$htmlContent = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,4 +219,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 "@
 
-$html_content | Out-File -FilePath $output_path -Encoding UTF8
+$htmlContent | Out-File -FilePath $outputPath -Encoding UTF8

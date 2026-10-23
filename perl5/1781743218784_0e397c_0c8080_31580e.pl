@@ -1,13 +1,23 @@
-#!/usr/bin/env perl
-# 1781743218784_0e397c_0c8080.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
+#!/usr/bin/perl
+# 1781743218784_0e397c_0c8080_31580e.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0e397c_0c8080_31580e.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
 
-sub GenerateHTML {
-    my $html = <<'HTML_END';
+# 1781743218784_0e397c_0c8080.ps1 — portiert nach javascript — portiert nach Perl 5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0e397c_0c8080.ps1
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0e397c.tcl — portiert nach powershell — portiert nach JavaScript — portiert nach Perl 5
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0e397c.tcl
+# Erzeugt: 2026-10-12 durch ABSTRACTIONS_MANAGER.py
+
+sub generateHTML {
+    return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -214,23 +224,24 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 HTML_END
-    return $html;
 }
 
-sub Main {
-    my ($output_file) = @_;
+sub main {
+    my @args = @ARGV;
     
-    if (@_ != 1) {
+    if (@args != 1) {
         print "Usage: perl script.pl <output-file>\n";
         exit 1;
     }
     
+    my $outputFile = $args[0];
+    
     eval {
-        my $html_content = GenerateHTML();
-        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
-        print $fh $html_content;
+        my $htmlContent = generateHTML();
+        open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
+        print $fh $htmlContent;
         close($fh);
-        print "HTML file generated: $output_file\n";
+        print "HTML file generated: $outputFile\n";
     };
     if ($@) {
         print "Error generating HTML file: $@\n";
@@ -238,4 +249,4 @@ sub Main {
     }
 }
 
-Main(@ARGV);
+main();
