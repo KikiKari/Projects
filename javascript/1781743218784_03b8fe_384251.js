@@ -1,21 +1,23 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe_384251.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
+// 1781743218784_03b8fe_384251.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_384251.pl
+// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe_384251.ps1 — portiert nach perl5 — portiert nach JavaScript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_03b8fe.pl — portiert nach tcl
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+import { writeFileSync } from 'fs';
 
 // Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js <OutputPath>");
+    console.error("Usage: node script.js <OutputPath>\n");
     process.exit(1);
 }
 
 const outputPath = process.argv[2];
 
-const html_content = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -221,6 +223,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-// Schreibe den HTML-Inhalt in die Ausgabedatei
-const fs = require('fs');
-fs.writeFileSync(outputPath, html_content);
+try {
+    writeFileSync(outputPath, htmlContent, 'utf-8');
+} catch (error) {
+    console.error(\`Could not write to file '\${outputPath}': \${error.message}\n\`);
+    process.exit(1);
+}

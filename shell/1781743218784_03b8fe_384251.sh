@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# 1781743218784_03b8fe_384251.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_384251.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_384251.pl
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Parameter verarbeiten
 if [[ $# -ne 1 ]]; then
-    echo "Usage: bash script.sh <OutputPath>" >&2
+    echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
-# HTML-Inhalt als Here Document mit eingebetteten Quotes
-read -r -d '' htmlContent <<'EOF_HTMLCONTENT'
+# HTML-Inhalt als Here Document mit eingebetteten Variablen
+read -r -d '' html_content <<'HTML_CONTENT' || true
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,11 +220,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTMLCONTENT
+HTML_CONTENT
 
-# Schreibe den Inhalt in die Ausgabedatei mit UTF-8 Kodierung
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Could not write to file '$outputPath'" >&2
-    exit 1
-fi
-EOF_HTMLCONTENT
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+echo "$html_content" > "$output_path"

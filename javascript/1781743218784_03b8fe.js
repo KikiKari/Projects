@@ -1,20 +1,15 @@
 #!/usr/bin/env node
 // 1781743218784_03b8fe.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_03b8fe.js — portiert nach perl5
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
-
-// Prüfen der Argumente
+// Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js <OutputPath>");
-    process.exit(1);
+  console.error("Usage: node script.js <OutputPath>");
+  process.exit(1);
 }
 
+const fs = require('fs');
 const outputPath = process.argv[2];
 
 const htmlContent = `<!DOCTYPE html>

@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe_384251.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
+# 1781743218784_03b8fe_384251.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_384251.js
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe_384251.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
 # Parameter verarbeiten
 if len(sys.argv) != 2:
     print("Usage: python script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
 
-output_path = sys.argv[1]
+outputPath = sys.argv[1]
 
 html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -217,12 +224,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-try:
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-except Exception as e:
-    print(f"Could not write to file '{output_path}': {e}", file=sys.stderr)
-    sys.exit(1)
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+with open(outputPath, 'w') as f:
+    f.write(html_content)

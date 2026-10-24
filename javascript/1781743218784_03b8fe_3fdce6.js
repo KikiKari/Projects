@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // 1781743218784_03b8fe_3fdce6.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_3fdce6.pl
+// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe.tcl — portiert nach javascript
+// Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe.tcl
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 // Parameter verarbeiten
 if (process.argv.length !== 3) {
-  console.error("Usage: node script.js <OutputPath>");
-  process.exit(1);
+    console.error("Usage: node script.js <OutputPath>");
+    process.exit(1);
 }
 
 const fs = require('fs');
@@ -216,7 +220,6 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 fs.writeFileSync(output_path, html_content, 'utf8');

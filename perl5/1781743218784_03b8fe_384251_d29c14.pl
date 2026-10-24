@@ -1,14 +1,12 @@
 #!/usr/bin/perl
-# 1781743218784_03b8fe_384251.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_03b8fe_384251.py
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_384251_d29c14.tcl — portiert nach perl5
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251_d29c14.tcl
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
 
-# Parameter verarbeiten
+# Prüfe Anzahl Argumente
 if (@ARGV != 1) {
     print STDERR "Usage: perl script.pl <OutputPath>\n";
     exit 1;
@@ -16,6 +14,7 @@ if (@ARGV != 1) {
 
 my $output_path = $ARGV[0];
 
+# HTML-Inhalt
 my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -224,7 +223,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open(my $fh, '>:encoding(UTF-8)', $output_path) or do {
+# Schreibe HTML-Inhalt in Datei
+open(my $fh, '>', $output_path) or do {
     print STDERR "Could not open file '$output_path': $!\n";
     exit 1;
 };

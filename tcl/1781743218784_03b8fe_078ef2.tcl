@@ -1,7 +1,7 @@
-#!/usr/bin/tclsh
-# 1781743218784_03b8fe.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh
+# 1781743218784_03b8fe_078ef2.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2.ps1
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfen der Argumente
 if {$argc != 1} {
@@ -9,9 +9,9 @@ if {$argc != 1} {
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,7 +218,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-set fh [open $output_path w]
-fconfigure $fh -encoding utf-8
-puts -nonewline $fh $html_content
-close $fh
+# Schreiben der HTML-Datei
+if {[catch {set fd [open $outputPath w]} err]} {
+    puts stderr "Could not open '$outputPath' for writing: $err"
+    exit 1
+}
+
+puts -nonewline $fd $htmlContent
+close $fd
+
+if {[catch {flush $fd} err]} {
+    puts stderr "Could not write to '$outputPath': $err"
+    exit 1
+}

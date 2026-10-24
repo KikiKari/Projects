@@ -1,15 +1,22 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe_3fdce6.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_3fdce6.ps1
+// 1781743218784_03b8fe_3fdce6_c25e6d.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_3fdce6_c25e6d.pl
+// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe_3fdce6.ps1 — portiert nach JavaScript
+// Quelle: perl5, Projects@abstractions:powershell/1781743218784_03b8fe_3fdce6_c25e6d.pl
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
+import { writeFileSync } from 'fs';
+import { argv } from 'process';
+
 // Parameter verarbeiten
-if (process.argv.length !== 3) {
-  console.error("Usage: node script.js <OutputPath>");
-  process.exit(1);
+if (argv.length !== 3) {
+    console.warn("Usage: node script.js <OutputPath>\n");
+    process.exit(1);
 }
 
-const output_path = process.argv[2];
+const output_path = argv[2];
 
 const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -218,4 +225,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 // Schreibe den Inhalt in die Ausgabedatei mit UTF-8-Encoding
-require('fs').writeFileSync(output_path, html_content, 'utf-8');
+writeFileSync(output_path, html_content, 'utf8');

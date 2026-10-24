@@ -1,13 +1,13 @@
-#!/usr/bin/env bash
-# 1781743218784.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Funktion zur Generierung des HTML-Inhalts
 generate_html() {
-cat << 'EOF'
+    cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -152,7 +152,7 @@ function u8b64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromC
 function b64u8(b64){ const s=atob(b64.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
 async function deriveKey(pw,salt){
   const km=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt:Uint8Array.from(salt),iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
@@ -213,7 +213,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 }
 
 # Hauptfunktion
@@ -221,17 +221,14 @@ main() {
     local args_count=$#
     
     if [[ $args_count -ne 1 ]]; then
-        echo "Usage: $0 <output-file>" >&2
+        echo "Usage: bash script.sh <output-file>" >&2
         exit 1
     fi
     
     local output_file="$1"
     
-    # Generiere den HTML-Inhalt und schreibe ihn in die Datei
-    generate_html > "$output_file"
-    
-    # Überprüfe, ob das Schreiben erfolgreich war
-    if [[ $? -eq 0 ]]; then
+    # Versuche den HTML-Inhalt zu generieren und in die Datei zu schreiben
+    if generate_html > "$output_file"; then
         echo "HTML file generated: $output_file"
     else
         echo "Error generating HTML file" >&2

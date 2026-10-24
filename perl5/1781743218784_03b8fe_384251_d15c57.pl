@@ -1,14 +1,14 @@
 #!/usr/bin/perl
-# 1781743218784_03b8fe_384251.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_384251_d15c57.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251_d15c57.ps1
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
 # Parameter verarbeiten
 if (@ARGV != 1) {
-    print STDERR "Usage: perl script.pl <OutputPath>\n";
+    warn "Usage: perl script.pl <OutputPath>\n";
     exit 1;
 }
 
@@ -223,6 +223,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-open my $fh, '>', $output_path or die "Konnte Datei '$output_path' nicht öffnen: $!";
+open my $fh, '>:encoding(UTF-8)', $output_path or die "Konnte Datei '$output_path' nicht öffnen: $!";
 print $fh $html_content;
 close $fh;

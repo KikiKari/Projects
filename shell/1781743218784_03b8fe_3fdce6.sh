@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1781743218784_03b8fe_3fdce6.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_3fdce6.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -223,5 +223,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 )
 
-# HTML-Inhalt in Ausgabedatei schreiben
+# HTML-Inhalt in Datei schreiben
 echo "$html_content" > "$output_path"

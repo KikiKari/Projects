@@ -1,23 +1,31 @@
-#!/usr/bin/env perl
-# 1781743218784_03b8fe_384251.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_03b8fe_384251.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_384251.js
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
 use Encode qw(encode decode);
-use File::Slurper qw(write_text);
+use File::Slurp qw(write_file);
+
+# 1781743218784_03b8fe_384251.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if (@ARGV != 1) {
-    warn "Usage: perl script.pl <OutputPath>\n";
+    print STDERR "Usage: perl script.pl <OutputPath>\n";
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
-my $html_content = <<'HTML_CONTENT';
+my $html_content = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,15 +231,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_CONTENT
+HTML
 
-eval {
-    write_text($output_path, $html_content, 'utf-8');
-    1;
-} or do {
-    my $error = $@ || 'unknown error';
-    warn "Could not write to file '$output_path': $error\n";
-    exit 1;
-};
-
-1;
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+write_file($outputPath, encode('UTF-8', $html_content));

@@ -1,13 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_03b8fe_3fdce6.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_3fdce6.ps1
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_3fdce6_c25e6d.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_3fdce6_c25e6d.js
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_03b8fe.tcl — portiert nach powershell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe.tcl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-# Parameter verarbeiten
+# Prüfen auf genau einen Parameter
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -219,11 +215,10 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
 # Schreibe den Inhalt in die Ausgabedatei mit UTF-8-Encoding
-set fh [open $output_path w]
-fconfigure $fh -encoding utf-8
-puts -nonewline $fh $html_content
-close $fh
+set fd [open $output_path w]
+fconfigure $fd -encoding utf-8
+puts -nonewline $fd $html_content
+close $fd

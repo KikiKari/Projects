@@ -1,20 +1,20 @@
 #!/bin/bash
 # 1781743218784_03b8fe.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Anzahl der Argumente
+# Prüfen der Argumente
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <OutputPath>" >&2
-  exit 1
+    echo "Usage: $0 <OutputPath>" >&2
+    exit 1
 fi
 
-OUTPUT_PATH="$1"
+outputPath="$1"
 
-# HTML-Inhalt (wie im JavaScript-Original)
-read -r -d '' HTML_CONTENT <<'EOF_HTML'
+# HTML-Inhalt in eine Variable speichern
+htmlContent=$(cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,7 +220,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTML
+EOF
+)
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-echo "$HTML_CONTENT" > "$OUTPUT_PATH"
+# Schreiben des Inhalts in die Ausgabedatei
+echo "$htmlContent" > "$outputPath"

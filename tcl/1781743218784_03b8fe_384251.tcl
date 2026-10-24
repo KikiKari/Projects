@@ -1,9 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_03b8fe_384251.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_384251.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_384251.js
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-# Pr端fen der Argumente
+# Pr端fe die Anzahl der Argumente
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -11,8 +11,8 @@ if {$argc != 1} {
 
 set outputPath [lindex $argv 0]
 
-# HTML-Inhalt als String
-set htmlContent {<!DOCTYPE html>
+# HTML-Inhalt als Tcl-Variable
+set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -216,19 +216,9 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-# Schreiben der Datei
-if {[catch {set fh [open $outputPath w]}]} {
-    puts stderr "Could not open file '$outputPath' for writing"
-    exit 1
-}
-
-if {[catch {puts -nonewline $fh $htmlContent}]} {
-    puts stderr "Could not write to file '$outputPath'"
-    close $fh
-    exit 1
-}
-
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+set fh [open $outputPath w]
+puts -nonewline $fh $html_content
 close $fh

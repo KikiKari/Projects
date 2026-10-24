@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_03b8fe.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2.ps1
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 # Prüfen der Argumente
 if len(sys.argv) != 2:
-    sys.stderr.write("Usage: python script.py <OutputPath>\n")
+    print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -221,12 +217,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
-    sys.stderr.write(f"Could not open '{output_path}' for writing: {str(e)}\n")
+    print(f"Could not write to '{output_path}': {e}", file=sys.stderr)
     sys.exit(1)

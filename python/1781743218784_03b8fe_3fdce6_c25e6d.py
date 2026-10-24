@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe_3fdce6.ps1 — portiert nach python
+# 1781743218784_03b8fe_3fdce6_c25e6d.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_3fdce6_c25e6d.js
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe_3fdce6.ps1 — portiert nach javascript — portiert nach Python 3.12
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_3fdce6.ps1
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py — portiert am 2024-11-20
 
 import sys
-import os
 
 # Parameter verarbeiten
 if len(sys.argv) != 2:
-    print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
+    print("Usage: python script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -36,7 +39,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 4px;font-weight:700;}
+h1{font-size:21px;margin:0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -217,8 +220,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Schreibe den Inhalt in die Ausgabedatei mit UTF-8-Encoding
 with open(output_path, 'w', encoding='utf-8') as f:
