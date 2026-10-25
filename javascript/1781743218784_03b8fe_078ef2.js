@@ -1,24 +1,24 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe_078ef2.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_03b8fe_078ef2.sh
+// 1781743218784_03b8fe_078ef2.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2.pl
+// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe_078ef2.ps1 — portiert nach JavaScript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2.ps1
 // Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_03b8fe.pl — portiert nach shell
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-import fs from 'fs';
+import { writeFileSync } from 'fs';
+import { exit } from 'process';
 
 // Prüfen der Argumente
 if (process.argv.length !== 3) {
     console.error("Usage: node script.js <OutputPath>");
-    process.exit(1);
+    exit(1);
 }
 
-const output_path = process.argv[2];
+const outputPath = process.argv[2];
 
-// HTML-Inhalt in Variable speichern
-const html_content = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,8 +222,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
-// Schreiben des HTML-Inhalts in die Ausgabedatei
-fs.writeFileSync(output_path, html_content);
+try {
+    writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (error) {
+    console.error(`Could not write to '${outputPath}': ${error.message}`);
+    exit(1);
+}

@@ -1,16 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_03b8fe_078ef2.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_03b8fe_078ef2.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2_256c1f.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2_256c1f.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_03b8fe.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_03b8fe.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
+# Prüfen der Argumente
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -225,10 +218,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {set fh [open $output_path w]} error]} {
-    puts stderr "Could not open '$output_path' for writing: $error"
-    exit 1
-}
-
+# Schreiben der HTML-Datei
+set fh [open $output_path w]
 puts -nonewline $fh $html_content
 close $fh

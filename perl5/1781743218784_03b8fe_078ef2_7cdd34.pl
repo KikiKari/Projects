@@ -1,10 +1,13 @@
 #!/usr/bin/perl
-# 1781743218784_03b8fe_078ef2.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_078ef2.tcl
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2_7cdd34.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_078ef2_7cdd34.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Spec;
 
 # Prüfen der Argumente
 if (@ARGV != 1) {
@@ -12,7 +15,7 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
 my $html_content = <<'HTML_END';
 <!DOCTYPE html>
@@ -222,6 +225,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open my $fh, '>:encoding(UTF-8)', $output_path or die "Could not open file '$output_path': $!";
+open my $fh, '>:encoding(UTF-8)', $outputPath or die "Could not open file '$outputPath' $!";
 print $fh $html_content;
 close $fh;

@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_03b8fe_078ef2.tcl — portiert nach powershell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_078ef2.tcl
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2_7cdd34.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_078ef2_7cdd34.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfen der Argumente
 if ($args.Count -ne 1) {
@@ -9,7 +9,7 @@ if ($args.Count -ne 1) {
     exit 1
 }
 
-$output_path = $args[0]
+$outputPath = $args[0]
 
 $html_content = @'
 <!DOCTYPE html>
@@ -219,5 +219,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Schreiben der HTML-Inhalte in die Ausgabedatei mit UTF-8-Encoding
-$html_content | Out-File -FilePath $output_path -Encoding Utf8
+$html_content | Out-File -FilePath $outputPath -Encoding utf8

@@ -1,18 +1,19 @@
 #!/usr/bin/perl
 # 1781743218784_03b8fe.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
-use Encode qw(decode_utf8);
 
-# Prüfen der Argumente
+# 1781743218784_03b8fe.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+# Parameter verarbeiten
 if (@ARGV != 1) {
-    print STDERR "Usage: perl script.pl <OutputPath>\n";
-    exit 1;
+  print STDERR "Usage: perl script.pl <OutputPath>\n";
+  exit 1;
 }
 
 my $outputPath = $ARGV[0];
@@ -225,6 +226,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open my $fh, '>:encoding(UTF-8)', $outputPath or die "Could not open file '$outputPath' for writing: $!";
+open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Could not open file '$outputPath' $!";
 print $fh $htmlContent;
 close $fh;

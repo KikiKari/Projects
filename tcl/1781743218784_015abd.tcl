@@ -1,5 +1,9 @@
-#!/usr/bin/env tclsh8.6
-# 1781743218784.py — portiert nach tcl
+#!/usr/bin/env tclsh
+# 1781743218784_015abd.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784.py
 # Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
@@ -7,7 +11,7 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-proc generate_html {} {
+proc generateHtml {} {
     return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -215,27 +219,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 }
 
-proc main {args} {
-    if {[llength $args] != 1} {
+proc main {} {
+    global argv
+    
+    if {[llength $argv] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set output_file [lindex $args 0]
+    set outputFile [lindex $argv 0]
     
     if {[catch {
-        set html_content [generate_html]
-        set f [open $output_file w]
-        fconfigure $f -encoding utf-8
-        puts -nonewline $f $html_content
-        close $f
-        puts "HTML file generated: $output_file"
+        set htmlContent [generateHtml]
+        set fd [open $outputFile w]
+        puts -nonewline $fd $htmlContent
+        close $fd
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts stderr "Error generating HTML file: $error"
         exit 1
     }
 }
 
-if {$::argv0 eq [info script]} {
-    main {*}$::argv
-}
+main

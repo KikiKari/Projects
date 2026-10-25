@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe.pl — portiert nach javascript
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_03b8fe.ps1 — portiert nach javascript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe.ps1
+// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-// Parameter verarbeiten
+// Prüfen der Argumente
 if (process.argv.length !== 3) {
   console.error("Usage: node script.js <OutputPath>");
   process.exit(1);
 }
 
-const fs = require('fs');
 const outputPath = process.argv[2];
+const fs = require('fs');
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -216,6 +216,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 fs.writeFileSync(outputPath, htmlContent, 'utf8');

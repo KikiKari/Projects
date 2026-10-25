@@ -1,13 +1,14 @@
-#!/usr/bin/env perl
-# 1781743218784_03b8fe_078ef2.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2.ps1
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_03b8fe_078ef2.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_078ef2.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(encode);
-use File::Slurper qw(write_text);
+use open qw(:std :utf8);
+use File::Spec;
+use File::Basename;
 
 # Prüfen der Argumente
 if (@ARGV != 1) {
@@ -15,9 +16,10 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+# HTML-Inhalt in Variable speichern
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -225,11 +227,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-eval {
-    write_text($outputPath, $htmlContent, 'utf8');
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR "Could not write to '$outputPath': $error\n";
-    exit 1;
-};
+# Schreiben des HTML-Inhalts in die Ausgabedatei
+open my $fh, '>:encoding(UTF-8)', $output_path or die "Konnte Datei '$output_path' nicht schreiben: $!";
+print $fh $html_content;
+close $fh;

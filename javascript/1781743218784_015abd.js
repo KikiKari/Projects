@@ -1,17 +1,12 @@
 #!/usr/bin/env node
-// 1781743218784.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.js — portiert nach python
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_015abd.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd.pl
+// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
-function generateHtml() {
-    return `<!DOCTYPE html>
+function generate_html() {
+  return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -34,7 +29,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 4px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -219,23 +214,25 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function main() {
-    const args = process.argv.slice(2);
-    
-    if (args.length !== 1) {
-        console.error("Usage: node script.js <output-file>");
-        process.exit(1);
-    }
-    
-    const outputFile = args[0];
-    
-    try {
-        const htmlContent = generateHtml();
-        fs.writeFileSync(outputFile, htmlContent, 'utf8');
-        console.log(`HTML file generated: ${outputFile}`);
-    } catch (error) {
-        console.error(`Error generating HTML file: ${error.message}`);
-        process.exit(1);
-    }
+  const args = process.argv.slice(2);
+  
+  if (args.length !== 1) {
+    console.error("Usage: node script.js <output-file>");
+    process.exit(1);
+  }
+  
+  const output_file = args[0];
+  
+  try {
+    const html_content = generate_html();
+    fs.writeFileSync(output_file, html_content, 'utf8');
+    console.log(`HTML file generated: ${output_file}`);
+  } catch (error) {
+    console.error(`Error generating HTML file: ${error.message}`);
+    process.exit(1);
+  }
 }
 
-main();
+if (require.main === module) {
+  main();
+}

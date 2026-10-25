@@ -1,21 +1,12 @@
 #!/usr/bin/perl
 # 1781743218784_03b8fe_384251.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_384251.js
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(encode decode);
-use File::Slurp qw(write_file);
-
-# 1781743218784_03b8fe_384251.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_03b8fe.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+use open qw(:std :utf8);
 
 # Parameter verarbeiten
 if (@ARGV != 1) {
@@ -25,7 +16,7 @@ if (@ARGV != 1) {
 
 my $outputPath = $ARGV[0];
 
-my $html_content = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -231,7 +222,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-write_file($outputPath, encode('UTF-8', $html_content));
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+open my $fh, '>:encoding(UTF-8)', $outputPath or do {
+    print STDERR "Could not write to file '$outputPath': $!\n";
+    exit 1;
+};
+print $fh $htmlContent;
+close $fh;

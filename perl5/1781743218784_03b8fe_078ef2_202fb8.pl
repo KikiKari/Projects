@@ -1,21 +1,21 @@
-#!/usr/bin/perl
-# 1781743218784_03b8fe_078ef2.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_03b8fe_078ef2.sh
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env perl
+# 1781743218784_03b8fe_078ef2_202fb8.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2_202fb8.ps1
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
 # Prüfen der Argumente
 if (@ARGV != 1) {
-    print STDERR "Usage: perl script.pl <OutputPath>\n";
+    warn "Usage: perl script.pl <OutputPath>\n";
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
 # HTML-Inhalt in Variable speichern
-my $html_content = <<'HTML_END';
+my $html_content = <<'HTML_CONTENT';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,9 +221,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML_CONTENT
 
 # Schreiben des HTML-Inhalts in die Ausgabedatei
-open(my $fh, '>', $output_path) or die "Could not open file '$output_path' $!";
+open my $fh, '>:encoding(UTF-8)', $outputPath or die "Could not open '$outputPath' for writing: $!";
 print $fh $html_content;
 close $fh;

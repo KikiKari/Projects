@@ -1,9 +1,9 @@
 #!/usr/bin/env pwsh
 # 1781743218784_03b8fe.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfen der Argumente
+# Parameter verarbeiten
 if ($args.Count -ne 1) {
     Write-Error "Usage: pwsh script.ps1 <OutputPath>"
     exit 1
@@ -219,4 +219,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-$htmlContent | Out-File -FilePath $outputPath -Encoding UTF8
+Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8

@@ -1,15 +1,16 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe_078ef2.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_078ef2.tcl
-// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_03b8fe_078ef2_7cdd34.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2_7cdd34.pl
+// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfen der Argumente
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js <OutputPath>");
-    process.exit(1);
+  console.error("Usage: node script.js <OutputPath>");
+  process.exit(1);
 }
 
-const outputPath = process.argv[2];
+const fs = require('fs');
+const output_path = process.argv[2];
 
 const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -215,8 +216,6 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
-import { writeFileSync } from 'fs';
-writeFileSync(outputPath, html_content, 'utf-8');
+fs.writeFileSync(output_path, html_content, 'utf8');

@@ -1,17 +1,18 @@
 #!/usr/bin/env pwsh
-# 1781743218784_03b8fe_078ef2.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_03b8fe_078ef2.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_078ef2.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfen der Argumente
 if ($args.Count -ne 1) {
-    Write-Error "Usage: script.ps1 <OutputPath>"
+    Write-Error "Usage: powershell script.ps1 <OutputPath>"
     exit 1
 }
 
-$outputPath = $args[0]
+$output_path = $args[0]
 
-$htmlContent = @'
+# HTML-Inhalt in Variable speichern
+$html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,9 +220,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding Utf8
-} catch {
-    Write-Error "Could not open '$outputPath' for writing: $_"
-    exit 1
-}
+# Schreiben des HTML-Inhalts in die Ausgabedatei
+$html_content | Out-File -FilePath $output_path -Encoding UTF8

@@ -1,5 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_03b8fe.pl — portiert nach tcl
+# 1781743218784_03b8fe_012fa6.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_012fa6.ps1
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
 # Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
@@ -218,8 +222,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Schreibe HTML-Inhalt in Datei
-set fh [open $outputPath w]
-fconfigure $fh -encoding utf-8
+if {[catch {set fh [open $outputPath w]} err]} {
+    puts stderr "Could not write to file '$outputPath': $err"
+    exit 1
+}
+
 puts -nonewline $fh $htmlContent
 close $fh

@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe_078ef2.sh — portiert nach python
+# 1781743218784_03b8fe_078ef2_202fb8.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2_202fb8.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_03b8fe_078ef2.sh — portiert nach perl5
 # Quelle: shell, Projects@abstractions:shell/1781743218784_03b8fe_078ef2.sh
 # Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
-def main():
-    # Prüfen der Argumente
-    if len(sys.argv) != 2:
-        print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
-        sys.exit(1)
+# Prüfen der Argumente
+if len(sys.argv) != 2:
+    print("Usage: python script.py <OutputPath>", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
+output_path = sys.argv[1]
 
-    # HTML-Inhalt in Variable speichern
-    html_content = '''<!DOCTYPE html>
+# HTML-Inhalt in Variable speichern
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,15 +221,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
-    # Schreiben des HTML-Inhalts in die Ausgabedatei
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except IOError as e:
-        print(f"Fehler beim Schreiben der Datei: {e}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+# Schreiben des HTML-Inhalts in die Ausgabedatei
+try:
+    with open(output_path, 'w', encoding='utf-8') as fh:
+        fh.write(html_content)
+except Exception as e:
+    print(f"Could not open file '{output_path}' {e}", file=sys.stderr)
+    sys.exit(1)

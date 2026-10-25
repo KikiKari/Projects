@@ -1,20 +1,20 @@
 #!/bin/bash
-# 1781743218784_03b8fe.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfen der Argumente
 if [[ $# -ne 1 ]]; then
-    echo "Usage: bash script.sh <OutputPath>" >&2
+    echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
-output_path="$1"
+outputPath="$1"
 
-# HTML-Inhalt in Variable speichern
-read -r -d '' html_content <<'HTML_END' || true
+# HTML-Inhalt als Variable speichern
+htmlContent=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,6 +221,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 HTML_END
+)
 
-# Schreiben des HTML-Inhalts in die Ausgabedatei
-echo "$html_content" > "$output_path"
+# Schreiben der HTML-Datei
+{
+    echo "$htmlContent" > "$outputPath"
+} || {
+    echo "Could not write to '$outputPath': $?" >&2
+    exit 1
+}

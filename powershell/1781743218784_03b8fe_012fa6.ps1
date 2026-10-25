@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
-# 1781743218784_03b8fe.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_012fa6.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_03b8fe_012fa6.py
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if ($args.Count -ne 1) {
-  Write-Error "Usage: powershell script.ps1 <OutputPath>"
-  exit 1
+    Write-Error "Usage: powershell script.ps1 <OutputPath>"
+    exit 1
 }
 
 $outputPath = $args[0]
@@ -220,8 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-  [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
-} catch {
-  Write-Error "Could not write to file '$outputPath': $_"
-  exit 1
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+}
+catch {
+    Write-Error "Could not write to file '$outputPath': $_"
+    exit 1
 }

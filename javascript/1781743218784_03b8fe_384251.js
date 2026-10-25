@@ -1,23 +1,31 @@
 #!/usr/bin/env node
 // 1781743218784_03b8fe_384251.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_384251.pl
+// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe_384251.js — portiert nach perl5
+// Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_384251.js
 // Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_03b8fe_384251.ps1 — portiert nach perl5 — portiert nach JavaScript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_384251.ps1
+// 1781743218784_03b8fe_384251.tcl — portiert nach javascript
+// Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_384251.tcl
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync } from 'fs';
+// 1781743218784_03b8fe.pl — portiert nach tcl
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
+// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+const fs = require('fs');
 
 // Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.error("Usage: node script.js <OutputPath>\n");
+    console.error("Usage: node script.js <OutputPath>");
     process.exit(1);
 }
 
 const outputPath = process.argv[2];
 
-const htmlContent = `<!DOCTYPE html>
+const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -223,9 +231,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-try {
-    writeFileSync(outputPath, htmlContent, 'utf-8');
-} catch (error) {
-    console.error(\`Could not write to file '\${outputPath}': \${error.message}\n\`);
-    process.exit(1);
-}
+// Schreibe den HTML-Inhalt in die Ausgabedatei
+fs.writeFileSync(outputPath, html_content, 'utf8');

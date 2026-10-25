@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe_078ef2.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_078ef2.ps1
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_078ef2.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
 # Prüfen der Argumente
 if len(sys.argv) != 2:
@@ -13,6 +12,7 @@ if len(sys.argv) != 2:
 
 output_path = sys.argv[1]
 
+# HTML-Inhalt in Variable speichern
 html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,11 +217,9 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
-try:
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-except Exception as e:
-    print(f"Could not write to '{output_path}': {e}", file=sys.stderr)
-    sys.exit(1)
+# Schreiben des HTML-Inhalts in die Ausgabedatei
+with open(output_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)

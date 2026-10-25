@@ -1,9 +1,9 @@
 #!/usr/bin/env tclsh
-# 1781743218784_03b8fe_078ef2.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784_03b8fe_078ef2.sh
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_078ef2_202fb8.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_078ef2_202fb8.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfen der Argumente
+# Pr端fen der Argumente
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -17,7 +17,7 @@ set html_content {<!DOCTYPE html>
 {
   "name": "Secret Vault Public",
   "schemaVersion": 1,
-  "description": "Secret-Vault Public als interaktives Browser-Artefakt: verschlüsselter Secret-Container vollständig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). Öffnen/Anlegen, Anbieter/Felder ergänzen und ersetzen (Rotation), verschlüsseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
+  "description": "Secret-Vault Public als interaktives Browser-Artefakt: verschl端sselter Secret-Container vollst盲ndig client-seitig (WebCrypto, AES-256-GCM + PBKDF2). 脰ffnen/Anlegen, Anbieter/Felder erg盲nzen und ersetzen (Rotation), verschl端sseln und als .svpb herunterladen oder Klartext-JSON exportieren. DE/EN nach Browsersprache. Eigenes Format (nicht kompatibel mit dem scrypt-Python-Tool). Keine Secrets eingebettet.",
   "mcpTools": [],
   "mcpServerNames": []
 }
@@ -63,17 +63,17 @@ a{color:var(--accent);}
 <body>
 <div class="wrap">
   <div class="brand"><div class="mark"></div><h1 id="title">Secret-Vault Public</h1></div>
-  <div class="sub" id="sub">Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
+  <div class="sub" id="sub">Verschl端sselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.</div>
 
   <div class="card">
-    <h2 id="h-open">Öffnen oder neu</h2>
+    <h2 id="h-open">脰ffnen oder neu</h2>
     <label class="lab" id="l-pass">Passphrase</label>
     <input id="pass" type="password" placeholder="Passphrase…">
-    <label class="lab" id="l-file">Vault laden (Datei oder Base64 einfügen)</label>
+    <label class="lab" id="l-file">Vault laden (Datei oder Base64 einf端gen)</label>
     <input id="file" type="file" accept=".svpb,.txt,.vault,.b64">
-    <textarea id="blob" placeholder="…oder Base64 hier einfügen"></textarea>
+    <textarea id="blob" placeholder="…oder Base64 hier einf端gen"></textarea>
     <div class="row" style="margin-top:10px">
-      <button class="btn primary" id="openBtn">Öffnen / Entschlüsseln</button>
+      <button class="btn primary" id="openBtn">脰ffnen / Entschl端sseln</button>
       <button class="btn" id="newBtn">Neuer leerer Vault</button>
       <span class="msg" id="openMsg"></span>
     </div>
@@ -91,7 +91,7 @@ a{color:var(--accent);}
   <div class="card hide" id="out">
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
-      <button class="btn primary" id="encBtn">Verschlüsseln</button>
+      <button class="btn primary" id="encBtn">Verschl端sseln</button>
       <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
@@ -107,29 +107,29 @@ a{color:var(--accent);}
 const L = ((navigator.language||"en").toLowerCase().startsWith("de"))?"de":"en";
 const T = {
  title:{de:"Secret-Vault Public",en:"Secret-Vault Public"},
- sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
- hOpen:{de:"Öffnen oder neu",en:"Open or new"},
+ sub:{de:"Verschl端sselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
+ hOpen:{de:"脰ffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
- blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
- open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
+ file:{de:"Vault laden (Datei oder Base64 einf端gen)",en:"Load vault (file or paste Base64)"},
+ blob:{de:"…oder Base64 hier einf端gen",en:"…or paste Base64 here"},
+ open:{de:"脰ffnen / Entschl端sseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
  hEdit:{de:"Inhalt",en:"Content"},
  newProv:{de:"Neuer Anbieter (Name)",en:"New provider (name)"},
  addProv:{de:"+ Anbieter",en:"+ Provider"},
  hSave:{de:"Speichern / Export",en:"Save / Export"},
- enc:{de:"Verschlüsseln",en:"Encrypt"},
+ enc:{de:"Verschl端sseln",en:"Encrypt"},
  dl:{de:"Als .svpb herunterladen",en:"Download as .svpb"},
  exp:{de:"Klartext-JSON exportieren",en:"Export plaintext JSON"},
  result:{de:"Ergebnis (zum Kopieren/Speichern)",en:"Result (to copy/save)"},
  foot:{de:"Eigenes Format (PBKDF2). Nicht kompatibel mit dem scrypt-Python-Tool. Sicherheit liegt in der Passphrase; Inhalt ohne sie nicht wiederherstellbar.",en:"Own format (PBKDF2). Not compatible with the scrypt Python tool. Security rests on the passphrase; content is unrecoverable without it."},
  needPass:{de:"Passphrase eingeben.",en:"Enter a passphrase."},
- noInput:{de:"Datei laden oder Base64 einfügen.",en:"Load a file or paste Base64."},
- bad:{de:"Falsche Passphrase oder ungültiger Vault.",en:"Wrong passphrase or invalid vault."},
- opened:{de:"Geöffnet.",en:"Opened."},
+ noInput:{de:"Datei laden oder Base64 einf端gen.",en:"Load a file or paste Base64."},
+ bad:{de:"Falsche Passphrase oder ung端ltiger Vault.",en:"Wrong passphrase or invalid vault."},
+ opened:{de:"Ge枚ffnet.",en:"Opened."},
  created:{de:"Neuer Vault angelegt.",en:"New vault created."},
- encrypted:{de:"Verschlüsselt — unten kopieren oder herunterladen.",en:"Encrypted — copy below or download."},
- needOpen:{de:"Erst öffnen/anlegen.",en:"Open/create first."},
+ encrypted:{de:"Verschl端sselt — unten kopieren oder herunterladen.",en:"Encrypted — copy below or download."},
+ needOpen:{de:"Erst 枚ffnen/anlegen.",en:"Open/create first."},
  field:{de:"Feld",en:"field"}, value:{de:"Wert",en:"value"},
  addField:{de:"+ Feld",en:"+ field"}, del:{de:"✕",en:"✕"},
  newField:{de:"neues Feld",en:"new field"}, newValue:{de:"Wert",en:"value"}
