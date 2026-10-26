@@ -1,18 +1,10 @@
 #!/usr/bin/perl
-# 1781743218784_015abd.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_87c85e.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_87c85e.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 sub generate_html {
     return <<'HTML_END';
@@ -247,4 +239,4 @@ sub main {
     }
 }
 
-main(@ARGV) if __FILE__ eq $0;
+main(@ARGV) if !caller;

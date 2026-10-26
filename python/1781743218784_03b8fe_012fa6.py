@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_03b8fe_012fa6.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_012fa6.ps1
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_012fa6.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe_012fa6.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <OutputPath>", file=sys.stderr)
-        sys.exit(1)
+# Parameter verarbeiten
+if len(sys.argv) != 2:
+    print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
-    
-    html_content = '''<!DOCTYPE html>
+output_path = sys.argv[1]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -111,7 +111,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -220,12 +220,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print(f"Could not write to file '{output_path}': {e}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+# Schreibe HTML-Inhalt in Datei
+with open(output_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)

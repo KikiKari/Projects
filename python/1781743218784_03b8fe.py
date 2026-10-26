@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 # 1781743218784_03b8fe.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_03b8fe.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
-# Parameter verarbeiten
+# Prüfen der Argumente
 if len(sys.argv) != 2:
-    print("Usage: python script.py <OutputPath>", file=sys.stderr)
+    print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -220,7 +217,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
 with open(output_path, 'w', encoding='utf-8') as f:
     f.write(html_content)

@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
-# 1781743218784_015abd.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_87c85e.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_87c85e.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# Prüfe Anzahl der Argumente
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>" >&2
+    exit 1
+fi
 
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+output_file="$1"
 
+# Funktion zur Generierung des HTML-Inhalts
 generate_html() {
-cat << 'EOF'
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,22 +224,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-main() {
-    if [[ $# -ne 1 ]]; then
-        echo "Usage: bash script.sh <output-file>" >&2
-        exit 1
-    fi
-    
-    local output_file="$1"
-    
-    if ! generate_html > "$output_file"; then
-        echo "Error generating HTML file" >&2
-        exit 1
-    fi
-    
-    echo "HTML file generated: $output_file"
-}
+# Hauptlogik
+{
+    generate_html
+} > "$output_file"
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+echo "HTML file generated: $output_file"

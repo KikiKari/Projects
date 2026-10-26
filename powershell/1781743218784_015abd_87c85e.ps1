@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd.tcl — portiert nach powershell
+# 1781743218784_015abd_87c85e.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_87c85e.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
 # Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
@@ -12,7 +16,7 @@
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 function Generate-Html {
-    return @'
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,31 +222,27 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
-function Main {
-    param(
-        [string[]]$Args
-    )
-    
-    if ($Args.Count -ne 1) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>" | Out-Host
+function Main($args) {
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
         exit 1
     }
     
-    $outputFile = $Args[0]
+    $output_file = $args[0]
     
     try {
-        $htmlContent = Generate-Html
-        [System.IO.File]::WriteAllText($outputFile, $htmlContent, [System.Text.Encoding]::UTF8)
-        Write-Host "HTML file generated: $outputFile"
+        $html_content = Generate-Html
+        Set-Content -Path $output_file -Value $html_content -Encoding UTF8
+        Write-Host "HTML file generated: $output_file"
     } catch {
-        Write-Error "Error generating HTML file: $_"
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }
 
 if ($MyInvocation.InvocationName -eq '&') {
-    Main -Args $args
+    Main $args
 }

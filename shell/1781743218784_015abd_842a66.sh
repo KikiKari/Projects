@@ -1,12 +1,24 @@
-#!/usr/bin/env bash
-# 1781743218784_015abd.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784_015abd_842a66.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_842a66.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
+# 1781743218784_015abd.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
 generate_html() {
-    cat << 'EOF'
+    cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -216,26 +228,23 @@ EOF
 }
 
 main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
-        echo "Usage: bash script.sh <output-file>" >&2
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: $0 <output-file>" >&2
         exit 1
     fi
+
+    local output_file="$1"
     
-    local output_file="${args[0]}"
+    # Generate HTML content and write to file
+    generate_html > "$output_file"
     
-    # Create temporary file to hold the HTML content
-    local temp_html
-    temp_html=$(mktemp)
-    
-    # Generate HTML content and save to temporary file
-    generate_html > "$temp_html"
-    
-    # Move temporary file to final destination
-    mv "$temp_html" "$output_file"
-    
-    echo "HTML file generated: $output_file"
+    # Check if file was written successfully
+    if [[ $? -eq 0 && -s "$output_file" ]]; then
+        echo "HTML file generated: $output_file"
+    else
+        echo "Error generating HTML file" >&2
+        exit 1
+    fi
 }
 
 main "$@"

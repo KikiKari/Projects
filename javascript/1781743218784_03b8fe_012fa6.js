@@ -1,16 +1,24 @@
 #!/usr/bin/env node
-// 1781743218784_03b8fe_012fa6.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_03b8fe_012fa6.tcl
+// 1781743218784_03b8fe_012fa6.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_012fa6.pl
+// Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_03b8fe_012fa6.ps1 — portiert nach perl5
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_03b8fe_012fa6.ps1
 // Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
 
 // Parameter verarbeiten
 if (process.argv.length !== 3) {
-  console.error("Usage: node script.js <OutputPath>");
-  process.exit(1);
+    console.error("Usage: node script.js <OutputPath>");
+    process.exit(1);
 }
 
 const outputPath = process.argv[2];
-const fs = require('fs');
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -110,7 +118,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -188,7 +196,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(\`.nf[data-np="\${CSS.escape(p)}"]\`).value.trim(); const nv=root.querySelector(\`.nv[data-np="\${CSS.escape(p)}"]\`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(\`input.nf[data-np="\${CSS.escape(p)}"]\`).value.trim(); const nv=root.querySelector(\`input.nv[data-np="\${CSS.escape(p)}"]\`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -216,8 +224,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
-// Schreibe HTML-Inhalt in Datei
-fs.writeFileSync(outputPath, htmlContent, 'utf-8');
+try {
+    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
+} catch (error) {
+    console.error(`Could not write to file '${outputPath}': ${error.message}`);
+    process.exit(1);
+}

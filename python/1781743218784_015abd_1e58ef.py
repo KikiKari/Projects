@@ -1,22 +1,13 @@
 #!/usr/bin/env python3
-# 1781743218784_015abd.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
+import json
 
-def main():
-    # Prüfe Anzahl Argumente
-    if len(sys.argv) != 2:
-        print("Usage: {} <output-file>".format(sys.argv[0]), file=sys.stderr)
-        sys.exit(1)
-
-    output_file = sys.argv[1]
-
-    # Funktion zur Generierung des HTML-Inhalts
-    def generate_html():
-        return '''<!DOCTYPE html>
+def generate_html():
+    return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,16 +213,21 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-    # Hauptlogik
-    html_content = generate_html()
-    
-    # Stelle sicher, dass das Verzeichnis existiert
-    os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else '.', exist_ok=True)
-    
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python3 " + sys.argv[0] + " <output-file>", file=sys.stderr)
+        sys.exit(1)
 
-    print("HTML file generated: {}".format(output_file))
+    output_file = sys.argv[1]
+
+    try:
+        html_content = generate_html()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print("HTML file generated: " + output_file)
+    except Exception as e:
+        print("Error generating HTML file:", str(e), file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

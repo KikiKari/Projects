@@ -1,17 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_015abd.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
-// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_015abd_842a66.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_842a66.pl
+// Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784.js — portiert nach python
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+const fs = require('fs');
 
-// 1781743218784.py — portiert nach powershell
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-function generateHtml() {
+function generate_html() {
     return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,12 +218,11 @@ function main(args) {
         console.error("Usage: node script.js <output-file>");
         process.exit(1);
     }
-
+    
     const outputFile = args[0];
     
     try {
-        const fs = require('fs');
-        const htmlContent = generateHtml();
+        const htmlContent = generate_html();
         fs.writeFileSync(outputFile, htmlContent, 'utf8');
         console.log(`HTML file generated: ${outputFile}`);
     } catch (error) {

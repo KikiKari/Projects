@@ -1,10 +1,16 @@
 #!/usr/bin/env pwsh
 # 1781743218784.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-function Generate-Html {
-    return @"
+# Prüfe Aufrufparameter
+if ($args.Count -ne 1) {
+    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    exit 1
+}
+$output_path = $args[0]
+
+$html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -210,27 +216,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
-}
+'@
 
-function Main {
-    $args = $args
-    
-    if ($args.Count -ne 1) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>"
-        exit 1
-    }
-    
-    $output_file = $args[0]
-    
-    try {
-        $html_content = Generate-Html
-        Set-Content -Path $output_file -Value $html_content -Encoding UTF8
-        Write-Host "HTML file generated: $output_file"
-    } catch {
-        Write-Error "Error generating HTML file: $($_.Exception.Message)"
-        exit 1
-    }
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+try {
+    Set-Content -Path $output_path -Value $html_content -Encoding UTF8
+} catch {
+    Write-Error "Konnte Datei '$output_path' nicht öffnen: $($_.Exception.Message)"
+    exit 1
 }
-
-Main @args

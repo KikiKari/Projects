@@ -1,10 +1,24 @@
-#!/usr/bin/env perl
-# 1781743218784_015abd.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_015abd_842a66.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_842a66.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+
+# 1781743218784_015abd.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
 sub generate_html {
     return <<'HTML_END';
@@ -230,7 +244,7 @@ sub main {
         my $html_content = generate_html();
         open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
         print $fh $html_content;
-        close $fh;
+        close($fh);
         print "HTML file generated: $output_file\n";
     };
     if ($@) {

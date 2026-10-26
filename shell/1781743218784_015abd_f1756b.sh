@@ -1,13 +1,20 @@
-#!/bin/bash
-# 1781743218784_015abd.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd.pl
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_015abd_f1756b.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_f1756b.ps1
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Funktion zur Generierung des HTML-Inhalts
+# 1781743218784_015abd.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
 generate_html() {
-    cat <<'HTML_END'
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -213,30 +220,33 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
 }
 
-# Hauptfunktion
 main() {
-    local args_count=$#
+    local args=("$@")
     
-    if [[ $args_count -ne 1 ]]; then
+    if [[ ${#args[@]} -ne 1 ]]; then
         echo "Usage: bash script.sh <output-file>" >&2
         exit 1
     fi
     
-    local output_file="$1"
+    local output_file="${args[0]}"
     
-    # Versuche, die HTML-Datei zu generieren
-    if ! generate_html > "$output_file"; then
-        echo "Error generating HTML file" >&2
-        exit 1
-    fi
+    # Create temporary file to hold the HTML content
+    local temp_file
+    temp_file=$(mktemp)
+    
+    # Generate HTML content into temporary file
+    generate_html > "$temp_file"
+    
+    # Move temporary file to final destination
+    mv "$temp_file" "$output_file"
     
     echo "HTML file generated: $output_file"
 }
 
-# Skript ausführen, wenn es nicht sourced wird
+# Wenn das Skript direkt ausgeführt wird (nicht gesourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi

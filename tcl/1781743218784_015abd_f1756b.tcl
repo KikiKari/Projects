@@ -1,5 +1,9 @@
-#!/usr/bin/tclsh
-# 1781743218784_015abd.pl — portiert nach tcl
+#!/usr/bin/env tclsh
+# 1781743218784_015abd_f1756b.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_f1756b.ps1
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd.pl
 # Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
@@ -215,29 +219,28 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 }
 
-proc main {} {
-    global argv
-    
-    if {[llength $argv] != 1} {
+proc main {args} {
+    if {[llength $args] != 1} {
         puts stderr "Usage: tclsh script.tcl <output-file>"
         exit 1
     }
     
-    set output_file [lindex $argv 0]
+    set outputFile [lindex $args 0]
     
     if {[catch {
-        set html_content [generate_html]
-        set fh [open $output_file w]
+        set htmlContent [generate_html]
+        set fh [open $outputFile w]
         fconfigure $fh -encoding utf-8
-        puts -nonewline $fh $html_content
+        puts -nonewline $fh $htmlContent
         close $fh
-        puts "HTML file generated: $output_file"
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts stderr "Error generating HTML file: $error"
         exit 1
     }
 }
 
-if {!$tcl_interactive} {
-    main
+# Wenn das Skript direkt ausgeführt wird (nicht importiert)
+if {[info script] eq $argv0} {
+    main {*}$argv
 }

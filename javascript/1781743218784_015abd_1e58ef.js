@@ -1,27 +1,20 @@
 #!/usr/bin/env node
-// 1781743218784_015abd.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.js — portiert nach python — portiert nach bash — portiert nach javascript
-// Quelle: bash, Projects@abstractions:bash/1781743218784_015abd.sh
-// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-import { writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+// 1781743218784_015abd_1e58ef.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef.pl
+// Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Anzahl Argumente
 if (process.argv.length !== 3) {
-    console.error("Usage: node " + process.argv[1] + " <output-file>");
-    process.exit(1);
+  console.error(`Usage: ${process.argv[1]} <output-file>`);
+  process.exit(1);
 }
 
+const fs = require('fs');
 const outputFile = process.argv[2];
 
 // Funktion zur Generierung des HTML-Inhalts
 function generateHtml() {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -230,10 +223,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 // Hauptlogik
 try {
-    const htmlContent = generateHtml();
-    writeFileSync(outputFile, htmlContent);
-    console.log("HTML file generated: " + outputFile);
-} catch (error) {
-    console.error("Error generating HTML file:", error.message);
-    process.exit(1);
+  fs.writeFileSync(outputFile, generateHtml());
+  console.log(`HTML file generated: ${outputFile}`);
+} catch (err) {
+  console.error(`Could not write to file '${outputFile}': ${err.message}`);
+  process.exit(1);
 }

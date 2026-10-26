@@ -1,11 +1,24 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd.pl
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_f1756b.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_015abd_f1756b.py
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+<#
+.SYNOPSIS
+    Generates an HTML file for the Secret Vault Public application.
+.DESCRIPTION
+    This script generates a self-contained HTML file that implements a client-side
+    encrypted secret vault using WebCrypto APIs (AES-256-GCM + PBKDF2).
+.PARAMETER OutputFile
+    The path where the generated HTML file will be saved.
+.EXAMPLE
+    .\script.ps1 -OutputFile "secret-vault.html"
+#>
+
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputFile
+)
 
 function Generate-Html {
     return @'
@@ -217,30 +230,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 }
 
-function Main {
-    param(
-        [string[]]$Args
-    )
-    
-    if ($Args.Count -ne 1) {
-        Write-Error "Usage: powershell script.ps1 <output-file>"
-        exit 1
-    }
-    
-    $outputFile = $Args[0]
-    
-    try {
-        $htmlContent = Generate-Html
-        [System.IO.File]::WriteAllText($outputFile, $htmlContent, [System.Text.Encoding]::UTF8)
-        Write-Output "HTML file generated: $outputFile"
-    }
-    catch {
-        Write-Error "Error generating HTML file: $_"
-        exit 1
-    }
-}
-
-# Wenn das Skript direkt ausgeführt wird (nicht importiert)
-if ($MyInvocation.InvocationName -ne '.') {
-    Main -Args $args
+try {
+    $htmlContent = Generate-Html
+    $htmlContent | Out-File -FilePath $OutputFile -Encoding utf8
+    Write-Host "HTML file generated: $OutputFile"
+} catch {
+    Write-Error "Error generating HTML file: $_"
+    exit 1
 }

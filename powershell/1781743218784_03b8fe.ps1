@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
 # 1781743218784_03b8fe.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_03b8fe.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# Prüfen der Argumente
 if ($args.Count -ne 1) {
-    Write-Error "Usage: pwsh script.ps1 <OutputPath>"
-    exit 1
+  Write-Error "Usage: pwsh script.ps1 <OutputPath>"
+  exit 1
 }
 
 $outputPath = $args[0]

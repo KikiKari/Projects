@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-# 1781743218784_015abd.ps1 — portiert nach python
+# 1781743218784_015abd_842a66.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_842a66.js
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.ps1 — portiert nach javascript
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd.ps1
 # Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
 import sys
-import base64
-import json
-import hashlib
-from datetime import datetime
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.backends import default_backend
 import os
 
 def generate_html():
@@ -223,9 +227,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 def main(args):
     if len(args) != 1:
-        print("Usage: python3 script.py <output-file>")
+        print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
-    
+
     output_file = args[0]
     
     try:
@@ -233,8 +237,8 @@ def main(args):
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         print(f"HTML file generated: {output_file}")
-    except Exception as e:
-        print(f"Error generating HTML file: {e}")
+    except Exception as error:
+        print(f"Error generating HTML file: {error}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

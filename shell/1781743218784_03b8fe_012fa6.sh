@@ -1,14 +1,14 @@
 #!/bin/bash
-# 1781743218784_03b8fe.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe.pl
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_03b8fe_012fa6.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_03b8fe_012fa6.pl
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Parameter verarbeiten
 if [[ $# -ne 1 ]]; then
-  echo "Usage: bash script.sh <OutputPath>" >&2
-  exit 1
+    echo "Usage: $0 <OutputPath>" >&2
+    exit 1
 fi
 
 outputPath="$1"
@@ -223,5 +223,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 )
 
-# HTML-Inhalt in Datei schreiben
-echo "$htmlContent" > "$outputPath"
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+if ! printf '%s' "$htmlContent" > "$outputPath"; then
+    echo "Could not write to file '$outputPath'" >&2
+    exit 1
+fi
