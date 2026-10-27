@@ -1,27 +1,21 @@
 #!/usr/bin/perl
 # 1781743218784_015abd_1e58ef.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef.js
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.sh — portiert nach javascript — portiert nach Perl 5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
 
 # Prüfe Anzahl Argumente
 if (@ARGV != 1) {
-    print STDERR "Usage: perl $0 <output-file>\n";
+    print STDERR "Usage: $0 <output-file>\n";
     exit 1;
 }
 
-my $outputFile = $ARGV[0];
+my $output_file = $ARGV[0];
 
 # Funktion zur Generierung des HTML-Inhalts
-sub generateHtml {
+sub generate_html {
     return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -233,13 +227,14 @@ HTML_END
 
 # Hauptlogik
 eval {
-    my $htmlContent = generateHtml();
-    open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
-    print $fh $htmlContent;
-    close($fh);
-    print "HTML file generated: $outputFile\n";
-};
-if ($@) {
-    print STDERR "Error generating HTML file: $@\n";
+    open(my $fh, '>', $output_file) or die "Could not open file '$output_file' $!";
+    print $fh generate_html();
+    close $fh;
+    print "HTML file generated: $output_file\n";
+    1;
+} or do {
+    my $error = $@ || 'Unknown error';
+    print STDERR "Could not write to file '$output_file': $error\n";
     exit 1;
-}
+};
+1;

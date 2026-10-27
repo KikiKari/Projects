@@ -1,21 +1,24 @@
 #!/bin/bash
-# 1781743218784_015abd_1e58ef.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_1e58ef.py
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_e969dc.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_e969dc.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Anzahl Argumente
-if [ $# -ne 1 ]; then
+if [[ $# -ne 1 ]]; then
     echo "Usage: $0 <output-file>" >&2
     exit 1
 fi
 
 output_file="$1"
+output_dir=$(dirname "$output_file")
 
-# Funktion zur Generierung des HTML-Inhalts
-generate_html() {
-    cat <<'EOF'
+# Erstelle Ausgabeverzeichnis
+mkdir -p "$output_dir"
+
+# Generiere HTML-Inhalt
+cat > "$output_file" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,15 +225,5 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 EOF
-}
-
-# Hauptlogik
-html_content=$(generate_html)
-
-# Stelle sicher, dass das Verzeichnis existiert
-mkdir -p "$(dirname "$output_file" 2>/dev/null || echo .)"
-
-# Schreibe den HTML-Inhalt in die Datei
-echo "$html_content" > "$output_file"
 
 echo "HTML file generated: $output_file"

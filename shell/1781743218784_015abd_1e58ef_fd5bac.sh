@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
-# 1781743218784_015abd_1e58ef.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd_1e58ef.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784_015abd_1e58ef_fd5bac.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_fd5bac.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -226,5 +226,4 @@ EOF
 
 # Hauptlogik
 generate_html > "$output_file"
-
 echo "HTML file generated: $output_file"

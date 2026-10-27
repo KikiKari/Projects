@@ -1,7 +1,7 @@
-#!/usr/bin/env perl
-# 1781743218784_015abd_1e58ef.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_1e58ef.ps1
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_015abd_1e58ef_405102.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_405102.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -15,7 +15,7 @@ if (@ARGV != 1) {
 my $outputFile = $ARGV[0];
 
 # Funktion zur Generierung des HTML-Inhalts
-sub generate_html {
+sub generateHtml {
     return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -226,13 +226,9 @@ HTML_END
 }
 
 # Hauptlogik
-my $htmlContent = generate_html();
-
-open my $fh, '>:encoding(UTF-8)', $outputFile
-    or die "Could not open file '$outputFile' for writing: $!";
-
+my $htmlContent = generateHtml();
+open(my $fh, '>:encoding(UTF-8)', $outputFile) or die "Could not open file '$outputFile': $!";
 print $fh $htmlContent;
 close $fh;
 
 print "HTML file generated: $outputFile\n";
-1;

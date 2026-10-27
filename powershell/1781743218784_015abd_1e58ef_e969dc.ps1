@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_1e58ef.py — portiert nach powershell
+# 1781743218784_015abd_1e58ef_e969dc.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_e969dc.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_1e58ef.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_015abd_1e58ef.py
 # Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
@@ -7,17 +11,18 @@
 # Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
 # Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Anzahl Argumente
-if ($args.Count -ne 1) {
-    Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
-    exit 1
-}
+function Main {
+    # Prüfe Anzahl Argumente
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
+        exit 1
+    }
 
-$outputFile = $args[0]
+    $outputFile = $args[0]
 
-# Funktion zur Generierung des HTML-Inhalts
-function Generate-Html {
-    return @'
+    # Funktion zur Generierung des HTML-Inhalts
+    function Generate-Html {
+        return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,19 +228,24 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
+    }
+
+    # Hauptlogik
+    $htmlContent = Generate-Html
+    
+    # Stelle sicher, dass das Verzeichnis existiert
+    $dir = Split-Path $outputFile -Parent
+    if ([string]::IsNullOrEmpty($dir)) {
+        $dir = "."
+    }
+    if (!(Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir | Out-Null
+    }
+    
+    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+
+    Write-Host "HTML file generated: $outputFile"
 }
 
-# Hauptlogik
-$htmlContent = Generate-Html
-
-# Stelle sicher, dass das Verzeichnis existiert
-$dir = Split-Path $outputFile -Parent
-if ($dir -and !(Test-Path $dir)) {
-    New-Item -ItemType Directory -Path $dir | Out-Null
-}
-
-# Schreibe den HTML-Inhalt in die Datei
-$htmlContent | Set-Content -Path $outputFile -Encoding Utf8
-
-Write-Host "HTML file generated: $outputFile"
+Main @args

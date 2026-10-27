@@ -1,35 +1,26 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd.tcl — portiert nach powershell
+# 1781743218784_015abd_08077d.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
 # Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-<#
-.SYNOPSIS
-Generates an HTML file containing a secret vault application.
+# 1781743218784_015abd.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-.DESCRIPTION
-This script generates a self-contained HTML file for a secret vault application
-that uses client-side encryption (AES-256-GCM + PBKDF2). The generated HTML
-can be used offline in any modern browser.
+# 1781743218784.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
 
-.PARAMETER OutputFile
-The path where the generated HTML file will be saved.
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
-.EXAMPLE
-.\script.ps1 vault.html
-Generates the secret vault HTML app and saves it as vault.html
-
-.NOTES
-Author: ABSTRACTIONS_MANAGER.py
-Date: 2026-10-25
-#>
-
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputFile
-)
-
-$htmlContent = @'
+function Generate-Html {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -235,12 +226,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
-
-try {
-    $htmlContent | Out-File -FilePath $OutputFile -Encoding UTF8
-    Write-Host "HTML file generated: $OutputFile"
-} catch {
-    Write-Error "Error generating HTML file: $_"
-    exit 1
+"@
 }
+
+function Main {
+    param(
+        [string[]]$Args
+    )
+    
+    if ($Args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        exit 1
+    }
+    
+    $outputFile = $Args[0]
+    
+    try {
+        $htmlContent = Generate-Html
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding Utf8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+Main -Args $args

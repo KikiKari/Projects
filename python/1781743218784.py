@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # 1781743218784.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
 # Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
-import sys
-import json
+# 1781743218784.js — portiert nach JavaScript für Node 20
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
-if len(sys.argv) != 2:
-    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
-    sys.exit(1)
-
-output_path = sys.argv[1]
-
-html_content = '''<!DOCTYPE html>
+def generate_html():
+    return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,9 +218,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-try:
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-except Exception as err:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {err}", file=sys.stderr)
-    sys.exit(1)
+def main():
+    import sys
+    import os
+    
+    args = sys.argv[1:]
+    
+    if len(args) != 1:
+        print("Usage: python3 script.py <output-file>")
+        sys.exit(1)
+    
+    output_file = args[0]
+    
+    try:
+        html_content = generate_html()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f"HTML file generated: {output_file}")
+    except Exception as error:
+        print(f"Error generating HTML file: {str(error)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

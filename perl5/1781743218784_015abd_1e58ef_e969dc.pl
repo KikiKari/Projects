@@ -1,18 +1,21 @@
 #!/usr/bin/perl
-# 1781743218784_015abd_1e58ef.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_1e58ef.py
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_e969dc.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_e969dc.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use File::Basename qw(dirname);
 use File::Path qw(make_path);
-use File::Basename;
+use utf8;
+
+binmode STDOUT, ':encoding(UTF-8)';
+binmode STDERR, ':encoding(UTF-8)';
 
 sub main {
     # Prüfe Anzahl Argumente
     if (@ARGV != 1) {
-        my $progname = $0;
-        print STDERR "Usage: $progname <output-file>\n";
+        print STDERR "Usage: $0 <output-file>\n";
         exit 1;
     }
 
@@ -234,8 +237,10 @@ HTML_END
     
     # Stelle sicher, dass das Verzeichnis existiert
     my $dir = dirname($output_file);
-    make_path($dir) unless $dir eq '.' || $dir eq '';
-
+    if ($dir ne '.' && $dir ne '') {
+        make_path($dir) or die "Failed to create directory $dir: $!";
+    }
+    
     open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
     print $fh $html_content;
     close $fh;
@@ -243,4 +248,4 @@ HTML_END
     print "HTML file generated: $output_file\n";
 }
 
-main() if $0 eq __FILE__;
+main();

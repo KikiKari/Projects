@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# 1781743218784_015abd.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
+
+# 1781743218784_015abd.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_015abd.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
@@ -18,7 +22,7 @@ set -euo pipefail
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 generate_html() {
-    cat <<'EOF'
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -228,19 +232,25 @@ EOF
 }
 
 main() {
-    if [[ $# -ne 1 ]]; then
+    local args=("$@")
+    
+    if [[ ${#args[@]} -ne 1 ]]; then
         echo "Usage: $0 <output-file>" >&2
         exit 1
     fi
     
-    local output_file="$1"
+    local output_file="${args[0]}"
     
-    if ! generate_html > "$output_file"; then
+    # Generate HTML content and write to file
+    generate_html > "$output_file"
+    
+    # Check if write was successful
+    if [[ $? -eq 0 ]]; then
+        echo "HTML file generated: $output_file"
+    else
         echo "Error generating HTML file" >&2
         exit 1
     fi
-    
-    echo "HTML file generated: $output_file"
 }
 
 main "$@"

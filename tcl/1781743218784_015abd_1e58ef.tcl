@@ -1,15 +1,16 @@
 #!/usr/bin/env tclsh
 # 1781743218784_015abd_1e58ef.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef.js
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd.sh — portiert nach javascript — portiert nach Tcl 8.6
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef.pl
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# Portiert nach Tcl 8.6
 
 # Prüfe Anzahl Argumente
 if {$argc != 1} {
-    puts stderr "Usage: tclsh [info script] <output-file>"
+    puts stderr "Usage: [info script] <output-file>"
     exit 1
 }
 
@@ -225,13 +226,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Hauptlogik
-if {[catch {
-    set htmlContent [generateHtml]
-    set fh [open $outputFile w]
-    puts -nonewline $fh $htmlContent
-    close $fh
-    puts "HTML file generated: $outputFile"
-} error]} {
-    puts stderr "Error generating HTML file: $error"
+if {[catch {set fd [open $outputFile w]} err]} {
+    puts stderr "Could not write to file '$outputFile': $err"
     exit 1
 }
+puts -nonewline $fd [generateHtml]
+close $fd
+puts "HTML file generated: $outputFile"

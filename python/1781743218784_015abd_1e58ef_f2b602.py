@@ -1,22 +1,11 @@
 #!/usr/bin/env python3
-# 1781743218784_015abd_1e58ef.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef.pl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_f2b602.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_1e58ef_f2b602.ps1
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
-# Prüfe Anzahl Argumente
-if len(sys.argv) != 2:
-    print("Usage: {} <output-file>".format(sys.argv[0]), file=sys.stderr)
-    sys.exit(1)
-
-output_file = sys.argv[1]
-
-# Funktion zur Generierung des HTML-Inhalts
 def generate_html():
     return '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -222,15 +211,24 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-# Hauptlogik
-try:
-    with open(output_file, 'w') as fh:
-        fh.write(generate_html())
-except Exception as e:
-    print("Could not open file '{}': {}".format(output_file, str(e)), file=sys.stderr)
-    sys.exit(1)
+def main():
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <output-file>", file=sys.stderr)
+        sys.exit(1)
+    
+    output_file = sys.argv[1]
+    
+    html_content = generate_html()
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f"HTML file generated: {output_file}")
+    except Exception as e:
+        print(f"Could not write to file '{output_file}': {e}", file=sys.stderr)
+        sys.exit(1)
 
-print("HTML file generated: {}".format(output_file))
+if __name__ == "__main__":
+    main()

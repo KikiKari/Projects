@@ -1,19 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_015abd_1e58ef.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_1e58ef.ps1
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python — portiert nach bash
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_405102.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_405102.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Anzahl Argumente
 if {$argc != 1} {
@@ -24,7 +12,7 @@ if {$argc != 1} {
 set outputFile [lindex $argv 0]
 
 # Funktion zur Generierung des HTML-Inhalts
-proc Generate-Html {} {
+proc generateHtml {} {
     return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -233,7 +221,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Hauptlogik
-set htmlContent [Generate-Html]
+set htmlContent [generateHtml]
 set fh [open $outputFile w]
 puts -nonewline $fh $htmlContent
 close $fh

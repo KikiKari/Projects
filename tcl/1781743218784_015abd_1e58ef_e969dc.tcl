@@ -1,19 +1,20 @@
 #!/usr/bin/env tclsh
-# 1781743218784_015abd_1e58ef.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_1e58ef.py
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_e969dc.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef_e969dc.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Anzahl Argumente
-if {$argc != 1} {
-    puts stderr "Usage: [info script] <output-file>"
-    exit 1
-}
+proc main {} {
+    # Prüfe Anzahl Argumente
+    if {$::argc != 1} {
+        puts stderr "Usage: [info script] <output-file>"
+        exit 1
+    }
 
-set output_file [lindex $argv 0]
+    set outputFile [lindex $::argv 0]
 
-# Funktion zur Generierung des HTML-Inhalts
-proc generate_html {} {
-    return {<!DOCTYPE html>
+    # Funktion zur Generierung des HTML-Inhalts
+    proc generateHtml {} {
+        return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,20 +219,24 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>}
-}
+    }
 
-# Hauptlogik
-set html_content [generate_html]
-
-# Stelle sicher, dass das Verzeichnis existiert
-set dir [file dirname $output_file]
-if {$dir ne "" && $dir ne "."} {
+    # Hauptlogik
+    set htmlContent [generateHtml]
+    
+    # Stelle sicher, dass das Verzeichnis existiert
+    set dir [file dirname $outputFile]
+    if {$dir eq ""} {
+        set dir "."
+    }
     file mkdir $dir
+    
+    # Schreibe die Datei
+    set fh [open $outputFile w]
+    puts -nonewline $fh $htmlContent
+    close $fh
+
+    puts "HTML file generated: $outputFile"
 }
 
-# Schreibe die Datei
-set f [open $output_file w]
-puts -nonewline $f $html_content
-close $f
-
-puts "HTML file generated: $output_file"
+main

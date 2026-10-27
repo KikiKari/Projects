@@ -1,27 +1,23 @@
 #!/usr/bin/env pwsh
 # 1781743218784_015abd_1e58ef.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_1e58ef.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_1e58ef.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef.pl
 # Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.sh — portiert nach javascript
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python — portiert nach bash — portiert nach javascript
-# Quelle: bash, Projects@abstractions:bash/1781743218784_015abd.sh
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Anzahl Argumente
 if ($args.Count -ne 1) {
-    Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
-    exit 1
+  Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
+  exit 1
 }
 
 $outputFile = $args[0]
 
 # Funktion zur Generierung des HTML-Inhalts
 function Generate-Html {
-    return @"
+  return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -232,10 +228,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Hauptlogik
 try {
-    $htmlContent = Generate-Html
-    Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-    Write-Host "HTML file generated: $outputFile"
+  Generate-Html | Out-File -FilePath $outputFile -Encoding UTF8
+  Write-Host "HTML file generated: $outputFile"
 } catch {
-    Write-Error "Error generating HTML file: $($_.Exception.Message)"
-    exit 1
+  Write-Error "Could not write to file '$outputFile': $($_.Exception.Message)"
+  exit 1
 }

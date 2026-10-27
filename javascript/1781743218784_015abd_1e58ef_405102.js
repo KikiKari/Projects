@@ -1,31 +1,20 @@
 #!/usr/bin/env node
-// 1781743218784_015abd_1e58ef.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_1e58ef.ps1
-// Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_015abd.sh — portiert nach powershell
-// Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.py — portiert nach shell
-// Quelle: python, Projects@abstractions:python/1781743218784.py
-// Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784.js — portiert nach python — portiert nach bash
-// Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-// Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_015abd_1e58ef_405102.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef_405102.pl
+// Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Anzahl Argumente
 if (process.argv.length !== 3) {
-  console.error(`Usage: ${process.argv[1]} <output-file>`);
-  process.exit(1);
+    console.error("Usage: " + process.argv[1] + " <output-file>");
+    process.exit(1);
 }
 
 const outputFile = process.argv[2];
+const fs = require('fs');
 
 // Funktion zur Generierung des HTML-Inhalts
-function generateHtml() {
-  return `<!DOCTYPE html>
+function generate_html() {
+    return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -233,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 // Hauptlogik
-const fs = require('fs');
-const htmlContent = generateHtml();
+const htmlContent = generate_html();
+
 fs.writeFileSync(outputFile, htmlContent, 'utf8');
 
-console.log(`HTML file generated: ${outputFile}`);
+console.log("HTML file generated: " + outputFile);

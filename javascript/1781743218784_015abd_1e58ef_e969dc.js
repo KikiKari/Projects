@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_015abd_1e58ef.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784_015abd_1e58ef.py
-// Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_015abd.sh — portiert nach python
-// Quelle: shell, Projects@abstractions:shell/1781743218784_015abd.sh
-// Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_015abd_1e58ef_e969dc.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef_e969dc.pl
+// Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
@@ -13,7 +9,8 @@ import { dirname } from 'path';
 function main() {
     // Prüfe Anzahl Argumente
     if (process.argv.length !== 3) {
-        console.error(`Usage: ${process.argv[1]} <output-file>`);
+        const progname = process.argv[1];
+        console.error(`Usage: ${progname} <output-file>`);
         process.exit(1);
     }
 
@@ -225,17 +222,20 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
     }
 
     // Hauptlogik
     const htmlContent = generateHtml();
     
     // Stelle sicher, dass das Verzeichnis existiert
-    const dir = dirname(outputFile) || '.';
-    mkdirSync(dir, { recursive: true });
-    
-    writeFileSync(outputFile, htmlContent, 'utf-8');
+    const dir = dirname(outputFile);
+    if (dir !== '.' && dir !== '') {
+        mkdirSync(dir, { recursive: true });
+    }
+
+    writeFileSync(outputFile, htmlContent, 'utf8');
 
     console.log(`HTML file generated: ${outputFile}`);
 }

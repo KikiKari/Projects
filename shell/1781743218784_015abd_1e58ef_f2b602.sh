@@ -1,21 +1,21 @@
 #!/bin/bash
-# 1781743218784_015abd_1e58ef.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_1e58ef.pl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_1e58ef_f2b602.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_1e58ef_f2b602.ps1
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Anzahl Argumente
 if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 <output-file>" >&2
+    echo "Usage: $(basename "$0") <output-file>" >&2
     exit 1
 fi
 
-output_file="$1"
+outputFile="$1"
 
 # Funktion zur Generierung des HTML-Inhalts
 generate_html() {
-    cat <<'EOF'
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -225,6 +225,12 @@ EOF
 }
 
 # Hauptlogik
-generate_html > "$output_file"
+htmlContent=$(generate_html)
 
-echo "HTML file generated: $output_file"
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if ! printf '%s' "$htmlContent" > "$outputFile"; then
+    echo "Could not write to file '$outputFile'" >&2
+    exit 1
+fi
+
+echo "HTML file generated: $outputFile"
