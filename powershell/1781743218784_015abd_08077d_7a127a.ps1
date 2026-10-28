@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_08077d.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d.pl
+# 1781743218784_015abd_08077d_7a127a.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d_7a127a.py
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 function Generate-Html {
@@ -103,7 +103,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -214,21 +214,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function Main {
-    param(
-        [string[]]$Args
-    )
+    $args = $args
     
-    if ($Args.Count -ne 1) {
+    if ($args.Count -ne 1) {
         Write-Error "Usage: powershell script.ps1 <output-file>"
         exit 1
     }
     
-    $outputFile = $Args[0]
+    $outputFile = $args[0]
     
     try {
         $htmlContent = Generate-Html
         Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Output "HTML file generated: $outputFile"
+        Write-Host "HTML file generated: $outputFile"
     }
     catch {
         Write-Error "Error generating HTML file: $_"
@@ -236,4 +234,4 @@ function Main {
     }
 }
 
-Main -Args $args
+Main @args

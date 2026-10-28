@@ -1,7 +1,27 @@
 #!/usr/bin/env python3
-# 1781743218784_015abd_08077d.sh — portiert nach python
+# 1781743218784_015abd_08077d_e01760.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_e01760.js
+# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_08077d.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.tcl — portiert nach shell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
@@ -210,22 +230,22 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: {} <output-file>".format(sys.argv[0]), file=sys.stderr)
+        print("Usage: python3 script.py <output-file>")
         sys.exit(1)
     
     output_file = sys.argv[1]
     
     try:
-        with open(output_file, 'w') as f:
-            f.write(generate_html())
-        print("HTML file generated: {}".format(output_file))
-    except Exception as e:
-        print("Error generating HTML file: {}".format(str(e)), file=sys.stderr)
+        html_content = generate_html()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print(f"HTML file generated: {output_file}")
+    except Exception as error:
+        print("Error generating HTML file")
         sys.exit(1)
 
 if __name__ == "__main__":

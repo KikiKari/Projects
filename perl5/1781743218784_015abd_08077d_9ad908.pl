@@ -1,47 +1,19 @@
-#!/usr/bin/env perl
-# 1781743218784_015abd_08077d.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_08077d.ps1
+#!/usr/bin/perl
+# 1781743218784_015abd_08077d_9ad908.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_9ad908.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.tcl — portiert nach powershell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# .SYNOPSIS
-# Generates an HTML file containing a secret vault application.
-# 
-# .DESCRIPTION
-# This script generates a self-contained HTML file for a secret vault application
-# that uses client-side encryption (AES-256-GCM + PBKDF2). The generated HTML
-# can be used offline in any modern browser.
-# 
-# .PARAMETER OutputFile
-# The path where the generated HTML file will be saved.
-# 
-# .EXAMPLE
-# .\script.ps1 vault.html
-# Generates the secret vault HTML app and saves it as vault.html
-# 
-# .NOTES
-# Author: ABSTRACTIONS_MANAGER.py
-# Date: 2026-10-25
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(decode_utf8);
-use Getopt::Long;
 
-binmode(STDOUT, ':encoding(UTF-8)');
-
-my $output_file;
-GetOptions('output-file=s' => \$output_file) or die "Ungültige Optionen\n";
-
-if (!$output_file) {
-    die "Fehlender Parameter: OutputFile\n";
+if (@ARGV != 1) {
+    print STDERR "Usage: perl script.pl <output-file>\n";
+    exit 1;
 }
 
-my $html_content = <<'HTML_END';
+my $outputFile = $ARGV[0];
+
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -65,7 +37,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 10px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -250,10 +222,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 eval {
-    open my $fh, '>:encoding(UTF-8)', $output_file or die "Konnte Datei '$output_file' nicht öffnen: $!";
-    print $fh $html_content;
+    open my $fh, '>:encoding(UTF-8)', $outputFile or die "Could not open file '$outputFile': $!";
+    print $fh $htmlContent;
     close $fh;
-    print "HTML file generated: $output_file\n";
+    print "HTML file generated: $outputFile\n";
     1;
 } or do {
     my $error = $@ || 'Unknown error';

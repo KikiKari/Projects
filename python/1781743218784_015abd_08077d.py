@@ -3,23 +3,15 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
 import sys
+import base64
+import json
+import hashlib
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import os
 
 def generate_html():
     return '''<!DOCTYPE html>
@@ -120,7 +112,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -232,7 +224,7 @@ def main():
     args = sys.argv[1:]
     
     if len(args) != 1:
-        print("Usage: python3 script.py <output-file>")
+        print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
     
     output_file = args[0]
@@ -243,7 +235,7 @@ def main():
             f.write(html_content)
         print(f"HTML file generated: {output_file}")
     except Exception as error:
-        print(f"Error generating HTML file: {error}")
+        print(f"Error generating HTML file: {error}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

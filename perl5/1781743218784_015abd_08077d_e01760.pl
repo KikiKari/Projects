@@ -1,10 +1,14 @@
-#!/usr/bin/env perl
-# 1781743218784_015abd_08077d.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
+#!/usr/bin/perl
+# 1781743218784_015abd_08077d_e01760.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_e01760.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+
+# 1781743218784_015abd_08077d.sh — portiert nach javascript
+# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_015abd.tcl — portiert nach shell
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
@@ -23,7 +27,7 @@ use warnings;
 # Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
 
 sub generate_html {
-    return <<'EOF';
+    return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -229,28 +233,28 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 }
 
 sub main {
-    my @args = @_;
-    
-    if (@args != 1) {
-        print STDERR "Usage: $0 <output-file>\n";
+    if (@ARGV != 1) {
+        print STDERR "Usage: perl script.pl <output-file>\n";
         exit 1;
     }
     
-    my $output_file = $args[0];
+    my $outputFile = $ARGV[0];
     
-    open(my $fh, '>', $output_file) or do {
+    eval {
+        my $htmlContent = generate_html();
+        open(my $fh, '>', $outputFile) or die "Cannot open file '$outputFile': $!";
+        print $fh $htmlContent;
+        close($fh);
+        print "HTML file generated: $outputFile\n";
+    };
+    if ($@) {
         print STDERR "Error generating HTML file\n";
         exit 1;
-    };
-    
-    print $fh generate_html();
-    close($fh);
-    
-    print "HTML file generated: $output_file\n";
+    }
 }
 
-main(@ARGV);
+main();

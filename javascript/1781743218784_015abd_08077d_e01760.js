@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// 1781743218784_015abd_08077d.sh — portiert nach javascript
+// 1781743218784_015abd_08077d_e01760.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d_e01760.pl
+// Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_015abd_08077d.sh — portiert nach perl5
 // Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
 // Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
@@ -18,8 +22,6 @@
 // 1781743218784.js — portiert nach python
 // Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
 // Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
 
 function generate_html() {
     return `<!DOCTYPE html>
@@ -226,25 +228,26 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 }
 
-function main() {
-    if (process.argv.length !== 3) {
-        console.error("Usage: node script.js <output-file>");
+function main(args) {
+    if (args.length !== 1) {
+        console.error("Usage: " + process.argv[1] + " <output-file>");
         process.exit(1);
     }
     
-    const outputFile = process.argv[2];
+    const fs = require('fs');
+    const output_file = args[0];
     
     try {
-        const htmlContent = generate_html();
-        fs.writeFileSync(outputFile, htmlContent);
-        console.log(`HTML file generated: ${outputFile}`);
-    } catch (error) {
+        fs.writeFileSync(output_file, generate_html());
+        console.log("HTML file generated: " + output_file);
+    } catch (err) {
         console.error("Error generating HTML file");
         process.exit(1);
     }
 }
 
-main();
+main(process.argv.slice(2));

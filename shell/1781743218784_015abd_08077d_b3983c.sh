@@ -1,26 +1,11 @@
-#!/usr/bin/env bash
-# 1781743218784_015abd_08077d.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
+#!/bin/bash
+# 1781743218784_015abd_08077d_b3983c.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_b3983c.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_015abd.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
+# Funktion zur Generierung des HTML-Inhalts
 generate_html() {
     cat <<'EOF'
 <!DOCTYPE html>
@@ -232,6 +217,7 @@ EOF
 }
 
 main() {
+    # Prüfe, ob genau ein Argument übergeben wurde
     if [[ $# -ne 1 ]]; then
         echo "Usage: $0 <output-file>" >&2
         exit 1
@@ -239,11 +225,8 @@ main() {
     
     local output_file="$1"
     
-    # Generate HTML content and write to file
-    generate_html > "$output_file"
-    
-    # Check if file was written successfully
-    if [[ $? -eq 0 && -f "$output_file" ]]; then
+    # Generiere den HTML-Inhalt und schreibe ihn in die Ausgabedatei
+    if generate_html > "$output_file"; then
         echo "HTML file generated: $output_file"
     else
         echo "Error generating HTML file" >&2
@@ -251,5 +234,7 @@ main() {
     fi
 }
 
-# Call main function with all arguments
-main "$@"
+# Führe die Hauptfunktion aus, wenn das Skript direkt aufgerufen wird
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

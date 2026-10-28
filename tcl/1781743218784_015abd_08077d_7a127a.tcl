@@ -1,6 +1,6 @@
 #!/usr/bin/env tclsh
-# 1781743218784_015abd_08077d.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d.pl
+# 1781743218784_015abd_08077d_7a127a.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_08077d_7a127a.ps1
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 proc generate_html {} {
@@ -102,7 +102,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -217,14 +217,14 @@ proc main {args} {
         exit 1
     }
     
-    set output_file [lindex $args 0]
+    set outputFile [lindex $args 0]
     
     if {[catch {
-        set html_content [generate_html]
-        set fh [open $output_file w]
-        puts -nonewline $fh $html_content
+        set htmlContent [generate_html]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
         close $fh
-        puts "HTML file generated: $output_file"
+        puts "HTML file generated: $outputFile"
     } error]} {
         puts stderr "Error generating HTML file: $error"
         exit 1

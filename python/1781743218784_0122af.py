@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
-# 1781743218784.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
+# 1781743218784_0122af.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
+    print("Aufruf: {} <Ausgabedatei>".format(os.path.basename(sys.argv[0])), file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -224,7 +220,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)

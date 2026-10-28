@@ -3,22 +3,6 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
 function Generate-Html {
     return @"
 <!DOCTYPE html>
@@ -119,7 +103,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -230,25 +214,23 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 function Main {
-    param(
-        [string[]]$Args
-    )
+    $args = $args
     
-    if ($Args.Count -ne 1) {
+    if ($args.Count -ne 1) {
         Write-Error "Usage: pwsh script.ps1 <output-file>"
         exit 1
     }
     
-    $outputFile = $Args[0]
+    $outputFile = $args[0]
     
     try {
         $htmlContent = Generate-Html
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding Utf8
-        Write-Host "HTML file generated: $outputFile"
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Output "HTML file generated: $outputFile"
     } catch {
         Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }
 
-Main -Args $args
+Main @args

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# 1781743218784_015abd_08077d.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d.pl
+# 1781743218784_015abd_08077d_7a127a.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_08077d_7a127a.ps1
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 import sys
@@ -211,12 +211,9 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
-def main():
-    args = sys.argv[1:]
-    
+def main(args):
     if len(args) != 1:
         print("Usage: python3 script.py <output-file>", file=sys.stderr)
         sys.exit(1)
@@ -225,12 +222,12 @@ def main():
     
     try:
         html_content = generate_html()
-        with open(output_file, 'w', encoding='utf-8') as fh:
-            fh.write(html_content)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
         print(f"HTML file generated: {output_file}")
     except Exception as e:
         print(f"Error generating HTML file: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

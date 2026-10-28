@@ -1,26 +1,14 @@
 #!/usr/bin/perl
-# 1781743218784_015abd_08077d.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
+# 1781743218784_015abd_08077d_b3983c.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_b3983c.js
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 
-# 1781743218784_015abd.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 sub generate_html {
     return <<'HTML_END';
@@ -47,7 +35,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 10px;font-weight:700;}
+h1{font-size:21px;margin:0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -242,9 +230,9 @@ sub main {
     
     eval {
         my $html_content = generate_html();
-        open(my $fd, '>:encoding(UTF-8)', $output_file) or die "Cannot open file '$output_file': $!";
-        print $fd $html_content;
-        close($fd);
+        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
+        print $fh $html_content;
+        close $fh;
         print "HTML file generated: $output_file\n";
     };
     if ($@) {

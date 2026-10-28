@@ -1,10 +1,30 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_08077d.sh — portiert nach powershell
+# 1781743218784_015abd_08077d_e01760.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_e01760.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_08077d.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-function Generate-Html {
-    @"
+# 1781743218784_015abd.tcl — portiert nach shell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
+# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
+# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784.py
+# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
+# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+
+function generate_html {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -213,24 +233,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 "@
 }
 
-function Main {
-    param(
-        [string]$OutputFile
-    )
-    
-    if (-not $OutputFile) {
-        Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
+function main {
+    if ($args.Count -ne 1) {
+        Write-Error "Usage: pwsh script.ps1 <output-file>"
         exit 1
     }
     
+    $outputFile = $args[0]
+    
     try {
-        Generate-Html | Set-Content -Path $OutputFile -Encoding UTF8
-        Write-Output "HTML file generated: $OutputFile"
-    }
-    catch {
+        $htmlContent = generate_html
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
         Write-Error "Error generating HTML file"
         exit 1
     }
 }
 
-Main @args
+main @args

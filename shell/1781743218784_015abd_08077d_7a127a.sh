@@ -1,12 +1,16 @@
 #!/bin/bash
-# 1781743218784_015abd_08077d.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d.pl
+# 1781743218784_015abd_08077d_7a127a.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_015abd_08077d_7a127a.ps1
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
+# 1781743218784_015abd_08077d.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d.pl
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
 generate_html() {
-    cat <<'HTML_END'
+    cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -105,7 +109,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -212,25 +216,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
 }
 
 main() {
-    local args=("$@")
+    local args_count=$#
     
-    if [[ ${#args[@]} -ne 1 ]]; then
+    if [[ $args_count -ne 1 ]]; then
         echo "Usage: bash script.sh <output-file>" >&2
         exit 1
     fi
     
-    local output_file="${args[0]}"
+    local output_file="$1"
     
-    if generate_html > "$output_file"; then
-        echo "HTML file generated: $output_file"
-    else
-        echo "Error generating HTML file" >&2
-        exit 1
-    fi
+    # Create temporary file to hold the HTML content
+    local temp_file=$(mktemp)
+    
+    # Generate HTML content to temporary file
+    generate_html > "$temp_file"
+    
+    # Move temporary file to final destination
+    mv "$temp_file" "$output_file"
+    
+    echo "HTML file generated: $output_file"
 }
 
 main "$@"

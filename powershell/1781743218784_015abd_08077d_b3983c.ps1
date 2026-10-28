@@ -1,26 +1,14 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_08077d.py — portiert nach powershell
+# 1781743218784_015abd_08077d_b3983c.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_b3983c.js
+# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_08077d.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_15abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
 function Generate-Html {
-    return @'
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -226,26 +214,39 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
 function Main {
-    if ($args.Count -ne 1) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>"
+    param(
+        [string]$OutputFile
+    )
+    
+    if (-not $OutputFile) {
+        Write-Error "Usage: powershell script.ps1 <output-file>"
         exit 1
     }
     
-    $outputFile = $args[0]
-    
     try {
         $htmlContent = Generate-Html
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding Utf8
-        Write-Host "HTML file generated: $outputFile"
-    }
-    catch {
+        $htmlContent | Out-File -FilePath $OutputFile -Encoding UTF8
+        Write-Host "HTML file generated: $OutputFile"
+    } catch {
         Write-Error "Error generating HTML file: $_"
         exit 1
     }
 }
 
-Main @args
+# Wenn das Skript direkt aufgerufen wird
+if ($MyInvocation.InvocationName -eq '.') {
+    # Wird als Modul geladen
+} else {
+    # Wird direkt ausgeführt
+    $argsCount = $args.Count
+    if ($argsCount -ne 1) {
+        Write-Error "Usage: powershell script.ps1 <output-file>"
+        exit 1
+    }
+    
+    Main -OutputFile $args[0]
+}
