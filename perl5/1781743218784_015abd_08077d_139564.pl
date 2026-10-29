@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# 1781743218784_015abd_08077d.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d_139564.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_139564.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -230,14 +230,13 @@ sub main {
         my $html_content = generate_html();
         open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
         print $fh $html_content;
-        close($fh);
+        close $fh;
         print "HTML file generated: $output_file\n";
     };
     if ($@) {
-        my $error = $@;
-        print "Error generating HTML file: $error\n";
+        print "Error generating HTML file: $@\n";
         exit 1;
     }
 }
 
-main() unless caller;
+main();

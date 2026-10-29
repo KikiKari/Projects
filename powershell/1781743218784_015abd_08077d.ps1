@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # 1781743218784_015abd_08077d.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 function Generate-Html {
     return @"
@@ -103,7 +103,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -217,16 +217,16 @@ function Main {
     $args = $args
     
     if ($args.Count -ne 1) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>"
+        Write-Error "Usage: powershell script.ps1 <output-file>"
         exit 1
     }
     
-    $outputFile = $args[0]
+    $output_file = $args[0]
     
     try {
-        $htmlContent = Generate-Html
-        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
-        Write-Output "HTML file generated: $outputFile"
+        $html_content = Generate-Html
+        Set-Content -Path $output_file -Value $html_content -Encoding UTF8
+        Write-Host "HTML file generated: $output_file"
     } catch {
         Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1

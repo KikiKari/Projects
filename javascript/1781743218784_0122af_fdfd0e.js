@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784_0122af.py
-// Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
+// 1781743218784_0122af_fdfd0e.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_fdfd0e.pl
+// Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -11,6 +9,7 @@ if (process.argv.length !== 3) {
     process.exit(1);
 }
 
+const fs = require('fs');
 const outputPath = process.argv[2];
 
 const htmlContent = `<!DOCTYPE html>
@@ -217,13 +216,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 // Schreibe die HTML-Inhalte in die Ausgabedatei
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf-8');
-} catch (e) {
-    console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${e.message}`);
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (err) {
+    console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${err.message}`);
     process.exit(1);
 }

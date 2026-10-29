@@ -1,10 +1,19 @@
 #!/bin/bash
-# 1781743218784_015abd_08077d.py — portiert nach shell
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d_139564.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_139564.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
+# Prüfe Anzahl der Argumente
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <output-file>"
+    exit 1
+fi
+
+output_file="$1"
+
+# Generiere den HTML-Inhalt
 generate_html() {
     cat <<'EOF'
 <!DOCTYPE html>
@@ -215,27 +224,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 EOF
 }
 
-main() {
-    local args=("$@")
-    
-    if [[ ${#args[@]} -ne 1 ]]; then
-        echo "Usage: bash script.sh <output-file>"
-        exit 1
-    fi
-    
-    local output_file="${args[0]}"
-    
-    # Generate HTML content and write to file
-    generate_html > "$output_file"
-    
-    # Check if the operation was successful
-    if [[ $? -eq 0 ]]; then
-        echo "HTML file generated: $output_file"
-    else
-        echo "Error generating HTML file"
-        exit 1
-    fi
-}
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+generate_html > "$output_file"
 
-# Run main function with all arguments
-main "$@"
+echo "HTML file generated: $output_file"

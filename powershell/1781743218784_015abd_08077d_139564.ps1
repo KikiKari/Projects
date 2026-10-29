@@ -1,10 +1,10 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_08077d.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_015abd_08077d.py
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d_139564.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_139564.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 function Generate-Html {
-    return @'
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -210,7 +210,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 }
 
 function Main {
@@ -227,9 +227,8 @@ function Main {
         $htmlContent = Generate-Html
         Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
         Write-Host "HTML file generated: $outputFile"
-    }
-    catch {
-        Write-Host "Error generating HTML file: $_"
+    } catch {
+        Write-Host "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }

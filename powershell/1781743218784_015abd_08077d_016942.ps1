@@ -1,30 +1,14 @@
 #!/usr/bin/env pwsh
-# 1781743218784_015abd_08077d.sh — portiert nach powershell
+# 1781743218784_015abd_08077d_016942.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_016942.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_015abd_08077d.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd_08077d.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-function generate_html {
-    $htmlContent = @'
+function Generate-Html {
+    return @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -230,31 +214,27 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
-    return $htmlContent
+"@
 }
 
-function main {
-    param(
-        [string[]]$args
-    )
+function Main {
+    $args = $args
     
     if ($args.Count -ne 1) {
         Write-Error "Usage: $($MyInvocation.MyCommand.Name) <output-file>"
         exit 1
     }
     
-    $output_file = $args[0]
+    $outputFile = $args[0]
     
-    # Generate HTML content and write to file
     try {
-        generate_html | Set-Content -Path $output_file -Encoding UTF8
-        Write-Output "HTML file generated: $output_file"
-    }
-    catch {
-        Write-Error "Error generating HTML file"
+        $htmlContent = Generate-Html
+        Set-Content -Path $outputFile -Value $htmlContent -Encoding UTF8
+        Write-Host "HTML file generated: $outputFile"
+    } catch {
+        Write-Error "Error generating HTML file: $($_.Exception.Message)"
         exit 1
     }
 }
 
-main -args $args
+Main @args

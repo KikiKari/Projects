@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af.py
+# 1781743218784_0122af.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.ps1 — portiert nach javascript
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
 # Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
-if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-    exit 1
-}
-
-$outputPath = $args[0]
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
 $htmlContent = @'
 <!DOCTYPE html>
@@ -219,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
 try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding Utf8
-} catch {
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $_"
+    Set-Content -Path $OutputPath -Value $htmlContent -Encoding UTF8
+}
+catch {
+    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
     exit 1
 }

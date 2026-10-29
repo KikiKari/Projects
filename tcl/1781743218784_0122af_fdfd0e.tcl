@@ -1,15 +1,7 @@
-#!/usr/bin/env tclsh8.6
-# 1781743218784_0122af.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af.py
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/17817432184.pl
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh
+# 1781743218784_0122af_fdfd0e.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_fdfd0e.js
+# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -17,9 +9,9 @@ if {$argc != 1} {
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -227,9 +219,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-if {[catch {set f [open $output_path w]} err]} {
-    puts stderr "Konnte Datei '$output_path' nicht öffnen: $err"
+if {[catch {set fd [open $outputPath w]}]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $fd"
     exit 1
 }
-puts -nonewline $f $html_content
-close $f
+puts -nonewline $fd $htmlContent
+close $fd

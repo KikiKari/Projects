@@ -1,26 +1,12 @@
 #!/usr/bin/env tclsh
-# 1781743218784_015abd_08077d.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d_016942.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_016942.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_015abd.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
+# Tcl 8.6 Port of JavaScript script to generate HTML file
 
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
-
-proc generate_html {} {
-    set html {<!DOCTYPE html>
+proc generateHtml {} {
+    return {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -225,31 +211,26 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>}
-    return $html
 }
 
-proc main {args} {
-    if {[llength $args] != 1} {
-        puts stderr "Usage: [info script] <output-file>"
+proc main {argv} {
+    if {[llength $argv] != 1} {
+        puts stderr "Usage: tclsh [file tail [info script]] <output-file>"
         exit 1
     }
     
-    set output_file [lindex $args 0]
+    set outputFile [lindex $argv 0]
     
-    # Generate HTML content and write to file
-    set html_content [generate_html]
-    set fh [open $output_file w]
-    puts -nonewline $fh $html_content
-    close $fh
-    
-    # Check if write was successful
-    if {[catch {file stat $output_file _}]} {
-        puts stderr "Error generating HTML file"
+    if {[catch {
+        set htmlContent [generateHtml]
+        set fh [open $outputFile w]
+        puts -nonewline $fh $htmlContent
+        close $fh
+        puts "HTML file generated: $outputFile"
+    } error]} {
+        puts stderr "Error generating HTML file: $error"
         exit 1
-    } else {
-        puts "HTML file generated: $output_file"
     }
 }
 
-# Call main with command line arguments
-main {*}$argv
+main $argv

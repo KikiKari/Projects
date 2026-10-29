@@ -1,33 +1,14 @@
 #!/usr/bin/perl
-# 1781743218784_015abd_08077d.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_015abd_08077d_016942.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d_016942.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-
-# 1781743218784_015abd_08077d.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd_08077d.js
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_015abd.tcl
-# Erzeugt: 2026-10-26 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_015abd.js — portiert nach tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_015abd.js
-# Erzeugt: 2026-10-25 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784.py
-# Erzeugt: 2026-10-24 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784.js — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+use File::Basename;
 
 sub generate_html {
-    return <<'EOF';
+    return <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -233,34 +214,30 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 }
 
 sub main {
-    my @args = @_;
+    my @args = @ARGV;
     
     if (@args != 1) {
-        print STDERR "Usage: $0 <output-file>\n";
+        print STDERR "Usage: perl " . basename($0) . " <output-file>\n";
         exit 1;
     }
     
     my $output_file = $args[0];
     
-    # Generate HTML content and write to file
-    open(my $fh, '>', $output_file) or do {
-        print STDERR "Error generating HTML file\n";
-        exit 1;
-    };
-    print $fh generate_html();
-    close($fh);
-    
-    # Check if write was successful
-    if (-f $output_file) {
+    eval {
+        my $html_content = generate_html();
+        open(my $fh, '>:encoding(UTF-8)', $output_file) or die "Could not open file '$output_file': $!";
+        print $fh $html_content;
+        close $fh;
         print "HTML file generated: $output_file\n";
-    } else {
-        print STDERR "Error generating HTML file\n";
+    };
+    if ($@) {
+        print STDERR "Error generating HTML file: $@\n";
         exit 1;
     }
 }
 
-main(@ARGV);
+main();

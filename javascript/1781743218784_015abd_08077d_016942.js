@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_015abd_08077d.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_015abd_08077d.sh
-// Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_015abd_08077d_016942.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_015abd_08077d_016942.pl
+// Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
-const path = require('path');
 
-function generateHtml() {
+function generate_html() {
   return `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -214,24 +213,29 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  
+function main(args) {
   if (args.length !== 1) {
-    console.error("Usage: node " + path.basename(process.argv[1]) + " <output-file>");
+    console.error("Usage: node script.js <output-file>");
     process.exit(1);
   }
-  
-  const outputFile = args[0];
-  
+
+  const output_file = args[0];
+
+  // Generate HTML content and write to file
   try {
-    const htmlContent = generateHtml();
-    fs.writeFileSync(outputFile, htmlContent, 'utf8');
-    console.log("HTML file generated: " + outputFile);
+    fs.writeFileSync(output_file, generate_html());
+    
+    // Check if write was successful
+    if (fs.existsSync(output_file)) {
+      console.log(`HTML file generated: ${output_file}`);
+    } else {
+      console.error("Error generating HTML file");
+      process.exit(1);
+    }
   } catch (error) {
-    console.error("Error generating HTML file:", error.message);
+    console.error("Error generating HTML file");
     process.exit(1);
   }
 }
 
-main();
+main(process.argv.slice(2));
