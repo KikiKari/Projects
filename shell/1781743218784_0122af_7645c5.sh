@@ -1,20 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_7645c5.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_7645c5.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
 if [[ $# -ne 1 ]]; then
-    echo "Aufruf: $(basename "$0") <Ausgabedatei>" >&2
+    echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'HTML_END' || true
+read -r -d '' html_content <<'EOF_HTML'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF_HTML
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Konnte Datei '$outputPath' nicht öffnen: $!" >&2
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Konnte Datei '$output_path' nicht öffnen." >&2
     exit 1
 fi

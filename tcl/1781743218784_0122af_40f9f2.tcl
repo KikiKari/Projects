@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -217,12 +217,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {
-    set fh [open $outputPath w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $htmlContent
-    close $fh
-} error]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $error"
+# Schreibe HTML-Inhalt in Ausgabedatei
+if {[catch {set fd [open $outputPath w]}]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $fd"
     exit 1
 }
+puts -nonewline $fd $htmlContent
+close $fd

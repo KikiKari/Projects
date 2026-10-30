@@ -1,11 +1,11 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_7645c5.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_7645c5.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
@@ -215,13 +215,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-if {[catch {set fd [open $outputPath w]} err]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $err"
+if {[catch {set fh [open $outputPath w]} error]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $error"
     exit 1
 }
-puts -nonewline $fd $htmlContent
-close $fd
+puts -nonewline $fh $htmlContent
+close $fh

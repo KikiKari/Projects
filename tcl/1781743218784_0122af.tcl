@@ -1,17 +1,13 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
-
+# Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
-
 set outputPath [lindex $argv 0]
 
 set htmlContent {<!DOCTYPE html>
@@ -37,7 +33,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -94,7 +90,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svbp herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -218,10 +214,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
-if {[catch {set fd [open $outputPath w]} error]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $error"
+if {[catch {set fd [open $outputPath w]} errorMsg]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $errorMsg"
     exit 1
 }
 

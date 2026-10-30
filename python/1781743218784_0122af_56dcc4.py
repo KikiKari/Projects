@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_56dcc4.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_56dcc4.js
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af.tcl
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
     print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
+
 output_path = sys.argv[1]
 
 html_content = '''<!DOCTYPE html>
@@ -225,6 +223,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as errmsg:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {errmsg}", file=sys.stderr)
+except Exception as err:
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {err}", file=sys.stderr)
     sys.exit(1)

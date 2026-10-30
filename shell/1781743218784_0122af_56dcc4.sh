@@ -1,19 +1,20 @@
 #!/bin/bash
 # 1781743218784_0122af_56dcc4.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4.pl
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
 if [[ $# -ne 1 ]]; then
-    echo "Aufruf: $0 <Ausgabedatei>" >&2
+    script_name=$(basename "$0")
+    echo "Aufruf: $script_name <Ausgabedatei>" >&2
     exit 1
 fi
-output_path="$1"
+outputPath="$1"
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
-cat > "$output_path" <<'HTML_END'
+# HTML-Inhalt
+read -r -d '' htmlContent <<'HTML_END' || true
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-# Prüfe ob das Schreiben erfolgreich war
-if [[ $? -ne 0 ]]; then
-    echo "Konnte Datei '$output_path' nicht schreiben." >&2
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+if ! printf '%s' "$htmlContent" > "$outputPath"; then
+    echo "Konnte Datei '$outputPath' nicht öffnen: $?" >&2
     exit 1
 fi

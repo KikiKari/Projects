@@ -1,9 +1,8 @@
-#!/usr/bin/env tclsh8.6
-# 1781743218784_0122af_56dcc4.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_56dcc4.py
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh
+# 1781743218784_0122af_56dcc4_5be232.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4_5be232.pl
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
 if {$argc != 1} {
     puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
@@ -217,10 +216,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
 if {[catch {open $output_path w} fd]} {
     puts stderr "Konnte Datei '$output_path' nicht öffnen: $fd"
     exit 1
 }
+
 puts -nonewline $fd $html_content
 close $fd

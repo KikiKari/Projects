@@ -1,7 +1,7 @@
-#!/bin/bash
-# 1781743218784_0122af.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_0122af.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -13,17 +13,8 @@ fi
 
 outputPath="$1"
 
-# HTML-Inhalt als here-document
-read -r -d '' htmlContent || true
-
-# Schreibe HTML-Inhalt in Ausgabedatei
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Konnte Datei '$outputPath' nicht öffnen: Unknown error" >&2
-    exit 1
-fi
-
-# Embed the HTML content directly in the script
-read -r -d '' htmlContent <<'HTML_END'
+# HTML-Inhalt
+htmlContent=$(cat <<'HTML_DELIMITER'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -47,7 +38,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -104,7 +95,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svbp herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -229,4 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML_DELIMITER
+)
+
+# Schreibe HTML-Inhalt in Ausgabedatei
+echo "$htmlContent" > "$outputPath" || {
+    echo "Konnte Datei '$outputPath' nicht öffnen: $?" >&2
+    exit 1
+}

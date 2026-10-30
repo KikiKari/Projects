@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_56dcc4.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4.pl
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_56dcc4_469143.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_56dcc4_469143.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
@@ -220,7 +220,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    Set-Content -Path $outputPath -Value $htmlContent -ErrorAction Stop
 } catch {
     Write-Error "Konnte Datei '$outputPath' nicht öffnen: $_"
     exit 1

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_56dcc4.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_56dcc4.ps1
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_56dcc4_ff4780.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_56dcc4_ff4780.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
+    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -216,13 +216,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as e:
-    print("Konnte Datei '{}' nicht öffnen: {}".format(output_path, str(e)), file=sys.stderr)
+except Exception as error:
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
     sys.exit(1)

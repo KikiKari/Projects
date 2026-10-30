@@ -1,20 +1,16 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_56dcc4.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_56dcc4.js
-# Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.tcl — portiert nach javascript
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af.tcl
-# Erzeugt: 2026-10-27 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-  Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-  exit 1
+    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    exit 1
 }
-$outputPath = $args[0]
+$output_path = $args[0]
 
-$htmlContent = @"
+$html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,13 +216,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
+'@
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
 try {
-  Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-}
-catch {
-  Write-Error "Konnte Datei '$outputPath' nicht öffnen: $_"
-  exit 1
+    Set-Content -Path $output_path -Value $html_content -Encoding UTF8
+} catch {
+    Write-Error "Konnte Datei '$output_path' nicht öffnen: $($_.Exception.Message)"
+    exit 1
 }

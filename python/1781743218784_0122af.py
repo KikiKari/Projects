@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
 # Erzeugt: 2026-10-28 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
+# Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    script_name = os.path.basename(sys.argv[0])
-    print(f"Aufruf: {script_name} <Ausgabedatei>", file=sys.stderr)
+    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -36,7 +39,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -93,7 +96,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svbp herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -217,11 +220,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {str(e)}", file=sys.stderr)
+    print("Konnte Datei '{}' nicht öffnen: {}".format(output_path, str(e) or 'Unknown error'), file=sys.stderr)
     sys.exit(1)
