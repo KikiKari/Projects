@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_40f9f2_7437a5.tcl — portiert nach python
+# 1781743218784_0122af_40f9f2_7437a5_afe633.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_7437a5_afe633.js
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2_7437a5.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2_7437a5.tcl
 # Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0122af_40f9f2.py — portiert nach tcl
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2.py
+# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+
 import sys
-import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
@@ -13,7 +20,7 @@ if len(sys.argv) != 2:
 
 output_path = sys.argv[1]
 
-html_content = '''<!DOCTYPE html>
+html_content = """<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,10 +225,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'''
+"""
 
 try:
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as err:
     print(f"Konnte Datei '{output_path}' nicht öffnen: {err}", file=sys.stderr)

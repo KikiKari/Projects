@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_40f9f2.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_40f9f2.ps1 — portiert nach python3.12
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_945019.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_945019.ps1
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -13,7 +9,7 @@ import os
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
     script_name = os.path.basename(__file__)
-    sys.stderr.write(f"Aufruf: {script_name} <Ausgabedatei>\n")
+    print(f"Fehler: Aufruf: {script_name} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -226,11 +222,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '''
 
 try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
-    error = str(e).strip()
-    sys.stderr.write(f"Konnte Datei '{output_path}' nicht öffnen: {error}\n")
+    print(f"Fehler: Konnte Datei '{output_path}' nicht öffnen: {str(e)}", file=sys.stderr)
     sys.exit(1)
 
 sys.exit(0)

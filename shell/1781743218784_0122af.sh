@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 1781743218784_0122af.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -11,10 +11,10 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
 # HTML-Inhalt
-htmlContent=$(cat <<'HTML_DELIMITER'
+read -r -d '' html_content <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -159,7 +159,7 @@ function u8b64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromC
 function b64u8(b64){ const s=atob(b64.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
 async function deriveKey(pw,salt){
   const km=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt: new Uint8Array(salt),iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
@@ -220,11 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_DELIMITER
-)
+HTML_END
 
-# Schreibe HTML-Inhalt in Ausgabedatei
-echo "$htmlContent" > "$outputPath" || {
-    echo "Konnte Datei '$outputPath' nicht öffnen: $?" >&2
+# Versuche, die HTML-Datei zu schreiben
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Konnte Datei '$output_path' nicht öffnen: $?" >&2
     exit 1
-}
+fi

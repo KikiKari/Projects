@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_40f9f2.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
 # Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 import sys
@@ -8,7 +12,8 @@ import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+    script_name = os.path.basename(sys.argv[0])
+    print(f"Aufruf: {script_name} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 output_path = sys.argv[1]
 
@@ -136,7 +141,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -225,3 +230,5 @@ try:
 except Exception as error:
     print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
     sys.exit(1)
+
+sys.exit(0)

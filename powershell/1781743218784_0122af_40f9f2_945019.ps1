@@ -1,14 +1,15 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_40f9f2.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_945019.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2_945019.py
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
     $scriptName = Split-Path -Leaf $MyInvocation.MyCommand.Path
-    Write-Error "Aufruf: $scriptName <Ausgabedatei>" -ErrorAction Stop
+    Write-Error "Aufruf: $scriptName <Ausgabedatei>"
     exit 1
 }
+
 $outputPath = $args[0]
 
 $htmlContent = @'
@@ -220,9 +221,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding Utf8
 } catch {
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)" -ErrorAction Stop
+    $errorMessage = $_.Exception.Message.Trim()
+    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $errorMessage"
+    exit 1
 }
 
 exit 0

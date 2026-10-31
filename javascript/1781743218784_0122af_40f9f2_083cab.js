@@ -1,15 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_40f9f2.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2.py
-// Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_40f9f2_083cab.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
+// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_40f9f2.js — portiert nach JavaScript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
+// Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.pl
 
 const fs = require('fs');
-const path = require('path');
 
 function main() {
     // Prüfe Aufrufparameter
     if (process.argv.length !== 3) {
-        console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+        const prog = process.argv[1];
+        console.error(`Aufruf: ${prog} <Ausgabedatei>`);
         process.exit(1);
     }
 
@@ -223,11 +227,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 `;
 
     try {
-        fs.writeFileSync(output_path, html_content, 'utf-8');
-    } catch (e) {
-        console.error(`Konnte Datei '${output_path}' nicht öffnen: ${e.message}`);
+        fs.writeFileSync(output_path, html_content, 'utf8');
+    } catch (error) {
+        console.error(`Konnte Datei '${output_path}' nicht öffnen: ${error.message}`);
         process.exit(1);
     }
 }
 
-main();
+if (require.main === module) {
+    main();
+}

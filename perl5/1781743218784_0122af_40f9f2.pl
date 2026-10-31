@@ -1,15 +1,17 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_40f9f2.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Basename;
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    my $script_name = $0;
-    $script_name =~ s!.*/!!;
+    my $script_name = basename($0);
     print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
     exit 1;
 }
@@ -140,7 +142,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -224,7 +226,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-open(my $fh, '>:encoding(UTF-8)', $output_path)
-    or die "Konnte Datei '$output_path' nicht öffnen: $!";
+open(my $fh, '>:encoding(UTF-8)', $output_path) or do {
+    print STDERR "Konnte Datei '$output_path' nicht öffnen: $!\n";
+    exit 1;
+};
 print $fh $html_content;
-close $fh;
+close($fh);
+
+exit 0;

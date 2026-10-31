@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_40f9f2_7437a5.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_7437a5.pl
+// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_40f9f2_7437a5.tcl — portiert nach perl5
+// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2_7437a5.tcl
 // Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+
+import { writeFileSync } from 'fs';
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+    console.error("Aufruf: " + process.argv[1] + " <Ausgabedatei>");
     process.exit(1);
 }
 
-const fs = require('fs');
 const output_path = process.argv[2];
 
 const html_content = `<!DOCTYPE html>
@@ -219,8 +224,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 try {
-    fs.writeFileSync(output_path, html_content, 'utf8');
-} catch (error) {
-    console.error(`Konnte Datei '${output_path}' nicht öffnen: ${error.message}`);
+    writeFileSync(output_path, html_content);
+} catch (err) {
+    console.error("Konnte Datei '" + output_path + "' nicht öffnen: " + err.message);
     process.exit(1);
 }

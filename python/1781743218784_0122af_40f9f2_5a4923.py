@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_40f9f2.ps1 — portiert nach python
+# 1781743218784_0122af_40f9f2_5a4923.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_5a4923.pl
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2.ps1 — portiert nach python3
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
 # Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
@@ -8,7 +12,7 @@ import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(os.path.basename(sys.argv[0])), file=sys.stderr)
+    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]

@@ -1,19 +1,23 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_40f9f2.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2.tcl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_7059d6.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_7059d6.js
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Slurper qw(write_text);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
+    my $script_name = $0;
+    print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
     exit 1;
 }
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+my $html_content = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,12 +223,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
 # Schreibe HTML-Inhalt in Ausgabedatei
-open(my $fh, '>', $outputPath) or do {
-    print STDERR "Konnte Datei '$outputPath' nicht öffnen: $!\n";
-    exit 1;
+eval {
+    write_text($output_path, $html_content);
 };
-print $fh $htmlContent;
-close $fh;
+if ($@) {
+    my $error_message = $@;
+    chomp $error_message;
+    print STDERR "Konnte Datei '$output_path' nicht öffnen: $error_message\n";
+    exit 1;
+}

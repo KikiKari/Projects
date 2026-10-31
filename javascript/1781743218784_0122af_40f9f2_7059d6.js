@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_40f9f2.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2.tcl
-// Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_40f9f2_7059d6.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_7059d6.pl
+// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -221,7 +221,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 // Schreibe HTML-Inhalt in Ausgabedatei
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+    fs.writeFileSync(outputPath, htmlContent);
 } catch (err) {
     console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${err.message}`);
     process.exit(1);

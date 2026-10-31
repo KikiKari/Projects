@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_40f9f2_7437a5.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_7437a5.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_7437a5.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_7437a5.js
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -215,13 +215,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-if {[catch {set fh [open $output_path w]}]} {
-    puts stderr "Konnte Datei '$output_path' nicht öffnen: $fh"
+# Schreibe HTML-Inhalt in Ausgabedatei
+if {[catch {set fd [open $output_path w]} error]} {
+    puts stderr "Konnte Datei '$output_path' nicht öffnen: $error"
     exit 1
 }
 
-puts $fh $html_content
-close $fh
+puts -nonewline $fd $html_content
+close $fd
