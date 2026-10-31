@@ -1,18 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-// Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
+// Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-// Parameter verarbeiten
-const args = process.argv.slice(2);
-if (args.length === 0) {
-    console.error("Fehler: OutputPath ist erforderlich.");
+// Prüfe Aufrufparameter
+if (process.argv.length !== 3) {
+    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
     process.exit(1);
 }
-const outputPath = args[0];
+const outputPath = process.argv[2];
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -37,7 +38,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -94,7 +95,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svbp herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -158,7 +159,7 @@ function u8b64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromC
 function b64u8(b64){ const s=atob(b64.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
 async function deriveKey(pw,salt){
   const km=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt: new Uint8Array(salt),iterations:210000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
 async function encryptObj(obj,pw){
   const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
@@ -220,9 +221,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
+// Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-    console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${error.message}`);
+    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
+} catch (err) {
+    console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${err.message}`);
     process.exit(1);
 }

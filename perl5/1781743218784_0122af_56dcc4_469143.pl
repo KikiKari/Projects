@@ -1,22 +1,22 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_56dcc4_469143.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_56dcc4_469143.ps1
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_56dcc4_469143.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_56dcc4_469143.js
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use open qw(:std :utf8);
-use File::Slurper qw(write_text);
+use Encode qw(encode decode);
+use File::Slurp qw(write_file);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
     print STDERR "Aufruf: $0 <Ausgabedatei>\n";
     exit 1;
 }
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -226,12 +226,9 @@ HTML_END
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
 eval {
-    write_text($outputPath, $htmlContent);
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR "Konnte Datei '$outputPath' nicht öffnen: $error\n";
-    exit 1;
+    write_file($output_path, encode('UTF-8', $html_content));
 };
-
-1;
+if ($@) {
+    print STDERR "Konnte Datei '$output_path' nicht öffnen: $@\n";
+    exit 1;
+}

@@ -1,14 +1,15 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_56dcc4.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4.pl
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_56dcc4_4272c5.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_56dcc4_4272c5.py
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-    $scriptName = $MyInvocation.MyCommand.Name
-    Write-Error "Aufruf: $scriptName <Ausgabedatei>" -ErrorAction SilentlyContinue
+    $scriptName = [System.IO.Path]::GetFileName($MyInvocation.MyCommand.Path)
+    Write-Error "Aufruf: $scriptName <Ausgabedatei>" -ErrorAction Stop
     exit 1
 }
+
 $outputPath = $args[0]
 
 $htmlContent = @'
@@ -222,7 +223,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try {
     [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
 } catch {
-    $errmsg = $_.Exception.Message
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $errmsg" -ErrorAction SilentlyContinue
+    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)" -ErrorAction Stop
     exit 1
 }

@@ -1,12 +1,12 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_56dcc4.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4.pl
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_56dcc4_4272c5.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_56dcc4_4272c5.ps1
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    set script_name [file tail $argv0]
-    puts stderr "Aufruf: $script_name <Ausgabedatei>"
+    set scriptName [file tail $argv0]
+    puts stderr "Aufruf: $scriptName <Ausgabedatei>"
     exit 1
 }
 set outputPath [lindex $argv 0]
@@ -215,12 +215,19 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
+# Schreibe HTML-Inhalt in Ausgabedatei
 if {[catch {set fd [open $outputPath w]} errmsg]} {
     puts stderr "Konnte Datei '$outputPath' nicht öffnen: $errmsg"
     exit 1
 }
-puts -nonewline $fd $htmlContent
+
+if {[catch {puts -nonewline $fd $htmlContent} errmsg]} {
+    puts stderr "Konnte nicht in Datei '$outputPath' schreiben: $errmsg"
+    close $fd
+    exit 1
+}
+
 close $fd

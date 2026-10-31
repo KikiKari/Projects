@@ -1,6 +1,10 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_40f9f2.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
+# 1781743218784_0122af_40f9f2.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2.tcl
 # Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
@@ -217,9 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Schreibe HTML-Inhalt in Ausgabedatei
-if {[catch {set fd [open $outputPath w]}]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $fd"
+if {[catch {set fd [open $outputPath w]} error]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $error"
     exit 1
 }
 puts -nonewline $fd $htmlContent

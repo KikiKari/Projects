@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_40f9f2.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
-def main():
-    # Prüfe Aufrufparameter
-    if len(sys.argv) != 2:
-        print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
-        sys.exit(1)
-    
-    output_path = sys.argv[1]
-    
-    html_content = '''<!DOCTYPE html>
+# Prüfe Aufrufparameter
+if len(sys.argv) != 2:
+    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+    sys.exit(1)
+output_path = sys.argv[1]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -221,12 +219,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print("Konnte Datei '{}' nicht öffnen: {}".format(output_path, str(e)), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as error:
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
+    sys.exit(1)

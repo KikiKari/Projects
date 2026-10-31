@@ -1,14 +1,13 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
-if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-    exit 1
-}
-$outputPath = $args[0]
+# Parameter verarbeiten
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
 $htmlContent = @'
 <!DOCTYPE html>
@@ -34,7 +33,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 0;font-weight:700;}
+h1{font-size:21px;margin:0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -91,7 +90,7 @@ a{color:var(--accent);}
     <h2 id="h-save">Speichern / Export</h2>
     <div class="row">
       <button class="btn primary" id="encBtn">Verschlüsseln</button>
-      <button class="btn" id="dlBtn">Als .svbp herunterladen</button>
+      <button class="btn" id="dlBtn">Als .svpb herunterladen</button>
       <button class="btn" id="expBtn">Klartext-JSON exportieren</button>
       <span class="msg" id="saveMsg"></span>
     </div>
@@ -219,8 +218,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $OutputPath -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)"
+    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
     exit 1
 }

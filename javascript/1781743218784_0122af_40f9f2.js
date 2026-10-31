@@ -1,16 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_40f9f2.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2.tcl
-// Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_40f9f2.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
+// Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-  console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
-  process.exit(1);
+    const script_name = require('path').basename(process.argv[1]);
+    console.error(`Aufruf: ${script_name} <Ausgabedatei>`);
+    process.exit(1);
 }
-const outputPath = process.argv[2];
+const output_path = process.argv[2];
 
-const htmlContent = `<!DOCTYPE html>
+const fs = require('fs');
+
+const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -134,7 +137,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -217,10 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 `;
 
-const fs = require('fs');
 try {
-  fs.writeFileSync(outputPath, htmlContent, 'utf8');
+    fs.writeFileSync(output_path, html_content, 'utf8');
 } catch (error) {
-  console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${error.message}`);
-  process.exit(1);
+    console.error(`Konnte Datei '${output_path}' nicht öffnen: ${error.message}`);
+    process.exit(1);
 }
+
+process.exit(0);

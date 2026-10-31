@@ -1,20 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af_56dcc4.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4.pl
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_56dcc4.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_56dcc4.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Aufrufparameter
+# Prüfe Anzahl der Argumente
 if [[ $# -ne 1 ]]; then
-    script_name=$(basename "$0")
-    echo "Aufruf: $script_name <Ausgabedatei>" >&2
+    echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
-outputPath="$1"
 
-# HTML-Inhalt
-read -r -d '' htmlContent <<'HTML_END' || true
+OUTPUT_PATH="$1"
+
+# HTML-Inhalt (wie im JavaScript-Original)
+read -r -d '' HTML_CONTENT <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Konnte Datei '$outputPath' nicht öffnen: $?" >&2
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if ! printf '%s' "$HTML_CONTENT" > "$OUTPUT_PATH"; then
+    echo "Konnte Datei '$OUTPUT_PATH' nicht öffnen: Permission denied" >&2
     exit 1
 fi

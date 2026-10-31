@@ -1,14 +1,13 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_40f9f2.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2.py
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
     Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
     exit 1
 }
-
 $outputPath = $args[0]
 
 $htmlContent = @'

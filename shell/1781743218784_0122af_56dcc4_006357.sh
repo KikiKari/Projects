@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
-# 1781743218784_0122af_56dcc4.tcl — portiert nach shell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_56dcc4.tcl
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+#!/bin/bash
+# 1781743218784_0122af_56dcc4_006357.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_56dcc4_006357.pl
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -10,11 +10,10 @@ if [[ $# -ne 1 ]]; then
     echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
-
 outputPath="$1"
 
-# HTML-Inhalt als mehrzeiliger String
-read -r -d '' htmlContent <<'EOF_HTML'
+# HTML-Inhalt in Variable speichern
+htmlContent=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +219,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTML
+HTML_END
+)
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-if ! echo -n "$htmlContent" > "$outputPath"; then
-    echo "Konnte Datei '$outputPath' nicht schreiben." >&2
-    exit 1
-fi
+echo "$htmlContent" > "$outputPath"

@@ -1,19 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af_40f9f2.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2.ps1
-# Erzeugt: 2026-10-29 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
 if [[ $# -ne 1 ]]; then
-    echo "Aufruf: $0 <Ausgabedatei>" >&2
+    script_name=$(basename "$0")
+    echo "Aufruf: $script_name <Ausgabedatei>" >&2
     exit 1
 fi
-outputPath="$1"
+output_path="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'HTML_END'
+read -r -d '' html_content <<'HTML_END' || true
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -138,7 +139,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -222,4 +223,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Schreibe HTML-Inhalt in Ausgabedatei
-echo "$htmlContent" > "$outputPath"
+if ! echo "$html_content" > "$output_path"; then
+    echo "Konnte Datei '$output_path' nicht öffnen: Unknown error" >&2
+    exit 1
+fi
+
+exit 0
