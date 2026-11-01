@@ -1,159 +1,341 @@
 #!/bin/bash
-# sidepanel.css — portiert nach shell
-# Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion-Android:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/browser-extension/sidepanel.css
-# auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/browser-extension/sidepanel.css
-# Erzeugt: 2026-10-23 durch ABSTRACTIONS_MANAGER.py
+# sidepanel.html — portiert nach shell
+# Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/sidepanel.html
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# CSS content stored as a variable
-css_content=':root {
-  color-scheme: light dark;
-  font-family: Inter, "Segoe UI", system-ui, sans-serif;
-  --accent: #fe2c55;
-  --accent-dark: #d91f46;
-  --surface: color-mix(in srgb, Canvas 94%, CanvasText 6%);
-  --border: color-mix(in srgb, CanvasText 18%, transparent);
-  --muted: color-mix(in srgb, CanvasText 65%, transparent);
-  --good: #147d45;
-  --warn: #a65f00;
-  --bad: #b42318;
+# Erzeuge HTML-Dokument dynamisch mit Bash
+# Portierung von sidepanel.html zu Bash 5
+
+generate_html() {
+cat << 'EOF'
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TikTok LIVE Companion</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <link rel="stylesheet" href="icon-controls.css">
+  <link rel="stylesheet" href="status-overview-panel.css">
+</head>
+<body>
+  <p id="page-title" hidden></p>
+
+  <main>
+    <section aria-labelledby="chat-heading">
+      <div class="section-title">
+        <h2 id="chat-heading">Chat</h2>
+        <div class="title-actions">
+          <span id="chat-led" class="status-led off" role="status" aria-label="Chat inaktiv" title="Chat inaktiv"></span>
+          <button id="chat-count" class="count count-button" type="button" aria-haspopup="dialog" title="Gesammelte Chatzeilen öffnen">0</button>
+          <button id="refresh-chat" class="secondary compact" title="Chatanzeige leeren">Reset</button>
+          <button id="toggle-speech" class="secondary compact" aria-pressed="false" aria-label="Vorlesen">On</button>
+          <span id="speech-led" class="status-led off" role="status" aria-label="Vorlesen inaktiv" title="Vorlesen inaktiv"></span>
+        </div>
+      </div>
+      <div id="chat-list" class="chat-list empty" role="log" aria-live="polite" aria-relevant="additions" aria-label="Die letzten fünf bereinigten Chatnachrichten">Noch keine Chatnachrichten erkannt.</div>
+      <p id="speech-status" role="status" class="inline-status">Vorlesen ist ausgeschaltet.</p>
+      <div class="control-label"><label for="speech-volume">Vorleselautstärke</label><output id="speech-volume-output" for="speech-volume">100%</output></div>
+      <input id="speech-volume" type="range" min="0" max="100" step="5" value="50">
+      <div class="button-row">
+        <button id="service-action" class="secondary">Sprachdienst</button>
+        <button id="sherpa-action" class="secondary">Sherpa</button>
+        <button id="open-speech-settings" class="secondary compact settings-button" type="button" aria-label="Erweiterte Einstellungen öffnen" aria-haspopup="dialog" title="Einstellungen"></button>
+      </div>
+      <p id="service-status" class="inline-status">Lokaler Sprachdienst noch nicht geprüft.</p>
+      <div id="service-setup" class="inline-status" hidden>
+        <button id="copy-service-setup" class="secondary compact">Installation abschließen!</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="stats-heading">
+      <div class="section-title">
+        <h2 id="stats-heading">LIVE-Information</h2>
+        <span id="stats-live" class="live-indicator">warte</span>
+      </div>
+      <div id="live-stats" class="status-grid stats-grid"></div>
+      <p id="stats-status" class="inline-status"></p>
+    </section>
+
+    <section id="page-info-section" aria-labelledby="page-info-heading">
+      <div class="section-title">
+        <h2 id="page-info-heading">PROFIL-Information</h2>
+        <div class="title-actions">
+          <span id="page-info-source" class="live-indicator">Metadaten</span>
+          <button id="refresh-page-info" class="secondary compact" title="Refresh">Refresh</button>
+          <button id="force-page-info" class="secondary compact danger-outline">Force</button>
+        </div>
+      </div>
+      <div id="profile-info" class="profile-info" hidden></div>
+      <div id="summary-info" class="summary-info"></div>
+    </section>
+
+    <section aria-labelledby="hook-heading">
+      <div class="section-title header-controls">
+        <h2 id="hook-heading">Connection</h2>
+        <div class="title-actions">
+          <button id="reset-tab" class="secondary compact danger-outline" title="Reset">Reset</button>
+          <input id="hook-autostart" type="checkbox" aria-label="Hook dauerhaft" title="Hook dauerhaft: Off">
+          <span class="status-led off" data-switch-status="hook-autostart" role="status"></span>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="toggle-hook" class="primary" aria-label="Connection" aria-pressed="false">On</button>
+        <button id="open-connection-settings" class="secondary compact settings-button" type="button" aria-label="Connection-Einstellungen öffnen" aria-haspopup="dialog"></button>
+        <button id="open-embed-live" class="secondary">Embed</button>
+        <button id="open-normal-live" class="secondary">Browser</button>
+        <button id="player-vlc-frame" class="secondary compact">Player</button>
+      </div>
+      <div class="connection-status"><span id="hook-led" class="status-led off" role="status" aria-label="Hook inaktiv" title="Hook inaktiv"></span><p id="hook-status" class="inline-status"></p></div>
+      <p id="embed-startup-status" class="inline-status" role="status" aria-live="polite" hidden></p>
+      <button id="cancel-embed-startup" class="secondary" hidden>Embed-Start abbrechen</button>
+      <p id="hook-reconnect-status" class="inline-status" role="status">Hook-Reconnect: aus</p>
+      <p id="player-recovery-status" class="inline-status" role="status">Player-Recovery: aus</p>
+    </section>
+
+    <section aria-labelledby="player-heading">
+      <div class="section-title header-controls">
+        <h2 id="player-heading">Player</h2>
+        <div class="title-actions">
+          <button id="player-replay" class="secondary compact" title="Neu laden">Neu laden</button>
+          <input id="limiter-enabled" type="checkbox" aria-label="Pegelschutz" title="Pegelschutz: Off">
+          <span class="status-led off" data-switch-status="limiter-enabled" role="status"></span>
+        </div>
+      </div>
+      <div class="player-controls" role="group" aria-label="TikTok-Player steuern">
+        <button id="player-play" class="secondary compact">Play</button>
+        <button id="player-mute" class="secondary compact">Mute</button>
+        <button id="player-pip" class="secondary compact">Bild-in-Bild</button>
+        <button id="player-fullscreen" class="secondary compact">Vollbild</button>
+        <button id="player-report" class="secondary compact danger-outline">Meldung</button>
+      </div>
+      <div class="audio-controls">
+        <div class="control-label"><label for="player-volume">Lautstärke</label><output id="player-volume-output" for="player-volume">–</output></div>
+        <input id="player-volume" type="range" min="0" max="100" step="1" value="100">
+        <div class="audio-meter-row"><span>Spitzenpegel</span><strong id="player-peak">–</strong></div>
+        <div class="control-label"><label for="limiter-strength">Schutzstärke</label><output id="limiter-strength-output" for="limiter-strength">30</output></div>
+        <input id="limiter-strength" type="range" min="0" max="100" step="1" value="30">
+      </div>
+      <p id="multi-guest-status" class="inline-status">Verbundene Streams: noch nicht erkannt.</p>
+      <p id="player-status" role="status" class="inline-status">Warte auf den TikTok-Player.</p>
+      <span id="player-time" class="player-time" hidden>–</span>
+    </section>
+
+    <section aria-labelledby="top-chatters-heading">
+      <div class="section-title">
+        <h2 id="top-chatters-heading">Top-Chatter</h2>
+        <button id="open-audience" class="secondary compact">Zuschauer*innen</button>
+      </div>
+      <p id="team-tag-status" class="inline-status">Teamkürzel: noch nicht erkannt.</p>
+      <div id="top-chatters" class="top-chatters empty">Noch keine Personen im Chat beobachtet.</div>
+      <div id="top-chatters-actions" class="top-chatters-actions" hidden>
+        <button id="top-chatters-reset" class="top-chatter-link" type="button" hidden>Reset</button>
+        <button id="top-chatters-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
+    </section>
+
+    <section id="recommendations-section" aria-labelledby="recommendations-heading">
+      <div class="section-title">
+        <h2 id="recommendations-heading">LIVE-Empfehlungen</h2>
+        <span id="recommendation-status" class="live-indicator">bereit</span>
+      </div>
+      <div class="recommendation-controls">
+        <label><span>Anzahl</span><input id="recommendation-limit" type="number" min="1" max="300" step="1" value="20" inputmode="numeric"></label>
+        <label><span>Sortierung</span><select id="recommendation-sort"><option value="tiktok">TikTok-Reihenfolge</option><option value="viewers">Zuschauer*innen</option></select></label>
+      </div>
+      <div class="button-row">
+        <button id="scan-recommendations" class="primary">Empfehlungen scannen</button>
+        <button id="cancel-recommendations" class="secondary" hidden>Abbrechen</button>
+      </div>
+      <p id="recommendation-progress" class="inline-status" aria-live="polite">Noch kein Scan gestartet.</p>
+      <div id="recommendation-list" class="recommendation-list empty">Noch keine Empfehlungen erfasst.</div>
+      <div id="recommendation-actions" class="top-chatters-actions" hidden>
+        <button id="recommendation-more" class="top-chatter-link" type="button">mehr…</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="overview-heading">
+      <div class="section-title header-controls"><h2 id="overview-heading">STATUS-Monitor</h2><div class="title-actions"><button id="overview-settings" class="secondary compact" type="button" aria-label="Monitor Einstellungen">Monitor Einstellungen</button><button id="overview-reset" class="secondary compact" type="button" aria-label="Streamnamen leeren">Streamnamen leeren</button><input id="overview-enabled" type="checkbox" aria-label="LIVE-Prüfung"><span class="status-led off" data-switch-status="overview-enabled" role="status"></span></div></div>
+      <div id="overview-rows"></div>
+      <div class="button-row overview-actions"><button id="overview-check" class="secondary" type="button" aria-label="Jetzt prüfen" title="Jetzt prüfen"></button><button id="overview-copy" class="secondary">Alle kopieren</button><button id="overview-open" class="primary">Overview</button></div>
+      <div class="top-chatters-actions"><button id="overview-collapse" class="top-chatter-link" type="button" hidden>Reset</button><button id="overview-more" class="top-chatter-link" type="button">mehr…</button></div>
+      <p id="overview-message" class="overview-visually-hidden" role="status"></p>
+    </section>
+
+    <section aria-labelledby="caption-heading">
+      <div class="section-title">
+        <h2 id="caption-heading">Titel</h2>
+        <button id="scan" class="secondary">Status</button>
+      </div>
+      <div id="caption-status" class="status-grid"></div>
+      <button id="enable-captions" class="primary">Untertitel</button>
+      <p id="caption-action-status" role="status" class="inline-status action-status"></p>
+    </section>
+
+    <section aria-labelledby="song-heading">
+      <div class="section-title header-controls">
+        <h2 id="song-heading">Songs</h2>
+        <div class="title-actions">
+          <input id="song-enabled" type="checkbox" aria-label="Songerkennung" title="Songerkennung: Off">
+          <span id="song-led" class="status-led off" data-switch-status="song-enabled" role="status" aria-label="Songerkennung inaktiv"></span>
+        </div>
+      </div>
+      <button id="recognize-song" class="primary" disabled>Jetzt erkennen</button>
+      <p id="song-status" class="inline-status"></p>
+      <div id="song-result" class="song-result" hidden></div>
+    </section>
+
+    <section aria-labelledby="links-heading">
+      <div class="section-title">
+        <h2 id="links-heading">HAR-Logs</h2>
+        <span id="media-count" class="count">0</span>
+      </div>
+      <div id="media-list" class="list empty">Noch keine FLV-/HLS-Links erkannt.</div>
+    </section>
+
+    <section aria-labelledby="log-heading">
+      <div class="section-title header-controls">
+        <h2 id="log-heading">LIVE-Logs</h2>
+        <div class="title-actions">
+          <span class="status-led off" data-counter-status="caption-count" role="status"></span>
+          <span id="caption-count" class="count">0</span>
+          <button id="clear" class="ghost compact" title="Reset">Reset</button>
+          <input id="live-logs-enabled" type="checkbox" aria-label="LIVE-Logs" title="LIVE-Logs: Off">
+          <span class="status-led off" data-switch-status="live-logs-enabled" role="status" aria-label="LIVE-Logs: deaktiviert"></span>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="export-log" class="secondary">JSON-L-Export</button>
+        <button id="export-caption-raw" class="secondary">RAW-JSON-Export</button>
+      </div>
+      <div id="caption-list" class="list empty">Noch keine CaptionMessages empfangen.</div>
+    </section>
+
+    <section aria-labelledby="debug-heading">
+      <div class="section-title header-controls">
+        <h2 id="debug-heading">Debugmodus</h2>
+        <div class="title-actions">
+          <span class="status-led off" data-counter-status="debug-count" role="status"></span>
+          <span id="debug-count" class="count">0</span>
+          <button id="clear-debug" class="ghost compact" title="Reset">Reset</button>
+          <input id="debug-enabled" type="checkbox" aria-label="Diagnoseereignisse für diesen Tab protokollieren" title="Diagnoseereignisse für diesen Tab protokollieren: Off">
+          <span class="status-led off" data-switch-status="debug-enabled" role="status"></span>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="export-debug" class="secondary">Debug exportieren</button>
+      </div>
+      <p class="muted small"></p>
+    </section>
+
+    <div id="audience-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="audience-heading">
+        <div class="section-title">
+          <h2 id="audience-heading">Im Chat beobachtete Personen</h2>
+          <button id="close-audience" class="secondary compact" aria-label="Übersicht schließen">Schließen</button>
+        </div>
+        <p id="audience-limit" class="inline-status"></p>
+        <div id="audience-list" class="audience-list"></div>
+      </section>
+    </div>
+
+    <div id="speech-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="speech-settings-heading">
+        <div class="section-title">
+          <h2 id="speech-settings-heading">Erweiterte Einstellungen</h2>
+          <button id="close-speech-settings" class="secondary compact" aria-label="Einstellungen schließen">Schließen</button>
+        </div>
+        <div class="settings-grid speech-integration-settings">
+<label class="icon-style-setting"><span>Icon-Stil</span><select id="icon-style"><option value="plastisch">3D / Plastisch</option><option value="glass">Glass / Realistisch</option><option value="linear">Minimal / Linear</option></select></label>
+          <label><span>Sprache</span><select id="speech-language"><option value="auto">Auto</option><option value="de-DE">Deutsch</option><option value="en-US">Englisch</option><option value="ru-RU">Russisch</option><option value="uk-UA">Ukrainisch</option><option value="bg-BG">Bulgarisch</option><option value="sr-RS">Serbisch</option><option value="kk-KZ">Kasachisch</option><option value="zh-CN">Chinesisch</option><option value="ja-JP">Japanisch</option><option value="ko-KR">Koreanisch</option><option value="ar-JO">Arabisch</option><option value="fa-IR">Persisch</option><option value="ur-PK">Urdu</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option><option value="ml-IN">Malayalam</option></select></label>
+          <label><span>Stimme</span><select id="speech-voice"><option value="">Standard</option></select></label>
+          <label id="audd-token-setting"><span id="audd-token-label">AudD API-Token (optional - <a href="https://audd.io/" target="_blank" rel="noopener noreferrer">https://AudD.io</a> Trial/Paid)</span><input id="audd-token" type="password" autocomplete="off" spellcheck="false"></label>
+          <label id="pairing-code-setting"><span>Pairing-Code</span><input id="pairing-code" type="password" autocomplete="off" spellcheck="false"></label>
+          <label><span>Universal API-Key</span><input id="universal-caption-api-key" type="password" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <label class="option-row"><input id="speak-names" type="checkbox" checked> Chatnamen sprechen</label>
+        <label class="option-row"><input id="shorten-names" type="checkbox"> Chatnamen kürzen</label>
+        <label class="option-row auto-chat-refresh"><input id="auto-chat-refresh" type="checkbox"> Auto-Chat Refresh <input id="auto-chat-refresh-minutes" type="number" min="1" max="60" step="1" value="5" inputmode="numeric" aria-label="Auto-Chat-Refresh in Minuten"><span>min.</span></label>
+        <label class="option-row"><input id="game-mode" type="checkbox"> Game-Mode (Spam-, Emoji, usw. Chatfilter)</label>
+        <div class="option-row external-speech-trigger-row"><label><input id="filter-external-speech-triggers" type="checkbox"> Trigger filtern (ext. Sprachdienste)</label><input id="external-speech-trigger-characters" type="text" value="." maxlength="10" aria-label="Triggerzeichen, maximal fünf Sonderzeichen" autocomplete="off" spellcheck="false"></div>
+        <label class="option-row"><input id="keep-speech-active" type="checkbox" aria-label="Vorlesen dauerhaft" title="Vorlesen dauerhaft: Off"> Vorlesen dauerhaft</label>
+      </section>
+    </div>
+
+    <div id="chat-history-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="chat-history-heading">
+        <div class="section-title">
+          <h2 id="chat-history-heading">Gesammelte Chatnachrichten</h2>
+          <button id="close-chat-history" class="secondary compact" aria-label="Chatzeilen schließen">Schließen</button>
+        </div>
+        <p id="chat-history-limit" class="inline-status"></p>
+        <div id="chat-history-list" class="chat-history-list"></div>
+      </section>
+    </div>
+
+    <div id="recommendation-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="recommendation-modal-heading">
+        <div class="section-title">
+          <h2 id="recommendation-modal-heading">Gescannte LIVE-Empfehlungen</h2>
+          <button id="close-recommendations" class="secondary compact" aria-label="Empfehlungen schließen">Schließen</button>
+        </div>
+        <div id="recommendation-modal-list" class="recommendation-list"></div>
+      </section>
+    </div>
+
+    <p id="notice" role="alert" class="notice"></p>
+  </main>
+  <div id="connection-settings-modal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="connection-settings-heading">
+      <div class="section-title"><h2 id="connection-settings-heading">Connection-Einstellungen</h2><button id="close-connection-settings" class="secondary compact">Schließen</button></div>
+      <label class="option-row top-setting"><input id="connection-top" type="checkbox"> Connection @ Top</label>
+      <label class="option-row quick-recover-setting"><input id="hook-reconnect" type="checkbox"> Hook-Reconnect <input id="hook-reconnect-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Hook-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
+      <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Player-Recovery <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Player-Recovery-Bestätigungszeit in Sekunden"><span>Sek.</span></label>
+    </section>
+  </div>
+
+
+  <div id="overview-settings-modal" class="modal-backdrop" hidden>
+    <section class="modal monitor-settings" role="dialog" aria-modal="true" aria-labelledby="overview-settings-heading">
+      <div class="section-title"><h2 id="overview-settings-heading">Monitor Einstellungen</h2><button id="overview-settings-close" class="secondary compact">Schließen</button></div>
+      <label>Prüfintervall (Minuten) <input id="overview-interval" type="number" min="1" max="60" value="5"></label>
+      <label>Maximale Links pro Stream <input id="overview-max-links" type="number" min="5" max="30" value="5"></label>
+      <label class="option-row"><input id="overview-top" type="checkbox"> Monitor @ Top</label>
+      <label class="option-row"><input id="overview-show-links" type="checkbox"> Streamlinks anzeigen</label>
+      <label class="option-row"><input id="overview-auto-sort" type="checkbox"> Online-Streams automatisch sortieren</label>
+      <label class="option-row"><input id="overview-reverse" type="checkbox"> Übersicht von unten nach oben</label>
+      <label class="option-row"><input id="overview-grid2" type="checkbox"> Übersicht 2×2</label>
+      <label class="option-row"><input id="overview-skip-online" type="checkbox"> Online-Streams nicht erneut prüfen</label>
+    </section>
+  </div>
+  <div id="overview-links-modal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="overview-links-heading">
+      <div class="section-title"><h2 id="overview-links-heading">Streamlinks</h2><button id="overview-links-close" class="secondary compact">Schließen</button></div>
+      <div id="overview-links-list"></div>
+    </section>
+  </div>
+
+  <script src="content-core.js"></script>
+  <script src="sidepanel.js"></script>
+  <script src="status-overview-panel.js"></script>
+  <script src="icon-controls.js"></script>
+</body>
+</html>
+EOF
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; background: Canvas; color: CanvasText; min-width: 300px; }
-header { padding: 11px 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, Canvas), Canvas); border-bottom: 1px solid var(--border); }
-h2 { margin: 0; font-size: 15px; }
-main { padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-section { min-width: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; box-shadow: 0 5px 20px color-mix(in srgb, CanvasText 6%, transparent); }
-.section-title, .button-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.section-title { min-width: 0; flex-wrap: wrap; }
-.title-actions { display: flex; min-width: 0; max-width: 100%; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
-.status-led { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 15%, transparent); }
-.status-led.on { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 17%, transparent); }
-.status-led.off { background: var(--bad); }
-.button-row { justify-content: flex-start; flex-wrap: wrap; margin-top: 10px; }
-button { border: 0; border-radius: 9px; padding: 9px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-button:disabled { cursor: not-allowed; opacity: .55; }
-.compact { padding: 7px 9px; }
-.settings-button { min-width: 34px; font-size: 17px; line-height: 1; }
-.primary { color: white; background: var(--accent); }
-.primary:hover { background: var(--accent-dark); }
-.secondary { color: CanvasText; background: color-mix(in srgb, CanvasText 9%, Canvas); border: 1px solid var(--border); }
-.ghost { color: var(--muted); background: transparent; }
-.danger-outline { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
-#enable-captions { width: 100%; margin-top: 11px; }
-.muted { color: var(--muted); }
-.small { font-size: 12px; line-height: 1.45; }
-#page-title { margin: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 11px; }
-.status { padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; }
-.status-label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
-.status-value { display: block; margin-top: 3px; font-size: 12px; font-weight: 750; }
-.good .status-value { color: var(--good); }
-.warn .status-value { color: var(--warn); }
-.bad .status-value { color: var(--bad); }
-.count { min-width: 25px; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 15%, Canvas); color: var(--accent); text-align: center; font-size: 11px; font-weight: 800; }
-.count-button { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); cursor: pointer; }
-.count-button:hover, .count-button:focus-visible { background: color-mix(in srgb, var(--accent) 25%, Canvas); }
-.live-indicator { padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 15%, Canvas); color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.live-indicator.active { background: color-mix(in srgb, var(--good) 16%, Canvas); color: var(--good); }
-.stats-grid .status-value { font-size: 16px; font-variant-numeric: tabular-nums; }
-.chat-list { display: grid; gap: 6px; margin-top: 11px; }
-.chat-list.empty { color: var(--muted); font-size: 12px; }
-.chat-line { margin: 0; padding: 7px 8px; border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 6px; background: Canvas; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
-.chat-author { font-weight: 800; }
-.player-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px; }
-.player-controls button { width: 100%; }
-.player-time { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.audio-controls { display: grid; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); }
-.control-label, .audio-meter-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; }
-.control-label output, .audio-meter-row strong { font-variant-numeric: tabular-nums; }
-input[type="range"] { width: 100%; accent-color: var(--accent); }
-.settings-grid { display: grid; gap: 7px; margin-top: 10px; }
-.settings-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
-.settings-grid label[hidden] { display: none; }
-input[type="url"], input[type="text"], input[type="password"], input[type="number"], select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
-.top-chatters { display: grid; gap: 6px; margin-top: 8px; }
-.top-chatters.empty { color: var(--muted); font-size: 12px; }
-.top-chatters-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 7px; }
-.top-chatters-actions[hidden] { display: none; }
-.top-chatter-link { padding: 0; color: var(--accent); background: transparent; border: 0; border-radius: 0; font-weight: 700; }
-.top-chatter-link:hover { text-decoration: underline; }
-.chatter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 7px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; background: Canvas; }
-.chatter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 800; }
-.chatter-metrics { color: var(--muted); font-size: 10px; white-space: nowrap; }
-.mute-toggle { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 10px; }
-#recognize-song { width: 100%; margin-top: 10px; }
-.song-result { margin-top: 9px; padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; font-size: 11px; line-height: 1.45; }
-.song-result strong, .song-result span, .song-result a { display: block; }
-.song-result a { margin-top: 4px; color: var(--accent); overflow-wrap: anywhere; }
-.modal-backdrop { position: fixed; inset: 0; z-index: 100; padding: 14px; background: color-mix(in srgb, CanvasText 42%, transparent); overflow: auto; }
-.modal { width: min(520px, 100%); max-height: calc(100vh - 28px); margin: 0 auto; overflow: auto; background: Canvas; }
-.audience-list, .chat-history-list, .recommendation-list { display: grid; gap: 7px; margin-top: 9px; }
-.chat-history-row { padding: 8px 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
-.chat-history-meta { display: block; margin-bottom: 3px; color: var(--muted); font-size: 10px; }
-.audience-row { display: grid; gap: 6px; padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
-.audience-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.audience-row select { width: auto; max-width: 170px; }
-.audience-metrics { color: var(--muted); font-size: 10px; line-height: 1.45; }
-.option-row { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.35; }
-.option-row input { margin: 1px 0 0; accent-color: var(--accent); }
-.auto-chat-refresh { align-items: center; }
-.external-speech-trigger-row { align-items: center; }
-.external-speech-trigger-row label { display: flex; align-items: center; gap: 7px; }
-.external-speech-trigger-row input[type="text"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
-.auto-chat-refresh input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
-.quick-recover-setting input[type="number"] { width: 48px; margin-left: 3px; padding: 3px 4px; border: 1px solid var(--border); border-radius: 6px; background: Canvas; color: CanvasText; font: inherit; font-size: 11px; }
-.audio-note { margin: 1px 0 0; }
-.profile-info { display: grid; gap: 8px; margin-top: 11px; }
-.profile-heading { margin: 0; font-size: 14px; font-weight: 800; }
-.profile-handle, .profile-bio { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; white-space: pre-wrap; }
-.profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.profile-stat { padding: 7px; border: 1px solid var(--border); border-radius: 8px; background: Canvas; }
-.profile-stat strong, .profile-stat span { display: block; }
-.profile-stat span { margin-top: 2px; color: var(--muted); font-size: 9px; text-transform: uppercase; }
-.summary-info { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.45; }
-.summary-text { margin: 6px 0 0; white-space: pre-wrap; }
-.recommendation-controls { display: grid; grid-template-columns: minmax(70px, .7fr) minmax(150px, 1.3fr); gap: 8px; margin-top: 10px; }
-.recommendation-controls label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
-.recommendation-list.empty { display: block; color: var(--muted); font-size: 12px; }
-.recommendation-row { padding: 9px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; }
-.recommendation-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.recommendation-name { min-width: 0; margin: 0; font-size: 11px; font-weight: 800; overflow-wrap: anywhere; }
-.recommendation-viewers { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
-.recommendation-description { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
-.recommendation-link { display: inline-block; margin-top: 6px; color: var(--accent); font-size: 11px; font-weight: 700; }
-.list { display: grid; gap: 8px; margin-top: 11px; max-height: 300px; overflow: auto; }
-.list.empty { display: block; color: var(--muted); font-size: 12px; }
-.item { padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: Canvas; }
-.item-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.item-title { font-size: 12px; font-weight: 800; }
-.item-meta, .item-url, .caption-meta { color: var(--muted); font-size: 10px; }
-.item-url { margin-top: 6px; overflow-wrap: anywhere; max-height: 42px; overflow: hidden; }
-.copy { flex: 0 0 auto; padding: 6px 8px; }
-.caption-text { margin: 5px 0 0; white-space: pre-wrap; font-size: 12px; line-height: 1.4; }
-.inline-status, .notice { min-height: 17px; margin: 9px 0 0; color: var(--muted); font-size: 11px; }
-.action-status { line-height: 1.4; }
-.reset-note { margin: 7px 0 0; }
-.notice { margin: 0 3px 8px; color: var(--bad); }
-@media (min-width: 430px) { .speech-settings { grid-template-columns: 1fr 1fr; } .speech-settings label:first-child { grid-column: 1 / -1; } }
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+# Hauptprogramm
+main() {
+  local output_file="${1:-}"
 
-/* Header controls remain in one ordered group at the upper right. */
-.section-title.header-controls { flex-wrap: nowrap; align-items: flex-start; }
-.header-controls > .title-actions { margin-inline-start: auto; flex-wrap: nowrap; flex-shrink: 0; }
-.header-controls > .title-actions input[type="checkbox"] { margin: 0; }
-.connection-status { display: flex; align-items: center; gap: 8px; }
-'
-
-# Check if an argument is provided
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 <output_file>"
+  if [[ -z "$output_file" ]]; then
+    echo "Verwendung: $0 <ausgabedatei>" >&2
     exit 1
-fi
+  fi
 
-# Write CSS content to the specified file
-echo "$css_content" > "$1"
+  generate_html > "$output_file"
+}
+
+main "$@"
