@@ -1,7 +1,7 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_40f9f2.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2.tcl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_40f9f2_0f7ee1.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_0f7ee1.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ if (@ARGV != 1) {
 }
 my $outputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML_CONTENT';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -112,7 +112,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -219,13 +219,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_CONTENT
+HTML_END
 
-# Schreibe HTML-Inhalt in Ausgabedatei
-if (open(my $fh, '>', $outputPath)) {
-    print $fh $htmlContent;
-    close $fh;
-} else {
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+open(my $fh, '>', $outputPath) or do {
     print STDERR "Konnte Datei '$outputPath' nicht öffnen: $!\n";
     exit 1;
-}
+};
+print $fh $htmlContent;
+close($fh);

@@ -1,22 +1,27 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach powershell
+# 1781743218784_0122af_40f9f2_083cab_e1b7d0.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2_083cab_e1b7d0.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach python
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
 # Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_40f9f2.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2.py
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2.py — portiert nach python3
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.pl
 
-# Prüfe Aufrufparameter
-if ($args.Count -ne 1) {
-    $prog = $MyInvocation.MyCommand.Name
-    Write-Error "Aufruf: $prog <Ausgabedatei>" -ErrorAction Stop
-    exit 1
-}
+function Main {
+    # Prüfe Aufrufparameter
+    if ($args.Count -ne 1) {
+        $prog = [System.IO.Path]::GetFileName($MyInvocation.ScriptName)
+        [Console]::Error.WriteLine("Aufruf: $prog <Ausgabedatei>")
+        exit 1
+    }
 
-$output_path = $args[0]
+    $outputPath = $args[0]
 
-$html_content = @'
+    $htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,9 +229,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-try {
-    [System.IO.File]::WriteAllText($output_path, $html_content, [System.Text.Encoding]::UTF8)
-} catch {
-    Write-Error "Konnte Datei '$output_path' nicht öffnen: $($_.Exception.Message)" -ErrorAction Stop
-    exit 1
+    try {
+        [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    }
+    catch {
+        [Console]::Error.WriteLine("Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)")
+        exit 1
+    }
 }
+
+Main @args

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_40f9f2_083cab.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2_083cab.tcl
-// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_40f9f2_083cab_16895a.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab_16895a.pl
+// Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-  console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
-  process.exit(1);
+    process.stderr.write("Aufruf: " + process.argv[1] + " <Ausgabedatei>\n");
+    process.exit(1);
 }
 
 const fs = require('fs');
@@ -219,9 +219,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 `;
 
+// Datei öffnen und schreiben
 try {
-  fs.writeFileSync(output_path, html_content);
-} catch (error) {
-  console.error(`Konnte Datei '${output_path}' nicht öffnen: ${error.message}`);
-  process.exit(1);
+    fs.writeFileSync(output_path, html_content);
+} catch (err) {
+    process.stderr.write("Konnte Datei '" + output_path + "' nicht öffnen: " + err.message + "\n");
+    process.exit(1);
 }

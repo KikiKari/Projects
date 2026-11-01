@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -14,8 +14,7 @@ fi
 output_path="$1"
 
 # HTML-Inhalt in Variable speichern
-html_content=$(
-    cat <<'EOF'
+html_content=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,11 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 )
 
 # Schreibe HTML-Inhalt in Ausgabedatei
-if ! printf '%s' "$html_content" >"$output_path"; then
+echo "$html_content" > "$output_path" || {
     echo "Konnte Datei '$output_path' nicht öffnen." >&2
     exit 1
-fi
+}

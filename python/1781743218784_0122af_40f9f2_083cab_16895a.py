@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_40f9f2_083cab.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2_083cab.tcl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_083cab_16895a.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_16895a.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import json
+import base64
+import os
+from datetime import datetime
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
-# Prüfe Aufrufparameter
 if len(sys.argv) != 2:
     print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
@@ -136,7 +143,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -220,8 +227,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '''
 
 try:
-    with open(output_path, 'w') as fh:
-        fh.write(html_content)
-except Exception as error:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {str(e)}", file=sys.stderr)
     sys.exit(1)

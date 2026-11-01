@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_40f9f2.py — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
+import json
 
 def main():
     # Prüfe Aufrufparameter
     if len(sys.argv) != 2:
-        print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+        prog = sys.argv[0]
+        print(f"Aufruf: {prog} <Ausgabedatei>", file=sys.stderr)
         sys.exit(1)
 
     output_path = sys.argv[1]
@@ -228,9 +225,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-    except Exception as e:
-        print(f"Konnte Datei '{output_path}' nicht öffnen: {str(e)}", file=sys.stderr)
+    except Exception as error:
+        print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

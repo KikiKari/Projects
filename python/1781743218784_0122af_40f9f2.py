@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_40f9f2.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_40f9f2.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -15,6 +11,7 @@ if len(sys.argv) != 2:
     script_name = os.path.basename(sys.argv[0])
     print(f"Aufruf: {script_name} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
+
 output_path = sys.argv[1]
 
 html_content = '''<!DOCTYPE html>
@@ -141,7 +138,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -221,14 +218,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
+# Schreibe die HTML-Inhalte in die Ausgabedatei
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
+    print(f"Datei erfolgreich geschrieben: {output_path}")
 except Exception as error:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
+    print(f"Konnte Datei '{output_path}' nicht schreiben: {error}", file=sys.stderr)
     sys.exit(1)
-
-sys.exit(0)

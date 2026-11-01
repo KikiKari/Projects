@@ -1,20 +1,20 @@
 #!/usr/bin/env perl
-# 1781743218784_0122af.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
+use Getopt::Long;
 
-# Parameter verarbeiten
-my $output_path = shift @ARGV;
-if (!$output_path) {
-    die "Verwendung: $0 <Ausgabedatei>\n";
+my $output_path;
+GetOptions('output_path=s' => \$output_path) or die "Ungültige Optionen\n";
+
+if (!defined $output_path) {
+    die "output_path ist erforderlich\n";
 }
 
-my $html_content = <<'HTML';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,12 +220,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
-# Datei schreiben
 open my $fh, '>:encoding(UTF-8)', $output_path or do {
-    print STDERR "Konnte Datei '$output_path' nicht öffnen: $!\n";
+    warn "Konnte Datei '$output_path' nicht öffnen: $!\n";
     exit 1;
 };
+
 print $fh $html_content;
 close $fh;

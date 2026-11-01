@@ -1,7 +1,15 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
 # Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2.js — portiert nach JavaScript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
+# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.pl
 
 param(
     [Parameter(Mandatory=$true)]
@@ -217,7 +225,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 "@
 
 try {
-    $html_content | Out-File -FilePath $OutputPath -Encoding UTF8
+    $html_content | Out-File -FilePath $OutputPath -Encoding utf8 -Force
 } catch {
     Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
     exit 1

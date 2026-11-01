@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_40f9f2.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    const scriptName = path.basename(process.argv[1]);
-    console.error(`Aufruf: ${scriptName} <Ausgabedatei>`);
+    const script_name = path.basename(process.argv[1]);
+    console.error(`Aufruf: ${script_name} <Ausgabedatei>`);
     process.exit(1);
 }
-const outputPath = process.argv[2];
+const output_path = process.argv[2];
 
-const htmlContent = `<!DOCTYPE html>
+const html_content = `\
+<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -138,7 +141,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -218,13 +221,15 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 // Schreibe die HTML-Inhalte in die Ausgabedatei
 try {
-    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
-    console.log(`Datei erfolgreich geschrieben: ${outputPath}`);
-} catch (error) {
-    console.error(`Konnte Datei '${outputPath}' nicht schreiben: ${error.message}`);
+    fs.writeFileSync(output_path, html_content, { encoding: 'utf8' });
+} catch (err) {
+    console.error(`Konnte Datei '${output_path}' nicht öffnen: ${err.message}`);
     process.exit(1);
 }
+
+process.exit(0);

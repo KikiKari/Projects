@@ -1,15 +1,18 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_40f9f2_083cab.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_40f9f2_083cab.tcl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_40f9f2_083cab_16895a.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_16895a.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
 
-# Prüfe Aufrufparameter
+binmode(STDERR, ":encoding(UTF-8)");
+
 if (@ARGV != 1) {
     print STDERR "Aufruf: $0 <Ausgabedatei>\n";
-    exit 1;
+    exit(1);
 }
 
 my $output_path = $ARGV[0];
@@ -222,10 +225,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-# Datei öffnen und schreiben
-open(my $fh, '>', $output_path) or do {
+open my $fh, '>:encoding(UTF-8)', $output_path or do {
     print STDERR "Konnte Datei '$output_path' nicht öffnen: $!\n";
-    exit 1;
+    exit(1);
 };
 
 print $fh $html_content;

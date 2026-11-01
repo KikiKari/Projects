@@ -1,16 +1,13 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
+# 1781743218784_0122af_40f9f2_083cab_e1b7d0.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_083cab_e1b7d0.ps1
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2_083cab_e1b7d0.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_083cab_e1b7d0.ps1
 # Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_40f9f2.py -- portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_40f9f2.py
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
-
-# Tcl-Portierung: Perl -> Tcl 8.6
-# Beachte: Tcl hat keine direkte Entsprechung zu Perl's use/open/Encode,
-#          daher verwenden wir Tcl's eingebaute UTF-8-Unterstützung.
-
+# Prüfe Aufrufparameter
 if {$argc != 1} {
     set prog [file tail $argv0]
     puts stderr "Aufruf: $prog <Ausgabedatei>"
@@ -226,13 +223,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Versuche, die Datei zu öffnen und zu schreiben
-if {[catch {
-    set fh [open $output_path w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $html_content
-    close $fh
-} error]} {
-    puts stderr "Konnte Datei '$output_path' nicht öffnen: $error"
+if {[catch {set fd [open $output_path w]}]} {
+    puts stderr "Konnte Datei '$output_path' nicht öffnen: $fd"
     exit 1
 }
+
+puts -nonewline $fd $html_content
+close $fd
