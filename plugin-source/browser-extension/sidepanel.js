@@ -69,6 +69,10 @@
 
   async function activeTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const pinned = Number(new URLSearchParams(location.search).get("tabId"));
+    if (tab?.url?.startsWith(chrome.runtime.getURL("sidepanel.html")) && pinned > 0) {
+      return await chrome.tabs.get(pinned).catch(() => tab);
+    }
     return tab;
   }
 

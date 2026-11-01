@@ -6,11 +6,10 @@
   <title>TikTok LIVE Companion</title>
   <link rel="stylesheet" href="sidepanel.css">
   <link rel="stylesheet" href="icon-controls.css">
+  <link rel="stylesheet" href="status-overview-panel.css">
 </head>
 <body>
-  <header>
-    <p id="page-title" class="muted">Kein TikTok-Tab ausgewählt</p>
-  </header>
+  <p id="page-title" hidden></p>
 
   <main>
     <section aria-labelledby="chat-heading">
@@ -145,6 +144,14 @@
       </div>
     </section>
 
+    <section aria-labelledby="overview-heading">
+      <div class="section-title header-controls"><h2 id="overview-heading">STATUS-Monitor</h2><div class="title-actions"><button id="overview-settings" class="secondary compact" type="button" aria-label="Monitor Einstellungen">Monitor Einstellungen</button><button id="overview-reset" class="secondary compact" type="button" aria-label="Streamnamen leeren">Streamnamen leeren</button><input id="overview-enabled" type="checkbox" aria-label="LIVE-Prüfung"><span class="status-led off" data-switch-status="overview-enabled" role="status"></span></div></div>
+      <div id="overview-rows"></div>
+      <div class="button-row overview-actions"><button id="overview-check" class="secondary" type="button" aria-label="Jetzt prüfen" title="Jetzt prüfen"></button><button id="overview-copy" class="secondary">Alle kopieren</button><button id="overview-open" class="primary">Overview</button></div>
+      <div class="top-chatters-actions"><button id="overview-collapse" class="top-chatter-link" type="button" hidden>Reset</button><button id="overview-more" class="top-chatter-link" type="button">mehr…</button></div>
+      <p id="overview-message" class="overview-visually-hidden" role="status"></p>
+    </section>
+
     <section aria-labelledby="caption-heading">
       <div class="section-title">
         <h2 id="caption-heading">Titel</h2>
@@ -271,14 +278,36 @@
   <div id="connection-settings-modal" class="modal-backdrop" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="connection-settings-heading">
       <div class="section-title"><h2 id="connection-settings-heading">Connection-Einstellungen</h2><button id="close-connection-settings" class="secondary compact">Schließen</button></div>
+      <label class="option-row top-setting"><input id="connection-top" type="checkbox"> Connection @ Top</label>
       <label class="option-row quick-recover-setting"><input id="hook-reconnect" type="checkbox"> Hook-Reconnect <input id="hook-reconnect-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Hook-Reconnect-Wartezeit in Sekunden"><span>Sek.</span></label>
       <label class="option-row quick-recover-setting"><input id="quick-recover" type="checkbox"> Player-Recovery <input id="quick-recover-seconds" type="number" min="1" max="59" step="1" value="3" inputmode="numeric" aria-label="Player-Recovery-Bestätigungszeit in Sekunden"><span>Sek.</span></label>
     </section>
   </div>
 
 
+  <div id="overview-settings-modal" class="modal-backdrop" hidden>
+    <section class="modal monitor-settings" role="dialog" aria-modal="true" aria-labelledby="overview-settings-heading">
+      <div class="section-title"><h2 id="overview-settings-heading">Monitor Einstellungen</h2><button id="overview-settings-close" class="secondary compact">Schließen</button></div>
+      <label>Prüfintervall (Minuten) <input id="overview-interval" type="number" min="1" max="60" value="5"></label>
+      <label>Maximale Links pro Stream <input id="overview-max-links" type="number" min="5" max="30" value="5"></label>
+      <label class="option-row"><input id="overview-top" type="checkbox"> Monitor @ Top</label>
+      <label class="option-row"><input id="overview-show-links" type="checkbox"> Streamlinks anzeigen</label>
+      <label class="option-row"><input id="overview-auto-sort" type="checkbox"> Online-Streams automatisch sortieren</label>
+      <label class="option-row"><input id="overview-reverse" type="checkbox"> Übersicht von unten nach oben</label>
+      <label class="option-row"><input id="overview-grid2" type="checkbox"> Übersicht 2×2</label>
+      <label class="option-row"><input id="overview-skip-online" type="checkbox"> Online-Streams nicht erneut prüfen</label>
+    </section>
+  </div>
+  <div id="overview-links-modal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="overview-links-heading">
+      <div class="section-title"><h2 id="overview-links-heading">Streamlinks</h2><button id="overview-links-close" class="secondary compact">Schließen</button></div>
+      <div id="overview-links-list"></div>
+    </section>
+  </div>
+
   <script src="content-core.js"></script>
   <script src="sidepanel.js"></script>
+  <script src="status-overview-panel.js"></script>
   <script src="icon-controls.js"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@
   function apply(value) { style = styles.has(value) ? value : "plastisch"; document.documentElement.dataset.iconStyle = style; picker.value = style; }
   apply(style);
   picker.addEventListener("change", () => { apply(picker.value); try { localStorage.setItem("tlc-icon-style", style); } catch {} });
-  const fixed = {"open-normal-live":"browser", "player-vlc-frame":"player", "player-fullscreen":"fullscreen", "player-pip":"pip", "player-report":"report", "scan":"status", "enable-captions":"captions", "player-replay":"reset", "clear":"reset", "clear-debug":"reset", "refresh-chat":"reset", "top-chatters-reset":"reset", "reset-tab":"reset", "refresh-page-info":"reset", "open-speech-settings":"settings", "open-connection-settings":"settings"};
+  const fixed = {"open-normal-live":"browser", "player-vlc-frame":"player", "player-fullscreen":"fullscreen", "player-pip":"pip", "player-report":"report", "scan":"status", "enable-captions":"captions", "player-replay":"reset", "clear":"reset", "clear-debug":"reset", "refresh-chat":"reset", "top-chatters-reset":"reset", "reset-tab":"reset", "overview-reset":"reset", "overview-collapse":"reset", "overview-settings":"settings", "overview-check":"status", "refresh-page-info":"reset", "open-speech-settings":"settings", "open-connection-settings":"settings"};
   const counters = new Map();
   function setHeaderLed(dot, active, label) {
     dot.classList.toggle("on", active);
@@ -42,7 +42,7 @@
       const text = el.textContent.trim();
       const context = id === "toggle-speech" ? "Vorlesen: " : id === "toggle-hook" ? "Connection: " : "";
       const stateText = context ? (el.getAttribute("aria-pressed") === "true" ? "On" : "Off") : text;
-      const label = id === "refresh-page-info" ? "Refresh" : id === "open-speech-settings" ? "Erweiterte Einstellungen öffnen" : id === "open-connection-settings" ? "Connection-Einstellungen öffnen" : context + stateText;
+      const label = id === "overview-check" ? "Jetzt prüfen" : id === "refresh-page-info" ? "Refresh" : id === "open-speech-settings" ? "Erweiterte Einstellungen öffnen" : id === "open-connection-settings" ? "Connection-Einstellungen öffnen" : context + stateText;
       el.setAttribute("aria-label", label);
       el.setAttribute("title", label);
     }

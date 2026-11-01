@@ -1,5 +1,5 @@
 importScripts("content-core.js", "export-privacy.js");
-importScripts("pipeline-client.js", "pipeline-capture.js");
+importScripts("pipeline-client.js", "pipeline-capture.js", "status-overview-worker.js");
 
 const STATE_PREFIX = "tlc-tab-";
 const LEGACY_HOOK_SCRIPT_ID = "tiktok-live-companion-ws-hook";
@@ -1244,10 +1244,22 @@ async function openNormalLive(tabId) {
   return { activated: false, phase: "loading", reloading, tabId, handle };
 }
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+// chrome.sidePanel.setPanelBehavior is not available in every host.
+let panelFallbackRegistered = false;
+function registerPanelFallback() {
+  if (panelFallbackRegistered || !chrome.action?.onClicked) return;
+  panelFallbackRegistered = true;
+  chrome.action.onClicked.addListener((tab) => chrome.tabs.create({ url: chrome.runtime.getURL(`sidepanel.html?tabId=${Number(tab?.id) || 0}`) }));
+}
+function configurePanelAccess() {
+  if (!chrome.sidePanel?.setPanelBehavior) return registerPanelFallback();
+  try { Promise.resolve(chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })).catch(registerPanelFallback); }
+  catch (_) { registerPanelFallback(); }
+}
+configurePanelAccess();
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  configurePanelAccess();
   removeLegacyGlobalHook().catch(() => {});
 });
 
@@ -1262,7 +1274,7 @@ restoreEmbedDeadlines().catch(() => {});
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab.url) return;
   const isTikTok = tab.url.startsWith("https://www.tiktok.com/");
-  chrome.sidePanel.setOptions({
+  chrome.sidePanel?.setOptions?.({
     tabId,
     path: "sidepanel.html",
     enabled: true
@@ -1361,6 +1373,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const handleMessage = async () => {
     if (sender.tab && Number.isInteger(tabId) && message?.type !== "TLC_DEBUG_EVENT") {
       await addDebug(tabId, `raw:${String(message?.type || "unknown")}`, message || {});
+    }
+    if (message.type?.startsWith("TLC_OVERVIEW_")) {
+      sendResponse(await TLCOverview.message(message, sender));
+      return;
     }
     switch (message.type) {
       case "TLC_GET_STATE":
@@ -1844,8 +1860,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const state = await getState(tabId);
         state.enabled = true;
         await setState(tabId, state);
-        await chrome.sidePanel.setOptions({ tabId, path: "sidepanel.html", enabled: true }).catch(() => {});
-        if (chrome.sidePanel.open) await chrome.sidePanel.open({ tabId }).catch(() => {});
+        await chrome.sidePanel?.setOptions?.({ tabId, path: "sidepanel.html", enabled: true }).catch(() => {});
+        if (chrome.sidePanel?.open) await chrome.sidePanel.open({ tabId }).catch(() => {});
         sendResponse({ ok: true, state });
         break;
       }

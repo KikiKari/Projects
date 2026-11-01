@@ -10,6 +10,7 @@ Lokales Codex-Plugin plus entpackbare Manifest-V3-Erweiterung für Edge und Chro
 - `caption_info` aus eingebetteten JSON-Metadaten erkennen
 - optionale, vor dem Reload installierte WebSocket-Beobachtung für `WebcastCaptionMessage`
 - LIVE-Informationen aus `WebcastRoomUserSeqMessage`, `WebcastLikeMessage` und `WebcastSocialMessage`: Zuschauer*innen, Aufrufe, Likes, Follows und Teilungen
+- STATUS-Monitor: bis zu 20 LIVE-Handles regelmäßig prüfen, Videolinks kopieren und im separaten 2×2- oder 3×3-Tab stumm abspielen
 - FLV-/HLS-Anfragen an TikTok-CDNs passiv erkennen
 - eingebettete Stream-URLs einschließlich nicht abgespielter Qualitätsstufen, Codec, Auflösung und Bitrate auslesen
 - verfügbare Qualitätsstufen über TikToks vorhandenes Player-Menü wechseln
@@ -31,3 +32,7 @@ Lokales Codex-Plugin plus entpackbare Manifest-V3-Erweiterung für Edge und Chro
 Die Erweiterung liest keine Cookies. Für fehlende Profilkopfwerte kann sie die öffentliche TikTok-Profilseite mit `credentials: omit` abrufen oder nach einem ausdrücklichen Force-Klick kurz vollständig öffnen. Erkannte Links, Captions, Diagnosedaten, Teilnehmeraggregate und bis zu 50 öffentliche Chatzeilen werden im flüchtigen Browser-Sitzungsspeicher gehalten. Einstellungen und dauerhafte Mutes liegen im lokalen Speicher. TTS läuft lokal im Browser beziehungsweise im optionalen Windows-Dienst. Nur eine manuell gestartete Songerkennung sendet ungefähr zwölf Sekunden Tab-Audio an AudD; das AudD-Token verbleibt in der lokalen Dienstkonfiguration.
 
 Die dBFS-Anzeige beschreibt den digitalen Signalpegel. Ohne ein kalibriertes Ausgabegerät kann die Erweiterung keinen physikalischen Schalldruckpegel in dB SPL am Ohr messen oder garantieren.
+
+## STATUS-Monitor
+
+Unter LIVE-Empfehlungen lassen sich bis zu 20 unterschiedliche Handles und ein Prüfintervall von 1 bis 60 Minuten einstellen (Standard: 5). Die Erweiterung fragt den LIVE-Status direkt ab, ohne Prüftabs zu öffnen. Die automatische Prüfung kann ein- und ausgeschaltet werden; tatsächlich laufende Kacheln werden während der Wiedergabe nicht erneut geprüft. Ein unbekannter oder fehlgeschlagener Prüfstatus bedeutet nicht offline. Erkannte Video-Links bleiben im Sitzungsspeicher und können einzeln oder nach Handle gruppiert kopiert werden. Der Übersichtstab zeigt wahlweise vier oder neun Kacheln, prüft die Quellen je Kachel und startet sie stumm. Verfügbarkeit, Links und Abspielbarkeit hängen von TikTok, Browserunterstützung und der Gültigkeit der signierten Links ab. Die Funktion ist ausschließlich in Erweiterung und Plugin enthalten.

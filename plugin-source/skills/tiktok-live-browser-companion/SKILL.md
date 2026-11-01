@@ -1,6 +1,6 @@
 ---
 name: tiktok-live-browser-companion
-description: Installiert und bedient TikTok LIVE Companion 0.8.1 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung, Auto-Reconnect, Embed/Normal und Streaminformationen.
+description: Installiert und bedient TikTok LIVE Companion 0.8.2 für Edge oder Chrome einschließlich Chat-TTS, Top-Chatter, beobachteter Personen, optionalem Windows-Sprachdienst, manueller AudD-Songerkennung, Untertiteln, Playersteuerung, Auto-Reconnect, Embed/Normal, Streaminformationen und STATUS-Monitor.
 ---
 
 # TikTok LIVE Browser Companion
@@ -31,6 +31,7 @@ Nutze die mitgelieferte Manifest-V3-Erweiterung, um einen öffentlichen TikTok-L
 10. Nutze Auto-Reconnect, Embed / Normal, Qualitätsauswahl, Caption-Protokoll und VLC-Links wie bisher. Im Embed-Modus kann die Erweiterung einen inaktiven normalen LIVE-Tab als Chatquelle verwenden. Signierte Links sind zeitlich begrenzt.
 11. **Refresh** prüft Seiteninformationen ohne absichtlichen Profilumweg. **Force** besucht bewusst kurz die Profilseite und kehrt auch bei Timeout zum zuvor gespeicherten LIVE-Stream zurück; Hook und Player verbinden sich neu.
 12. Aktiviere **Debugmodus** nur zur Fehlersuche. Der JSON-Export entfernt Werte signierter URL-Parameter und enthält keinen Chattext, keine Cookies und keine API-Keys.
+13. Nutze **STATUS-Monitor** unter den LIVE-Empfehlungen für bis zu 20 Handles. Stelle das Prüfintervall ein, schalte die automatische Prüfung bei Bedarf ein oder aus und kopiere verfügbare Links und öffne die stumm startende 2×2- oder 3×3-Übersicht. Eine fehlgeschlagene Prüfung ist kein Offline-Nachweis; signierte Links können ablaufen.
 
 ## Interpretation
 

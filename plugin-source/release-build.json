@@ -1,5 +1,6 @@
 {
   "version": "0.8.2",
-  "build": 21,
-  "acceptedSourceCommit": "fde797f6e511935256f9783a91628513aedf8ae9"
+  "build": 22,
+  "baseAcceptedSourceCommit": "fde797f6e511935256f9783a91628513aedf8ae9",
+  "basePublishedCommit": "ee4baabb85139518e8d6efa63ebf8b2f25bec880"
 }
