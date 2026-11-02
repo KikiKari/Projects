@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_0edddb.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_0edddb.tcl
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_1d307b.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb_1d307b.js
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -221,8 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '''
 
 try:
-    with open(output_path, 'w', encoding='utf-8') as fd:
-        fd.write(html_content)
-except Exception as err:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {err}", file=sys.stderr)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {str(e)}", file=sys.stderr)
     sys.exit(1)

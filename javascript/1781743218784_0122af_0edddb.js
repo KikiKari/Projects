@@ -1,18 +1,28 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_0edddb.pl — portiert nach javascript
+// 1781743218784_0122af_0edddb.py — portiert nach javascript
+// Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb.py
+// Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_0edddb.pl — portiert nach python
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb.pl
 // Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-// Parameter verarbeiten
-const outputPath = process.argv[2];
-if (!outputPath) {
-    console.error(`Verwendung: ${process.argv[1]} <Ausgabedatei>`);
-    process.exit(1);
-}
+// 1781743218784_0122af.ps1 — portiert nach perl5
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
+// Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 
-const htmlContent = `<!DOCTYPE html>
+function main() {
+    // Parameter verarbeiten
+    if (process.argv.length < 3) {
+        console.error(`Verwendung: ${process.argv[1]} <Ausgabedatei>`);
+        process.exit(1);
+    }
+    
+    const outputPath = process.argv[2];
+    
+    const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -216,12 +226,16 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
-// Datei schreiben
-try {
-    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
-} catch (err) {
-    console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${err.message}`);
-    process.exit(1);
+    // Datei schreiben
+    try {
+        fs.writeFileSync(outputPath, htmlContent, 'utf8');
+    } catch (e) {
+        console.error(`Konnte Datei '${outputPath}' nicht öffnen: ${e.message}`);
+        process.exit(1);
+    }
 }
+
+main();

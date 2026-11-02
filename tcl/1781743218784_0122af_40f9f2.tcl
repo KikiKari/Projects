@@ -1,21 +1,17 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_40f9f2.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_40f9f2.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    set scriptName [file tail $argv0]
-    puts stderr "Aufruf: $scriptName <Ausgabedatei>"
+    set script_name [file tail $argv0]
+    puts stderr "Aufruf: $script_name <Ausgabedatei>"
     exit 1
 }
-set outputPath [lindex $argv 0]
+set output_path [lindex $argv 0]
 
-set htmlContent {<!DOCTYPE html>
+set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -139,7 +135,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -219,13 +215,15 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-if {[catch {set fd [open $outputPath w]} error]} {
-    puts stderr "Konnte Datei '$outputPath' nicht schreiben: $error"
+if {[catch {set fd [open $output_path w]}]} {
+    puts stderr "Konnte Datei '$output_path' nicht öffnen: $fd"
     exit 1
 }
-puts -nonewline $fd $htmlContent
+puts -nonewline $fd $html_content
 close $fd
-puts "Datei erfolgreich geschrieben: $outputPath"
+
+exit 0

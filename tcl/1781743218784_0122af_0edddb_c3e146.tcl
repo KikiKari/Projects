@@ -1,21 +1,24 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_0edddb.py — portiert nach tcl
+# 1781743218784_0122af_0edddb_c3e146.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb_c3e146.ps1
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_0edddb.py — portiert nach powershell
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb.py
 # Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-package require cmdline
-package require json
+# 1781743218784_0122af.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
-# Define command line options
-set options [list [list output_path.arg "" "Pfad zur Ausgabedatei"]]
-array set opts [cmdline::typedGetopt argv $options]
-
-if {$opts(output_path) eq ""} {
-    puts stderr "Fehler: Ausgabepfad erforderlich"
+if {$argc != 1} {
+    puts stderr "Verwendung: [info script] <Ausgabepfad>"
     exit 1
 }
 
-set html_content {<!DOCTYPE html>
+set OutputPath [lindex $argv 0]
+
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,12 +222,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
-if {[catch {set fh [open $opts(output_path) w]} error]} {
-    puts stderr "Konnte Datei '$opts(output_path)' nicht öffnen: $error"
+if {[catch {set fh [open $OutputPath w]} error]} {
+    puts stderr "Konnte Datei '$OutputPath' nicht öffnen: $error"
     exit 1
 }
 
-puts -nonewline $fh $html_content
+puts -nonewline $fh $htmlContent
 close $fh

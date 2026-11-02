@@ -1,11 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_0edddb.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb.py
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_c3e146.tcl — portiert nach powershell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_0edddb_c3e146.tcl
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 param(
     [Parameter(Mandatory=$true)]
@@ -221,9 +217,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    $htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8
-}
-catch {
-    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
+    $htmlContent | Out-File -FilePath $OutputPath -Encoding utf8
+} catch {
+    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $_"
     exit 1
 }

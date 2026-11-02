@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_40f9f2.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -11,13 +11,13 @@ use File::Basename;
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    my $scriptName = basename($0);
-    print STDERR "Aufruf: $scriptName <Ausgabedatei>\n";
-    exit 1;
+    my $script_name = basename($0);
+    print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
+    exit(1);
 }
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
-my $htmlContent = <<'HTML';
+my $html_content = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -142,7 +142,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -226,15 +226,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML
 
 # Schreibe die HTML-Inhalte in die Ausgabedatei
-eval {
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Konnte Datei '$outputPath' nicht öffnen: $!";
-    print $fh $htmlContent;
-    close $fh;
-    print "Datei erfolgreich geschrieben: $outputPath\n";
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    chomp $error;
-    print STDERR "Konnte Datei '$outputPath' nicht schreiben: $error\n";
-    exit 1;
-};
+if (!open(FH, '>:encoding(UTF-8)', $output_path)) {
+    print STDERR "Konnte Datei '$output_path' nicht öffnen: $!\n";
+    exit(1);
+}
+print FH $html_content;
+close(FH);
+
+exit(0);

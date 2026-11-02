@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_0edddb.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb.pl
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
+$outputPath = $args[0]
+if (-not $outputPath) {
+    Write-Error "Verwendung: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    exit 1
+}
 
-$html_content = @'
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,9 +218,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
+# Datei schreiben
 try {
-    [System.IO.File]::WriteAllText($OutputPath, $html_content, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $_"
+    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)"
     exit 1
 }

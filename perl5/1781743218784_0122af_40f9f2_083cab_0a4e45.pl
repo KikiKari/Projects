@@ -1,21 +1,20 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_40f9f2_083cab.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_083cab.ps1
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_40f9f2_083cab_0a4e45.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_0a4e45.js
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
 use open qw(:std :utf8);
-use Getopt::Long;
-use File::Basename;
 
-my $output_path;
-GetOptions('output-path=s' => \$output_path) or die "Ungültige Optionen\n";
-
-if (!$output_path) {
-    die "Fehlender Parameter: --output-path\n";
+my @args = @ARGV;
+if (@args != 1) {
+    print STDERR "Usage: perl script.pl <OutputPath>\n";
+    exit 1;
 }
+
+my $OutputPath = $args[0];
 
 my $html_content = <<'HTML_END';
 <!DOCTYPE html>
@@ -226,12 +225,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 eval {
-    open my $fh, '>:encoding(UTF-8)', $output_path or die "Konnte Datei '$output_path' nicht öffnen: $!";
+    open my $fh, '>:encoding(UTF-8)', $OutputPath or die "Konnte Datei '$OutputPath' nicht öffnen: $!";
     print $fh $html_content;
     close $fh;
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    warn "Konnte Datei '$output_path' nicht öffnen: $error";
-    exit 1;
 };
+if ($@) {
+    print STDERR "Konnte Datei '$OutputPath' nicht öffnen: $@\n";
+    exit 1;
+}

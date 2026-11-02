@@ -1,25 +1,23 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(decode_utf8);
-use File::Slurper qw(write_text);
+use File::Basename;
 
 sub main {
     # Prüfe Aufrufparameter
     if (@ARGV != 1) {
-        my $prog = $0;
-        print STDERR "Aufruf: $prog <Ausgabedatei>\n";
+        my $script_name = basename($0);
+        print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
         exit 1;
     }
 
     my $output_path = $ARGV[0];
 
-    my $html_content = <<'HTML';
+    my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -225,15 +223,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
-    eval {
-        write_text($output_path, $html_content);
-    };
-    if ($@) {
-        print STDERR "Konnte Datei '$output_path' nicht öffnen: $@\n";
+    # Schreibe die HTML-Inhalte in die Ausgabedatei
+    if (open(my $fh, '>:encoding(UTF-8)', $output_path)) {
+        print $fh $html_content;
+        close $fh;
+    } else {
+        print STDERR "Konnte Datei '$output_path' nicht öffnen: $!\n";
         exit 1;
     }
 }
 
-main() if not caller;
+main();

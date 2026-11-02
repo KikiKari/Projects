@@ -1,29 +1,22 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach tcl
+# 1781743218784_0122af_40f9f2_083cab.pl — portiert nach javascript — portiert nach Tcl 8.6
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py — portiert nach Tcl 8.6 am 2026-11-02
 
-# 1781743218784_0122af_40f9f2.js — portiert nach Tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.pl
+# Prüfe Aufrufparameter
+if {$argc != 1} {
+    set script_name [file tail $argv0]
+    puts stderr "Aufruf: $script_name <Ausgabedatei>"
+    exit 1
+}
 
-proc main {} {
-    global argv
-    
-    # Prüfe Aufrufparameter
-    if {[llength $argv] != 1} {
-        set prog [file tail [info script]]
-        puts stderr "Aufruf: $prog <Ausgabedatei>"
-        exit 1
-    }
-    
-    set output_path [lindex $argv 0]
-    
-    set html_content {<!DOCTYPE html>
+set output_path [lindex $argv 0]
+
+set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -229,18 +222,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 }
-    
-    # Schreibe die HTML-Inhalte in die Ausgabedatei
-    if {[catch {set fh [open $output_path w]} error]} {
-        puts stderr "Konnte Datei '$output_path' nicht öffnen: $error"
-        exit 1
-    }
-    
-    puts -nonewline $fh $html_content
-    close $fh
-}
 
-# Wenn dieses Skript direkt aufgerufen wird, führe main aus
-if {[info script] eq $argv0} {
-    main
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+if {[catch {set fd [open $output_path w]} err]} {
+    puts stderr "Konnte Datei '$output_path' nicht öffnen: $err"
+    exit 1
 }
+puts -nonewline $fd $html_content
+close $fd

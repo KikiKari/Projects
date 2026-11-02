@@ -1,15 +1,14 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_40f9f2_083cab.ps1 — portiert nach tcl
+# 1781743218784_0122af_40f9f2_083cab_0a4e45.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_0a4e45.js
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_40f9f2_083cab.ps1 — portiert nach javascript
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_083cab.ps1
 # Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_40f9f2_083cab.js — portiert nach powershell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach Tcl 8.6
-
 if {$argc != 1} {
-    puts stderr "Verwendung: [info script] <Ausgabedatei>"
+    puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
 }
 
@@ -219,13 +218,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-if {[catch {set fh [open $OutputPath w]} error]} {
+if {[catch {set fd [open $OutputPath w]} error]} {
     puts stderr "Konnte Datei '$OutputPath' nicht öffnen: $error"
     exit 1
 }
 
-puts -nonewline $fh $html_content
-close $fh
+puts -nonewline $fd $html_content
+close $fd

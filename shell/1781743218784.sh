@@ -1,20 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # 1781743218784.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784.pl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# Prüfe Aufrufparameter
+if [[ $# -ne 1 ]]; then
+  echo "Aufruf: $0 <Ausgabedatei>" >&2
+  exit 1
+fi
 
-# 1781743218784.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.py
+outputPath="$1"
 
-generate_html() {
-    cat <<'EOF'
+# HTML-Inhalt
+read -r -d '' htmlContent <<'EOF_HTML_CONTENT'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -38,7 +38,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 4px;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -220,29 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
-}
+EOF_HTML_CONTENT
 
-main() {
-    local args_count=$#
-    
-    if [[ $args_count -ne 1 ]]; then
-        echo "Usage: $0 <output-file>" >&2
-        exit 1
-    fi
-    
-    local output_file="$1"
-    
-    # Generate HTML content and write to file
-    generate_html > "$output_file"
-    
-    # Check if file was written successfully
-    if [[ $? -eq 0 ]]; then
-        echo "HTML file generated: $output_file"
-    else
-        echo "Error generating HTML file" >&2
-        exit 1
-    fi
-}
-
-main "$@"
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+if ! printf '%s' "$htmlContent" > "$outputPath"; then
+  echo "Konnte Datei '$outputPath' nicht öffnen: $!" >&2
+  exit 1
+fi

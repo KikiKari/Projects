@@ -1,22 +1,28 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_0122af_40f9f2_083cab.pl — portiert nach javascript
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2_083cab.pl
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_40f9f2.js — portiert nach JavaScript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_40f9f2.pl
-# Erzeugt: 2026-10-30 durch ABSTRACTIONS_MANAGER.pl
+# Portiert nach PowerShell 7
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$false)]
     [string]$OutputPath
 )
 
-$html_content = @"
+function Main {
+    # Prüfe Aufrufparameter
+    if (-not $OutputPath) {
+        $script_name = Split-Path -Leaf $MyInvocation.MyCommand.Path
+        Write-Error "Aufruf: $script_name <Ausgabedatei>"
+        exit 1
+    }
+
+    $html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,11 +228,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
+'@
 
-try {
-    $html_content | Out-File -FilePath $OutputPath -Encoding utf8 -Force
-} catch {
-    Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
-    exit 1
+    # Schreibe die HTML-Inhalte in die Ausgabedatei
+    try {
+        Set-Content -Path $OutputPath -Value $html_content -Encoding UTF8
+    } catch {
+        Write-Error "Konnte Datei '$OutputPath' nicht öffnen: $($_.Exception.Message)"
+        exit 1
+    }
 }
+
+Main

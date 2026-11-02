@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_40f9f2_083cab.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
+import os
 
 def main():
     # Prüfe Aufrufparameter
     if len(sys.argv) != 2:
-        prog = sys.argv[0]
-        print(f"Aufruf: {prog} <Ausgabedatei>", file=sys.stderr)
+        script_name = os.path.basename(sys.argv[0])
+        sys.stderr.write(f"Aufruf: {script_name} <Ausgabedatei>\n")
         sys.exit(1)
 
     output_path = sys.argv[1]
@@ -222,12 +222,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
+    # Schreibe die HTML-Inhalte in die Ausgabedatei
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-    except Exception as error:
-        print(f"Konnte Datei '{output_path}' nicht öffnen: {error}", file=sys.stderr)
+    except Exception as err:
+        sys.stderr.write(f"Konnte Datei '{output_path}' nicht öffnen: {err}\n")
         sys.exit(1)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

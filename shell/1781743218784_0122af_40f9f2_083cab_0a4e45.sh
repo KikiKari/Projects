@@ -1,23 +1,23 @@
 #!/bin/bash
-# 1781743218784_0122af_40f9f2_083cab.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_40f9f2_083cab.ps1
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_083cab_0a4e45.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_0a4e45.js
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_0122af_40f9f2_083cab.js — portiert nach powershell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab.js
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_40f9f2_083cab.ps1 — portiert nach bash
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_40f9f2_083cab_0a4e45.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe ob Output-Pfad übergeben wurde
-if [[ $# -eq 0 ]]; then
-    echo "FEHLER: Es wird ein Ausgabepfad benötigt." >&2
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
-OUTPUT_PATH="$1"
+OutputPath="$1"
 
-read -r -d '' HTML_CONTENT << 'EOF_HTML_CONTENT'
+# Shellcheck disable=SC2016 weil Variablen in Heredoc absichtlich nicht expandiert werden sollen
+read -r -d '' html_content <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,10 +223,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTML_CONTENT
+EOF
 
-# Schreibe HTML-Inhalt in die angegebene Datei
-if ! printf '%s' "$HTML_CONTENT" > "$OUTPUT_PATH"; then
-    echo "Konnte Datei '$OUTPUT_PATH' nicht öffnen: Unbekannter Fehler beim Schreiben" >&2
+if ! printf '%s' "$html_content" > "$OutputPath"; then
+    echo "Konnte Datei '$OutputPath' nicht öffnen: $!" >&2
     exit 1
 fi
