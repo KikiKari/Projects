@@ -1,43 +1,34 @@
 #!/usr/bin/env pwsh
-# status-overview.html — portiert nach powershell
-# Quelle: html, Projects@TikTok-Live-Companion:plugin-source/browser-extension/status-overview.html
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
-
-<#
-.SYNOPSIS
-    Generates an HTML file with structure similar to the provided HTML document.
-.DESCRIPTION
-    This script creates a basic HTML document with specified elements and scripts included.
-.PARAMETER OutputPath
-    The path where the generated HTML file will be saved.
-.EXAMPLE
-    .\GenerateStatusOverview.ps1 -OutputPath "C:\temp\status-overview.html"
-#>
+# status-overview.css — portiert nach powershell
+# Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/status-overview.css
+# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$OutputPath
+    [string]$OutputFile
 )
 
-# Create the HTML content as a string
-$htmlContent = @"
-<!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>STATUS-Overview</title>
-<link rel="stylesheet" href="status-overview.css">
-</head>
-<body>
-<main id="grid" aria-label="LIVE-Übersicht"></main>
-<script src="vendor-mpegts.js"></script>
-<script src="status-overview-player.js"></script>
-</body>
-</html>
-"@
+# Create the CSS content using PowerShell syntax
+$cssContent = @(
+    "*{box-sizing:border-box}",
+    "html,body{margin:0;min-height:100%;background:#101015;color:#fff;font:14px system-ui,sans-serif}",
+    "body{display:flex;flex-direction:column;height:100vh}",
+    "header{display:flex;gap:1em;align-items:baseline;padding:0 12px}",
+    "h1{font-size:17px;margin:8px 0}",
+    "header p{font-size:12px;color:#bbb;margin:0}",
+    "main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:4px;padding:0}",
+    ".tile{min-width:0;min-height:0;display:flex;flex-direction:column;background:#202026;border:1px solid #393940}",
+    ".tile h2{font-size:13px;margin:3px 8px}",
+    ".tile video{min-height:0;width:100%;flex:1;object-fit:contain;background:#000}",
+    ".tile p{font-size:11px;margin:3px 8px;color:#ddd}",
+    "main.grid2{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}",
+    ".tile[hidden]{display:none}"
+)
 
-# Write the content to the specified output path
-$htmlContent | Out-File -FilePath $OutputPath -Encoding utf8
+# Join all CSS rules with newlines
+$fullCSS = $cssContent -join "`n"
 
-Write-Host "HTML file has been generated at: $OutputPath"
+# Write to the specified output file
+Set-Content -Path $OutputFile -Value $fullCSS -Encoding UTF8
+
+Write-Host "CSS file written to: $OutputFile"
