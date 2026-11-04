@@ -46,6 +46,10 @@ class NativeVlcAudio(private val report: (Boolean, Double, Double, Double, Strin
         if (handle != 0L) configure(handle, active, strength.coerceIn(0, 100))
     }
 
+    fun setMuted(muted: Boolean) {
+        track.setVolume(if (muted) 0f else 1f)
+    }
+
     private fun fail(message: String) {
         if (failed || closing) return
         failed = true

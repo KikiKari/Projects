@@ -40,7 +40,7 @@ class CompanionServiceClientTest {
             calls += it.url.toString()
             200 to if (it.url.encodedPath == "/v1/health") healthy else "{\"catalog\":[]}"
         }
-        service.baseUrl = "invalid alternative"
+        assertEquals(CompanionEndpoint.local, service.baseUrl)
         assertTrue(JSONObject(String(service.request("/v1/voices"))).has("catalog"))
         assertEquals(listOf("http://127.0.0.1:43117/v1/health", "http://127.0.0.1:43117/v1/voices"), calls)
     }
@@ -54,9 +54,11 @@ class CompanionServiceClientTest {
                 else -> "{\"catalog\":[]}"
             }
         }
-        service.baseUrl = "service.example:8443"
-        service.request("/v1/voices")
-        assertEquals(listOf("http://127.0.0.1:43117/v1/health", "http://localhost:43117/v1/health", "https://service.example:8443/v1/health", "https://service.example:8443/v1/voices"), calls)
+        try { service.request("/v1/voices"); fail("Unrelated local servers must be rejected") }
+        catch (error: IllegalStateException) {
+            assertTrue(error.message.orEmpty().contains("Kein lokaler Companion-Dienst"))
+        }
+        assertEquals(listOf("http://127.0.0.1:43117/v1/health", "http://localhost:43117/v1/health"), calls)
     }
     @Test fun failedInstallIsNotReplayedOnAnotherService() = runBlocking {
         val calls = mutableListOf<String>()
@@ -64,7 +66,6 @@ class CompanionServiceClientTest {
             calls += it.method + " " + it.url.toString()
             if (it.method == "POST") 500 to "{}" else 200 to healthy
         }
-        service.baseUrl = "service.example"
         try { service.request("/v1/voices/install", JSONObject().put("voiceId", "test")); fail() }
         catch (_: IllegalStateException) { }
         assertEquals(2, calls.size)

@@ -11,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -66,13 +67,22 @@ class MainActivity : ComponentActivity() {
                     BackgroundPlaybackService.commandSink = null
                 }
             }
-            MaterialTheme(colorScheme = lightColorScheme(primary = Accent, secondary = Accent)) { CompanionIconTheme { CompanionApp(model) } }
+            var monitorOpen by remember { mutableStateOf(false) }
+            MaterialTheme(colorScheme = lightColorScheme(primary = Accent, secondary = Accent)) {
+                CompanionIconTheme {
+                    if (monitorOpen) MonitorScreen { monitorOpen = false }
+                    else {
+                        MonitorForeground()
+                        CompanionApp(model, openMonitor = { monitorOpen = true })
+                    }
+                }
+            }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun CompanionApp(model: CompanionViewModel) {
+@Composable private fun CompanionApp(model: CompanionViewModel, openMonitor: () -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var ttsReady by remember { mutableStateOf(false) }
@@ -147,7 +157,7 @@ class MainActivity : ComponentActivity() {
                         CompanionTab.CHAT -> ChatTab(state, model, ttsReady, if (ttsReady) tts.voices.orEmpty().toList() else emptyList())
                         CompanionTab.LIVE -> LiveTab(state, model)
                         CompanionTab.PLAYER -> PlayerTab(state, model)
-                        CompanionTab.MORE -> MoreTab(state, model)
+                        CompanionTab.MORE -> MoreTab(state, model, openMonitor)
                     }
                 }
             }
@@ -307,7 +317,7 @@ class MainActivity : ComponentActivity() {
         if (state.mediaUrls.isNotEmpty()) OutlinedButton(onClick = { copyMedia("TikTok LIVE Media-URLs", state.mediaUrls.joinToString("\n") { it.url }) }, modifier = Modifier.fillMaxWidth()) { Text("Alle kopieren") }
     }
 }
-@Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel) {
+@Composable private fun MoreTab(state: CompanionUiState, model: CompanionViewModel, openMonitor: () -> Unit) {
     val context = LocalContext.current
     var connectionSettingsOpen by remember { mutableStateOf(false) }
     var hookDelay by remember(state.hookReconnectDelaySeconds) { mutableStateOf(state.hookReconnectDelaySeconds.toString()) }
@@ -317,19 +327,18 @@ class MainActivity : ComponentActivity() {
         if (uri != null) context.contentResolver.openOutputStream(uri)?.use { it.write(pendingCaptionExport.toByteArray(Charsets.UTF_8)) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        CompanionAdaptiveHeader(
-            leading = {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            Row(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = maxWidth), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedButton(onClick = model::openNormal, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel("Browser", "browser") }
-                    OutlinedButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty(), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) { CompanionIconLabel("Player", "player") }
+                    OutlinedIconButton(onClick = model::openNormal) { CompanionControlIcon("browser", "Browser") }
+                    OutlinedIconButton(onClick = model::toggleVlcReplacement, enabled = state.mediaUrls.isNotEmpty()) { CompanionControlIcon("player", "Player") }
                 }
-            },
-            actions = {
+                Button(onClick = openMonitor, contentPadding = PaddingValues(horizontal = 12.dp)) { Text("GRID") }
                 CompanionModuleActions(active = state.connectionEnabled, reset = model::resetPage) {
                     CompanionIconSwitch(state.connectionEnabled, model::setConnectionEnabled, label = "Connection")
                 }
             }
-        )
+        }
         OutlinedButton(onClick = { connectionSettingsOpen = true }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel("Connection-Einstellungen", "settings") }
         listOf("inspect" to "Status", "captions" to "Untertitel", "open-report" to "Meldung").forEach { (command, label) -> OutlinedButton(onClick = { if (command == "refresh") model.resetPage() else model.sendCommand?.invoke(command, emptyMap()) }, modifier = Modifier.fillMaxWidth()) { CompanionIconLabel(label, when(command) { "inspect" -> "status"; "refresh" -> "reset"; "open-report" -> "report"; else -> command }) } }
         CompanionIconStylePicker()
