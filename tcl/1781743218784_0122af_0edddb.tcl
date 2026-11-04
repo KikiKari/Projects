@@ -1,21 +1,30 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_0edddb.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_0edddb.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb.py
 # Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_0edddb.pl — portiert nach javascript
+# 1781743218784_0122af_0edddb.pl — portiert nach python
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb.pl
 # Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
-if {$argc != 1} {
-    puts stderr "Verwendung: [info script] <Ausgabedatei>"
-    exit 1
-}
+# 1781743218784_0122af.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
+# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
 
-set outputPath [lindex $argv 0]
-
-set htmlContent {<!DOCTYPE html>
+proc main {} {
+    # Parameter verarbeiten
+    if {$::argc < 1} {
+        puts stderr "Verwendung: [info script] <Ausgabedatei>"
+        exit 1
+    }
+    
+    set outputPath [lindex $::argv 0]
+    
+    set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,13 +228,17 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
-
-# Datei schreiben
-if {[catch {set fd [open $outputPath w]} err]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $err"
-    exit 1
+</html>
 }
 
-puts -nonewline $fd $htmlContent
-close $fd
+    # Datei schreiben
+    if {[catch {set fd [open $outputPath w]} errmsg]} {
+        puts stderr "Konnte Datei '$outputPath' nicht öffnen: $errmsg"
+        exit 1
+    }
+    
+    puts -nonewline $fd $htmlContent
+    close $fd
+}
+
+main

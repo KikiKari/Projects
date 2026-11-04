@@ -1,18 +1,19 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_0edddb_1d307b.pl — portiert nach tcl
+# 1781743218784_0122af_0edddb_1d307b_0df3d6.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb_1d307b_0df3d6.ps1
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_0edddb_1d307b.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b.pl
 # Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Anzahl Argumente
+# Parameter verarbeiten
 if {$argc != 1} {
     puts stderr "Verwendung: [info script] <Ausgabedatei>"
     exit 1
 }
+set OutputPath [lindex $argv 0]
 
-# Hole Ausgabepfad aus Kommandozeilenargumenten
-lassign $argv OutputPath
-
-# HTML-Inhalt als Tcl-Variable speichern
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,11 +221,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Versuche Datei zu öffnen und schreiben
-if {[catch {open $OutputPath w} fh]} {
-    puts stderr "Konnte Datei '$OutputPath' nicht öffnen: $fh"
+if {[catch {set fd [open $OutputPath w]}]} {
+    puts stderr "Konnte Datei '$OutputPath' nicht öffnen: $fd"
     exit 1
 }
-
-puts -nonewline $fh $htmlContent
-close $fh
+puts -nonewline $fd $htmlContent
+close $fd

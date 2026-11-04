@@ -1,20 +1,19 @@
 #!/bin/bash
-# 1781743218784_0122af_0edddb.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb.ps1
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_2ee5f4.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_2ee5f4.pl
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Parameter verarbeiten
-if [[ $# -ne 1 ]]; then
-    echo "Fehler: Kein Ausgabepfad übergeben." >&2
+output_path="${1:-}"
+if [[ -z "$output_path" ]]; then
+    echo "Fehlender Parameter: OutputPath" >&2
     exit 1
 fi
 
-output_path="$1"
-
-# HTML-Inhalt
-read -r -d '' html_content <<'EOT'
+# HTML-Inhalt direkt in die Datei schreiben
+cat >"$output_path" <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +219,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOT
+HTML_END
 
-# Schreiben der Datei
-if ! printf '%s' "$html_content" > "$output_path"; then
-    echo "Konnte Datei '$output_path' nicht öffnen: $!" >&2
+# Prüfe, ob das Schreiben erfolgreich war
+if [[ ! -f "$output_path" ]] || [[ $(stat -c%s "$output_path") -eq 0 ]]; then
+    echo "Fehler beim Schreiben der Datei '$output_path'" >&2
     exit 1
 fi

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_0edddb.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
-# Parameter verarbeiten
-if len(sys.argv) != 2:
-    print(f"Verwendung: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
-    sys.exit(1)
-
-output_path = sys.argv[1]
-
-html_content = '''<!DOCTYPE html>
+def main():
+    # Parameter verarbeiten
+    if len(sys.argv) < 2:
+        print(f"Verwendung: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+        sys.exit(1)
+    
+    output_path = sys.argv[1]
+    
+    html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,12 +217,16 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
-# Datei schreiben
-try:
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-except Exception as err:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {err}", file=sys.stderr)
-    sys.exit(1)
+    # Datei schreiben
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+    except Exception as e:
+        print(f"Konnte Datei '{output_path}' nicht öffnen: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

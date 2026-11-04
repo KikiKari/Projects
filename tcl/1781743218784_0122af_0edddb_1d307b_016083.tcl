@@ -1,16 +1,18 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_0edddb_1d307b.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb_1d307b.py
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_1d307b_016083.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b_016083.pl
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# Prüfe Anzahl der Argumente
 if {$argc != 1} {
-    puts stderr "Verwendung: [info script] <Ausgabedatei>"
+    set script_name [file tail $argv0]
+    puts stderr "Verwendung: $script_name <Ausgabedatei>"
     exit 1
 }
 
 set output_path [lindex $argv 0]
 
+# HTML-Inhalt als Tcl-Variable
 set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,8 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {set fd [open $output_path w]} err]} {
-    puts stderr "Konnte Datei '$output_path' nicht öffnen: $err"
+# Schreibe HTML-Inhalt in Ausgabedatei
+if {[catch {open $output_path w} fd]} {
+    puts stderr "Konnte Datei '$output_path' nicht öffnen: $fd"
     exit 1
 }
 

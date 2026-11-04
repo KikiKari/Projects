@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_0edddb_1d307b.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_1d307b_0df3d6.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb_1d307b_0df3d6.ps1
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Parameter verarbeiten
 if len(sys.argv) != 2:
@@ -216,11 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
 try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
-except IOError as e:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {e}", file=sys.stderr)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print("Konnte Datei '{}' nicht öffnen: {}".format(output_path, str(e)), file=sys.stderr)
     sys.exit(1)

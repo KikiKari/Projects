@@ -1,10 +1,12 @@
-#!/usr/bin/perl
-# 1781743218784_0122af_0edddb.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env perl
+# 1781743218784_0122af_0edddb.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb.ps1
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
 
 # Parameter verarbeiten
 my $outputPath = $ARGV[0];
@@ -13,7 +15,7 @@ if (!$outputPath) {
     exit 1;
 }
 
-my $htmlContent = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,12 +221,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Datei schreiben
-open(my $fh, '>:encoding(utf8)', $outputPath) or do {
+open my $fh, '>:encoding(UTF-8)', $outputPath or do {
     print STDERR "Konnte Datei '$outputPath' nicht öffnen: $!\n";
     exit 1;
 };
 print $fh $htmlContent;
-close($fh);
+close $fh;

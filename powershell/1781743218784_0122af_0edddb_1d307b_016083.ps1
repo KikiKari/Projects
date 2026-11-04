@@ -1,11 +1,12 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_0edddb_1d307b.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb_1d307b.py
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb_1d307b_016083.pl — portiert nach powershell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b_016083.pl
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if ($args.Count -ne 1) {
-    Write-Error "Verwendung: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    $scriptName = [System.IO.Path]::GetFileName($MyInvocation.MyCommand.Path)
+    Write-Error "Verwendung: $scriptName <Ausgabedatei>"
     exit 1
 }
 
@@ -220,9 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-}
-catch {
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $_"
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+} catch {
+    Write-Error $_.Exception.Message
     exit 1
 }

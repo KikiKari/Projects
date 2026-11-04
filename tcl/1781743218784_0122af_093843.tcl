@@ -1,13 +1,15 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af.pl — portiert nach tcl
+# 1781743218784_0122af_093843.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
+# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.pl — portiert nach powershell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
 # Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Tcl-Version
-if {[package vcompare [info tclversion] 8.6] == -1} {
-    puts stderr "Fehler: Tcl 8.6 oder höher wird benötigt."
-    exit 1
-}
+# 1781743218784_0122af.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if {$argc < 1} {
@@ -223,13 +225,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Schreibe HTML-Inhalt in Datei
-if {[catch {
-    set fh [open $outputPath w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $htmlContent
-    close $fh
-} errorMsg]} {
-    puts stderr $errorMsg
+# Schreibe den HTML-Inhalt in die angegebene Datei
+if {[catch {set fd [open $outputPath w]} err]} {
+    puts stderr "Fehler beim Öffnen der Datei $outputPath: $err"
+    exit 1
+}
+
+if {[catch {puts $fd $htmlContent; close $fd} err]} {
+    puts stderr "Fehler beim Schreiben in die Datei $outputPath: $err"
     exit 1
 }

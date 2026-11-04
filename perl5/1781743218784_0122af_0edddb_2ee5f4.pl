@@ -1,20 +1,23 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_0edddb.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb.ps1
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_0edddb_2ee5f4.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_0edddb_2ee5f4.py
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
+use Getopt::Long;
+use File::Spec;
+use File::Path qw(make_path);
+use File::Basename;
 
-# Parameter verarbeiten
-my $output_path = shift @ARGV;
+my $output_path = '';
+GetOptions('output_path=s' => \$output_path) or die "Ungültige Optionen\n";
+
 if (!$output_path) {
-    die "Fehlender Parameter: OutputPath\n";
+    die "Verwendung: $0 <Ausgabedatei-Pfad>\n";
 }
 
-my $html_content = <<'HTML_END';
+my $html_content = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,13 +223,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
-# Schreibe die HTML-Inhalte in die Ausgabedatei
-open my $fh, '>:encoding(UTF-8)', $output_path or do {
-    warn "Konnte Datei '$output_path' nicht öffnen: $!";
-    exit 1;
+eval {
+    # Erstelle das Ausgabeverzeichnis falls notwendig
+    my $dirname = dirname($output_path);
+    if ($dirname && !-d $dirname) {
+        make_path($dirname) or die "Konnte Verzeichnis '$dirname' nicht erstellen: $!";
+    }
+
+    # Schreibe die HTML-Datei
+    open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Konnte Datei '$output_path' nicht öffnen: $!";
+    print $fh $html_content;
+    close($fh);
 };
 
-print $fh $html_content;
-close $fh;
+if ($@) {
+    warn "Konnte Datei '$output_path' nicht öffnen: $@\n";
+    exit 1;
+}

@@ -1,20 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af_0edddb.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_0edddb.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
+# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe, ob output_path als Argument übergeben wurde
-if [[ $# -ne 1 ]]; then
-    echo "output_path ist erforderlich" >&2
+# Parameter verarbeiten
+if [ $# -lt 1 ]; then
+    echo "Verwendung: $0 <Ausgabedatei>" >&2
     exit 1
 fi
 
-output_path="$1"
+outputPath="$1"
 
-# HTML-Inhalt
-read -r -d '' html_content <<'HTML_END' || true
+# HTML-Inhalt generieren
+htmlContent=$(cat <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,7 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
+)
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-echo "$html_content" > "$output_path"
+# Datei schreiben
+if ! printf '%s' "$htmlContent" > "$outputPath"; then
+    echo "Konnte Datei '$outputPath' nicht öffnen." >&2
+    exit 1
+fi
