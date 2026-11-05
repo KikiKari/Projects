@@ -1,7 +1,15 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843.sh — portiert nach tcl
+# 1781743218784_0122af_093843_3a9f85.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_3a9f85.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843.sh
 # Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.pl — portiert nach JavaScript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if {$argc < 1} {
@@ -215,15 +223,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
 # Schreibe HTML-Inhalt in Ausgabedatei
-if {[catch {set fd [open $outputPath w]}]} {
-    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $::errorInfo"
+if {[catch {set fd [open $outputPath w]} error]} {
+    puts stderr "Konnte Datei '$outputPath' nicht öffnen: $error"
     exit 1
 }
-if {[catch {puts $fd $htmlContent; close $fd}]} {
-    puts stderr "Fehler beim Schreiben in Datei '$outputPath': $::errorInfo"
-    exit 1
-}
+puts -nonewline $fd $htmlContent
+close $fd

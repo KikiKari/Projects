@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-def main():
-    if len(sys.argv) < 2:
-        print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
-        sys.exit(1)
-    
-    output_path = sys.argv[1]
-    
-    html_content = '''<!DOCTYPE html>
+# Parameter verarbeiten
+if len(sys.argv) < 2:
+    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    sys.exit(1)
+
+output_path = sys.argv[1]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,14 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(e, file=sys.stderr)
+    sys.exit(1)

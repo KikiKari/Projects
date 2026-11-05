@@ -1,20 +1,20 @@
 #!/bin/bash
 # 1781743218784_0122af_0edddb.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
-# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter verarbeiten
-if [ $# -lt 1 ]; then
+# Prüfe ob Ausgabedatei angegeben wurde
+if [[ $# -eq 0 ]]; then
     echo "Verwendung: $0 <Ausgabedatei>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
-# HTML-Inhalt generieren
-htmlContent=$(cat <<'EOF'
+# HTML-Inhalt in Variable speichern
+html_content=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,11 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 )
 
-# Datei schreiben
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Konnte Datei '$outputPath' nicht öffnen." >&2
+# Schreibe HTML-Inhalt in Ausgabedatei
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Konnte Datei '$output_path' nicht öffnen: $!" >&2
     exit 1
 fi

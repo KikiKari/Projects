@@ -1,14 +1,17 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843.tcl
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_aecdae.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_aecdae.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode_utf8);
+use File::Spec;
 
-# Prüfe Perl-Version (5.8 oder höher für ordentliche UTF-8-Unterstützung)
-if ($] < 5.008) {
-    print STDERR "Fehler: Perl 5.8 oder höher wird benötigt.\n";
+# Prüfe Perl-Version (Perl 5.20 ist aktuell genug)
+unless ($] >= 5.020000) {
+    print STDERR "Fehler: Perl 5.20 oder höher wird benötigt.\n";
     exit 1;
 }
 
@@ -229,9 +232,9 @@ HTML_END
 
 # Schreibe HTML-Inhalt in Datei
 eval {
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Cannot open file '$outputPath': $!";
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Konnte Datei '$outputPath' nicht öffnen: $!";
     print $fh $htmlContent;
-    close($fh);
+    close $fh;
 };
 if ($@) {
     print STDERR $@;

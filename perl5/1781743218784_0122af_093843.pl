@@ -1,24 +1,17 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use open qw(:std :utf8);
-
-# 1781743218784_0122af.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+use Encode qw(decode_utf8);
+use File::Basename;
 
 # Parameter verarbeiten
 if (@ARGV < 1) {
-    warn "Fehler: OutputPath ist erforderlich.\n";
+    print STDERR "Fehler: OutputPath ist erforderlich.\n";
     exit 1;
 }
 my $outputPath = $ARGV[0];
@@ -231,13 +224,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
+# Schreibe den HTML-Inhalt in die Ausgabedatei
 eval {
-    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
+    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Kann Datei '$outputPath' nicht öffnen: $!";
     print $fh $htmlContent;
-    close $fh;
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    warn $error;
-    exit 1;
+    close($fh);
 };
+
+if ($@) {
+    print STDERR $@;
+    exit 1;
+}

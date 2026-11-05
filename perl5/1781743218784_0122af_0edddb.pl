@@ -1,17 +1,15 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_0edddb.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_0edddb.ps1
-# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_0edddb.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use open qw(:std :utf8);
 
 # Parameter verarbeiten
 my $outputPath = $ARGV[0];
 if (!$outputPath) {
-    print STDERR "Verwendung: $0 <Ausgabedatei>\n";
+    print STDERR "Verwendung: perl script.pl <Ausgabedatei>\n";
     exit 1;
 }
 

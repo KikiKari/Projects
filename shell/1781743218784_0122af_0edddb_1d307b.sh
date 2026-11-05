@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1781743218784_0122af_0edddb_1d307b.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b.pl
-# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -10,11 +10,10 @@ if [[ $# -ne 1 ]]; then
     echo "Verwendung: $0 <Ausgabedatei>" >&2
     exit 1
 fi
+output_path="$1"
 
-OutputPath="$1"
-
-# HTML-Inhalt
-read -r -d '' htmlContent || true <<'HTMLCONTENT'
+# HTML-Inhalt in Variable speichern
+html_content=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -38,7 +37,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 10px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -220,12 +219,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTMLCONTENT
+HTML_END
+)
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-{
-    echo "$htmlContent" > "$OutputPath"
-} || {
-    echo "Konnte Datei '$OutputPath' nicht öffnen: $?" >&2
+# Versuche, die Datei zu schreiben
+if {
+    printf '%s' "$html_content" > "$output_path"
+} 2>/dev/null; then
+    :
+else
+    echo "Konnte Datei '$output_path' nicht öffnen: $?" >&2
     exit 1
-}
+fi

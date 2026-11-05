@@ -1,23 +1,18 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
-
-# Parameter verarbeiten
+# Prüfe, ob ein Argument übergeben wurde
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
 }
+
+# Hole das erste Argument (Output-Pfad)
 set outputPath [lindex $argv 0]
 
+# HTML-Inhalt als Tcl-Variable definieren
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -226,12 +221,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Schreibe den HTML-Inhalt in die angegebene Datei
-if {[catch {set fd [open $outputPath w]} err]} {
-    puts stderr "Fehler beim Öffnen der Datei $outputPath: $err"
+if {[catch {set fh [open $outputPath w]} errorMsg]} {
+    puts stderr $errorMsg
     exit 1
 }
 
-if {[catch {puts $fd $htmlContent; close $fd} err]} {
-    puts stderr "Fehler beim Schreiben in die Datei $outputPath: $err"
-    exit 1
-}
+puts -nonewline $fh $htmlContent
+close $fh

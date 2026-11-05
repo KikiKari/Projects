@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843.tcl
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_aecdae.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_aecdae.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-# Prüfe Python-Version
+# Prüfe Python-Version (Python 3.12 ist aktuell genug)
 if sys.version_info < (3, 12):
     print("Fehler: Python 3.12 oder höher wird benötigt.", file=sys.stderr)
     sys.exit(1)
@@ -226,8 +226,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreibe HTML-Inhalt in Datei
 try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
-except Exception as error_msg:
-    print(error_msg, file=sys.stderr)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(str(e), file=sys.stderr)
     sys.exit(1)

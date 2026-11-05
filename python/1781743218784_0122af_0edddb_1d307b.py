@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_0edddb_1d307b.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_0edddb_1d307b.pl
-# Erzeugt: 2026-11-04 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_0edddb_1d307b.js — portiert nach perl5
+# 1781743218784_0122af_0edddb_1d307b.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_0edddb_1d307b.js
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-
-# 1781743218784_0122af.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-10-31 durch ABSTRACTIONS_MANAGER.py
+import os
 
 # Parameter verarbeiten
 if len(sys.argv) != 2:
-    sys.stderr.write(f"Verwendung: {sys.argv[0]} <Ausgabedatei>\n")
+    print(f"Verwendung: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
-OutputPath = sys.argv[1]
+output_path = sys.argv[1]
 
-htmlContent = '''<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -228,8 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '''
 
 try:
-    with open(OutputPath, 'w', encoding='utf-8') as fh:
-        fh.write(htmlContent)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
-    sys.stderr.write(f"Konnte Datei '{OutputPath}' nicht öffnen: {e}\n")
+    print(f"Konnte Datei '{output_path}' nicht öffnen: {e}", file=sys.stderr)
     sys.exit(1)
