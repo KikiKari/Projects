@@ -20,4 +20,4 @@ The iOS source work is maintained on `tlc-arm64` in an iOS-branch worktree. The 
 SWIFTC=/home/codex/tlc-integration/ios-swift-6.1.3-arm64/usr/bin/swiftc sh mobile/ios/monitor-core-tests/run-monitor-core.sh
 ```
 
-These checks cover the platform-independent monitor model only. They do not compile SwiftUI, MobileVLCKit, background scheduling or the iOS application. Apple builds and simulator checks require macOS with Xcode. The monitor integration is prepared but has not been built or validated on Apple platforms; do not assign an iOS Build 22 on the basis of these checks.
+These checks cover the platform-independent monitor model only. They do not compile SwiftUI, MobileVLCKit, background scheduling or the iOS application. Apple builds and simulator checks require macOS with Xcode. Apple-platform CI builds and simulator tests are separate from these ARM checks. Real-device playback and background behavior require their own validation.
