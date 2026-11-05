@@ -65,6 +65,7 @@ jobs:
             -workspace mobile/ios/TikTokLiveCompanion.xcworkspace \
             -scheme TikTokLiveCompanion \
             -configuration Debug \
+            -parallel-testing-enabled NO \
             -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath "$RUNNER_TEMP/tlc-ios-derived-data" \
             -resultBundlePath "$RUNNER_TEMP/tlc-ios-results" \
@@ -78,3 +79,11 @@ jobs:
           if [[ -d "$RUNNER_TEMP/tlc-ios-results" ]]; then
             xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/tlc-ios-results"
           fi
+
+      - name: Preserve simulator diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-results
+          path: ${{ runner.temp }}/tlc-ios-results
+          if-no-files-found: warn
