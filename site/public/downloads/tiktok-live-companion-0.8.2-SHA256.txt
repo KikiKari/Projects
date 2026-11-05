@@ -1,6 +1,6 @@
 4a993f0faa3339650dc1a4c4f005323e3f85527dfffb95593f497288d2e30c87  tiktok-live-companion-0.8.2-source.zip
-d3b75353d815ac0afa9c351dcbf6fe86d01919923b77976276d66b4496b7d262  tiktok-live-companion-android-0.8.2-source.zip
-c25f10d98712137ff50f711612b0ec6774dfe2a091c1f4f116b47e4e656e0083  tiktok-live-companion-android-0.8.2.apk
+accd9e63c4357c666a15904c9f535f85d99ef795d7dbf64b56047a7f8eaf2fdb  tiktok-live-companion-android-0.8.2-source.zip
+b79a2fbc75ca8d1e24d74320d05b876334dddcb7524e51c2e9a39e97c5b1d54c  tiktok-live-companion-android-0.8.2.apk
 6cf2aca8563ea16421b4ccd9c93216e237299887b106f300debf9d55d0295638  tiktok-live-companion-extension-0.8.2.zip
 f63a420a2919e95a1aed8a182e5af8fccf54dfd754d569aeab10ac5e1a3d6df7  tiktok-live-companion-ios-0.8.2-source.zip
 47c8854e166ad7eb13ccf03ecc42a8e0808c3ddbf7c919e98bc6216afb7fe21e  tiktok-live-companion-plugin-0.8.2.zip
