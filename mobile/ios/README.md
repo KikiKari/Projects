@@ -11,3 +11,13 @@ Native SwiftUI/WKWebView companion for iOS 15 and newer. Music recognition uses 
 Open `TikTokLiveCompanion.xcodeproj`, select a development team, and build the `TikTokLiveCompanion` scheme. No credentials or private keys belong in this project.
 
 The app loads only `https://www.tiktok.com` in its WebView, never reads cookies, and opens other hosts in the system browser.
+
+## ARM64 source preparation
+
+The iOS source work is maintained on `tlc-arm64` in an iOS-branch worktree. The standalone Foundation monitor-core checks can run on Linux ARM64 using a native Swift toolchain:
+
+```sh
+SWIFTC=/path/to/swiftc sh mobile/ios/monitor-core-tests/run-monitor-core.sh
+```
+
+These checks cover the platform-independent monitor model only. They do not compile SwiftUI, MobileVLCKit, background scheduling or the iOS application. Apple builds and simulator checks require macOS with Xcode. The monitor integration is prepared but has not been built or validated on Apple platforms; do not assign an iOS Build 22 on the basis of these checks.

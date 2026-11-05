@@ -7,6 +7,8 @@ typedef void (^TLCNativeAudioReport)(BOOL active, double input, double output, d
 @property(nonatomic, readonly) VLCMediaPlayer *player;
 - (nullable instancetype)initWithReport:(TLCNativeAudioReport)report;
 - (void)setProtectionEnabled:(BOOL)enabled strength:(NSInteger)strength NS_SWIFT_NAME(setProtection(enabled:strength:));
+- (void)setMuted:(BOOL)muted NS_SWIFT_NAME(setMuted(_:));
+- (void)setPlaybackStateHandler:(nullable void (^)(NSInteger state))handler NS_SWIFT_NAME(setPlaybackStateHandler(_:));
 - (void)playURL:(NSURL *)url drawable:(UIView *)drawable NS_SWIFT_NAME(play(url:drawable:));
 /* Completion runs after the native stopped event; MobileVLCKit's stop is async. */
 - (void)stopWithCompletion:(void (^)(void))completion NS_SWIFT_NAME(stop(completion:));

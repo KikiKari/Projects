@@ -6,6 +6,8 @@ struct VlcVideoSurface: UIViewRepresentable {
     let url: URL
     let enabled: Bool
     let strength: Int
+    var muted: Bool = false
+    var playbackState: ((Int) -> Void)? = nil
     let report: (Bool, Double, Double, Double, String?) -> Void
 
     final class Coordinator {
@@ -15,6 +17,8 @@ struct VlcVideoSurface: UIViewRepresentable {
         var generation = 0
         var enabled = false
         var strength = 30
+        var muted = false
+        var playbackState: ((Int) -> Void)?
         var report: ((Bool, Double, Double, Double, String?) -> Void)?
         func stop() {
             generation += 1; currentURL = nil
@@ -30,7 +34,9 @@ struct VlcVideoSurface: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {
         let coordinator = context.coordinator
         coordinator.report = report; coordinator.enabled = enabled; coordinator.strength = strength
+        coordinator.muted = muted; coordinator.playbackState = playbackState
         coordinator.output?.setProtection(enabled: enabled, strength: strength)
+        coordinator.output?.setMuted(muted)
         guard coordinator.currentURL != url else { return }
         coordinator.generation += 1
         let generation = coordinator.generation
@@ -47,6 +53,11 @@ struct VlcVideoSurface: UIViewRepresentable {
             }
             coordinator.output = output
             output.setProtection(enabled: coordinator.enabled, strength: coordinator.strength)
+            output.setMuted(coordinator.muted)
+            output.setPlaybackStateHandler { [weak coordinator] value in
+                guard let coordinator, coordinator.generation == generation else { return }
+                coordinator.playbackState?(Int(value))
+            }
             output.play(url: url, drawable: uiView)
         }
         if let previous = coordinator.output {

@@ -24,6 +24,7 @@ struct ContentView: View {
     @StateObject var state: CompanionState
     @AppStorage("tlc-icon-style") private var iconStyle = "plastisch"
     @State private var settingsOpen = false
+    @State private var monitorOpen = false
     @State private var captionExportOpen = false
     @State private var captionExportDocument = CaptionExportDocument()
     @State private var captionExportName = "tiktok-live-captions.jsonl"
@@ -55,6 +56,7 @@ struct ContentView: View {
             .environment(\.companionIconStyle, iconStyle)
             .toggleStyle(CompanionIconToggleStyle())
             .sheet(isPresented: $settingsOpen) { speechSettingsView.environment(\.companionIconStyle, iconStyle).toggleStyle(CompanionIconToggleStyle()) }
+            .fullScreenCover(isPresented: $monitorOpen) { StatusMonitorView().environment(\.companionIconStyle, iconStyle) }
             .fileExporter(isPresented: $captionExportOpen, document: captionExportDocument, contentType: captionExportName.hasSuffix(".jsonl") ? .plainText : .json, defaultFilename: captionExportName) { _ in }
             .alert("Hinweis", isPresented: Binding(get: { state.lastError != nil }, set: { if !$0 { state.lastError = nil } })) { Button("OK") {} } message: { Text(state.lastError ?? "") }
     }
@@ -193,6 +195,11 @@ struct ContentView: View {
             HStack {
                 Button(action: state.openNormal) { CompanionIconLabel(label: "Browser", component: "browser").frame(minHeight: 44) }
                 Button(action: state.toggleVlcReplacement) { CompanionIconLabel(label: "Player", component: "player") }.disabled(state.mediaLinks.isEmpty)
+                Button("GRID") {
+                    if state.vlcReplacementURL != nil { state.toggleVlcReplacement() }
+                    state.sendCommand?("pause", [:])
+                    monitorOpen = true
+                }.buttonStyle(.borderedProminent)
                 Button { connectionSettingsOpen = true } label: { CompanionIconLabel(label: "Connection-Einstellungen", component: "settings").frame(width: 44, height: 44) }.accessibilityLabel("Connection-Einstellungen")
             }.sheet(isPresented: $connectionSettingsOpen) { connectionSettingsView.environment(\.companionIconStyle, iconStyle).toggleStyle(CompanionIconToggleStyle()) }
             Button("Embed", action: state.openEmbed)

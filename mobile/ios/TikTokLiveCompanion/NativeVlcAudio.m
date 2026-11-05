@@ -22,6 +22,8 @@ extern int64_t libvlc_clock(void);
     BOOL _started, _hasPlayed;
     TLCNativeAudioReport _report;
     id _stopObserver;
+    id _stateObserver;
+    void (^_stateHandler)(NSInteger);
     CFTimeInterval _lastReport;
 }
 - (void)consume:(const int16_t *)pcm frames:(unsigned)frames pts:(int64_t)pts;
@@ -55,6 +57,15 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     if (!_nativePlayer) return nil;
     // Pinned VLCKit initializer takes ownership, without retaining the pointer.
     _player = [[VLCMediaPlayer alloc] initWithLibVLCInstance:_nativePlayer andLibrary:library];
+    __weak TLCNativeVlcAudio *weakSelf = self;
+    _stateObserver = [NSNotificationCenter.defaultCenter addObserverForName:VLCMediaPlayerStateChanged object:_player queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+        (void)note;
+        TLCNativeVlcAudio *strongSelf = weakSelf;
+        if (!strongSelf || atomic_load(&strongSelf->_closing) || !strongSelf->_stateHandler) return;
+        VLCMediaPlayerState state = strongSelf.player.state;
+        if (state == VLCMediaPlayerStatePlaying) strongSelf->_stateHandler(1);
+        else if (state == VLCMediaPlayerStateEnded || state == VLCMediaPlayerStateError) strongSelf->_stateHandler(2);
+    }];
     libvlc_audio_set_format(_nativePlayer, "S16N", 48000, 2);
     libvlc_audio_set_callbacks(_nativePlayer, tlc_play, tlc_pause, tlc_resume, tlc_flush, tlc_drain, (__bridge void *)self);
     return self;
@@ -63,6 +74,8 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     atomic_store(&_strength, (int)MAX(0, MIN(100, strength)));
     atomic_store(&_enabled, enabled);
 }
+- (void)setMuted:(BOOL)muted { _node.volume = muted ? 0.0f : 1.0f; }
+- (void)setPlaybackStateHandler:(void (^)(NSInteger))handler { _stateHandler = [handler copy]; }
 - (void)playURL:(NSURL *)url drawable:(UIView *)drawable {
     _player.drawable = drawable;
     _player.media = [VLCMedia mediaWithURL:url];
@@ -130,6 +143,8 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     libvlc_audio_set_callbacks(_nativePlayer, NULL, NULL, NULL, NULL, NULL, NULL);
     [_node stop]; [_engine stop]; _player.drawable = nil;
     if (_stopObserver) { [NSNotificationCenter.defaultCenter removeObserver:_stopObserver]; _stopObserver = nil; }
+    if (_stateObserver) { [NSNotificationCenter.defaultCenter removeObserver:_stateObserver]; _stateObserver = nil; }
+    _stateHandler = nil;
     completion();
 }
 - (void)stopWithCompletion:(void (^)(void))completion {
@@ -145,6 +160,7 @@ static void tlc_drain(void *opaque) { [(__bridge TLCNativeVlcAudio *)opaque cont
     [_player stop];
 }
 - (void)dealloc {
+    if (_stateObserver) [NSNotificationCenter.defaultCenter removeObserver:_stateObserver];
     [_engine stop]; tlc_peak_destroy(_limiter);
 }
 @end
