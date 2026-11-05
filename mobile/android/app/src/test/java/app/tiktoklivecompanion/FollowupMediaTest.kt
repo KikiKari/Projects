@@ -27,15 +27,20 @@ class FollowupMediaTest {
     @Test fun connectionWaitsForBridgeAndBrowserExitsPlayer() {
         val model = CompanionViewModel(FollowupFakeEngine())
         val commands = mutableListOf<String>()
+        var reloads = 0
+        model.reloadPage = { reloads++ }
         model.sendCommand = { name, _ -> commands += name }
         model.setConnectionEnabled(true)
+        assertEquals(1, reloads)
         assertFalse(model.state.value.connectionEnabled)
+        model.handle(envelope("capability", mapOf("feature" to "websocket-hook", "available" to true)))
         model.handle(envelope("capability", mapOf("feature" to "connection", "available" to true)))
         assertTrue(model.state.value.connectionEnabled)
         model.setConnectionEnabled(false)
         assertTrue(model.state.value.connectionEnabled)
         model.handle(envelope("capability", mapOf("feature" to "connection", "available" to false)))
         assertFalse(model.state.value.connectionEnabled)
+        model.handle(envelope("bridge-ready", emptyMap()))
         model.handle(envelope("media-url", mapOf("url" to "https://cdn.example/live.m3u8", "kind" to "network")))
         model.toggleVlcReplacement()
         assertTrue(model.state.value.vlcReplacementUrl != null)
@@ -133,6 +138,7 @@ class FollowupMediaTest {
         model.setPairingCode("pair")
         model.setUniversalCaptionApiKey("caption")
         model.setAutoReconnectDelay(59)
+        model.setLiveLogsEnabled(true)
         model.startRecommendationScan(99)
         model.handle(envelope("caption", mapOf("sentenceId" to "1", "definite" to true, "contents" to listOf(mapOf("lang" to "de", "text" to "Hallo")))))
         val state = model.state.value

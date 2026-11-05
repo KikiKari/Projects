@@ -24,7 +24,7 @@ class RecoveryIntegrationTest {
     private fun model() = CompanionViewModel(RecoveryEngine())
     private fun e(type: String, payload: Map<String, Any?>) = BridgeEnvelope(1, type, "/@private/live", 2, "2026-10-07T12:00:00Z", payload)
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    @Test fun startupLimiterWaitsForOverviewSetupButManualTogglesStayImmediate() {
+    @Test fun startupLimiterWaitsForPlaybackButManualTogglesStayImmediate() {
         val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
         kotlinx.coroutines.Dispatchers.setMain(dispatcher)
         try {
@@ -39,6 +39,8 @@ class RecoveryIntegrationTest {
             assertFalse(commands.any { it.first == "set-limiter" })
             dispatcher.scheduler.advanceTimeBy(1)
             dispatcher.scheduler.runCurrent()
+            assertFalse(commands.any { it.first == "set-limiter" })
+            m.handle(e("player-observation", mapOf("playing" to true)))
             assertEquals(1, commands.count { it.first == "set-limiter" })
             m.setLimiterEnabled(true)
             assertEquals(true, commands.last().second["enabled"])
@@ -54,6 +56,7 @@ class RecoveryIntegrationTest {
     @Test fun hookAndPlayerTimersAreIndependent() {
         val m = model(); val commands = mutableListOf<Pair<String, Map<String, Any>>>()
         m.sendCommand = { n,p -> commands.add(n to p) }
+        m.handle(e("bridge-ready", emptyMap()))
         assertFalse(m.state.value.hookReconnectEnabled)
         m.setAutoReconnectDelay(8); m.setHookReconnectDelay(2); m.setHookReconnect(true)
         assertEquals(8,m.state.value.autoReconnectDelaySeconds)
@@ -67,7 +70,7 @@ class RecoveryIntegrationTest {
         assertEquals(0,navigation); assertTrue(commands.isEmpty())
     }
     @Test fun exportsExcludeSecretsAndKeepCaptionExportSeparate() {
-        val m=model(); m.setDebugEnabled(true); m.setAuddToken("API-SECRET")
+        val m=model(); m.setDebugEnabled(true); m.setAuddToken("API-SECRET"); m.setLiveLogsEnabled(true)
         m.handle(e("chat",mapOf("nickname" to "PRIVATE-AUTHOR","content" to "PRIVATE-CHAT")))
         m.handle(e("caption",mapOf("text" to "PRIVATE-CAPTION","endpoint" to "https://private/?token=TOKEN")))
         m.handle(e("socket-telemetry",mapOf("stage" to "socket-open","socketId" to "11111111-1111-1111-1111-111111111111","url" to "https://private/?token=TOKEN")))
@@ -113,7 +116,7 @@ class RecoveryIntegrationTest {
     }
     @Test fun bridgeDecodesCaptionArraysAndRecoveryTypes() {
         val raw="""{"version":1,"type":"caption","sequence":1,"timestamp":"2026-10-07T12:00:00Z","payload":{"contents":[{"lang":"de","text":"Hallo"}]}}"""
-        val m=model();m.handle(BridgeValidator.decode(raw,BridgeValidator.ALLOWED_ORIGIN,true)!!)
+        val m=model();m.setLiveLogsEnabled(true);m.handle(BridgeValidator.decode(raw,BridgeValidator.ALLOWED_ORIGIN,true)!!)
         assertEquals("Hallo",m.state.value.captionRecords.single().text)
         for(t in listOf("hook-recovery","socket-telemetry","caption-state","player-recovery")) assertNotNull(BridgeValidator.decode(raw.replace("\"caption\"","\"$t\""),BridgeValidator.ALLOWED_ORIGIN,true))
     }

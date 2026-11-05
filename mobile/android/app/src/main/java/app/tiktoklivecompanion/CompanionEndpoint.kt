@@ -31,6 +31,13 @@ internal object CompanionEndpoint {
             catch (error: CancellationException) { throw error }
             catch (_: Exception) { /* Only the two local loopback addresses are used. */ }
         }
+        if (configured.isBlank()) throw IllegalArgumentException("Kein lokaler Companion-Dienst auf diesem Gerät erreichbar; Systemstimmen bleiben verfügbar.")
+        val alternative = normalize(configured)
+        if (alternative !in candidates) {
+            try { probe(alternative); return alternative }
+            catch (error: CancellationException) { throw error }
+            catch (_: Exception) { /* Report the unavailable service after all configured candidates. */ }
+        }
         throw IllegalStateException("Kein lokaler Companion-Dienst auf diesem Gerät erreichbar; Systemstimmen bleiben verfügbar.")
     }
 }
