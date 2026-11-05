@@ -24,11 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.currentStateAsState
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
@@ -79,9 +80,9 @@ internal fun MonitorScreen(close: () -> Unit) {
     val scope = rememberCoroutineScope()
     val probe = remember { MonitorProbe() }
     val checking = remember { mutableStateMapOf<Int, Int>() }
+    val probePermits = remember { Semaphore(3) }
     val playingSlots = remember { mutableStateMapOf<Int, Boolean>() }
     val revisions = remember { IntArray(MonitorConfig.SLOT_COUNT) }
-    val lifecycleState by lifecycle.currentStateAsState()
     val currentConfig by rememberUpdatedState(config)
     BackHandler { if (gridOpen) gridOpen = false else close() }
     fun save(next: MonitorConfig) { config = next; preferences.save(next); MonitorWorker.schedule(context, next) }
@@ -90,14 +91,16 @@ internal fun MonitorScreen(close: () -> Unit) {
         val revision = revisions[index]
         val storedRevision = preferences.revision(index)
         if (handle.isEmpty() || checking[index] == revision) return
-        val visibleSlots = if (config.gridNine) (0 until 9).toList() else config.selectedSlots
+        val visibleSlots = monitorGridSlots(config, rows)
         if (!force && config.skipOnline && rows[index].status == MonitorStatus.ONLINE && rows[index].sources.any { MonitorProbe.isUsableSource(it) }) return
         if (!force && gridOpen && index in visibleSlots && playingSlots[index] == true && rows[index].sources.any { MonitorProbe.isUsableSource(it) }) return
         checking[index] = revision
         rows = applyMonitorResult(rows, index, rows[index].copy(status = MonitorStatus.CHECKING))
         scope.launch {
             try {
-                val result = withContext(Dispatchers.IO) { probe.check(handle, currentConfig.maxLinks) }
+                val result = probePermits.withPermit {
+                    withContext(Dispatchers.IO) { probe.check(handle, currentConfig.maxLinks) }
+                }
                 if (revisions[index] == revision && currentConfig.handles[index] == handle) {
                     rows = applyMonitorResult(rows, index, result)
                     preferences.saveStatus(index, result, storedRevision)
@@ -132,9 +135,7 @@ internal fun MonitorScreen(close: () -> Unit) {
         }
     }
     if (gridOpen) {
-        val selected = if (config.gridNine) (0 until 9).toList() else config.selectedSlots
-        val sorted = if (config.autoSort) selected.sortedBy { rows[it].status != MonitorStatus.ONLINE } else selected
-        val slots = if (config.reverse) sorted.reversed() else sorted
+        val slots = monitorGridSlots(config, rows)
         val columns = if (config.gridNine) 3 else 2
         Column(Modifier.fillMaxSize().background(Color.Black)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -146,7 +147,7 @@ internal fun MonitorScreen(close: () -> Unit) {
                 Row(Modifier.fillMaxWidth().weight(1f)) {
                     line.forEach { index ->
                         key(index, rows[index].handle) {
-                            MonitorTile(rows[index], Modifier.weight(1f).fillMaxHeight(), lifecycleState.isAtLeast(Lifecycle.State.STARTED), refresh = { check(index) }, onPlaybackChanged = { playingSlots[index] = it })
+                            MonitorTile(rows[index], Modifier.weight(1f).fillMaxHeight(), true, refresh = { check(index) }, onPlaybackChanged = { playingSlots[index] = it })
                         }
                     }
                 }
@@ -163,7 +164,7 @@ internal fun MonitorScreen(close: () -> Unit) {
                 IconButton(onClick = { for (i in 0 until MonitorConfig.SLOT_COUNT) check(i) }, modifier = Modifier.semantics { contentDescription = "Alle prüfen" }) { CompanionControlIcon("status") }
             }
         }
-        val orderedRows = rows.indices.toList().let { indices -> if (config.autoSort) indices.sortedBy { rows[it].status != MonitorStatus.ONLINE } else indices }
+        val orderedRows = rows.indices.toList()
         orderedRows.forEach { index ->
             val row = rows[index]
             Column {

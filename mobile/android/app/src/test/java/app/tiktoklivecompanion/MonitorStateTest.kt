@@ -5,6 +5,21 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 class MonitorStateTest {
+    @Test fun aPlayingSourceDoesNotLoseGridPriorityWhileBeingRechecked() {
+        val rows = List(9) { i -> when (i) {
+            7 -> MonitorRow("creator7", MonitorStatus.CHECKING, listOf("https://example.invalid/live.m3u8"))
+            8 -> MonitorRow("creator8", MonitorStatus.ONLINE)
+            else -> MonitorRow("creator$i", MonitorStatus.OFFLINE)
+        } }
+        assertEquals(listOf(7, 8, 0, 1), monitorGridSlots(MonitorConfig(autoSort = true), rows))
+    }
+    @Test fun onlinePriorityFillsGridFromAllNineSlots() {
+        val rows = List(9) { MonitorRow("creator$it", if (it == 7 || it == 8) MonitorStatus.ONLINE else MonitorStatus.OFFLINE) }
+        assertEquals(listOf(7, 8, 0, 1), monitorGridSlots(MonitorConfig(autoSort = true), rows))
+        assertEquals(listOf(8, 7, 6, 5), monitorGridSlots(MonitorConfig(autoSort = true, reverse = true), rows))
+        assertEquals(listOf(0, 1, 2, 3), monitorGridSlots(MonitorConfig(), rows))
+        assertEquals(listOf(7, 8), monitorGridSlots(MonitorConfig(gridNine = true, autoSort = true), rows).take(2))
+    }
     @Test fun sourcesAdvanceIndependentlyAndOnlyManualRestartWraps() {
         assertEquals(1, nextMonitorSource(0, 3, manual = false))
         assertEquals(2, nextMonitorSource(1, 3, manual = false))

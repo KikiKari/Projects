@@ -33,6 +33,20 @@ internal data class MonitorConfig(
 
 internal enum class MonitorStatus { UNKNOWN, CHECKING, ONLINE, OFFLINE, ERROR }
 
+/** Online priority applies to the grid, while explicit 2×2 assignments remain the fallback. */
+internal fun monitorGridSlots(config: MonitorConfig, rows: List<MonitorRow>): List<Int> {
+    require(rows.size == MonitorConfig.SLOT_COUNT)
+    val all = (0 until MonitorConfig.SLOT_COUNT).toList()
+    val assigned = if (config.gridNine) all else config.selectedSlots
+    val candidates = if (config.autoSort && !config.gridNine) assigned + all.filterNot { it in assigned } else assigned
+    val ordered = if (config.reverse) candidates.reversed() else candidates
+    return (if (config.autoSort) ordered.sortedBy {
+        val row = rows[it]
+        row.status != MonitorStatus.ONLINE && !(row.status == MonitorStatus.CHECKING && row.sources.isNotEmpty())
+    } else ordered)
+        .take(if (config.gridNine) 9 else 4)
+}
+
 /** The identity is captured with every request so stale responses cannot cross slots. */
 internal data class MonitorRow(
     val handle: String,
