@@ -1,20 +1,23 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843.py — portiert nach tcl
+# 1781743218784_0122af_093843_1b74c9.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_1b74c9.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843.ps1 — portiert nach python — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py — portiert: 2024-11-03
-
-if {$argc < 1} {
-    puts stderr "Fehler: OutputPath ist erforderlich."
-    exit 1
-}
-
-set output_path [lindex $argv 0]
-
-set html_content {<!DOCTYPE html>
+proc main {} {
+    global argv
+    
+    if {[llength $argv] < 1} {
+        puts stderr "Fehler: OutputPath ist erforderlich."
+        exit 1
+    }
+    
+    set outputPath [lindex $argv 0]
+    
+    set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,16 +222,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>}
-
-if {[catch {set fd [open $output_path w]} error]} {
-    puts stderr $error
-    exit 1
+    
+    if {[catch {set fh [open $outputPath w]}]} {
+        puts stderr $::errorInfo
+        exit 1
+    }
+    
+    puts -nonewline $fh $htmlContent
+    close $fh
 }
 
-if {[catch {puts $fd $html_content} error]} {
-    puts stderr $error
-    close $fd
-    exit 1
-}
-
-close $fd
+main

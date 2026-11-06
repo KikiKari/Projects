@@ -7,7 +7,7 @@ use strict;
 use warnings;
 use utf8;
 use Encode qw(decode_utf8);
-use File::Basename;
+use File::Spec;
 
 # Parameter verarbeiten
 if (@ARGV < 1) {
@@ -224,14 +224,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
 eval {
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Kann Datei '$outputPath' nicht öffnen: $!";
+    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Cannot open file '$outputPath': $!";
     print $fh $htmlContent;
     close($fh);
-};
-
-if ($@) {
-    print STDERR $@;
+    1;
+} or do {
+    my $error = $@ || 'Unknown error';
+    chomp $error;
+    print STDERR "$error\n";
     exit 1;
-}
+};

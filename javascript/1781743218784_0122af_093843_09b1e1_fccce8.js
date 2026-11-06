@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.tcl — portiert nach javascript
+// 1781743218784_0122af_093843_09b1e1_fccce8.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_fccce8.pl
+// Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_093843_09b1e1.tcl — portiert nach perl5
 // Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
 // Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
@@ -21,6 +25,8 @@ if (process.argv.length < 3) {
 }
 
 const output_path = process.argv[2];
+
+const fs = require('fs');
 
 const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -230,8 +236,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 `;
 
 try {
-    require('fs').writeFileSync(output_path, html_content);
-} catch (error) {
-    console.error(error.message);
+    fs.writeFileSync(output_path, html_content);
+} catch (err) {
+    console.error(err.message);
     process.exit(1);
 }

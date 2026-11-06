@@ -1,10 +1,18 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_09b1e1_fccce8.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_fccce8.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Spec;
+use Encode qw(encode decode);
+
+# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_0122af_093843.py — portiert nach tcl
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
@@ -233,10 +241,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-open(my $fh, '>', $output_path) or do {
-    print STDERR $!;
+eval {
+    open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Konnte Datei '$output_path' nicht öffnen: $!";
+    print $fh $html_content;
+    close($fh);
+    1;
+} or do {
+    my $error = $@ || 'Unknown error';
+    chomp $error;
+    print STDERR "$error\n";
     exit 1;
 };
-
-print $fh $html_content;
-close $fh;

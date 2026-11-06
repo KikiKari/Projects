@@ -1,21 +1,33 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach python
+# 1781743218784_0122af_093843_09b1e1_fccce8.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_fccce8.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-import sys
-import os
+# 1781743218784_0122af_093843.py — portiert nach tcl
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
+# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
 
-def main():
-    # Prüfe ob Output-Pfad übergeben wurde
-    if len(sys.argv) < 2:
-        print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
-        sys.exit(1)
-    
-    output_path = sys.argv[1]
-    
-    # HTML-Inhalt definieren
-    html_content = '''<!DOCTYPE html>
+# 1781743218784_0122af.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
+# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.js — portiert nach python3.12
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
+
+import sys
+
+if len(sys.argv) < 3:
+    print("Fehler: OutputPath ist erforderlich.")
+    sys.exit(1)
+
+output_path = sys.argv[2]
+
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -221,14 +233,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>
 '''
-    
-    # Versuche die Datei zu schreiben
-    try:
-        with open(output_path, 'w', encoding='utf-8') as fh:
-            fh.write(html_content)
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
 
-if __name__ == "__main__":
-    main()
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as error:
+    print(str(error))
+    sys.exit(1)

@@ -5,8 +5,8 @@
 
 # Parameter verarbeiten
 if ($args.Count -lt 1) {
-  Write-Error "Fehler: OutputPath ist erforderlich."
-  exit 1
+    Write-Error "Fehler: OutputPath ist erforderlich."
+    exit 1
 }
 $outputPath = $args[0]
 
@@ -219,8 +219,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-  [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
-  Write-Error $_.Exception.Message
-  exit 1
+    Write-Error $_.Exception.Message
+    exit 1
 }

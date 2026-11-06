@@ -1,26 +1,30 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_093843.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_1b74c9.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_1b74c9.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
 use open qw(:std :utf8);
+use File::Spec;
+use Encode;
 
-# 1781743218784_0122af_093843.ps1 — portiert nach python — portiert nach Perl 5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py — portiert nach Perl 5
+# 1781743218784_0122af_093843.py — portiert nach javascript
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
 sub main {
-    if (@ARGV < 1) {
+    my @args = @ARGV;
+    
+    if (@args < 1) {
         print STDERR "Fehler: OutputPath ist erforderlich.\n";
         exit 1;
     }
-
-    my $output_path = $ARGV[0];
-
-    my $html_content = <<'HTML_END';
+    
+    my $outputPath = $args[0];
+    
+    my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -229,16 +233,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
     eval {
-        open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Cannot open file '$output_path': $!";
-        print $fh $html_content;
+        open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Cannot open $outputPath: $!";
+        print $fh $htmlContent;
         close($fh);
-        1;
-    } or do {
-        my $error = $@ || 'Unknown error';
-        print STDERR "$error\n";
-        exit 1;
     };
-
+    if ($@) {
+        print STDERR $@;
+        exit 1;
+    }
 }
 
-main() unless caller;
+main();

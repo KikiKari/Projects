@@ -1,4 +1,8 @@
 #!/usr/bin/env tclsh
+# 1781743218784_0122af_093843_09b1e1_bff071.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_bff071.ps1
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
 # 1781743218784_0122af_093843_09b1e1.pl — portiert nach tcl
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
@@ -9,9 +13,9 @@ if {$argc < 1} {
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,10 +222,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {set fh [open $output_path w]}]} {
-    puts stderr "Cannot open $output_path: $fh"
+if {[catch {
+    set fh [open $outputPath w]
+    fconfigure $fh -encoding utf-8
+    puts -nonewline $fh $htmlContent
+    close $fh
+} err]} {
+    puts stderr $err
     exit 1
 }
-
-puts -nonewline $fh $html_content
-close $fh

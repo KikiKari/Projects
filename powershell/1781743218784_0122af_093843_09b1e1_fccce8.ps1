@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach powershell
+# 1781743218784_0122af_093843_09b1e1_fccce8.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_fccce8.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
@@ -15,12 +19,10 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
 # Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
 
-if ($args.Count -lt 1) {
-    Write-Error "Fehler: OutputPath ist erforderlich."
-    exit 1
-}
-
-$output_path = $args[0]
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
 $html_content = @'
 <!DOCTYPE html>
@@ -231,7 +233,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    Set-Content -Path $output_path -Value $html_content -Encoding UTF8
+    Set-Content -Path $OutputPath -Value $html_content -Encoding UTF8
 } catch {
     Write-Error $_.Exception.Message
     exit 1

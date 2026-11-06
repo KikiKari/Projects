@@ -1,22 +1,27 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843.py — portiert nach javascript
+// 1781743218784_0122af_093843_1b74c9.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_1b74c9.pl
+// Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_093843.py — portiert nach perl5
 // Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
 // Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
+// 1781743218784_0122af_093843.ps1 — portiert nach python — portiert nach Perl 5
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
+// Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py — portiert nach Perl 5
+
 const fs = require('fs');
-const path = require('path');
 
 function main() {
-    const args = process.argv.slice(2);
-    
-    if (args.length < 1) {
+    if (process.argv.length < 3) {
         console.error("Fehler: OutputPath ist erforderlich.");
         process.exit(1);
     }
-    
-    const outputPath = args[0];
-    
-    const htmlContent = `<!DOCTYPE html>
+
+    const output_path = process.argv[2];
+
+    const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -220,14 +225,17 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
     try {
-        fs.writeFileSync(outputPath, htmlContent, 'utf8');
-    } catch (e) {
-        console.error(e.message);
+        fs.writeFileSync(output_path, html_content, 'utf8');
+    } catch (error) {
+        console.error(error.message);
         process.exit(1);
     }
 }
 
-main();
+if (require.main === module) {
+    main();
+}

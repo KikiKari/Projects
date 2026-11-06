@@ -1,20 +1,12 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_093843_3a9f85.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_3a9f85.js
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843.sh — portiert nach javascript
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843.sh
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.pl — portiert nach JavaScript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if ($args.Count -lt 1) {
-    Write-Error "Fehler: OutputPath ist erforderlich."
-    exit 1
+  Write-Error "Fehler: OutputPath ist erforderlich."
+  exit 1
 }
 $outputPath = $args[0]
 
@@ -229,8 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreibe HTML-Inhalt in Ausgabedatei
 try {
-    $htmlContent | Out-File -FilePath $outputPath -Encoding UTF8
+  [System.IO.File]::WriteAllText($outputPath, $htmlContent)
 } catch {
-    Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)"
-    exit 1
+  Write-Error "Konnte Datei '$outputPath' nicht öffnen: $($_.Exception.Message)"
+  exit 1
 }

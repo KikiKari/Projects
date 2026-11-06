@@ -8,7 +8,7 @@ import os
 
 # Parameter verarbeiten
 if len(sys.argv) < 2:
-    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    print("Fehler: OutputPath ist erforderlich.")
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -217,12 +217,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(e, file=sys.stderr)
+    print(str(e) or 'Unknown error')
     sys.exit(1)

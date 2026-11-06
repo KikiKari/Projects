@@ -1,19 +1,25 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843.py — portiert nach powershell
+# 1781743218784_0122af_093843_1b74c9.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_1b74c9.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
-
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
-
 function Main {
-    $htmlContent = @'
+    param(
+        [string[]]$Args
+    )
+
+    if ($Args.Count -lt 1) {
+        Write-Error "Fehler: OutputPath ist erforderlich."
+        exit 1
+    }
+
+    $outputPath = $Args[0]
+
+    $htmlContent = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,15 +225,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 
     try {
-        Set-Content -Path $OutputPath -Value $htmlContent -Encoding Utf8
-    }
-    catch {
+        [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    } catch {
         Write-Error $_.Exception.Message
         exit 1
     }
 }
 
-Main
+Main -Args $args

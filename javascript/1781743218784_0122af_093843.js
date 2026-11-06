@@ -3,11 +3,14 @@
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
 // Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0122af_093843.pl — portiert nach javascript
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_093843.js — portiert nach JavaScript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
+// Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
 
 const fs = require('fs');
+const path = require('path');
 
 // Parameter verarbeiten
 if (process.argv.length < 3) {
@@ -222,9 +225,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
+// Schreibe den HTML-Inhalt in die Ausgabedatei
 try {
-    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
-} catch (error) {
-    console.error(error.message || 'Unknown error');
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (err) {
+    console.error(err.message);
     process.exit(1);
 }

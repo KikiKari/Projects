@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_bff071.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_bff071.py
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if ($args.Count -lt 1) {
-    Write-Error "Fehler: OutputPath ist erforderlich."
+    [Console]::Error.WriteLine("Fehler: OutputPath ist erforderlich.")
     exit 1
 }
 
@@ -222,6 +222,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try {
     [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
 } catch {
-    Write-Error $_.Exception.Message
+    [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
 }

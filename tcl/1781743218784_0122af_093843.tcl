@@ -3,16 +3,21 @@
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe, ob ein Argument übergeben wurde
+# 1781743218784_0122af_093843.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
+# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+
+# Parameter verarbeiten
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
 }
-
-# Hole das erste Argument (Output-Pfad)
 set outputPath [lindex $argv 0]
 
-# HTML-Inhalt als Tcl-Variable definieren
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,14 +222,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-# Schreibe den HTML-Inhalt in die angegebene Datei
-if {[catch {set fh [open $outputPath w]} errorMsg]} {
-    puts stderr $errorMsg
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if {[catch {set fh [open $outputPath w]} err]} {
+    puts stderr $err
     exit 1
 }
-
 puts -nonewline $fh $htmlContent
 close $fh
