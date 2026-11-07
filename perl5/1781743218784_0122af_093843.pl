@@ -1,14 +1,13 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_093843.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use open qw(:std :utf8);
 use File::Spec;
-use Encode;
+use Encode qw(encode);
 
 # Parameter verarbeiten
 if (@ARGV < 1) {
@@ -225,13 +224,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
 eval {
-    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Konnte Datei '$outputPath' nicht öffnen: $!";
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open file '$outputPath': $!";
     print $fh $htmlContent;
     close $fh;
-};
-if ($@) {
-    print STDERR $@;
+    1;
+} or do {
+    my $error = $@ || 'Unknown error';
+    chomp $error;
+    print STDERR "$error\n";
     exit 1;
-}
+};

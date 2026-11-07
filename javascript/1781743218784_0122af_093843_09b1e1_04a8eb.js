@@ -1,14 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.py — portiert nach javascript
+// 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
+// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
 // Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
 // Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+// Portiert nach JavaScript fuer Node 20
 
 const fs = require('fs');
 const path = require('path');
 
 if (process.argv.length < 3) {
-  console.error("Fehler: OutputPath ist erforderlich.");
-  process.exit(1);
+    console.error("Fehler: OutputPath ist erforderlich.");
+    process.exit(1);
 }
 
 const outputPath = process.argv[2];
@@ -220,8 +225,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 try {
-  fs.writeFileSync(outputPath, htmlContent, 'utf-8');
-} catch (e) {
-  console.error(e.message);
-  process.exit(1);
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
 }

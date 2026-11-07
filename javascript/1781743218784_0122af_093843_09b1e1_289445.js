@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
-// Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_093843_09b1e1_289445.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_289445.pl
+// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe auf notwendige Argumente
 if (process.argv.length < 3) {
@@ -10,6 +10,7 @@ if (process.argv.length < 3) {
 }
 
 const outputPath = process.argv[2];
+const fs = require('fs');
 
 // HTML-Inhalt definieren
 const htmlContent = `<!DOCTYPE html>
@@ -216,14 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 // Schreibe den HTML-Inhalt in die Ausgabedatei
-const fs = require('fs');
 try {
-  fs.writeFileSync(outputPath, htmlContent, 'utf8');
+  fs.writeFileSync(outputPath, htmlContent);
 } catch (err) {
-  console.error(`Fehler beim Öffnen der Datei ${outputPath}: ${err.message}`);
+  console.error("Fehler beim Öffnen der Datei " + outputPath + ": " + err.message);
   process.exit(1);
 }

@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach powershell
+# 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
 # Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
@@ -217,7 +221,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    $htmlContent | Out-File -FilePath $OutputPath -Encoding utf8
+    $htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8 -Force
 } catch {
     Write-Error $_.Exception.Message
     exit 1

@@ -1,18 +1,21 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Kommandozeilenargumente
+# Import necessary packages
+package require Tcl 8.6
+
+# Check command line arguments
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-# HTML-Inhalt als Tcl-Variable
-set html_content {<!DOCTYPE html>
+# Define HTML content
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -218,11 +221,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Schreibe HTML-Inhalt in Datei
-if {[catch {set f [open $output_path w]} err]} {
-    puts stderr $err
+# Write to file
+if {[catch {set fh [open $outputPath w]} error]} {
+    puts stderr $error
     exit 1
 }
 
-puts -nonewline $f $html_content
-close $f
+puts -nonewline $fh $htmlContent
+close $fh

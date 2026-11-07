@@ -1,26 +1,28 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_093843_09b1e1.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843_09b1e1.sh
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_6f0761.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_6f0761.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode encode);
+use File::Spec;
+use File::Basename;
+
+binmode(STDOUT, ':encoding(UTF-8)');
+binmode(STDERR, ':encoding(UTF-8)');
 
 # Prüfe, ob ein Argument übergeben wurde
 if (@ARGV < 1) {
-  print STDERR "Fehler: OutputPath ist erforderlich.\n";
-  exit 1;
+    print STDERR "Fehler: OutputPath ist erforderlich.\n";
+    exit(1);
 }
 
 my $output_path = $ARGV[0];
 
 # Schreibe den HTML-Inhalt in die angegebene Datei
-open(my $fh, '>', $output_path) or do {
-  print STDERR "Fehler beim Schreiben in die Datei: $output_path\n";
-  exit 1;
-};
-
-print $fh <<'EOF';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -226,8 +228,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_END
 
-close($fh);
-
-exit 0;
+eval {
+    open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Cannot open file '$output_path': $!";
+    print $fh $htmlContent;
+    close($fh);
+    1;
+} or do {
+    my $error = $@ || 'Unknown error';
+    print STDERR "Fehler beim Schreiben in die Datei: $output_path\n";
+    exit(1);
+};

@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1.sh — portiert nach tcl
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843_09b1e1.sh
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_6f0761.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_6f0761.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe, ob ein Argument übergeben wurde
 if {$argc < 1} {
@@ -12,8 +12,7 @@ if {$argc < 1} {
 set output_path [lindex $argv 0]
 
 # Schreibe den HTML-Inhalt in die angegebene Datei
-set fd [open $output_path w]
-puts -nonewline $fd {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,11 +216,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
-close $fd
+</html>
+}
 
-# Überprüfe, ob das Schreiben erfolgreich war
-if {[catch {open $output_path r}]} {
+if {[catch {set fh [open $output_path w]} err]} {
     puts stderr "Fehler beim Schreiben in die Datei: $output_path"
     exit 1
 }
+
+puts -nonewline $fh $htmlContent
+close $fh

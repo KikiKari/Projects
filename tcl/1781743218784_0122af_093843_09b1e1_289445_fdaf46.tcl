@@ -1,6 +1,6 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1_289445.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_289445.pl
+# 1781743218784_0122af_093843_09b1e1_289445_fdaf46.py — portiert nach tcl
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_289445_fdaf46.py
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe auf notwendige Argumente
@@ -220,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-if {[catch {open $outputPath w} fh]} {
-    puts stderr "Fehler beim Öffnen der Datei $outputPath: $::errorInfo"
+if {[catch {set fh [open $outputPath w]}]} {
+    puts stderr "Fehler beim Öffnen der Datei $outputPath: $fh"
     exit 1
 }
 
-puts $fh $htmlContent
+puts -nonewline $fh $htmlContent
 close $fh

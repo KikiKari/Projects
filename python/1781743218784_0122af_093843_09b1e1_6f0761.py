@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.sh — portiert nach python
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843_09b1e1.sh
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_6f0761.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_6f0761.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
-def main():
-    # Prüfe, ob ein Argument übergeben wurde
-    if len(sys.argv) < 2:
-        print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
-        sys.exit(1)
+# Prüfe, ob ein Argument übergeben wurde
+if len(sys.argv) < 2:
+    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
+output_path = sys.argv[1]
 
-    html_content = '''<!DOCTYPE html>
+# Schreibe den HTML-Inhalt in die angegebene Datei
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -221,13 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-    # Schreibe den HTML-Inhalt in die angegebene Datei
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print(f"Fehler beim Schreiben in die Datei: {output_path}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception:
+    print(f'Fehler beim Schreiben in die Datei: {output_path}', file=sys.stderr)
+    sys.exit(1)

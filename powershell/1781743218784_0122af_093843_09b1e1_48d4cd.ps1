@@ -1,15 +1,20 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach powershell
+# 1781743218784_0122af_093843_09b1e1_48d4cd.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_48d4cd.py
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.pl — portiert nach python
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
 # Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe, ob das Skript mit mindestens einem Argument aufgerufen wurde
-if ($args.Count -lt 1) {
-    Write-Error "Fehler: OutputPath ist erforderlich."
-    exit 1
-}
+# 1781743218784_0122af_093843_09b1e1.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-$outputPath = $args[0]
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
 $htmlContent = @'
 <!DOCTYPE html>
@@ -220,10 +225,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    # Schreibe den HTML-Inhalt in die angegebene Datei mit UTF-8-Kodierung
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+    $htmlContent | Set-Content -Path $OutputPath -Encoding UTF8
 } catch {
-    # Gebe Fehlermeldung aus und beende mit Exit-Code 1
     Write-Error $_.Exception.Message
     exit 1
 }

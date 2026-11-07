@@ -1,18 +1,20 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_093843.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.js — portiert nach Tcl 8.6
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
 # Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843.tcl — portiert nach Tcl
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
-
+# Prüfe Kommandozeilenargumente
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
 }
 set outputPath [lindex $argv 0]
 
+# HTML-Inhalt definieren
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,10 +221,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-if {[catch {set fd [open $outputPath w]}]} {
-    puts stderr $fd
+# Schreibe HTML-Inhalt in Datei
+if {[catch {set fh [open $outputPath w]}]} {
+    puts stderr "Fehler beim Öffnen der Datei $outputPath: $fh"
     exit 1
 }
-puts -nonewline $fd $htmlContent
-close $fd
+
+if {[catch {puts $fh $htmlContent} errMsg]} {
+    puts stderr "Fehler beim Schreiben in die Datei $outputPath: $errMsg"
+    close $fh
+    exit 1
+}
+
+close $fh

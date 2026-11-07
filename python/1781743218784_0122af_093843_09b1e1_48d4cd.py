@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_48d4cd.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_48d4cd.ps1
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 def main():
+    # Prüfe, ob das Skript mit mindestens einem Argument aufgerufen wurde
     if len(sys.argv) < 2:
         print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
         sys.exit(1)
@@ -141,7 +138,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -224,9 +221,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
     try:
+        # Schreibe den HTML-Inhalt in die angegebene Datei mit UTF-8-Kodierung
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
     except Exception as e:
+        # Gebe Fehlermeldung aus und beende mit Exit-Code 1
         print(str(e), file=sys.stderr)
         sys.exit(1)
 

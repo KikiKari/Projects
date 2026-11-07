@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_093843_09b1e1_289445.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_289445.py
+# 1781743218784_0122af_093843_09b1e1_289445_e594ef.tcl — portiert nach perl5
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_289445_e594ef.tcl
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
@@ -224,9 +224,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-open(my $fd, '>:encoding(UTF-8)', $output_path) or do {
-    print STDERR "Fehler beim Öffnen der Datei $output_path: $!\n";
-    exit 1;
-};
-print $fd $html_content;
-close $fd;
+open(my $fh, '>', $output_path) or die "Fehler beim Öffnen der Datei $output_path: $!";
+print $fh $html_content;
+close $fh;

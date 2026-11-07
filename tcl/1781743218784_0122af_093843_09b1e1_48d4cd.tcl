@@ -1,18 +1,16 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_48d4cd.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_48d4cd.ps1
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe, ob ein Argument übergeben wurde
+# Prüfe, ob das Skript mit mindestens einem Argument aufgerufen wurde
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
 }
 
-# Hole den Ausgabepfad aus den Argumenten
 set outputPath [lindex $argv 0]
 
-# Definiere den HTML-Inhalt als Variable
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,23 +215,17 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
-
-# Schreibe den Inhalt in die angegebene Datei
-if {[catch {set fileId [open $outputPath "w"]}]} {
-    puts stderr "Fehler beim Öffnen der Datei $outputPath"
-    exit 1
+</html>
 }
 
-# Setze die Kodierung auf UTF-8
-fconfigure $fileId -encoding utf-8
-
-# Schreibe den HTML-Inhalt
-if {[catch {puts -nonewline $fileId $htmlContent}]} {
-    puts stderr "Fehler beim Schreiben in die Datei $outputPath"
-    close $fileId
+# Versuche, den HTML-Inhalt in die angegebene Datei zu schreiben
+if {[catch {
+    set fh [open $outputPath w]
+    fconfigure $fh -encoding utf-8
+    puts -nonewline $fh $htmlContent
+    close $fh
+} error]} {
+    # Gebe Fehlermeldung aus und beende mit Exit-Code 1
+    puts stderr $error
     exit 1
 }
-
-# Schließe die Datei
-close $fileId

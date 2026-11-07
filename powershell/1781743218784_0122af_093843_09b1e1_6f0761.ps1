@@ -1,15 +1,15 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843_09b1e1.sh
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_6f0761.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_6f0761.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe, ob ein Argument übergeben wurde
 if ($args.Count -lt 1) {
-  Write-Error "Fehler: OutputPath ist erforderlich."
-  exit 1
+    Write-Error "Fehler: OutputPath ist erforderlich."
+    exit 1
 }
 
-$outputPath = $args[0]
+$output_path = $args[0]
 
 # Schreibe den HTML-Inhalt in die angegebene Datei
 $htmlContent = @'
@@ -221,9 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-  Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-}
-catch {
-  Write-Error "Fehler beim Schreiben in die Datei: $outputPath"
-  exit 1
+    Set-Content -Path $output_path -Value $htmlContent -Encoding UTF8
+} catch {
+    Write-Error "Fehler beim Schreiben in die Datei: $output_path"
+    exit 1
 }

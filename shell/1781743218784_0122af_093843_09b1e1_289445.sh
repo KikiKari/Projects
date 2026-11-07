@@ -6,9 +6,9 @@
 set -euo pipefail
 
 # Prüfe auf notwendige Argumente
-if [ $# -lt 1 ]; then
-    echo "Fehler: OutputPath ist erforderlich." >&2
-    exit 1
+if [[ $# -lt 1 ]]; then
+  echo "Fehler: OutputPath ist erforderlich." >&2
+  exit 1
 fi
 
 outputPath="$1"
@@ -224,7 +224,7 @@ HTML_END
 )
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-echo "$htmlContent" > "$outputPath" || {
-    echo "Fehler beim Öffnen der Datei $outputPath: $!" >&2
-    exit 1
-}
+if ! echo "$htmlContent" > "$outputPath"; then
+  echo "Fehler beim Öffnen der Datei $outputPath: $?" >&2
+  exit 1
+fi

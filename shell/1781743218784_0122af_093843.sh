@@ -1,20 +1,19 @@
 #!/bin/bash
-# 1781743218784_0122af_093843.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843.pl — portiert nach shell
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe ob Ausgabepfad übergeben wurde
+# Parameter verarbeiten
 if [[ $# -lt 1 ]]; then
     echo "Fehler: OutputPath ist erforderlich." >&2
     exit 1
 fi
-
-output_path="$1"
+outputPath="$1"
 
 # HTML-Inhalt in Variable speichern
-html_content=$(cat <<'HTML_END'
+htmlContent=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,7 +223,9 @@ HTML_END
 )
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-if ! printf '%s' "$html_content" > "$output_path"; then
-    echo "Fehler beim Schreiben in $output_path" >&2
+{
+    echo "$htmlContent" > "$outputPath"
+} || {
+    echo "Konnte Datei '$outputPath' nicht öffnen: $!" >&2
     exit 1
-fi
+}
