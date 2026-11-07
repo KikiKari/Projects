@@ -1,20 +1,29 @@
 #!/usr/bin/env bash
-# 1781743218784_0122af_093843_09b1e1.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe, ob ein Argument übergeben wurde
-if [ $# -lt 1 ]; then
-  echo "Fehler: OutputPath ist erforderlich." >&2
-  exit 1
+# 1781743218784_0122af_093843_09b1e1.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
+# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+
+# Portiert nach Bash 5
+
+# Parameter parsing
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <OutputPath>" >&2
+    exit 1
 fi
 
-output_path="$1"
+OutputPath="$1"
 
-# Schreibe den HTML-Inhalt in die angegebene Datei
-cat > "$output_path" << 'EOF'
+read -r -d '' htmlContent <<'HTML_CONTENT_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +229,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+HTML_CONTENT_END
 
-# Überprüfe, ob das Schreiben erfolgreich war
-if [ $? -ne 0 ]; then
-  echo "Fehler beim Schreiben in die Datei: $output_path" >&2
-  exit 1
+# Write to file with error handling
+if ! printf '%s' "$htmlContent" > "$OutputPath"; then
+    echo "Failed to write to $OutputPath" >&2
+    exit 1
 fi

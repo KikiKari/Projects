@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_093843.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
-// Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784_0122af_093843.js — portiert nach JavaScript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
 // Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
-
-'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -225,10 +223,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-// Schreibe den HTML-Inhalt in die Ausgabedatei
 try {
     fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (err) {
-    console.error(err.message);
+} catch (error) {
+    console.error(error.message);
     process.exit(1);
 }

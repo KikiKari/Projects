@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_289445.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_289445.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -223,8 +223,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
 try:
-    with open(output_path, 'w', encoding='utf-8') as fd:
-        fd.write(html_content)
-except Exception as e:
-    print(f"Fehler beim Öffnen der Datei {output_path}: {e}", file=sys.stderr)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as err:
+    print(f"Fehler beim Öffnen der Datei {output_path}: {err}", file=sys.stderr)
     sys.exit(1)

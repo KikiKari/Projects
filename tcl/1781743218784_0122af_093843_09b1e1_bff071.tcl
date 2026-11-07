@@ -1,11 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1_bff071.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_bff071.ps1
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_bff071.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_bff071.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
 if {$argc < 1} {
@@ -222,12 +218,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-if {[catch {
-    set fh [open $outputPath w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $htmlContent
-    close $fh
-} err]} {
-    puts stderr $err
+# Schreibe die HTML-Datei
+if {[catch {set fd [open $outputPath w]} errorMsg]} {
+    puts stderr $errorMsg
     exit 1
 }
+
+puts -nonewline $fd $htmlContent
+close $fd

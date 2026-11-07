@@ -1,15 +1,18 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843_09b1e1.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1.tcl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_09b1e1_289445.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_289445.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use File::Slurp qw(write_file);
 
 # Prüfe auf notwendige Argumente
 if (@ARGV < 1) {
-    print STDERR "Fehler: OutputPath ist erforderlich.\n";
-    exit 1;
+  print STDERR "Fehler: OutputPath ist erforderlich.\n";
+  exit 1;
 }
 
 my $outputPath = $ARGV[0];
@@ -224,10 +227,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-open(my $fh, '>', $outputPath) or do {
-    print STDERR "Fehler beim Öffnen der Datei $outputPath: $!\n";
-    exit 1;
+eval {
+  write_file($outputPath, $htmlContent);
 };
-
-print $fh $htmlContent;
-close $fh;
+if ($@) {
+  print STDERR "Fehler beim Öffnen der Datei $outputPath: $@\n";
+  exit 1;
+}

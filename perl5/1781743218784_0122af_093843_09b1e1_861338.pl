@@ -1,22 +1,22 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_09b1e1_861338.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_861338.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(encode decode);
+use Encode qw(decode_utf8);
 use File::Spec;
-use File::Basename;
 
 # Parameter verarbeiten
-if (@ARGV < 1) {
+my @args = @ARGV;
+if (@args < 1) {
     print STDERR "Fehler: OutputPath ist erforderlich.\n";
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
+my $outputPath = $args[0];
 
 my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
@@ -227,12 +227,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 eval {
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Cannot open file '$outputPath': $!";
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
     print $fh $htmlContent;
-    close($fh);
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR $error;
-    exit 1;
+    close $fh;
 };
+
+if ($@) {
+    print STDERR $@;
+    exit 1;
+}

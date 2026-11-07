@@ -1,19 +1,16 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
-// Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
-const path = require('path');
+// 1781743218784_0122af_093843_09b1e1_861338.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_861338.pl
+// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 // Parameter verarbeiten
-const args = process.argv.slice(2);
-if (args.length < 1) {
+if (process.argv.length < 3) {
     console.error("Fehler: OutputPath ist erforderlich.");
     process.exit(1);
 }
 
-const outputPath = args[0];
+const outputPath = process.argv[2];
+const fs = require('fs');
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">

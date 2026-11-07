@@ -1,30 +1,20 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_881cf7.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_881cf7.ps1
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
-# 1781743218784_0122af_093843.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843.py
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
+def main():
+    # Parameter verarbeiten
+    if len(sys.argv) < 2:
+        print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+        sys.exit(1)
 
-# 1781743218784_0122af.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-02 durch ABSTRACTIONS_MANAGER.py
+    output_path = sys.argv[1]
 
-# 1781743218784_0122af.js — portiert nach python3.12
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-01 durch ABSTRACTIONS_MANAGER.py
-
-# Parameter verarbeiten
-if len(sys.argv) < 2:
-    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
-    sys.exit(1)
-
-outputPath = sys.argv[1]
-
-htmlContent = '''<!DOCTYPE html>
+    html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -231,10 +221,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-# Schreiben der HTML-Datei
-try:
-    with open(outputPath, 'w', encoding='utf-8') as fh:
-        fh.write(htmlContent)
-except Exception as e:
-    print(f"Konnte Datei '{outputPath}' nicht öffnen: {e}", file=sys.stderr)
-    sys.exit(1)
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+    except Exception as e:
+        print(f"Konnte Datei '{output_path}' nicht öffnen: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

@@ -1,17 +1,14 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_093843_09b1e1.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(decode_utf8);
-use File::Slurper qw(write_text);
+use open qw(:std :utf8);
 
-binmode(STDERR, ':encoding(UTF-8)');
-binmode(STDOUT, ':encoding(UTF-8)');
-
+# Parameter verarbeiten
 if (@ARGV < 1) {
     print STDERR "Fehler: OutputPath ist erforderlich.\n";
     exit 1;
@@ -196,7 +193,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`input.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`input.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -227,12 +224,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML
 
-eval {
-    write_text($outputPath, $htmlContent, 'utf-8');
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    chomp $error;
-    print STDERR "$error\n";
+# Schreiben der HTML-Datei
+open my $fh, '>:encoding(UTF-8)', $outputPath or do {
+    print STDERR "Konnte Datei '$outputPath' nicht öffnen: $!\n";
     exit 1;
 };
+print $fh $htmlContent;
+close $fh;

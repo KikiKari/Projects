@@ -1,17 +1,12 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_093843.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.tcl — portiert nach Tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
 # Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-03 durch ABSTRACTIONS_MANAGER.py
-
-# Parameter verarbeiten
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
@@ -225,9 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Schreibe den HTML-Inhalt in die Ausgabedatei
-if {[catch {set fh [open $outputPath w]} err]} {
-    puts stderr $err
+if {[catch {set fd [open $outputPath w]}]} {
+    puts stderr $fd
     exit 1
 }
-puts -nonewline $fh $htmlContent
-close $fh
+puts -nonewline $fd $htmlContent
+close $fd

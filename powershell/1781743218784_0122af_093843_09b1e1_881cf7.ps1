@@ -1,9 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_881cf7.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_881cf7.py
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# Prüfen auf notwendige Parameter
 if ($args.Count -lt 1) {
     Write-Error "Fehler: OutputPath ist erforderlich."
     exit 1
@@ -219,8 +219,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
+# Schreiben der HTML-Datei
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding Utf8
 } catch {
     Write-Error "Konnte Datei '$outputPath' nicht öffnen: $_"
     exit 1

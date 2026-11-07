@@ -1,19 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af_093843.ps1 — portiert nach shell
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843.ps1
-# Erzeugt: 2026-11-05 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter verarbeiten
+# Prüfe ob Ausgabepfad übergeben wurde
 if [[ $# -lt 1 ]]; then
-  echo "Fehler: OutputPath ist erforderlich." >&2
-  exit 1
+    echo "Fehler: OutputPath ist erforderlich." >&2
+    exit 1
 fi
-outputPath="$1"
 
-# HTML-Inhalt
-read -r -d '' htmlContent <<'HTMLBLOCK'
+output_path="$1"
+
+# HTML-Inhalt in Variable speichern
+html_content=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,10 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTMLBLOCK
+HTML_END
+)
 
-# Schreiben der Datei
-if ! echo "$htmlContent" > "$outputPath"; then
-  echo "Fehler beim Schreiben der Datei: $outputPath" >&2
-  exit 1
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Fehler beim Schreiben in $output_path" >&2
+    exit 1
 fi
