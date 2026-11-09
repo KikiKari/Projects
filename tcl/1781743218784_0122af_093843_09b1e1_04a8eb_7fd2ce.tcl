@@ -1,21 +1,20 @@
-#!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1_04a8eb.ps1 — portiert nach tcl
+#!/usr/bin/env tclsh8.6
+# 1781743218784_0122af_093843_09b1e1_04a8eb_7fd2ce.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_7fd2ce.js
+# Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb.ps1 — portiert nach javascript — portiert nach tcl
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_04a8eb.ps1
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach Tcl 8.6
-
 if {$argc != 1} {
-    puts stderr "Usage: [info script] <output_path>"
+    puts stderr "Bitte geben Sie einen Ausgabepfad an."
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set OUTPUT_PATH [lindex $argv 0]
 
-set html_content {<!DOCTYPE html>
+set HTML_CONTENT {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,18 +218,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-if {[catch {set fh [open $output_path w]} err]} {
-    puts stderr $err
+if {[catch {open $OUTPUT_PATH w} fileId]} {
+    puts stderr [string map {"\n" " "} $fileId]
     exit 1
+} else {
+    puts -nonewline $fileId $HTML_CONTENT
+    close $fileId
 }
-
-if {[catch {puts -nonewline $fh $html_content} err]} {
-    puts stderr $err
-    close $fh
-    exit 1
-}
-
-close $fh

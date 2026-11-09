@@ -1,22 +1,23 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_093843.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use File::Spec;
-use Encode qw(encode);
+use Encode qw(decode_utf8);
+use File::Slurper qw(write_text);
 
-# Parameter verarbeiten
+# Prüfe, ob Output-Pfad übergeben wurde
 if (@ARGV < 1) {
     print STDERR "Fehler: OutputPath ist erforderlich.\n";
     exit 1;
 }
 my $outputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+# HTML-Inhalt
+my $htmlContent = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,16 +223,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
+# Schreibe den HTML-Inhalt in die Ausgabedatei
 eval {
-    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open file '$outputPath': $!";
-    print $fh $htmlContent;
-    close $fh;
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    chomp $error;
-    print STDERR "$error\n";
-    exit 1;
+    write_text($outputPath, decode_utf8($htmlContent));
 };
+if ($@) {
+    print STDERR $@->message . "\n";
+    exit 1;
+}

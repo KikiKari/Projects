@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_093843.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
 
 // Parameter verarbeiten
 if (process.argv.length < 3) {
-  console.error("Fehler: OutputPath ist erforderlich.");
-  process.exit(1);
+    console.error("Fehler: OutputPath ist erforderlich.");
+    process.exit(1);
 }
 const outputPath = process.argv[2];
-
-const fs = require('fs');
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -218,10 +221,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-// Schreibe den HTML-Inhalt in die Ausgabedatei
 try {
-  fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (err) {
-  console.error(err.message);
-  process.exit(1);
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
 }

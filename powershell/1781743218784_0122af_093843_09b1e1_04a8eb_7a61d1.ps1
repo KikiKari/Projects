@@ -1,17 +1,19 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach powershell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
+# 1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.py — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.py
+# Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb_093843.ps1 — portiert nach powershell
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.py
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe, ob ein Argument übergeben wurde
-if ($args.Count -lt 1) {
-    Write-Error "Fehler: OutputPath ist erforderlich."
-    exit 1
-}
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$OutputPath
+)
 
-$outputPath = $args[0]
-
-$htmlContent = @'
+function Main {
+    $htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,10 +221,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-try {
-    $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($False)
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent, $Utf8NoBomEncoding)
-} catch {
-    Write-Error $_.Exception.Message
-    exit 1
+    try {
+        Set-Content -Path $OutputPath -Value $htmlContent -Encoding Utf8
+    }
+    catch {
+        Write-Error $_.Exception.Message
+        exit 1
+    }
 }
+
+Main

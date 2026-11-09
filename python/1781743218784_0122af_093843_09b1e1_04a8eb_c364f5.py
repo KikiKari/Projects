@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js
+# Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
 # Prüfe Kommandozeilenargumente
 if len(sys.argv) < 2:
-    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    print("Fehler: OutputPath ist erforderlich.")
     sys.exit(1)
 
 output_path = sys.argv[1]
 
-# HTML-Inhalt als String
+# HTML-Inhalt als Python-Variable
 html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,6 +223,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as err:
-    print(err, file=sys.stderr)
+except Exception as e:
+    print(str(e))
     sys.exit(1)

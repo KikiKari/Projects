@@ -1,12 +1,13 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js
+# Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
 use Encode qw(decode_utf8);
+use File::Slurper qw(write_text);
 
 # Prüfe Kommandozeilenargumente
 if (@ARGV < 1) {
@@ -17,7 +18,7 @@ if (@ARGV < 1) {
 my $output_path = $ARGV[0];
 
 # HTML-Inhalt als Perl-Variable
-my $html_content = <<'HTML';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,13 +224,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Schreibe HTML-Inhalt in Datei
-open my $fh, '>:encoding(UTF-8)', $output_path or do {
-    print STDERR $!;
-    exit 1;
+eval {
+    write_text($output_path, $html_content);
 };
-
-print $fh $html_content;
-close $fh;
+if ($@) {
+    print STDERR $@->message . "\n";
+    exit 1;
+}

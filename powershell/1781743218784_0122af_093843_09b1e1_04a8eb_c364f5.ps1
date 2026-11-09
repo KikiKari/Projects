@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach powershell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_c364f5.js
+# Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Kommandozeilenargumente
 if ($args.Count -lt 1) {
@@ -9,10 +9,10 @@ if ($args.Count -lt 1) {
     exit 1
 }
 
-$outputPath = $args[0]
+$output_path = $args[0]
 
-# HTML-Inhalt als String
-$htmlContent = @'
+# HTML-Inhalt als PowerShell-Variable
+$html_content = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,11 +218,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 
 # Schreibe HTML-Inhalt in Datei
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    Set-Content -Path $output_path -Value $html_content -Encoding UTF8
 } catch {
     Write-Error $_.Exception.Message
     exit 1

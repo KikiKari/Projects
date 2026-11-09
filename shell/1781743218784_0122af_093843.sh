@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1781743218784_0122af_093843.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -12,7 +12,7 @@ if [[ $# -lt 1 ]]; then
 fi
 outputPath="$1"
 
-# HTML-Inhalt in Variable speichern
+# HTML-Inhalt erstellen
 htmlContent=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -222,10 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 )
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-{
-    echo "$htmlContent" > "$outputPath"
-} || {
-    echo "Konnte Datei '$outputPath' nicht öffnen: $!" >&2
+# HTML-Datei schreiben
+if ! echo "$htmlContent" > "$outputPath"; then
+    echo "Cannot open file '$outputPath': $!" >&2
     exit 1
-}
+fi

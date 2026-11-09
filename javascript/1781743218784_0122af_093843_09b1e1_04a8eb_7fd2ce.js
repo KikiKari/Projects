@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1_04a8eb.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_04a8eb.ps1
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_093843_09b1e1_04a8eb_7fd2ce.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb_7fd2ce.pl
+// Erzeugt: 2026-11-09 durch ABSTRACTIONS_MANAGER.py
 
-const fs = require('fs');
+import { writeFileSync } from 'fs';
+import { exit } from 'process';
 
-const OUTPUT_PATH = process.argv[2];
-
-if (!OUTPUT_PATH) {
-    console.error("Bitte geben Sie einen Ausgabepfad an.");
-    process.exit(1);
+const outputPath = process.argv[2];
+if (!outputPath) {
+    console.error("Usage: node script.js <output_path>");
+    exit(1);
 }
 
-const HTML_CONTENT = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -216,11 +216,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 try {
-    fs.writeFileSync(OUTPUT_PATH, HTML_CONTENT, 'utf8');
+    writeFileSync(outputPath, htmlContent);
 } catch (error) {
-    console.error(error.message);
+    console.error("Error:", error.message);
     process.exit(1);
 }

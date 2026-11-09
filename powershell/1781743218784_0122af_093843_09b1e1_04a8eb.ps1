@@ -1,18 +1,23 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach javascript
+# 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
 # Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# Portiert nach PowerShell fuer PowerShell 7
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$OutputPath
 )
 
-$htmlContent = @'
+$HtmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,7 +226,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    $htmlContent | Out-File -FilePath $OutputPath -Encoding UTF8 -Force
+    Set-Content -Path $OutputPath -Value $HtmlContent -Encoding UTF8
 } catch {
     Write-Error $_.Exception.Message
     exit 1

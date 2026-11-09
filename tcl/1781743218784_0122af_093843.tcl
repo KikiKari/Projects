@@ -1,13 +1,9 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_093843.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843.js — portiert nach Tcl 8.6
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-
-# Prüfe Kommandozeilenargumente
+# Parameter verarbeiten
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
     exit 1
@@ -221,16 +217,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Schreibe HTML-Inhalt in Datei
-if {[catch {set fh [open $outputPath w]}]} {
-    puts stderr "Fehler beim Öffnen der Datei $outputPath: $fh"
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if {[catch {set fh [open $outputPath w]} err]} {
+    puts stderr $err
     exit 1
 }
-
-if {[catch {puts $fh $htmlContent} errMsg]} {
-    puts stderr "Fehler beim Schreiben in die Datei $outputPath: $errMsg"
-    close $fh
-    exit 1
-}
-
+puts -nonewline $fh $htmlContent
 close $fh

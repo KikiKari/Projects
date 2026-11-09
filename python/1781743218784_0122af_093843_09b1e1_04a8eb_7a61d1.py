@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.ps1
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
+import json
 
-def main():
-    if len(sys.argv) < 2:
-        print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
-        sys.exit(1)
+# Prüfe, ob ein Argument übergeben wurde
+if len(sys.argv) < 2:
+    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
+output_path = sys.argv[1]
 
-    html_content = '''<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -223,12 +219,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-    try:
-        with open(output_path, 'w', encoding='utf-8') as fh:
-            fh.write(html_content)
-    except Exception as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(str(e), file=sys.stderr)
+    sys.exit(1)

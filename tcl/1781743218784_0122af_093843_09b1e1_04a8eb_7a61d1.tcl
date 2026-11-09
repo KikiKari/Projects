@@ -1,7 +1,7 @@
-#!/usr/bin/tclsh
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh
+# 1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1_04a8eb_7a61d1.ps1
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe, ob ein Argument übergeben wurde
 if {$argc < 1} {
@@ -9,11 +9,9 @@ if {$argc < 1} {
     exit 1
 }
 
-# Hole den Ausgabepfad aus den Argumenten
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-# HTML-Inhalt als String
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,15 +215,14 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
-# Versuche, die Datei zu öffnen und den Inhalt zu schreiben
-if {[catch {
-    set fh [open $output_path w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $html_content
-    close $fh
-} error]} {
-    puts stderr $error
+# Schreibe den HTML-Inhalt in die angegebene Datei
+if {[catch {set fd [open $outputPath w]} errorMsg]} {
+    puts stderr $errorMsg
     exit 1
 }
+
+puts -nonewline $fd $htmlContent
+close $fd

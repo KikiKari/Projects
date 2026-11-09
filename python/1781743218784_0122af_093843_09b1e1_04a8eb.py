@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach python
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.js
+# 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
+# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
+# Portiert nach JavaScript fuer Node 20
+# Portiert nach Python 3.12
 
 import sys
-import os
 
 if len(sys.argv) < 2:
     print("Fehler: OutputPath ist erforderlich.")
@@ -226,5 +231,5 @@ try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(e)
+    print(str(e))
     sys.exit(1)

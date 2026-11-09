@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
-// Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-// Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-// Portiert nach JavaScript fuer Node 20
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +15,8 @@ if (process.argv.length < 3) {
 
 const outputPath = process.argv[2];
 
-const htmlContent = `<!DOCTYPE html>
+const htmlContent = `\
+<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,11 +220,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 try {
     fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-    console.error(error.message);
+} catch (err) {
+    console.error(err.message);
     process.exit(1);
 }

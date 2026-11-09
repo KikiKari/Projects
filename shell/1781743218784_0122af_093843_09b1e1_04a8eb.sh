@@ -1,20 +1,22 @@
 #!/bin/bash
 # 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe, ob ein Argument übergeben wurde
+# 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach bash
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
+# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+
 if [ $# -lt 1 ]; then
     echo "Fehler: OutputPath ist erforderlich." >&2
     exit 1
 fi
 
-output_path="$1"
+outputPath="$1"
 
-# HTML-Inhalt in eine Variable schreiben
-html_content=$(cat <<'HTML_END'
+htmlContent=$(cat <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,10 +225,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 )
 
-# Versuche, die HTML-Datei zu erstellen
-if echo "$html_content" > "$output_path"; then
-    exit 0
-else
-    echo "Cannot open $output_path" >&2
+{
+    echo "$htmlContent"
+} > "$outputPath" || {
+    echo "Cannot open file '$outputPath': $!" >&2
     exit 1
-fi
+}
