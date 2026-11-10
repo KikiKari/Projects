@@ -1,22 +1,20 @@
-#!/bin/bash
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach shell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach bash
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-if [ $# -lt 1 ]; then
+# Prüfe, ob ein Argument übergeben wurde
+if [[ $# -lt 1 ]]; then
     echo "Fehler: OutputPath ist erforderlich." >&2
     exit 1
 fi
 
 outputPath="$1"
 
-htmlContent=$(cat <<'HTML_END'
+# HTML-Inhalt in eine Variable speichern
+read -r -d '' htmlContent <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,12 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
-)
+EOF
 
-{
-    echo "$htmlContent"
-} > "$outputPath" || {
-    echo "Cannot open file '$outputPath': $!" >&2
+# Schreibe den Inhalt in die angegebene Datei
+echo -n "$htmlContent" > "$outputPath" || {
+    echo "Fehler beim Schreiben in $outputPath" >&2
     exit 1
 }

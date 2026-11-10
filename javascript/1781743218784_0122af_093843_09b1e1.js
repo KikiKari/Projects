@@ -1,29 +1,25 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.pl — portiert nach javascript
+// 1781743218784_0122af_093843_09b1e1.sh — portiert nach javascript
+// Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_093843_09b1e1.sh
+// Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af_093843_09b1e1.pl — portiert nach JavaScript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
 // Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0122af_093843_09b1e1.js — portiert nach JavaScript
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+import fs from 'fs';
+import process from 'process';
 
-'use strict';
-
-const fs = require('fs');
-const path = require('path');
-
-process.stdout.setEncoding('utf8');
-process.stderr.setEncoding('utf8');
-
+// Prüfe, ob OutputPath übergeben wurde
 if (process.argv.length < 3) {
-    process.stderr.write("Fehler: OutputPath ist erforderlich.\n");
+    console.error("Fehler: OutputPath ist erforderlich.");
     process.exit(1);
 }
 
 const outputPath = process.argv[2];
 
-const htmlContent = `\
-<!DOCTYPE html>
+// HTML-Inhalt in Variable speichern
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -227,13 +223,14 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>\
+</html>
 `;
 
+// Schreibe den HTML-Inhalt in die angegebene Datei
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-    process.stderr.write(`${error.message}\n`);
+    fs.writeFileSync(outputPath, htmlContent);
+} catch (err) {
+    console.error(`Cannot open file '${outputPath}': ${err.message}`);
     process.exit(1);
 }
 

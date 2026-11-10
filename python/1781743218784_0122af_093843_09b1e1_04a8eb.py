@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
+# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach python
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach JavaScript fuer Node 20
-# Portiert nach Python 3.12
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
@@ -21,7 +15,8 @@ if len(sys.argv) < 2:
 
 output_path = sys.argv[1]
 
-html_content = '''<!DOCTYPE html>
+html_content = '''\
+<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -225,11 +220,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>'''
+</html>
+'''
 
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(str(e))
+    print(e)
     sys.exit(1)

@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1.js — portiert nach python
+# 1781743218784_0122af_093843_09b1e1.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1.js — portiert nach python3
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
 # Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import json
-import base64
-import os
 
 # Parameter verarbeiten
 if len(sys.argv) < 2:
-    print("Fehler: OutputPath ist erforderlich.")
+    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
     sys.exit(1)
 
-output_path = sys.argv[1]
+outputPath = sys.argv[1]
 
-html_content = '''<!DOCTYPE html>
+htmlContent = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -223,8 +224,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreiben der HTML-Datei
 try:
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-except Exception as err:
-    print(f"Konnte Datei '{output_path}' nicht öffnen: {err}")
+    with open(outputPath, 'w', encoding='utf-8') as fh:
+        fh.write(htmlContent)
+except Exception as e:
+    print(f"Konnte Datei '{outputPath}' nicht öffnen: {e}", file=sys.stderr)
     sys.exit(1)

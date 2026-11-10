@@ -1,15 +1,11 @@
 #!/usr/bin/env node
-// 1781743218784_0122af.sh — portiert nach javascript
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_0122af.pl — portiert nach shell
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
+// Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error("Aufruf: node script.js <Ausgabedatei>");
+    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
     process.exit(1);
 }
 
@@ -223,12 +219,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 // Versuche, die HTML-Datei zu schreiben
-import { writeFile } from 'fs/promises';
-import { exit } from 'process';
+const fs = require('fs');
 
 try {
-    await writeFile(outputPath, htmlContent);
-} catch (error) {
+    fs.writeFileSync(outputPath, htmlContent);
+} catch (err) {
     console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
-    exit(1);
+    process.exit(1);
 }

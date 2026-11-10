@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
-// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_093843_09b1e1_04456c.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04456c.pl
+// Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784_0122af_093843_09b1e1.js — portiert nach powershell
 // Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
@@ -11,15 +11,13 @@
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
 // Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync } from 'fs';
-import { argv } from 'process';
+const fs = require('fs');
 
-if (argv.length < 3) {
-    console.error('Usage: node script.js <output_path>');
+const outputPath = process.argv[2];
+if (!outputPath) {
+    console.error("Usage: node script.js <output_path>");
     process.exit(1);
 }
-
-const outputPath = argv[2];
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -228,8 +226,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 try {
-    writeFileSync(outputPath, htmlContent, 'utf8');
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
 } catch (error) {
-    console.error(error.message);
+    console.error(error.message || 'Unknown error');
     process.exit(1);
 }

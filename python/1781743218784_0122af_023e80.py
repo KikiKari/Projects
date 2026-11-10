@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af.sh — portiert nach python
+# 1781743218784_0122af_023e80.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
 # Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
@@ -8,18 +12,16 @@
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
-def main():
-    # Prüfe Aufrufparameter
-    if len(sys.argv) != 2:
-        print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
-        sys.exit(1)
+# Prüfe Aufrufparameter
+if len(sys.argv) != 2:
+    print("Aufruf: python3 script.py <Ausgabedatei>", file=sys.stderr)
+    sys.exit(1)
 
-    output_path = sys.argv[1]
+output_path = sys.argv[1]
 
-    # HTML-Inhalt
-    html_content = '''<!DOCTYPE html>
+# HTML-Inhalt
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -225,13 +227,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-    # Versuche, die HTML-Datei zu schreiben
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-    except Exception as e:
-        print("Fehler beim Schreiben der Datei {}".format(output_path), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+# Versuche, die HTML-Datei zu schreiben
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
+    sys.exit(1)

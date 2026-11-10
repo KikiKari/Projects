@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach powershell
+# 1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
 # Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
@@ -222,7 +226,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Schreibe in Datei
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
     Write-Error $_.Exception.Message
     exit 1

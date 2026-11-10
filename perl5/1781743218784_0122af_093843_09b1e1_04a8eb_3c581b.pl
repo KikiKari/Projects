@@ -1,10 +1,17 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Spec;
+
+# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach javascript
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 # Check command line arguments
 if (@ARGV < 1) {
@@ -224,10 +231,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Write to file
-open my $fh, '>', $outputPath or do {
-    print STDERR $!;
-    exit 1;
+eval {
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open file '$outputPath': $!";
+    print $fh $htmlContent;
+    close $fh;
 };
-
-print $fh $htmlContent;
-close $fh;
+if ($@) {
+    print STDERR $@->getMessage() . "\n" if ref($@);
+    print STDERR "$@\n" unless ref($@);
+    exit 1;
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_093843_09b1e1_04a8eb.tcl — portiert nach python
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_093843_09b1e1_04a8eb.tcl
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb_3c581b.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -222,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Write to file
 try:
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as e:
-    print(str(e), file=sys.stderr)
+except Exception as error:
+    print(str(error), file=sys.stderr)
     sys.exit(1)

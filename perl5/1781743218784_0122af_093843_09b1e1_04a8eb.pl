@@ -1,28 +1,13 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(decode_utf8);
-use File::Spec;
-
-# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.py — portiert nach perl5
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_093843_09b1e1.py
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-# Portiert nach JavaScript fuer Node 20
-
-binmode(STDERR, ':encoding(UTF-8)');
-binmode(STDOUT, ':encoding(UTF-8)');
 
 if (@ARGV < 1) {
-    print STDERR "Fehler: OutputPath ist erforderlich.\n";
+    warn "Fehler: OutputPath ist erforderlich.\n";
     exit 1;
 }
 
@@ -236,13 +221,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML
 
-eval {
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Cannot open file '$outputPath': $!";
-    print $fh $htmlContent;
-    close($fh);
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR $error;
+open my $fh, '>:encoding(UTF-8)', $outputPath or do {
+    warn "$!\n";
     exit 1;
 };
+
+print $fh $htmlContent;
+close $fh;

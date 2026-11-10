@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $PSCommandPath <Ausgabedatei>"
+    Write-Error "Aufruf: script.ps1 <Ausgabedatei>"
     exit 1
 }
 
@@ -222,7 +222,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
 } catch {
     Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1

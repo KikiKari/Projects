@@ -1,24 +1,17 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_093843_09b1e1_04456c.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04456c.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_093843_09b1e1.js — portiert nach powershell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-
-if {$argc != 1} {
-    puts stderr "Usage: [info script] <output_path>"
+# Prüfe die Anzahl der Argumente
+if {$argc < 1} {
+    puts stderr "Usage: tclsh script.tcl <output_path>"
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
 
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,18 +215,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-if {[catch {set fh [open $output_path w]} error]} {
-    puts stderr "Error opening file for writing: $error"
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if {[catch {set fd [open $outputPath w]} errorMsg]} {
+    puts stderr $errorMsg
     exit 1
 }
 
-if {[catch {puts -nonewline $fh $html_content} error]} {
-    puts stderr "Error writing to file: $error"
-    close $fh
-    exit 1
-}
-
-close $fh
+puts -nonewline $fd $htmlContent
+close $fd

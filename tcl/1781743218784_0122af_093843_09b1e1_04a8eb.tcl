@@ -1,9 +1,11 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
 # 1781743218784_0122af_093843_09b1e1_04a8eb.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04a8eb.js
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
+# 1781743218784_0122af_093843_09b1e1_04a8eb.pl — portiert nach tcl
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1_04a8eb.pl
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 if {$argc < 1} {
     puts stderr "Fehler: OutputPath ist erforderlich."
@@ -136,7 +138,7 @@ const T = {
 };
 const tr=k=>T[k][L];
 // apply static i18n
-title.textContent=tr("title"); sub.textContent=tr("sub"); document.title=tr("title");
+title.textContent=tr("title"); sub.textContent=tr("title"); document.title=tr("title");
 document.getElementById("h-open").textContent=tr("hOpen");
 document.getElementById("l-pass").textContent=tr("pass");
 document.getElementById("l-file").textContent=tr("file");
@@ -216,7 +218,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
 if {[catch {set fh [open $outputPath w]} err]} {
     puts stderr $err

@@ -1,28 +1,22 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_093843_09b1e1.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_093843_09b1e1.ps1
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_093843_09b1e1_04456c.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1_04456c.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
+use open qw(:std :utf8);
 use File::Slurper qw(write_text);
 
-# 1781743218784_0122af_093843_09b1e1.js — portiert nach powershell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843_09b1e1.js
-# Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_093843_09b1e1.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843_09b1e1.pl
-# Erzeugt: 2026-11-06 durch ABSTRACTIONS_MANAGER.py
-
-my $output_path = shift @ARGV;
-if (!$output_path) {
-    print STDERR "Usage: $0 <output_path>\n";
+if (@ARGV < 1) {
+    print STDERR "Aufruf: $0 <ausgabepfad>\n";
     exit 1;
 }
 
-my $html_content = <<'HTML_END';
+my $outputPath = $ARGV[0];
+
+my $htmlContent = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -228,13 +222,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
 eval {
-    write_text($output_path, $html_content);
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR "$error\n";
-    exit 1;
+    write_text($outputPath, $htmlContent);
 };
+if ($@) {
+    print STDERR "$@\n";
+    exit 1;
+}

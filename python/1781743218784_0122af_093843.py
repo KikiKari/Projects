@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_093843.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-# Prüfe auf notwendige Parameter
+# Parameter verarbeiten
 if len(sys.argv) < 2:
-    print("Fehler: OutputPath ist erforderlich.", file=sys.stderr)
+    print("Fehler: OutputPath ist erforderlich.")
     sys.exit(1)
-
 output_path = sys.argv[1]
 
 html_content = '''<!DOCTYPE html>
@@ -219,10 +218,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as e:
-    print(str(e), file=sys.stderr)
+except Exception as error:
+    print(str(error))
     sys.exit(1)

@@ -1,6 +1,10 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_093843.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
 # Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
 
 # Parameter verarbeiten
@@ -10,7 +14,6 @@ if {$argc < 1} {
 }
 set outputPath [lindex $argv 0]
 
-# HTML-Inhalt definieren
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -217,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Schreibe den HTML-Inhalt in die Ausgabedatei
-if {[catch {set fh [open $outputPath w]} err]} {
-    puts stderr $err
+if {[catch {set fd [open $outputPath w]} errorMsg]} {
+    puts stderr $errorMsg
     exit 1
+} else {
+    puts -nonewline $fd $htmlContent
+    close $fd
 }
-puts -nonewline $fh $htmlContent
-close $fh

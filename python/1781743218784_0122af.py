@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
