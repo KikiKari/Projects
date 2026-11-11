@@ -1,30 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80.py
-// Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_c592a9.ps1 — portiert nach javascript
+// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_c592a9.ps1
+// Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
-// 1781743218784_0122af.sh — portiert nach python
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+// Prüfe Aufrufparameter
+if (process.argv.length !== 3) {
+  console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+  process.exit(1);
+}
 
-// 1781743218784_0122af.pl — portiert nach shell
-// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
-
+const outputPath = process.argv[2];
 const fs = require('fs');
-const path = require('path');
 
-function main() {
-    // Prüfe Aufrufparameter
-    if (process.argv.length !== 3) {
-        console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
-        process.exit(1);
-    }
-
-    const output_path = process.argv[2];
-
-    // HTML-Inhalt
-    const html_content = `<!DOCTYPE html>
+// HTML-Inhalt
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -230,13 +219,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-    // Versuche, die HTML-Datei zu schreiben
-    try {
-        fs.writeFileSync(output_path, html_content, 'utf8');
-    } catch (e) {
-        console.error(`Fehler beim Schreiben der Datei ${output_path}`);
-        process.exit(1);
-    }
+// Versuche, die HTML-Datei zu schreiben
+try {
+  fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (error) {
+  console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
+  process.exit(1);
 }
-
-main();

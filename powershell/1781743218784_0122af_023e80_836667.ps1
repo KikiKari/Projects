@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80.tcl — portiert nach powershell
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80.tcl
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_836667.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_836667.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
@@ -111,7 +111,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -222,7 +222,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
     Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1

@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80.py — portiert nach powershell
+# 1781743218784_0122af_023e80_c592a9.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_c592a9.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80.py
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
@@ -11,16 +15,17 @@
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
 # Erzeugt: 2026-11-07 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
-if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-    exit 1
-}
+function Main {
+    # Prüfe Aufrufparameter
+    if ($args.Count -ne 1) {
+        Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+        exit 1
+    }
 
-$outputPath = $args[0]
+    $output_path = $args[0]
 
-# HTML-Inhalt
-$htmlContent = @'
+    # HTML-Inhalt
+    $html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -228,11 +233,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Versuche, die HTML-Datei zu schreiben
-try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+    # Versuche, die HTML-Datei zu schreiben
+    try {
+        [System.IO.File]::WriteAllText($output_path, $html_content, [System.Text.Encoding]::UTF8)
+    } catch {
+        Write-Error "Fehler beim Schreiben der Datei $output_path"
+        exit 1
+    }
 }
-catch {
-    Write-Error "Fehler beim Schreiben der Datei $outputPath"
-    exit 1
-}
+
+Main

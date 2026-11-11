@@ -1,5 +1,9 @@
-#!/usr/bin/env tclsh8.6
-# 1781743218784_0122af_023e80.py — portiert nach tcl
+#!/usr/bin/env tclsh
+# 1781743218784_0122af_023e80_c592a9.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_c592a9.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80.py — portiert nach javascript
 # Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80.py
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
@@ -227,10 +231,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set f [open $output_path w]} err]} {
+if {[catch {set fd [open $output_path w]}]} {
     puts stderr "Fehler beim Schreiben der Datei $output_path"
     exit 1
 }
 
-puts -nonewline $f $html_content
-close $f
+puts -nonewline $fd $html_content
+close $fd

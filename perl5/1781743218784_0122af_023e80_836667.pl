@@ -1,7 +1,7 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_023e80.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80.tcl
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_023e80_836667.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_836667.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -224,10 +224,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
+open my $fh, '>', $outputPath or do {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
 };
-
 print $fh $htmlContent;
 close $fh;
+exit 0;

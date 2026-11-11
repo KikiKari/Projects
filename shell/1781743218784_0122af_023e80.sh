@@ -1,7 +1,7 @@
 #!/bin/bash
-# 1781743218784_0122af_023e80.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -11,10 +11,10 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'HTML' || true
+read -r -d '' html_content <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-if ! echo "$htmlContent" > "$outputPath"; then
-    echo "Fehler beim Schreiben der Datei $outputPath" >&2
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Fehler beim Schreiben der Datei $output_path" >&2
     exit 1
 fi

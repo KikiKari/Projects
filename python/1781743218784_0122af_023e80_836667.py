@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_023e80.tcl — portiert nach python
+# 1781743218784_0122af_023e80_836667.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_836667.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80.tcl — portiert nach javascript
 # Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80.tcl
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
@@ -223,8 +226,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try:
-    with open(output_path, 'w', encoding='utf-8') as fd:
-        fd.write(html_content)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
     print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
     sys.exit(1)

@@ -1,18 +1,18 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_063723.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_063723.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    Write-Error "Aufruf: pwsh 1781743218784_0122af_063723.ps1 <Ausgabedatei>"
     exit 1
 }
 
-$outputPath = $args[0]
+$output_path = $args[0]
 
 # HTML-Inhalt
-$htmlContent = @'
+$html_content = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    [System.IO.File]::WriteAllText($outputPath, $htmlContent)
+    [System.IO.File]::WriteAllText($output_path, $html_content)
 } catch {
-    Write-Error "Fehler beim Schreiben der Datei: $outputPath"
+    Write-Error "Fehler beim Schreiben der Datei: $output_path"
     exit 1
 }

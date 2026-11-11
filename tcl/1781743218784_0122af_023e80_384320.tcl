@@ -1,15 +1,15 @@
-#!/usr/bin/env tclsh
-# 1781743218784_0122af_023e80.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh8.6
+# 1781743218784_0122af_023e80_384320.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_384320.ps1
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <Ausgabedatei>"
+    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
     exit 1
 }
 
-set outputPath [lindex $argv 0]
+lassign $argv outputPath
 
 # HTML-Inhalt
 set htmlContent {<!DOCTYPE html>
@@ -220,10 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {open $outputPath w} fh]} {
+if {[catch {
+    set fh [open $outputPath w]
+    puts -nonewline $fh $htmlContent
+    close $fh
+} err]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-
-puts -nonewline $fh $htmlContent
-close $fh

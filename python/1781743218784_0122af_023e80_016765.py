@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_023e80.ps1 — portiert nach python
+# 1781743218784_0122af_023e80_016765.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80.ps1 — portiert nach javascript
 # Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0122af.sh — portiert nach powershell
+# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
 import sys
-import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
+    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -218,8 +225,7 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Versuche, die HTML-Datei zu schreiben
 try:

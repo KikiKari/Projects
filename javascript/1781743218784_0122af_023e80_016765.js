@@ -1,13 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
-// Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
-
-// 1781743218784_0122af.sh — portiert nach powershell
-// Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-// Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
-
-const fs = require('fs');
+// 1781743218784_0122af_023e80_016765.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
+// Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -16,6 +10,7 @@ if (process.argv.length !== 3) {
 }
 
 const outputPath = process.argv[2];
+const fs = require('fs');
 
 // HTML-Inhalt
 const htmlContent = `<!DOCTYPE html>
@@ -227,7 +222,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 // Versuche, die HTML-Datei zu schreiben
 try {
     fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
+} catch (err) {
     console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
     process.exit(1);
 }

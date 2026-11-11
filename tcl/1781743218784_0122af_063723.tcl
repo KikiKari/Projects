@@ -1,11 +1,19 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af.sh — portiert nach tcl
+# 1781743218784_0122af_063723.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_063723.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.sh — portiert nach javascript
 # Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
+# 1781743218784_0122af.js — portiert nach JavaScript
+# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <Ausgabedatei>"
+    puts stderr "Aufruf: tclsh 1781743218784_0122af.tcl <Ausgabedatei>"
     exit 1
 }
 
@@ -216,12 +224,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fh [open $output_path w]} err]} {
+if {[catch {set fd [open $output_path w]} err]} {
     puts stderr "Fehler beim Schreiben der Datei: $output_path"
     exit 1
 }
-puts -nonewline $fh $html_content
-close $fh
+puts -nonewline $fd $html_content
+close $fd

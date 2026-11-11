@@ -1,15 +1,24 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_093843.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_093843.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_093843.pl
 # Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# 1781743218784_0122af_093843.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_093843.js
+# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+
+# Prüfe, ob Output-Pfad übergeben wurde
 if ($args.Count -lt 1) {
     Write-Error "Fehler: OutputPath ist erforderlich."
     exit 1
 }
 $outputPath = $args[0]
 
+# HTML-Inhalt
 $htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -218,8 +227,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
+# Schreibe den HTML-Inhalt in die Ausgabedatei
 try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
 } catch {
     Write-Error $_.Exception.Message
     exit 1
