@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_023e80_016765.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
@@ -222,7 +222,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
 } catch {
     Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1

@@ -1,7 +1,7 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_023e80_016765.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_023e80_016765.sh
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_023e80_016765.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -15,7 +15,7 @@ if (@ARGV != 1) {
 my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'EOF_HTMLCONTENT';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,10 +221,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTMLCONTENT
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
+open my $fh, '>:encoding(UTF-8)', $outputPath or do {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
 };

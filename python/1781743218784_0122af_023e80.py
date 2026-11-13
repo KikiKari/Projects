@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_023e80.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print(f'Aufruf: {sys.argv[0]} <Ausgabedatei>', file=sys.stderr)
+    print("Aufruf: python3 script.py <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -227,6 +224,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception:
-    print(f'Fehler beim Schreiben der Datei {output_path}', file=sys.stderr)
+except Exception as e:
+    print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
     sys.exit(1)

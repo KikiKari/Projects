@@ -1,10 +1,12 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_023e80_384320.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_384320.ps1
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_023e80_384320.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_384320.js
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -12,10 +14,10 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $html_content = <<'HTML';
+my $htmlContent = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -225,11 +227,12 @@ HTML
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    open my $fh, '>', $output_path or die "Fehler beim Schreiben der Datei $output_path: $!";
-    print $fh $html_content;
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
+    print $fh $htmlContent;
     close $fh;
 };
+
 if ($@) {
-    print STDERR "Fehler beim Schreiben der Datei $output_path\n";
+    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
 }

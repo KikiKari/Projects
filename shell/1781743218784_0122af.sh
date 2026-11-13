@@ -1,19 +1,28 @@
-#!/bin/bash
-# 1781743218784_0122af.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env bash
+# 1781743218784_0122af.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-if [[ $# -lt 1 ]]; then
-    echo "Fehler: OutputPath ist erforderlich." >&2
+# 1781743218784_0122af.ps1 — portiert nach bash
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af.sh — portiert nach bash
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+
+# Parameter verarbeiten
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
-htmlContent=$(
-cat <<'HTML_END'
+# HTML-Inhalt
+read -r -d '' html_content <<'EOF_HTML'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,10 +228,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
-)
+EOF_HTML
 
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
-    echo "Fehler beim Schreiben in Datei $outputPath: $!" >&2
-    exit 1
-fi
+# Stelle sicher, dass das Verzeichnis existiert
+mkdir -p "$(dirname "$output_path")"
+
+# Schreibe die Datei
+echo "$html_content" > "$output_path"

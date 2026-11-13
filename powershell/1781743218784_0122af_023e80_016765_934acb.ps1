@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80_016765.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765.py
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_934acb.tcl — portiert nach powershell
+# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765_934acb.tcl
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {

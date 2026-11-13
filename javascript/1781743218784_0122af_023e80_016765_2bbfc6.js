@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80_016765.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765.tcl
-// Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_016765_2bbfc6.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_2bbfc6.pl
+// Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -217,12 +217,11 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 // Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+    fs.writeFileSync(outputPath, htmlContent);
 } catch (err) {
     console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
     process.exit(1);

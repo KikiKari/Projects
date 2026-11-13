@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_023e80_016765.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f.ps1 — portiert nach tcl
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f.ps1
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -216,13 +216,14 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fh [open $outputPath w]} error]} {
+if {[catch {set fd [open $outputPath w]}]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
 
-puts -nonewline $fh $htmlContent
-close $fh
+puts -nonewline $fd $htmlContent
+close $fd

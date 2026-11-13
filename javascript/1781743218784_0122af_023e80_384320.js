@@ -1,18 +1,19 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80_384320.ps1 — portiert nach javascript
-// Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_384320.ps1
-// Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_384320.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_384320.pl
+// Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
-    process.exit(1);
+  console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+  process.exit(1);
 }
 
-const outputPath = process.argv[2];
+const fs = require('fs');
+const output_path = process.argv[2];
 
 // HTML-Inhalt
-const htmlContent = `<!DOCTYPE html>
+const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,11 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 // Versuche, die HTML-Datei zu schreiben
-import { writeFileSync } from 'fs';
-
 try {
-    writeFileSync(outputPath, htmlContent);
-} catch (error) {
-    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
-    process.exit(1);
+  fs.writeFileSync(output_path, html_content);
+} catch (err) {
+  console.error(`Fehler beim Schreiben der Datei ${output_path}`);
+  process.exit(1);
 }

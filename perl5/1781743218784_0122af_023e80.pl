@@ -1,14 +1,18 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Spec;
+use File::Basename;
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
+    print STDERR "Aufruf: perl script.pl <Ausgabedatei>\n";
     exit 1;
 }
 
@@ -224,9 +228,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
+eval {
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
+    print $fh $htmlContent;
+    close $fh;
+};
+if ($@) {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
-};
-print $fh $htmlContent;
-close $fh;
+}

@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_023e80.ps1 — portiert nach javascript
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af.sh
-# Erzeugt: 2026-11-08 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 import sys
+import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:

@@ -1,15 +1,15 @@
-#!/usr/bin/env tclsh8.6
-# 1781743218784_0122af_023e80_384320.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_384320.ps1
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh
+# 1781743218784_0122af_023e80_384320.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_384320.js
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
-lassign $argv outputPath
+set outputPath [lindex $argv 0]
 
 # HTML-Inhalt
 set htmlContent {<!DOCTYPE html>
@@ -216,15 +216,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {
-    set fh [open $outputPath w]
-    puts -nonewline $fh $htmlContent
-    close $fh
-} err]} {
+if {[catch {set fd [open $outputPath w]} error]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
+
+puts -nonewline $fd $htmlContent
+close $fd

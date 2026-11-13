@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_023e80_016765.pl — portiert nach python
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
-# Erzeugt: 2026-11-11 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_023e80.ps1 — portiert nach python3
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
-# Erzeugt: 2026-11-10 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f.ps1 — portiert nach python
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f.ps1
+# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
+    print(f"Aufruf: {os.path.basename(sys.argv[0])} <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
-outputPath = sys.argv[1]
+output_path = sys.argv[1]
 
 # HTML-Inhalt
-htmlContent = '''<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -227,8 +223,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try:
-    with open(outputPath, 'w', encoding='utf-8') as fh:
-        fh.write(htmlContent)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 except Exception as e:
-    print("Fehler beim Schreiben der Datei {}".format(outputPath), file=sys.stderr)
+    print(f"Fehler beim Schreiben der Datei {output_path}: {e}", file=sys.stderr)
     sys.exit(1)
