@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80_016765_04d26f.sh — portiert nach powershell
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_023e80_016765_04d26f.sh
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_01e56d.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d.js
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
@@ -189,7 +189,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`input.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`input.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };

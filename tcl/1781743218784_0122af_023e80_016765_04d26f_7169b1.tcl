@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_023e80_016765_04d26f.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f.py
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_7169b1.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_7169b1.js
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -9,7 +9,7 @@ if {$argc != 1} {
     exit 1
 }
 
-set outputPath [lindex $argv 0]
+lassign $argv outputPath
 
 # HTML-Inhalt
 set htmlContent {<!DOCTYPE html>
@@ -220,10 +220,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fh [open $outputPath w]}]} {
+if {[catch {
+    set fd [open $outputPath w]
+    puts -nonewline $fd $htmlContent
+    close $fd
+} error]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-
-puts -nonewline $fh $htmlContent
-close $fh

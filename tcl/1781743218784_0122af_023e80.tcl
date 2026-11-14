@@ -1,11 +1,11 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: tclsh script.tcl <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
@@ -219,10 +219,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fh [open $outputPath w]}]} {
+if {[catch {set fd [open $outputPath w]} err]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
 
-puts -nonewline $fh $htmlContent
-close $fh
+puts -nonewline $fd $htmlContent
+close $fd

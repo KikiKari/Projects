@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_023e80_016765_04d26f.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765_04d26f.tcl
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_80c14a.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_80c14a.js
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
@@ -12,10 +12,10 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML_CONTENT';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,13 +221,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_CONTENT
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
-    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
+if (open(my $fh, '>:encoding(UTF-8)', $output_path)) {
+    print $fh $html_content;
+    close $fh;
+} else {
+    print STDERR "Fehler beim Schreiben der Datei $output_path\n";
     exit 1;
-};
-
-print $fh $htmlContent;
-close $fh;
+}

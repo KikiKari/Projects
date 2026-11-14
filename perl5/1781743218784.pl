@@ -1,16 +1,26 @@
 #!/usr/bin/perl
 # 1781743218784.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(decode encode);
-use File::Slurper qw(read_text write_text);
+use Encode qw(encode decode);
+use File::Basename;
 
-sub generate_html {
-    my $html = <<'HTML_END';
+binmode(STDOUT, ':encoding(UTF-8)');
+binmode(STDERR, ':encoding(UTF-8)');
+
+# Prüfe Aufrufparameter
+if (@ARGV != 1) {
+    my $scriptName = basename($0);
+    print STDERR "Aufruf: perl $scriptName <Ausgabedatei>\n";
+    exit 1;
+}
+my $outputPath = $ARGV[0];
+
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -34,7 +44,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 4px;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -218,28 +228,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 HTML_END
 
-    return $html;
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+eval {
+    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Konnte Datei '$outputPath' nicht öffnen: $!";
+    print $fh $htmlContent;
+    close($fh);
+};
+if ($@) {
+    print STDERR $@;
+    exit 1;
 }
-
-sub main {
-    my @args = @ARGV;
-    
-    if (@args != 1) {
-        print STDERR "Usage: perl script.pl <output-file>\n";
-        exit 1;
-    }
-    
-    my $output_file = $args[0];
-    
-    eval {
-        my $html_content = generate_html();
-        write_text($output_file, $html_content);
-        print "HTML file generated: $output_file\n";
-    };
-    if ($@) {
-        print STDERR "Error generating HTML file: $@\n";
-        exit 1;
-    }
-}
-
-main();

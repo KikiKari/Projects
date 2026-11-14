@@ -1,10 +1,13 @@
 #!/usr/bin/perl
-# 1781743218784_0122af_023e80_016765_04d26f.sh — portiert nach perl5
-# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_023e80_016765_04d26f.sh
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_01e56d.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d.js
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use File::Spec;
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -15,7 +18,7 @@ if (@ARGV != 1) {
 my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -192,7 +195,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`input.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`input.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -221,12 +224,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
+eval {
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
+    print $fh $htmlContent;
+    close $fh;
+};
+if ($@) {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
-};
-print $fh $htmlContent;
-close $fh;
+}

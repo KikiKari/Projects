@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_023e80.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-    Write-Error "Aufruf: pwsh script.ps1 <Ausgabedatei>"
+    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
     exit 1
 }
 

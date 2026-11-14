@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80_016765_04d26f.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765_04d26f.tcl
-// Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_016765_04d26f_80c14a.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_80c14a.pl
+// Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+    console.error("Aufruf: " + process.argv[1] + " <Ausgabedatei>");
     process.exit(1);
 }
 
-const fs = require('fs');
 const outputPath = process.argv[2];
 
 // HTML-Inhalt
@@ -220,9 +219,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 // Versuche, die HTML-Datei zu schreiben
+const fs = require('fs');
+
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
+    fs.writeFileSync(outputPath, htmlContent);
+} catch (err) {
+    console.error("Fehler beim Schreiben der Datei " + outputPath);
     process.exit(1);
 }

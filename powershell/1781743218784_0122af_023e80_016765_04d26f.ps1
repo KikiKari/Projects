@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80_016765_04d26f.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f.py
-# Erzeugt: 2026-11-13 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
+# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
