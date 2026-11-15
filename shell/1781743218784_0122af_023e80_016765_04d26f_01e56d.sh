@@ -1,12 +1,12 @@
 #!/bin/bash
 # 1781743218784_0122af_023e80_016765_04d26f_01e56d.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d.js
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
-if [ $# -ne 1 ]; then
+if [[ $# -ne 1 ]]; then
     echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
@@ -14,7 +14,7 @@ fi
 outputPath="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'EOF_HTMLCONTENT'
+read -r -d '' htmlContent <<'EOF_HTML_CONTENT'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -191,7 +191,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`input.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`input.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(`.nf[data-np="${CSS.escape(p)}"]`).value.trim(); const nv=root.querySelector(`.nv[data-np="${CSS.escape(p)}"]`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -220,7 +220,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTMLCONTENT
+EOF_HTML_CONTENT
 
 # Versuche, die HTML-Datei zu schreiben
 if ! printf '%s' "$htmlContent" > "$outputPath"; then

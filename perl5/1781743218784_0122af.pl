@@ -1,24 +1,22 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
+# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(encode decode);
+use File::Basename;
 use File::Path qw(make_path);
-use File::Basename qw(dirname);
+use autodie;
 
-# Parameter verarbeiten
 if (@ARGV != 1) {
-    warn "Usage: perl script.pl <OutputPath>\n";
+    print STDERR "Usage: perl script.pl <OutputPath>\n";
     exit 1;
 }
 
 my $outputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,20 +222,18 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 eval {
-    # Stelle sicher, dass das Verzeichnis existiert
     my $dir = dirname($outputPath);
-    make_path($dir) unless -d $dir;
-
-    # Schreibe die Datei
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Could not open file '$outputPath': $!";
+    unless (-d $dir) {
+        make_path($dir);
+    }
+    open my $fh, '>', $outputPath;
     print $fh $htmlContent;
     close $fh;
 };
-
 if ($@) {
-    warn "$@\n";
+    print STDERR $@->getMessage() . "\n";
     exit 1;
 }

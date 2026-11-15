@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -9,10 +9,10 @@ if {$argc != 1} {
     exit 1
 }
 
-set outputPath [lindex $argv 0]
+lassign $argv output_path
 
 # HTML-Inhalt
-set htmlContent {<!DOCTYPE html>
+set html_content {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -216,13 +216,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
-
-# Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $outputPath w]} error]} {
-    puts stderr "Fehler beim Schreiben der Datei $outputPath"
-    exit 1
+</html>
 }
 
-puts -nonewline $fd $htmlContent
+# Versuche, die HTML-Datei zu schreiben
+if {[catch {set fd [open $output_path w]}]} {
+    puts stderr "Fehler beim Schreiben der Datei $output_path"
+    exit 1
+}
+puts -nonewline $fd $html_content
 close $fd

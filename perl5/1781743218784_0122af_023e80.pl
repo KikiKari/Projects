@@ -1,24 +1,21 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(encode decode);
-use File::Slurp qw(write_file);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
+    print STDERR "Aufruf: perl script.pl <Ausgabedatei>\n";
     exit 1;
 }
 
 my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,11 +221,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    write_file($outputPath, {binmode => ':utf8'}, $htmlContent);
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open $outputPath: $!";
+    print $fh $htmlContent;
+    close $fh;
 };
 if ($@) {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";

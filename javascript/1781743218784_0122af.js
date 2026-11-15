@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // 1781743218784_0122af.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
-const fs = require('fs');
-const path = require('path');
+import { writeFileSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 
+// Parameter verarbeiten
 if (process.argv.length !== 3) {
-  console.error("Usage: node script.js <OutputPath>");
-  process.exit(1);
+    console.warn("Usage: node script.js <OutputPath>\n");
+    process.exit(1);
 }
 
 const outputPath = process.argv[2];
@@ -221,12 +222,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 `;
 
 try {
-  const dir = path.dirname(outputPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(outputPath, htmlContent);
+    // Stelle sicher, dass das Verzeichnis existiert
+    const dir = dirname(outputPath);
+    mkdirSync(dir, { recursive: true });
+
+    // Schreibe die Datei
+    writeFileSync(outputPath, htmlContent, 'utf8');
 } catch (error) {
-  console.error(error.message);
-  process.exit(1);
+    console.warn(error.message);
+    process.exit(1);
 }

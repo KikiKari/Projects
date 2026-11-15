@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f.pl
-// Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+    process.stderr.write("Aufruf: " + process.argv[1] + " <Ausgabedatei>\n");
     process.exit(1);
 }
 
+const outputPath = process.argv[2];
 const fs = require('fs');
-const output_path = process.argv[2];
 
 // HTML-Inhalt
-const html_content = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -217,13 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 // Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(output_path, html_content, { encoding: 'utf8' });
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
 } catch (err) {
-    console.error(`Fehler beim Schreiben der Datei ${output_path}`);
+    process.stderr.write("Fehler beim Schreiben der Datei " + outputPath + "\n");
     process.exit(1);
 }
