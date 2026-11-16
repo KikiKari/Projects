@@ -1,190 +1,279 @@
 #!/usr/bin/env node
 // dispatch_job.py — portiert nach javascript
 // Quelle: python, OpenClaw@gateway1:skills/multi-nodes-utils/scripts/dispatch_job.py
-// auch in: OpenClaw@gateway2:skills/multi-nodes-utils/scripts/dispatch_job.py
-// Erzeugt: 2026-08-09 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 /**
  * Job Dispatcher - Verteilt Jobs auf passende Nodes
  */
 
-const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
+const crypto = require('crypto');
+
+function _job_weight_bytes(script_path, target_langs_count) {
+    /** Arbeitsvolumen: Dateigröße × Anzahl der Zielsprachen. */
+    const stats = fs.statSync(script_path);
+    return stats.size * target_langs_count;
+}
 
 // Node-Konfiguration
 const NODES = {
-    "node1": { "always_available": true, "capacity": "medium", "priority": 2 },
-    "node2": { "always_available": true, "capacity": "medium", "priority": 3 },
-    "node3": { "always_available": false, "capacity": "medium", "priority": 4 },
-    "node5": { "always_available": false, "capacity": "low", "priority": 5, "device": "Redmi Note 11S" },
-    "node7": { "always_available": true, "capacity": "high", "priority": 1 }
+    "node1": {"always_available": true, "capacity": "medium", "priority": 3, "description": "Gateway"},
+    "node2": {"always_available": false, "capacity": "high", "priority": 1, "description": "ARM Server"},
+    "node3": {"always_available": false, "capacity": "medium", "priority": 4, "description": "AMD Server"},
+    "node4": {"always_available": false, "capacity": "low", "priority": 5, "device": "Redmi Note 11S"},
+    "node5": {"always_available": false, "capacity": "high", "priority": 2, "device": "Lenovo"},
+    "node6": {"always_available": false, "device": "Lenovo (Docker)"},
 };
 
+const NODE_NAMES = {
+    "node2": new Set(["openclaw-node2", "arm64-node", "v2202604104722449961", "v2202604104722449961.taild25fea.ts.net", "100.82.198.122"]),
+    "node3": new Set(["openclaw-node3", "openclaw-node3.taild25fea.ts.net", "100.73.154.125"]),
+    "node4": new Set(["openclaw-node4", "redmi-note-11s", "redmi-note-11s.taild25fea.ts.net", "100.94.134.39"]),
+    "node5": new Set(["openclaw-node5", "windows node (lenovo-7)"]),
+    "node6": new Set(["openclaw-node6"]),
+};
+
+function fetch_node_status() {
+    /** Return mapped OpenClaw connection states; None indicates lookup failure. */
+    try {
+        const result = spawnSync("openclaw", ["nodes", "status", "--json"], {
+            encoding: 'utf-8',
+            timeout: 10000
+        });
+        
+        if (result.error || result.status !== 0) {
+            return null;
+        }
+        
+        const payload = JSON.parse(result.stdout);
+        if (typeof payload !== 'object' || !Array.isArray(payload.nodes)) {
+            return null;
+        }
+        
+        const states = {};
+        for (const node of Object.keys(NODE_NAMES)) {
+            states[node] = false;
+        }
+        
+        for (const item of payload.nodes) {
+            if (typeof item !== 'object') {
+                continue;
+            }
+            
+            const names = new Set([
+                String(item.displayName || "").toLowerCase(),
+                String(item.nodeId || "").toLowerCase(),
+                String(item.remoteIp || "").toLowerCase()
+            ]);
+            
+            for (const [node, aliases] of Object.entries(NODE_NAMES)) {
+                for (const alias of aliases) {
+                    if (names.has(alias.toLowerCase()) && item.connected === true) {
+                        states[node] = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        states.node1 = true; // successful Gateway status request
+        return states;
+    } catch (error) {
+        return null;
+    }
+}
+
 class JobDispatcher {
-    /** Bewertet Job-Gewicht */
-    getJobWeight(scriptPath, targetLangsCount = 1) {
-        if (!fs.existsSync(scriptPath)) {
+    /** Dispatches jobs to appropriate nodes based on weight */
+    
+    get_job_weight(script_path, target_langs_count = 1) {
+        /** Bewertet Job-Gewicht */
+        if (!fs.existsSync(script_path)) {
             return "medium";
         }
-
-        const stats = fs.statSync(scriptPath);
-        const scriptSize = stats.size;
-        const totalWork = scriptSize * targetLangsCount;
-
-        if (totalWork > 50000) {  // > 50KB
+        
+        const total_work = _job_weight_bytes(script_path, target_langs_count);
+        
+        if (total_work > 50000) {  // > 50KB
             return "heavy";
-        } else if (totalWork > 10000) {  // > 10KB
+        } else if (total_work > 10000) {  // > 10KB
             return "medium";
         } else {
             return "light";
         }
     }
-
-    /** Wählt besten Node basierend auf Job-Gewicht */
-    selectNode(jobWeight) {
-        let preferred = [];
-
-        if (jobWeight === "heavy") {
-            // Schwere Jobs → Node 7 (Docker), dann Node 2, dann Node 1
-            preferred = ["node7", "node2", "node1"];
-        } else if (jobWeight === "medium") {
-            // Mittlere Jobs → Stable Nodes
-            preferred = ["node2", "node1", "node7"];
-        } else {  // light
-            // Leichte Jobs → Mobile/verfügbare Nodes
-            preferred = ["node5", "node1", "node2"];
+    
+    select_node(job_weight) {
+        /** Wählt besten Node basierend auf Job-Gewicht */
+        
+        let preferred;
+        if (job_weight === "heavy") {
+            preferred = ["node1", "node2", "node5", "node6"];
+        } else if (job_weight === "medium") {
+            preferred = ["node1", "node2", "node3", "node6"];
+        } else if (job_weight === "light") {
+            preferred = ["node2", "node1", "node3", "node4"];
+        } else {
+            throw new Error(`Unknown job weight: ${job_weight}`);
         }
 
-        // Prüfe Verfügbarkeit
-        for (const nodeId of preferred) {
-            if (this.checkNodeAvailable(nodeId)) {
-                return nodeId;
+        const states = fetch_node_status();
+        for (const node_id of preferred) {
+            if (states && states[node_id] === true) {
+                return node_id;
             }
         }
-
-        // Fallback
-        return "node1";
+        return null; // no verified reachable node
     }
 
-    /** Prüft ob Node erreichbar ist */
-    checkNodeAvailable(nodeId) {
-        if (!NODES[nodeId]) {
-            return false;
+    check_node_available(node_id) {
+        /** Use the live connection state rather than static availability. */
+        const states = fetch_node_status();
+        return Boolean(states && states[node_id] === true);
+    }
+
+    execute_translation(job, transport) {
+        return execute_translation(job, transport);
+    }
+
+    _check_mobile_online() {
+        /** Check Node4 (Redmi). */
+        return this.check_node_available("node4");
+    }
+
+    dispatch(job_script, target_langs = null, source_text = null, source_language = null) {
+        /** Dispatched Job und gibt Info zurück */
+        if (target_langs === null) {
+            target_langs = ["perl5"];
         }
-
-        const node = NODES[nodeId];
-
-        // Nicht immer-verfügbare Nodes nur wenn explizit requested
-        if (!node.always_available) {
-            // Für light-jobs prüfen wir ob online
-            if (nodeId === "node5") {  // Redmi
-                return this._checkMobileOnline();
+        
+        const weight = this.get_job_weight(job_script, target_langs.length);
+        const selected_node = this.select_node(weight);
+        const translation_jobs = [];
+        
+        for (const language of target_langs) {
+            const job = {
+                "job_id": crypto.randomUUID(),
+                "source": job_script,
+                "target_language": language,
+                "selected_node": selected_node,
+            };
+            
+            if (source_text !== null) {
+                job.source_text = source_text;
             }
-            return false;
+            if (source_language !== null) {
+                job.source_language = source_language;
+            }
+            translation_jobs.push(job);
         }
-
-        // Für immer-verfügbare Nodes: prüfe ob wirklich online
-        try {
-            const result = spawnSync("openclaw", ["nodes", "status", nodeId], {
-                timeout: 3000
-            });
-            return result.status === 0;
-        } catch (error) {
-            return node.always_available || false;
-        }
-    }
-
-    /** Prüft ob Redmi (Node 5) Internet hat */
-    _checkMobileOnline() {
-        try {
-            const result = spawnSync("openclaw", ["nodes", "status", "node5"], {
-                timeout: 5000
-            });
-            return result.status === 0 && result.stdout && result.stdout.toString().toLowerCase().includes("online");
-        } catch (error) {
-            return false;
-        }
-    }
-
-    /** Dispatched Job und gibt Info zurück */
-    dispatch(jobScript, targetLangs = null) {
-        if (targetLangs === null) {
-            targetLangs = ["perl5"];
-        }
-
-        const weight = this.getJobWeight(jobScript, targetLangs.length);
-        const selectedNode = this.selectNode(weight);
-
+        
         return {
-            "job": jobScript,
+            "job": job_script,
             "weight": weight,
-            "selected_node": selectedNode,
-            "target_langs": targetLangs,
-            "status": "dispatched"
+            "selected_node": selected_node,
+            "target_langs": target_langs,
+            "translation_jobs": translation_jobs,
+            "status": selected_node ? "selected" : "unavailable"
         };
     }
 }
 
-function main() {
-    const args = require('minimist')(process.argv.slice(2), {
-        alias: {
-            j: 'job',
-            l: 'langs',
-            w: 'weight',
-            x: 'execute'
-        },
-        default: {
-            langs: 'perl5'
+function execute_translation(job, transport) {
+    /** Execute via a supplied transport and verify its result belongs to the job. */
+    if (!job.selected_node || transport === null) {
+        throw new Error("no verified node or authorized translation transport");
+    }
+    const response = transport(job);
+    if (typeof response !== 'object') {
+        throw new Error("invalid transport response");
+    }
+    for (const key of ["job_id", "selected_node", "target_language"]) {
+        if (response[key] !== job[key]) {
+            throw new Error("transport response does not match job");
         }
-    });
+    }
+    const code = response.code;
+    if (response.status !== "ok" || typeof code !== 'string' || !code.trim()) {
+        throw new Error("translation did not complete with code");
+    }
+    return code;
+}
 
-    if (!args.job) {
-        console.error("❌ Job argument is required");
+function dispatch_abstraction_job(job_script, target_langs) {
+    /** Erstellt eine Node-Auswahl und je (Skript, Sprache) einen Auftrag. */
+    const dispatcher = new JobDispatcher();
+    return dispatcher.dispatch(job_script, target_langs);
+}
+
+function main() {
+    const args = process.argv.slice(2);
+    let jobPath = null;
+    let langs = "perl5";
+    let weight = null;
+    let execute = false;
+    
+    // Simple argument parsing
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--job" || args[i] === "-j") {
+            jobPath = args[++i];
+        } else if (args[i] === "--langs" || args[i] === "-l") {
+            langs = args[++i];
+        } else if (args[i] === "--weight" || args[i] === "-w") {
+            weight = args[++i];
+        } else if (args[i] === "--execute" || args[i] === "-x") {
+            execute = true;
+        }
+    }
+    
+    if (!jobPath) {
+        console.error("Usage: node dispatch_job.js --job <job-script> [--langs <languages>] [--weight <weight>] [--execute]");
         process.exit(1);
     }
-
-    const jobPath = path.resolve(args.job);
+    
     if (!fs.existsSync(jobPath)) {
         console.error(`❌ Job not found: ${jobPath}`);
         process.exit(1);
     }
-
+    
     const dispatcher = new JobDispatcher();
-    const targetLangs = args.langs.split(",");
-
+    const target_langs = langs.split(",");
+    
     // Determine weight
-    let weight;
-    if (args.weight) {
-        weight = args.weight;
+    if (weight) {
+        weight = weight;
     } else {
-        weight = dispatcher.getJobWeight(jobPath, targetLangs.length);
+        weight = dispatcher.get_job_weight(jobPath, target_langs.length);
     }
-
+    
     // Select node
-    const selectedNode = dispatcher.selectNode(weight);
-
+    const selected_node = dispatcher.select_node(weight);
+    
     // Output
     console.log("📦 Job Dispatch Information");
     console.log("=".repeat(50));
+    const stats = fs.statSync(jobPath);
     console.log(`Job: ${jobPath}`);
-    console.log(`Size: ${fs.statSync(jobPath).size} bytes`);
-    console.log(`Target langs: ${targetLangs.join(', ')}`);
+    console.log(`Size: ${stats.size} bytes`);
+    console.log(`Target langs: ${target_langs.join(", ")}`);
     console.log(`Job weight: ${weight}`);
-    console.log(`Selected node: ${selectedNode}`);
+    console.log(`Selected node: ${selected_node}`);
     console.log("=".repeat(50));
-
-    if (args.execute) {
-        console.log(`\n🚀 Executing on ${selectedNode}...`);
-        // TODO: Implement remote execution
-        console.log("(Remote execution not yet implemented)");
+    
+    if (execute) {
+        console.error(`\nTranslation dispatch on ${selected_node} is not implemented.`);
+        return 1;
     } else {
-        console.log(`\n💡 To execute: ${process.argv[1]} --job ${args.job} --execute`);
+        console.log(`\n💡 To execute: node ${process.argv[1]} --job ${jobPath} --execute`);
     }
+    return 0;
 }
 
 if (require.main === module) {
-    main();
+    process.exit(main());
 }
 
-module.exports = { JobDispatcher };
+module.exports = { JobDispatcher, dispatch_abstraction_job, execute_translation };
