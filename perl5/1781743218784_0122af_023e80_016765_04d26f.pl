@@ -1,12 +1,13 @@
-#!/usr/bin/perl
-# 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env perl
+# 1781743218784_0122af_023e80_016765_04d26f.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f.ps1
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use open qw(:std :utf8);
+use Encode qw(encode decode);
+use File::Slurp qw(write_file);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -227,9 +228,7 @@ HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    open my $fh, '>:encoding(UTF-8)', $output_path or die "Cannot open $output_path: $!";
-    print $fh $html_content;
-    close $fh;
+    write_file($output_path, {binmode => ':utf8'}, $html_content);
 };
 if ($@) {
     print STDERR "Fehler beim Schreiben der Datei $output_path\n";

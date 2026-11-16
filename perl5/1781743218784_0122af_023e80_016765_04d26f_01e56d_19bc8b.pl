@@ -1,13 +1,10 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(encode decode);
-use File::Slurper qw(write_text);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -227,10 +224,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-eval {
-    write_text($outputPath, $htmlContent);
-};
-if ($@) {
+open(my $fh, '>', $outputPath) or do {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
-}
+};
+print $fh $htmlContent;
+close $fh;

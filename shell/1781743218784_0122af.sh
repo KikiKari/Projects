@@ -1,24 +1,20 @@
 #!/bin/bash
 # 1781743218784_0122af.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Anzahl Argumente
+# Parameter verarbeiten
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <OutputPath>" >&2
-  exit 1
+    echo "Usage: $0 <OutputPath>" >&2
+    exit 1
 fi
 
-output_path="$1"
-output_dir=$(dirname "$output_path")
+outputPath="$1"
 
-# Erstelle Zielverzeichnis falls nötig
-mkdir -p "$output_dir"
-
-# Schreibe HTML-Inhalt in Zieldatei
-cat > "$output_path" << 'EOF'
+# Erstelle das HTML-Inhalt
+read -r -d '' htmlContent <<'EOF_HTML_CONTENT'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,4 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF
+EOF_HTML_CONTENT
+
+# Stelle sicher, dass das Verzeichnis existiert
+mkdir -p "$(dirname "$outputPath")"
+
+# Schreibe die Datei
+echo "$htmlContent" > "$outputPath"

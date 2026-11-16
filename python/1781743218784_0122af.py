@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
+from pathlib import Path
 
+# Parameter verarbeiten
 if len(sys.argv) != 2:
-    print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
+    print("Usage: python3 script.py <OutputPath>\n")
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -220,11 +222,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '''
 
 try:
-    directory = os.path.dirname(output_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory, exist_ok=True)
+    # Stelle sicher, dass das Verzeichnis existiert
+    dir_path = Path(output_path).parent
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+    # Schreibe die Datei
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as error:
-    print(str(error), file=sys.stderr)
+    print(error)
     sys.exit(1)

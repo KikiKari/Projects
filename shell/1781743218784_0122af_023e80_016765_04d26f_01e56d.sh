@@ -1,20 +1,20 @@
 #!/bin/bash
-# 1781743218784_0122af_023e80_016765_04d26f_01e56d.js — portiert nach shell
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_01e56d.ps1 — portiert nach shell
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f_01e56d.ps1
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
-if [[ $# -ne 1 ]]; then
-    echo "Aufruf: $0 <Ausgabedatei>" >&2
+if [ $# -ne 1 ]; then
+    echo "Aufruf: $(basename "$0") <Ausgabedatei>" >&2
     exit 1
 fi
 
 outputPath="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'EOF_HTML_CONTENT'
+read -r -d '' htmlContent << 'HTMLCONTENT_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,7 +220,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTML_CONTENT
+HTMLCONTENT_END
 
 # Versuche, die HTML-Datei zu schreiben
 if ! printf '%s' "$htmlContent" > "$outputPath"; then

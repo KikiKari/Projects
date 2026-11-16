@@ -1,16 +1,15 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
+# Parameter verarbeiten
+if ($args.Count -ne 1) {
+    Write-Warning "Usage: script.ps1 <OutputPath>`n"
+    exit 1
+}
 
-param(
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath
-)
+$outputPath = $args[0]
 
 $htmlContent = @'
 <!DOCTYPE html>
@@ -221,12 +220,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    $dir = Split-Path -Path $OutputPath -Parent
-    if (!(Test-Path -Path $dir)) {
+    # Stelle sicher, dass das Verzeichnis existiert
+    $dir = Split-Path -Path $outputPath -Parent
+    if (-not (Test-Path -Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
-    Set-Content -Path $OutputPath -Value $htmlContent -Encoding UTF8
+
+    # Schreibe die Datei
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error $_.Exception.Message
+    Write-Warning $_.Exception.Message
     exit 1
 }

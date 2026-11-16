@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach python
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f.pl
 # Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 
 # Prüfe Aufrufparameter
-if len(sys.argv) != 3:
-    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+if len(sys.argv) != 2:
+    sys.stderr.write("Aufruf: " + sys.argv[0] + " <Ausgabedatei>\n")
     sys.exit(1)
 
-output_path = sys.argv[2]
+output_path = sys.argv[1]
 
 # HTML-Inhalt
 html_content = '''<!DOCTYPE html>
@@ -217,13 +221,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Versuche, die HTML-Datei zu schreiben
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
+    sys.stderr.write("Fehler beim Schreiben der Datei " + output_path + "\n")
     sys.exit(1)

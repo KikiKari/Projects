@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
@@ -9,10 +9,10 @@ if ($args.Count -ne 1) {
     exit 1
 }
 
-$output_path = $args[0]
+$outputPath = $args[0]
 
 # HTML-Inhalt
-$html_content = @'
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -222,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    [System.IO.File]::WriteAllText($output_path, $html_content, [System.Text.Encoding]::UTF8)
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
-    Write-Error "Fehler beim Schreiben der Datei $output_path"
+    Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }

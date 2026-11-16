@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 // 1781743218784_0122af.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
+// Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af.js — portiert nach perl5
+// Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
 // Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
 
-// Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.warn("Usage: node script.js <OutputPath>\n");
+    console.error("Usage: node script.js <OutputPath>");
     process.exit(1);
 }
 
@@ -218,17 +221,15 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 try {
-    // Stelle sicher, dass das Verzeichnis existiert
     const dir = dirname(outputPath);
-    mkdirSync(dir, { recursive: true });
-
-    // Schreibe die Datei
-    writeFileSync(outputPath, htmlContent, 'utf8');
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(outputPath, htmlContent);
 } catch (error) {
-    console.warn(error.message);
+    console.error(error.message);
     process.exit(1);
 }

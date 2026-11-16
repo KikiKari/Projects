@@ -1,12 +1,9 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-14 durch ABSTRACTIONS_MANAGER.py
-
+# Prüfe Anzahl Argumente
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -14,6 +11,7 @@ if {$argc != 1} {
 
 set outputPath [lindex $argv 0]
 
+# Erstelle das HTML
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -37,7 +35,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -221,15 +219,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 }
 
-# Create directory if it doesn't exist
+# Erstelle Verzeichnisstruktur
 set dir [file dirname $outputPath]
 if {![file exists $dir]} {
     file mkdir $dir
 }
 
-# Write the HTML content to the output file
+# Schreibe Datei
 if {[catch {open $outputPath w} fileId]} {
-    puts stderr "Error: Could not create file $outputPath"
+    puts stderr "Error writing file: $fileId"
     exit 1
 }
 
