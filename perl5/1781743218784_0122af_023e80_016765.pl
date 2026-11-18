@@ -1,10 +1,13 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(encode decode);
+use File::Slurp qw(write_file);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -15,7 +18,7 @@ if (@ARGV != 1) {
 my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML_END';
+my $htmlContent = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,12 +224,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>:encoding(UTF-8)', $outputPath) or do {
+eval {
+    write_file($outputPath, {binmode => ':utf8'}, $htmlContent);
+};
+if ($@) {
     print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
-};
-print $fh $htmlContent;
-close $fh;
+}

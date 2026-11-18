@@ -1,15 +1,11 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f.pl
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [lindex $argv0 0] <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
@@ -223,7 +219,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $outputPath w]}]} {
+if {[catch {set fd [open $outputPath w]} err]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }

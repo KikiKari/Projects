@@ -1,11 +1,10 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if ($args.Count -ne 1) {
-    $ErrorActionPreference = "Stop"
     Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
     exit 1
 }
@@ -13,7 +12,7 @@ if ($args.Count -ne 1) {
 $outputPath = $args[0]
 
 # HTML-Inhalt
-$htmlContent = @'
+$htmlContent = @"
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -219,11 +218,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-'@
+"@
 
 # Versuche, die HTML-Datei zu schreiben
 try {
-    $htmlContent | Out-File -FilePath $outputPath -Encoding UTF8
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
 } catch {
     Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1

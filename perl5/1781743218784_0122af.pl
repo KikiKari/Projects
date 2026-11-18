@@ -1,15 +1,14 @@
 #!/usr/bin/perl
 # 1781743218784_0122af.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
-use File::Spec;
+use File::Spec::Functions qw(catfile);
 
-# Parameter verarbeiten
 if (@ARGV != 1) {
     warn "Usage: perl script.pl <OutputPath>\n";
     exit 1;
@@ -17,7 +16,7 @@ if (@ARGV != 1) {
 
 my $outputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML_END';
+my $htmlContent = <<'HTML_CONTENT';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -223,20 +222,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML_CONTENT
 
 eval {
-    # Stelle sicher, dass das Verzeichnis existiert
     my $dir = dirname($outputPath);
-    make_path($dir) unless -d $dir;
-
-    # Schreibe die Datei
-    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Could not open file '$outputPath': $!";
+    unless (-d $dir) {
+        make_path($dir) or die "Failed to create directory '$dir': $!";
+    }
+    open(my $fh, '>', $outputPath) or die "Could not open file '$outputPath' for writing: $!";
     print $fh $htmlContent;
-    close $fh;
+    close($fh);
 };
 
 if ($@) {
-    warn $@;
+    warn "$@\n";
     exit 1;
 }

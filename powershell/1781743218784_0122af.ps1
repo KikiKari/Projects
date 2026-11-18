@@ -1,16 +1,17 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
-# Parameter verarbeiten
+# Prüfen der Anzahl der übergebenen Argumente
 if ($args.Count -ne 1) {
-    Write-Warning "Usage: script.ps1 <OutputPath>`n"
+    Write-Error "Usage: pwsh script.ps1 <OutputPath>"
     exit 1
 }
 
 $outputPath = $args[0]
 
+# HTML-Inhalt als Here-String
 $htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -220,15 +221,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    # Stelle sicher, dass das Verzeichnis existiert
-    $dir = Split-Path -Path $outputPath -Parent
-    if (-not (Test-Path -Path $dir)) {
+    # Verzeichnis extrahieren und erstellen falls notwendig
+    $dir = Split-Path $outputPath -Parent
+    if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
-    # Schreibe die Datei
+    # Schreiben der HTML-Datei
     Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-} catch {
-    Write-Warning $_.Exception.Message
+}
+catch {
+    Write-Error $_.Exception.Message
     exit 1
 }

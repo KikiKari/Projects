@@ -1,24 +1,21 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af_023e80.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_023e80.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(encode decode);
-use File::Slurper qw(write_text);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    print STDERR "Aufruf: script.pl <Ausgabedatei>\n";
+    print STDERR "Aufruf: perl script.pl <Ausgabedatei>\n";
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $html_content = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,14 +221,16 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    write_text($output_path, $html_content, 'UTF-8');
+    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Cannot open file '$outputPath': $!";
+    print $fh $htmlContent;
+    close $fh;
     1;
 } or do {
-    my $error = $@ || 'unknown error';
-    print STDERR "Fehler beim Schreiben der Datei $output_path: $error\n";
+    my $error = $@ || 'Unknown error';
+    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
 };

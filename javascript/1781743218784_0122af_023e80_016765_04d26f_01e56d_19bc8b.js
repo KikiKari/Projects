@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_01e56d_19bc8b.pl
-// Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
-
-'use strict';
-
-const fs = require('fs');
+// Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error("Aufruf: " + process.argv[1] + " <Ausgabedatei>");
+    process.stderr.write("Aufruf: " + process.argv[1] + " <Ausgabedatei>\n");
     process.exit(1);
 }
 
 const outputPath = process.argv[2];
+const fs = require('fs');
 
 // HTML-Inhalt
 const htmlContent = `<!DOCTYPE html>
@@ -220,13 +217,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-`;
+</html>`;
 
 // Versuche, die HTML-Datei zu schreiben
 try {
     fs.writeFileSync(outputPath, htmlContent);
-} catch (error) {
-    console.error("Fehler beim Schreiben der Datei " + outputPath);
+} catch (err) {
+    process.stderr.write("Fehler beim Schreiben der Datei " + outputPath + "\n");
     process.exit(1);
 }

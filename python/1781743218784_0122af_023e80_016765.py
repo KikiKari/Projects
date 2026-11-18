@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: " + sys.argv[0] + " <Ausgabedatei>", file=sys.stderr)
+    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -218,13 +218,12 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-'''
+</html>'''
 
 # Versuche, die HTML-Datei zu schreiben
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as error:
-    print("Fehler beim Schreiben der Datei " + output_path, file=sys.stderr)
+except Exception as e:
+    print("Fehler beim Schreiben der Datei {}".format(output_path), file=sys.stderr)
     sys.exit(1)
