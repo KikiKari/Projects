@@ -1,14 +1,17 @@
 #!/usr/bin/env pwsh
 # 1781743218784.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784.ps1 — portiert nach PowerShell 7
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784.js
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Prüfe Aufrufparameter
+if ($args.Count -ne 1) {
+    $scriptName = Split-Path -Leaf $MyInvocation.MyCommand.Path
+    Write-Error "Aufruf: pwsh $scriptName <Ausgabedatei>"
+    exit 1
+}
+$outputPath = $args[0]
 
-function Generate-Html {
-    return @"
+$htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -32,7 +35,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 4px;font-weight:700;}
+h1{font-size:21px;margin:0 0 0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -214,28 +217,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-"@
-}
+'@
 
-function Main {
-    param(
-        [string]$OutputFile
-    )
-    
-    if (-not $OutputFile) {
-        Write-Error "Usage: pwsh script.ps1 <output-file>"
-        exit 1
-    }
-    
-    try {
-        $htmlContent = Generate-Html
-        Set-Content -Path $OutputFile -Value $htmlContent -Encoding UTF8
-        Write-Host "HTML file generated: $OutputFile"
-    } catch {
-        Write-Error "Error generating HTML file: $($_.Exception.Message)"
-        exit 1
-    }
+# Schreibe die HTML-Inhalte in die Ausgabedatei
+try {
+    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+} catch {
+    Write-Error "Kann Datei '$outputPath' nicht schreiben: $($_.Exception.Message)"
+    exit 1
 }
-
-# Call main function with command line arguments
-Main -OutputFile $args[0]

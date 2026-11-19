@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80_016765_04d26f.tcl — portiert nach javascript
-// Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765_04d26f.tcl
-// Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63.pl
+// Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -9,8 +9,8 @@ if (process.argv.length !== 3) {
     process.exit(1);
 }
 
-const fs = require('fs');
 const outputPath = process.argv[2];
+const fs = require('fs');
 
 // HTML-Inhalt
 const htmlContent = `<!DOCTYPE html>
@@ -217,7 +217,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 // Versuche, die HTML-Datei zu schreiben
 try {

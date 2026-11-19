@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(encode decode);
+use Encode qw(decode_utf8);
 use File::Slurp qw(write_file);
 
 # Prüfe Aufrufparameter
@@ -18,7 +18,7 @@ if (@ARGV != 1) {
 my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,7 +224,7 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {

@@ -1,16 +1,11 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.pl — portiert nach javascript
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+package require Tcl 8.6
 
-# 1781743218784_0122af.js — portiert nach perl5
-# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-15 durch ABSTRACTIONS_MANAGER.py
-
+# Parameter verarbeiten
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -224,17 +219,17 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Erstelle das Verzeichnis falls es nicht existiert
+# Stelle sicher, dass das Verzeichnis existiert
 set dir [file dirname $outputPath]
 if {![file exists $dir]} {
     file mkdir $dir
 }
 
-# Schreibe den HTML-Inhalt in die Datei
-if {[catch {open $outputPath w} fileId]} {
-    puts stderr "Error: Could not create file $outputPath"
+# Schreibe die Datei
+if {[catch {open $outputPath w} fd]} {
+    puts stderr "Failed to open $outputPath for writing"
     exit 1
 }
 
-puts -nonewline $fileId $htmlContent
-close $fileId
+puts -nonewline $fd $htmlContent
+close $fd

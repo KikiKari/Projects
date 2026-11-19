@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 // 1781743218784_0122af.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 // 1781743218784_0122af.js — portiert nach perl5
 // Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-// Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 const path = require('path');
 
-// Parameter verarbeiten
 if (process.argv.length !== 3) {
-    console.warn("Usage: node script.js <OutputPath>");
+    console.error("Usage: node script.js <OutputPath>");
     process.exit(1);
 }
 
@@ -116,7 +115,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -225,15 +224,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>`;
 
 try {
-    // Stelle sicher, dass das Verzeichnis existiert
     const dir = path.dirname(outputPath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
-
-    // Schreibe die Datei
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-    console.warn(error.message);
+    fs.writeFileSync(outputPath, htmlContent);
+} catch (err) {
+    console.error(err.message);
     process.exit(1);
 }

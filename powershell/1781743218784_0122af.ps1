@@ -1,17 +1,15 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfen der Anzahl der übergebenen Argumente
+# Parameter verarbeiten
 if ($args.Count -ne 1) {
-    Write-Error "Usage: pwsh script.ps1 <OutputPath>"
+    Write-Warning "Usage: script.ps1 <OutputPath>"
     exit 1
 }
 
 $outputPath = $args[0]
-
-# HTML-Inhalt als Here-String
 $htmlContent = @'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -111,7 +109,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -221,16 +219,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 '@
 
 try {
-    # Verzeichnis extrahieren und erstellen falls notwendig
+    # Stelle sicher, dass das Verzeichnis existiert
     $dir = Split-Path $outputPath -Parent
-    if (-not (Test-Path $dir)) {
+    if (!(Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
-    # Schreiben der HTML-Datei
-    Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-}
-catch {
-    Write-Error $_.Exception.Message
+    # Schreibe die Datei
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
+} catch {
+    Write-Warning $_.Exception.Message
     exit 1
 }

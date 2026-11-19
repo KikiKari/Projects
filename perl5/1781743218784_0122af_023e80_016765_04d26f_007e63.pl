@@ -1,10 +1,14 @@
-#!/usr/bin/perl
-# 1781743218784_0122af_023e80_016765_04d26f.tcl — portiert nach perl5
-# Quelle: tcl, Projects@abstractions:tcl/1781743218784_0122af_023e80_016765_04d26f.tcl
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env perl
+# 1781743218784_0122af_023e80_016765_04d26f_007e63.ps1 — portiert nach perl5
+# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f_007e63.ps1
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
+use utf8;
+use open qw(:std :utf8);
+use File::Spec;
+use Encode;
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -12,10 +16,10 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML_END';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,9 +228,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-open(my $fh, '>', $outputPath) or do {
-    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
-    exit 1;
+eval {
+    open my $fh, '>:encoding(UTF-8)', $output_path or die "Cannot open $output_path for writing: $!";
+    print $fh $html_content;
+    close $fh;
 };
-print $fh $htmlContent;
-close($fh);
+
+if ($@) {
+    print STDERR "Fehler beim Schreiben der Datei $output_path: $@\n";
+    exit 1;
+}

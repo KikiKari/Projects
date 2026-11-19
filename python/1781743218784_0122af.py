@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
+# Parameter verarbeiten
 if len(sys.argv) != 2:
     print("Usage: python3 script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
@@ -219,9 +220,14 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
 try:
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # Stelle sicher, dass das Verzeichnis existiert
+    directory = os.path.dirname(output_path)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+
+    # Schreibe die Datei
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(e, file=sys.stderr)
+    print(str(e), file=sys.stderr)
     sys.exit(1)
