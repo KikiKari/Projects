@@ -1,7 +1,7 @@
 #!/bin/bash
 # gateway_transport.py — portiert nach shell
 # Quelle: python, OpenClaw@gateway1:skills/script-abstractions-manager/scripts/gateway_transport.py
-# Erzeugt: 2026-11-17 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -10,401 +10,513 @@ set -euo pipefail
 # An attempt is saved before submission. If its outcome is uncertain, subsequent
 # calls only query the same node and attempt; they do not submit it again.
 
-# Simulating Python exceptions using exit codes and messages
-TRANSPORT_UNRESOLVED=1
-
-log_error() {
-    echo "ERROR: $*" >&2
-}
-
+# Exception handling: simulate Python exceptions using exit codes and messages
 die() {
-    log_error "$@"
-    exit "$TRANSPORT_UNRESOLVED"
+    echo "$*" >&2
+    exit 1
 }
 
-# Function to get gateway token
+# TransportUnresolved exception simulation
+transport_unresolved() {
+    echo "TransportUnresolved: $*" >&2
+    exit 2
+}
+
+# Get gateway token from environment or config file
 gateway_token() {
-    local token="${OPENCLAW_GATEWAY_TOKEN:-}"
-    if [[ -n "${token}" ]]; then
-        echo "${token}"
-        return
-    fi
-
-    local config_path="${OPENCLAW_CONFIG_PATH:-${HOME}/.openclaw/openclaw.json}"
-    if [[ ! -f "${config_path}" ]]; then
-        echo ""
-        return
-    fi
-
-    # Extract token from JSON (basic parsing)
-    local extracted_token
-    extracted_token=$(jq -r '.gateway.auth.token // ""' "${config_path}" 2>/dev/null || echo "")
+    local token=""
     
-    if [[ "${extracted_token}" =~ ^\$\{.*\}$ ]] || [[ -z "${extracted_token}" ]]; then
-        echo ""
+    if [[ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
+        token="${OPENCLAW_GATEWAY_TOKEN}"
     else
-        echo "${extracted_token}"
+        local config_path="${HOME}/.openclaw/openclaw.json"
+        if [[ -n "${OPENCLAW_CONFIG_PATH:-}" ]]; then
+            config_path="${OPENCLAW_CONFIG_PATH}"
+        fi
+        
+        if [[ -f "$config_path" ]]; then
+            # Extract token from JSON (simplified - assumes simple structure)
+            token=$(jq -r '.gateway.auth.token // ""' "$config_path" 2>/dev/null || echo "")
+        fi
     fi
+    
+    # Strip whitespace and check for placeholder patterns
+    token=$(echo "$token" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' )
+    if [[ "$token" =~ ^\$\{.*\}$ ]]; then
+        token=""
+    fi
+    
+    echo "$token"
 }
 
-# Class-like structure using functions and global variables
-# Global variables for GatewayTransport state
-GT_STATE_FILE=""
-GT_SAVE_CALLBACK=""
-GT_URL=""
-GT_TOKEN=""
-GT_TIMEOUT=3900
-GT_INTERVAL=3
-
-# Initialize GatewayTransport
-init_gateway_transport() {
-    local state_file="$1"
-    local save_callback="$2"
-    local url="$3"
-    local token="$4"
-    local timeout="${5:-3900}"
-    local interval="${6:-3}"
-
-    GT_STATE_FILE="${state_file}"
-    GT_SAVE_CALLBACK="${save_callback}"
-    GT_URL="${url}"
-    GT_TOKEN="${token}"
-    GT_TIMEOUT="${timeout}"
-    GT_INTERVAL="${interval}"
-
-    # Validate URL
-    if ! [[ "${url}" =~ ^https?://[^/]+ ]]; then
+# Validate URL format
+validate_url() {
+    local url="$1"
+    
+    if ! echo "$url" | grep -qE '^https?://'; then
         die "invalid Gateway URL"
     fi
     
-    local scheme hostname
-    scheme=$(echo "${url}" | cut -d':' -f1)
-    hostname=$(echo "${url}" | sed -E 's#https?://([^:/]+).*#\1#')
-
-    if [[ "${scheme}" == "http" ]] && ! [[ "${hostname}" =~ ^(127\.0\.0\.1|localhost|\[::1\])$ ]]; then
+    local scheme=$(echo "$url" | sed -E 's#^([a-z]+)://.*#\1#')
+    local hostname=$(echo "$url" | sed -E 's#^[a-z]+://([^/]*)/?.*#\1#' | cut -d: -f1)
+    
+    if [[ "$scheme" == "http" ]] && [[ ! "$hostname" =~ ^(127\.0\.0\.1|localhost|::1)$ ]]; then
         die "unencrypted Gateway must use loopback"
-    fi
-
-    if [[ -z "${token}" ]] || [[ "${timeout}" -le 0 ]] || [[ "${interval}" -le 0 ]]; then
-        die "Gateway token and positive timeouts required"
     fi
 }
 
 # Make HTTP request to gateway
 _request() {
-    local node="$1"
-    local request_json="$2"
-    local device_id="${3:-null}"
-
-    # Create payload
+    local url="$1"
+    local token="$2"
+    local node="$3"
+    local request_json="$4"
+    local device_id="${5:-}"
+    
     local payload
-    payload=$(jq -n --arg node "${node}" --arg device_id "${device_id}" --argjson request "${request_json}" \
-        '{node: $node, device_id: $device_id, request: $request}')
-
-    # Set timeout based on node
-    local request_timeout=40
-    if [[ "${node}" == "node4" ]]; then
-        request_timeout=150
+    if [[ -n "$device_id" ]]; then
+        payload=$(jq -n --arg node "$node" --arg device_id "$device_id" --argjson request "$request_json" \
+            '{node: $node, device_id: $device_id, request: $request}')
+    else
+        payload=$(jq -n --arg node "$node" --argjson request "$request_json" \
+            '{node: $node, request: $request}')
     fi
-
-    # Send request
-    local response_file response_status
+    
+    local timeout=40
+    if [[ "$node" == "node4" ]]; then
+        timeout=150
+    fi
+    
+    local response_file
     response_file=$(mktemp)
-    response_status=$(curl -s -w "%{http_code}" -o "${response_file}" \
-        -H "Authorization: Bearer ${GT_TOKEN}" \
+    trap 'rm -f "$response_file"' EXIT
+    
+    local http_code
+    http_code=$(curl -s -w "%{http_code}" \
+        -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json" \
-        -X POST \
-        --max-time "${request_timeout}" \
-        -d "${payload}" \
-        "${GT_URL}")
-
-    # Check HTTP status code
-    if [[ "${response_status}" -ne 200 ]]; then
-        rm -f "${response_file}"
-        die "Gateway request failed with HTTP status ${response_status}"
+        --data-raw "$payload" \
+        --max-time "$timeout" \
+        "$url" -o "$response_file")
+    
+    if [[ "$http_code" -ne 200 ]]; then
+        transport_unresolved "Gateway request failed"
     fi
-
-    # Check response size (approximate limit)
-    local response_size
-    response_size=$(wc -c < "${response_file}")
-    if [[ "${response_size}" -gt 4000001 ]]; then
-        rm -f "${response_file}"
+    
+    # Check response size limit (approximate)
+    local size
+    size=$(wc -c < "$response_file")
+    if [[ $size -gt 4000000 ]]; then
         die "response too large"
     fi
-
-    # Parse response
-    local result_data device_id_check
-    result_data=$(jq -r '.result' "${response_file}" 2>/dev/null || echo "null")
-    device_id_check=$(jq -r '.device_id' "${response_file}" 2>/dev/null || echo "null")
-
-    # Validate response format
-    if [[ "$(jq 'type' <<<"${result_data}")" == "null" ]]; then
-        rm -f "${response_file}"
+    
+    # Parse and validate response
+    local result
+    result=$(jq -r 'if type == "object" and has("result") then .result else empty end' "$response_file" 2>/dev/null)
+    if [[ -z "$result" || "$result" == "null" ]]; then
         die "invalid gateway response"
     fi
-
-    # Check device ID match if provided
-    if [[ "${device_id}" != "null" ]] && [[ "${device_id_check}" != "${device_id}" ]]; then
-        rm -f "${response_file}"
-        die "gateway device identity mismatch"
+    
+    if [[ -n "$device_id" ]]; then
+        local response_device_id
+        response_device_id=$(jq -r '.device_id // ""' "$response_file")
+        if [[ "$response_device_id" != "$device_id" ]]; then
+            die "gateway device identity mismatch"
+        fi
     fi
-
-    cat "${response_file}"
-    rm -f "${response_file}"
+    
+    echo "$result"
 }
 
 # Check node availability
 available() {
-    local response
-    response=$(_request "node1" '{"operation": "availability"}')
-    local result_type
-    result_type=$(jq 'type' <<<"${response}" 2>/dev/null || echo "null")
+    local url="$1"
+    local token="$2"
     
-    if [[ "${result_type}" != "object" ]]; then
-        die "invalid node availability"
+    local request='{"operation": "availability"}'
+    local result
+    result=$(_request "$url" "$token" "node1" "$request")
+    
+    # Validate result is a dictionary-like structure
+    if ! echo "$result" | jq -e 'type == "object"' >/dev/null 2>&1; then
+        transport_unresolved "invalid node availability"
     fi
     
-    echo "${response}"
+    echo "$result"
 }
 
-# Release a job
+# Release a job attempt
 _release() {
-    local original_ref="$1"
-    local entry_ref="$2"
+    local state_file="$1"
+    local key="$2"
+    local selected_node="$3"
+    local job_id="$4"
+    local attempt_id="$5"
+    local selected_device_id="$6"
+    local target_language="$7"
+    local url="$8"
+    local token="$9"
     
     # Check if already released
-    if jq -e ".${entry_ref}.released" "${GT_STATE_FILE}" >/dev/null 2>&1; then
+    local released
+    released=$(jq -r ".auftraege[\"$key\"].released // false" "$state_file")
+    if [[ "$released" == "true" ]]; then
         return
     fi
     
-    # Get job details
-    local selected_node job_id attempt_id selected_device_id target_language
-    selected_node=$(jq -r ".${original_ref}.selected_node" "${GT_STATE_FILE}")
-    job_id=$(jq -r ".${original_ref}.job_id" "${GT_STATE_FILE}")
-    attempt_id=$(jq -r ".${original_ref}.attempt_id" "${GT_STATE_FILE}")
-    selected_device_id=$(jq -r ".${original_ref}.selected_device_id" "${GT_STATE_FILE}")
-    target_language=$(jq -r ".${original_ref}.target_language" "${GT_STATE_FILE}")
+    local request
+    request=$(jq -n --arg job_id "$job_id" --arg attempt_id "$attempt_id" \
+        '{operation: "release", job_id: $job_id, attempt_id: $attempt_id}')
     
-    # Try to release
-    local release_result
-    release_result=$(_request "${selected_node}" "{\"operation\": \"release\", \"job_id\": \"${job_id}\", \"attempt_id\": \"${attempt_id}\"}" "${selected_device_id}" 2>/dev/null) || {
+    local result
+    if ! result=$(_request "$url" "$token" "$selected_node" "$request" "$selected_device_id" 2>/dev/null); then
         return  # Retry cleanup later
-    }
+    fi
     
-    # Check release status
-    local status release_job_id release_attempt_id release_selected_node release_target_language
-    status=$(jq -r '.status' <<<"${release_result}")
-    release_job_id=$(jq -r '.job_id' <<<"${release_result}")
-    release_attempt_id=$(jq -r '.attempt_id' <<<"${release_result}")
-    release_selected_node=$(jq -r '.selected_node' <<<"${release_result}")
-    release_target_language=$(jq -r '.target_language' <<<"${release_result}")
+    local status
+    status=$(echo "$result" | jq -r '.status // ""')
     
-    if [[ "${status}" == "released" ]] && 
-       [[ "${release_job_id}" == "${job_id}" ]] && 
-       [[ "${release_attempt_id}" == "${attempt_id}" ]] && 
-       [[ "${release_selected_node}" == "${selected_node}" ]] && 
-       [[ "${release_target_language}" == "${target_language}" ]]; then
-        # Update state to mark as released
-        jq ".${entry_ref}.released = true" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
-        ${GT_SAVE_CALLBACK} "${GT_STATE_FILE}"
+    if [[ "$status" == "released" ]]; then
+        local match=true
+        for field in job_id attempt_id selected_node target_language; do
+            local expected_value actual_value
+            expected_value=$(eval echo \$$field)
+            actual_value=$(echo "$result" | jq -r ".${field} // \"\"")
+            if [[ "$actual_value" != "$expected_value" ]]; then
+                match=false
+                break
+            fi
+        done
+        
+        if [[ "$match" == "true" ]]; then
+            jq ".auftraege[\"$key\"].released = true" "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+        fi
     fi
 }
 
 # Release pending jobs
 release_pending() {
-    # Iterate through all entries in auftraege
+    local state_file="$1"
+    local url="$2"
+    local token="$3"
+    
     local keys
-    keys=$(jq -r '.auftraege | keys[]' "${GT_STATE_FILE}" 2>/dev/null || echo "")
+    keys=$(jq -r '.auftraege | keys[]' "$state_file" 2>/dev/null || echo "")
     
     while IFS= read -r key; do
-        [[ -n "${key}" ]] || continue
+        [[ -z "$key" ]] && continue
         
-        local status selected_device_id job_exists
-        status=$(jq -r ".auftraege.\"${key}\".status" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-        selected_device_id=$(jq -r ".auftraege.\"${key}\".job.selected_device_id" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-        job_exists=$(jq -r ".auftraege.\"${key}\".job | type" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
+        local status
+        status=$(jq -r ".auftraege[\"$key\"].status // \"\"" "$state_file")
         
-        if [[ "${status}" =~ ^(completed|failed|unknown)$ ]] && [[ "${job_exists}" == "object" ]]; then
-            _release ".auftraege.\"${key}\".job" ".auftraege.\"${key}\""
+        if [[ "$status" =~ ^(completed|rejected|failed)$ ]]; then
+            local job_obj
+            job_obj=$(jq -r ".auftraege[\"$key\"].job // null" "$state_file")
+            if [[ "$job_obj" != "null" ]]; then
+                local selected_node job_id attempt_id selected_device_id target_language
+                selected_node=$(echo "$job_obj" | jq -r '.selected_node // ""')
+                job_id=$(echo "$job_obj" | jq -r '.job_id // ""')
+                attempt_id=$(echo "$job_obj" | jq -r '.attempt_id // ""')
+                selected_device_id=$(echo "$job_obj" | jq -r '.selected_device_id // ""')
+                target_language=$(echo "$job_obj" | jq -r '.target_language // ""')
+                
+                _release "$state_file" "$key" "$selected_node" "$job_id" "$attempt_id" \
+                    "$selected_device_id" "$target_language" "$url" "$token"
+            fi
         fi
-    done <<<"${keys}"
+    done <<< "$keys"
+}
+
+# Reject a job with validation error
+reject() {
+    local state_file="$1"
+    local job_json="$2"
+    local reason="$3"
+    
+    local source_sha256 target_language
+    source_sha256=$(echo "$job_json" | jq -r '.source_sha256 // ""')
+    target_language=$(echo "$job_json" | jq -r '.target_language // ""')
+    
+    local key="${source_sha256}:${target_language}"
+    
+    local status
+    status=$(jq -r ".auftraege[\"$key\"].status // \"\"" "$state_file")
+    
+    if [[ "$status" != "completed" ]]; then
+        return
+    fi
+    
+    local current_attempt_id entry_attempt_id
+    current_attempt_id=$(echo "$job_json" | jq -r '.attempt_id // ""')
+    entry_attempt_id=$(jq -r ".auftraege[\"$key\"].job.attempt_id // \"\"" "$state_file")
+    
+    if [[ "$entry_attempt_id" != "$current_attempt_id" ]]; then
+        transport_unresolved "rejected attempt identity mismatch"
+    fi
+    
+    # Truncate reason to 500 characters
+    reason=${reason:0:500}
+    
+    jq ".auftraege[\"$key\"].status = \"rejected\" | .auftraege[\"$key\"].validation_error = \"$reason\"" \
+        "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
 }
 
 # Main transport function
-transport_call() {
-    local job_ref="$1"
+gateway_transport() {
+    local state_file="$1"
+    local url="$2"
+    local token="$3"
+    local job_json="$4"
+    local timeout="${5:-3900}"
+    local interval="${6:-3}"
     
-    # Validate job has required fields
+    # Validate inputs
+    validate_url "$url"
+    
+    if [[ -z "$token" ]] || [[ $timeout -le 0 ]] || [[ $interval -le 0 ]]; then
+        die "Gateway token and positive timeouts required"
+    fi
+    
     local source_sha256 target_language selected_device_id
-    source_sha256=$(jq -r ".${job_ref}.source_sha256" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-    target_language=$(jq -r ".${job_ref}.target_language" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-    selected_device_id=$(jq -r ".${job_ref}.selected_device_id" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
+    source_sha256=$(echo "$job_json" | jq -r '.source_sha256 // ""')
+    target_language=$(echo "$job_json" | jq -r '.target_language // ""')
+    selected_device_id=$(echo "$job_json" | jq -r '.selected_device_id // ""')
     
-    if [[ "${source_sha256}" == "null" ]] || [[ "${target_language}" == "null" ]] || [[ "${selected_device_id}" == "null" ]]; then
+    if [[ -z "$source_sha256" ]] || [[ -z "$target_language" ]] || [[ -z "$selected_device_id" ]]; then
         die "missing source identity"
     fi
     
     local key="${source_sha256}:${target_language}"
-    local entry_path=".auftraege.\"${key}\""
     
-    # Check if entry exists
-    local entry_exists
-    entry_exists=$(jq "${entry_path} | type" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-    
-    local fresh=false
-    if [[ "${entry_exists}" == "null" ]]; then
-        fresh=true
-        # Create new attempt
-        local attempt_id
-        attempt_id=$(uuidgen)
-        
-        # Update job with attempt_id
-        jq ".${job_ref}.attempt_id = \"${attempt_id}\"" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
-        
-        # Create entry
-        jq "${entry_path} = {\"job\": .${job_ref}, \"status\": \"submitted\"}" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
-        
-        # Save state
-        ${GT_SAVE_CALLBACK} "${GT_STATE_FILE}"
+    # Initialize auftraege if needed
+    if ! jq -e '.auftraege' "$state_file" >/dev/null 2>&1; then
+        jq '.auftraege = {}' "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
     fi
     
-    # Get original job data
-    local original_path="${entry_path}.job"
+    local entry_status
+    entry_status=$(jq -r ".auftraege[\"$key\"].status // \"\"" "$state_file")
     
-    # Copy job data back to input
-    jq ".${job_ref} = ${original_path}" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
+    local fresh=false
+    local original_job=""
     
-    # Check if we have a cached response
-    local response_exists
-    response_exists=$(jq "${entry_path}.response | type" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-    if [[ "${response_exists}" != "null" ]]; then
-        _release "${original_path}" "${entry_path}"
-        jq -r "${entry_path}.response" "${GT_STATE_FILE}"
+    if [[ "$entry_status" == "rejected" ]]; then
+        local selected_node job_id attempt_id selected_device_id target_language
+        selected_node=$(jq -r ".auftraege[\"$key\"].job.selected_node // \"\"" "$state_file")
+        job_id=$(jq -r ".auftraege[\"$key\"].job.job_id // \"\"" "$state_file")
+        attempt_id=$(jq -r ".auftraege[\"$key\"].job.attempt_id // \"\"" "$state_file")
+        selected_device_id=$(jq -r ".auftraege[\"$key\"].job.selected_device_id // \"\"" "$state_file")
+        target_language=$(jq -r ".auftraege[\"$key\"].job.target_language // \"\"" "$state_file")
+        
+        _release "$state_file" "$key" "$selected_node" "$job_id" "$attempt_id" \
+            "$selected_device_id" "$target_language" "$url" "$token"
+        
+        local released
+        released=$(jq -r ".auftraege[\"$key\"].released // false" "$state_file")
+        if [[ "$released" != "true" ]]; then
+            transport_unresolved "rejected attempt release is unresolved"
+        fi
+        
+        local previous_entry
+        previous_entry=$(jq -rc ".auftraege[\"$key\"]" "$state_file")
+        
+        # Generate new attempt ID
+        local new_attempt_id
+        new_attempt_id=$(uuidgen)
+        
+        # Create new job with updated attempt_id
+        original_job=$(echo "$job_json" | jq --arg id "$new_attempt_id" '. + {attempt_id: $id}')
+        
+        local prev_attempts_json
+        prev_attempts_json=$(jq -r ".auftraege[\"$key\"].previous_attempts // []" "$state_file")
+        
+        local new_attempt_record
+        new_attempt_record=$(jq -n --arg job_id "$(echo "$previous_entry" | jq -r '.job.job_id // ""')" \
+            --arg attempt_id "$(echo "$previous_entry" | jq -r '.job.attempt_id // ""')" \
+            --arg selected_node "$(echo "$previous_entry" | jq -r '.job.selected_node // ""')" \
+            --arg validation_error "$(echo "$previous_entry" | jq -r '.validation_error // ""')" \
+            '{job_id: $job_id, attempt_id: $attempt_id, selected_node: $selected_node, validation_error: $validation_error}')
+        
+        local updated_prev_attempts
+        updated_prev_attempts=$(echo "$prev_attempts_json" | jq --argjson new_rec "$new_attempt_record" '. + [$new_rec]')
+        
+        local new_entry
+        new_entry=$(jq -n --argjson job "$original_job" --argjson prev_attempts "$updated_prev_attempts" \
+            '{job: $job, status: "submitted", previous_attempts: $prev_attempts}')
+        
+        jq ".auftraege[\"$key\"] = $new_entry" "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+        fresh=true
+    else
+        if jq -e ".auftraege[\"$key\"]" "$state_file" >/dev/null 2>&1; then
+            original_job=$(jq -rc ".auftraege[\"$key\"].job" "$state_file")
+        else
+            fresh=true
+        fi
+    fi
+    
+    if [[ -z "$original_job" ]]; then
+        local new_attempt_id
+        new_attempt_id=$(uuidgen)
+        original_job=$(echo "$job_json" | jq --arg id "$new_attempt_id" '. + {attempt_id: $id}')
+        
+        local new_entry
+        new_entry=$(jq -n --argjson job "$original_job" '{job: $job, status: "submitted"}')
+        jq ".auftraege[\"$key\"] = $new_entry" "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+    fi
+    
+    # Update job with original values
+    local updated_job
+    updated_job=$(echo "$job_json" | jq --argjson orig "$original_job" '. + $orig')
+    echo "$updated_job" > "/tmp/job_updated_$$.json"
+    
+    # Check if response exists
+    local response
+    response=$(jq -r ".auftraege[\"$key\"].response // \"null\"" "$state_file")
+    if [[ "$response" != "null" ]]; then
+        local selected_node job_id attempt_id selected_device_id target_language
+        selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+        job_id=$(echo "$original_job" | jq -r '.job_id // ""')
+        attempt_id=$(echo "$original_job" | jq -r '.attempt_id // ""')
+        selected_device_id=$(echo "$original_job" | jq -r '.selected_device_id // ""')
+        target_language=$(echo "$original_job" | jq -r '.target_language // ""')
+        
+        _release "$state_file" "$key" "$selected_node" "$job_id" "$attempt_id" \
+            "$selected_device_id" "$target_language" "$url" "$token"
+        jq -r ".auftraege[\"$key\"].response" "$state_file"
         return
     fi
     
-    # Check if status indicates failure requiring reconciliation
-    local current_status
-    current_status=$(jq -r "${entry_path}.status" "${GT_STATE_FILE}" 2>/dev/null || echo "null")
-    if [[ "${current_status}" =~ ^(failed|unknown)$ ]]; then
-        die "attempt requires reconciliation"
+    local entry_status
+    entry_status=$(jq -r ".auftraege[\"$key\"].status // \"\"" "$state_file")
+    if [[ "$entry_status" =~ ^(failed|unknown)$ ]]; then
+        transport_unresolved "attempt requires reconciliation"
     fi
     
-    local status="null"
-    if [[ "${fresh}" == true ]]; then
-        # Submit new job
-        local selected_node execute_payload
-        selected_node=$(jq -r "${original_path}.selected_node" "${GT_STATE_FILE}")
-        selected_device_id=$(jq -r "${original_path}.selected_device_id" "${GT_STATE_FILE}")
-        execute_payload=$(jq -r "${original_path}" "${GT_STATE_FILE}")
+    local status=""
+    
+    if [[ "$fresh" == "true" ]]; then
+        local request
+        request=$(jq -n --argjson job "$original_job" '{operation: "execute", job: $job}')
+        local selected_node selected_device_id
+        selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+        selected_device_id=$(echo "$original_job" | jq -r '.selected_device_id // ""')
         
-        status=$(_request "${selected_node}" "{\"operation\": \"execute\", \"job\": ${execute_payload}}" "${selected_device_id}" 2>/dev/null) || {
-            status="null"  # Request may have been accepted, proceed to query
-        }
+        if ! status=$(_request "$url" "$token" "$selected_node" "$request" "$selected_device_id" 2>/dev/null); then
+            :  # The request may have been accepted. Query, never resend.
+        fi
     fi
     
-    # Set deadline
-    local start_time deadline
-    start_time=$(date +%s)
-    deadline=$((start_time + GT_TIMEOUT))
+    local deadline
+    deadline=$(($(date +%s) + timeout))
     
-    # Poll until completion or timeout
     while true; do
-        if [[ "${status}" == "null" ]]; then
-            # Query status
-            local selected_node job_id attempt_id selected_device_id
-            selected_node=$(jq -r "${original_path}.selected_node" "${GT_STATE_FILE}")
-            job_id=$(jq -r "${original_path}.job_id" "${GT_STATE_FILE}")
-            attempt_id=$(jq -r "${original_path}.attempt_id" "${GT_STATE_FILE}")
-            selected_device_id=$(jq -r "${original_path}.selected_device_id" "${GT_STATE_FILE}")
+        if [[ -z "$status" ]]; then
+            local job_id attempt_id selected_node
+            job_id=$(echo "$original_job" | jq -r '.job_id // ""')
+            attempt_id=$(echo "$original_job" | jq -r '.attempt_id // ""')
+            selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+            selected_device_id=$(echo "$original_job" | jq -r '.selected_device_id // ""')
             
-            status=$(_request "${selected_node}" "{\"operation\": \"status\", \"job_id\": \"${job_id}\", \"attempt_id\": \"${attempt_id}\"}" "${selected_device_id}")
+            local request
+            request=$(jq -n --arg job_id "$job_id" --arg attempt_id "$attempt_id" \
+                '{operation: "status", job_id: $job_id, attempt_id: $attempt_id}')
+            
+            status=$(_request "$url" "$token" "$selected_node" "$request" "$selected_device_id")
         fi
         
-        # Validate status response
-        local status_type
-        status_type=$(jq 'type' <<<"${status}" 2>/dev/null || echo "null")
-        if [[ "${status_type}" != "object" ]]; then
-            die "attempt is not known by the node"
+        # Validate status is an object
+        if ! echo "$status" | jq -e 'type == "object"' >/dev/null 2>&1; then
+            transport_unresolved "attempt is not known by the node"
         fi
         
-        # Check identity match
-        local job_id_check selected_node_check attempt_id_check target_language_check
-        job_id_check=$(jq -r '.job_id' <<<"${status}")
-        selected_node_check=$(jq -r '.selected_node' <<<"${status}")
-        attempt_id_check=$(jq -r '.attempt_id' <<<"${status}")
-        target_language_check=$(jq -r '.target_language' <<<"${status}")
+        # Check identity fields
+        local job_id attempt_id selected_node target_language
+        job_id=$(echo "$original_job" | jq -r '.job_id // ""')
+        attempt_id=$(echo "$original_job" | jq -r '.attempt_id // ""')
+        selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+        target_language=$(echo "$original_job" | jq -r '.target_language // ""')
         
-        local original_job_id original_selected_node original_attempt_id original_target_language
-        original_job_id=$(jq -r "${original_path}.job_id" "${GT_STATE_FILE}")
-        original_selected_node=$(jq -r "${original_path}.selected_node" "${GT_STATE_FILE}")
-        original_attempt_id=$(jq -r "${original_path}.attempt_id" "${GT_STATE_FILE}")
-        original_target_language=$(jq -r "${original_path}.target_language" "${GT_STATE_FILE}")
+        local status_job_id status_attempt_id status_selected_node status_target_language
+        status_job_id=$(echo "$status" | jq -r '.job_id // ""')
+        status_attempt_id=$(echo "$status" | jq -r '.attempt_id // ""')
+        status_selected_node=$(echo "$status" | jq -r '.selected_node // ""')
+        status_target_language=$(echo "$status" | jq -r '.target_language // ""')
         
-        if [[ "${job_id_check}" != "${original_job_id}" ]] || 
-           [[ "${selected_node_check}" != "${original_selected_node}" ]] || 
-           [[ "${attempt_id_check}" != "${original_attempt_id}" ]] || 
-           [[ "${target_language_check}" != "${original_target_language}" ]]; then
-            die "status identity mismatch"
+        if [[ "$status_job_id" != "$job_id" ]] || [[ "$status_attempt_id" != "$attempt_id" ]] || 
+           [[ "$status_selected_node" != "$selected_node" ]] || [[ "$status_target_language" != "$target_language" ]]; then
+            transport_unresolved "status identity mismatch"
         fi
         
-        # Handle different statuses
         local state
-        state=$(jq -r '.status' <<<"${status}")
+        state=$(echo "$status" | jq -r '.status // ""')
         
-        case "${state}" in
-            "completed")
-                local response
-                response=$(jq -r '.response' <<<"${status}")
+        if [[ "$state" == "completed" ]]; then
+            local response
+            response=$(echo "$status" | jq -r '.response // null')
+            
+            if [[ "$response" == "null" ]]; then
+                transport_unresolved "invalid translation result"
+            fi
+            
+            local response_status
+            response_status=$(echo "$response" | jq -r '.status // ""')
+            
+            if [[ "$response_status" != "ok" ]]; then
+                transport_unresolved "invalid translation result"
+            fi
+            
+            # Check response identity fields
+            local resp_job_id resp_selected_node resp_target_language resp_code
+            resp_job_id=$(echo "$response" | jq -r '.job_id // ""')
+            resp_selected_node=$(echo "$response" | jq -r '.selected_node // ""')
+            resp_target_language=$(echo "$response" | jq -r '.target_language // ""')
+            resp_code=$(echo "$response" | jq -r '.code // ""')
+            
+            if [[ "$resp_job_id" != "$job_id" ]] || [[ "$resp_selected_node" != "$selected_node" ]] || 
+               [[ "$resp_target_language" != "$target_language" ]] || [[ -z "$resp_code" ]] || 
+               [[ $(echo "$resp_code" | wc -l) -eq 0 ]]; then
+                transport_unresolved "invalid translation result"
+            fi
+            
+            jq ".auftraege[\"$key\"].response = $response | .auftraege[\"$key\"].status = \"completed\"" \
+                "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+            
+            local selected_node job_id attempt_id selected_device_id target_language
+            selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+            job_id=$(echo "$original_job" | jq -r '.job_id // ""')
+            attempt_id=$(echo "$original_job" | jq -r '.attempt_id // ""')
+            selected_device_id=$(echo "$original_job" | jq -r '.selected_device_id // ""')
+            target_language=$(echo "$original_job" | jq -r '.target_language // ""')
+            
+            _release "$state_file" "$key" "$selected_node" "$job_id" "$attempt_id" \
+                "$selected_device_id" "$target_language" "$url" "$token"
+            
+            echo "$response"
+            return
+        fi
+        
+        if [[ "$state" =~ ^(failed|unknown)$ ]]; then
+            jq ".auftraege[\"$key\"].status = \"$state\"" "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+            
+            if [[ "$state" == "failed" ]]; then
+                local selected_node job_id attempt_id selected_device_id target_language
+                selected_node=$(echo "$original_job" | jq -r '.selected_node // ""')
+                job_id=$(echo "$original_job" | jq -r '.job_id // ""')
+                attempt_id=$(echo "$original_job" | jq -r '.attempt_id // ""')
+                selected_device_id=$(echo "$original_job" | jq -r '.selected_device_id // ""')
+                target_language=$(echo "$original_job" | jq -r '.target_language // ""')
                 
-                # Validate response
-                local response_status response_job_id response_selected_node response_target_language response_code
-                response_status=$(jq -r '.status' <<<"${response}" 2>/dev/null || echo "null")
-                response_job_id=$(jq -r '.job_id' <<<"${response}" 2>/dev/null || echo "null")
-                response_selected_node=$(jq -r '.selected_node' <<<"${response}" 2>/dev/null || echo "null")
-                response_target_language=$(jq -r '.target_language' <<<"${response}" 2>/dev/null || echo "null")
-                response_code=$(jq -r '.code' <<<"${response}" 2>/dev/null || echo "null")
-                
-                if [[ "${response_status}" != "ok" ]] || 
-                   [[ "${response_job_id}" != "${original_job_id}" ]] || 
-                   [[ "${response_selected_node}" != "${original_selected_node}" ]] || 
-                   [[ "${response_target_language}" != "${original_target_language}" ]] || 
-                   [[ "${response_code}" == "null" ]] || 
-                   [[ -z "$(echo "${response_code}" | tr -d ' \t\n\r')" ]]; then
-                    die "invalid translation result"
-                fi
-                
-                # Save successful response
-                jq "${entry_path}.response = ${response} | ${entry_path}.status = \"completed\"" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
-                ${GT_SAVE_CALLBACK} "${GT_STATE_FILE}"
-                _release "${original_path}" "${entry_path}"
-                echo "${response}"
-                return
-                ;;
-                
-            "failed"|"unknown")
-                jq "${entry_path}.status = \"${state}\"" "${GT_STATE_FILE}" > "${GT_STATE_FILE}.tmp" && mv "${GT_STATE_FILE}.tmp" "${GT_STATE_FILE}"
-                ${GT_SAVE_CALLBACK} "${GT_STATE_FILE}"
-                _release "${original_path}" "${entry_path}"
-                die "attempt requires reconciliation"
-                ;;
-                
-            "running")
-                # Check timeout
-                local current_time
-                current_time=$(date +%s)
-                if [[ "${current_time}" -ge "${deadline}" ]]; then
-                    die "attempt is unresolved"
-                fi
-                
-                # Sleep and continue polling
-                sleep "${GT_INTERVAL}"
-                status="null"
-                ;;
-                
-            *)
-                die "attempt is unresolved"
-                ;;
-        esac
+                _release "$state_file" "$key" "$selected_node" "$job_id" "$attempt_id" \
+                    "$selected_device_id" "$target_language" "$url" "$token"
+            fi
+            
+            transport_unresolved "attempt requires reconciliation"
+        fi
+        
+        if [[ "$state" != "running" ]] || [[ $(date +%s) -ge $deadline ]]; then
+            transport_unresolved "attempt is unresolved"
+        fi
+        
+        sleep "$interval"
+        status=""
     done
 }

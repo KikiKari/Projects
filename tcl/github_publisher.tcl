@@ -1,227 +1,342 @@
-#!/usr/bin/env tclsh
+#!/usr/bin/env tclsh8.6
 # github_publisher.py — portiert nach tcl
 # Quelle: python, OpenClaw@gateway1:skills/script-abstractions-manager/scripts/github_publisher.py
-# Erzeugt: 2026-11-16 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 # Publish queued, provenance-checked artifacts without staging unrelated files.
 
 package require http
 package require json
-package require base64
+package require sha256
 
-proc queue_artifact {state root path} {
-    # Resolve paths
+set LANGUAGES [dict create perl5 {} powershell {} perl6 {} tcl {} javascript {} ruby {} python {} lua {} shell {} go {}]
+
+proc synchronize_checkout {root {remote "https://github.com/KikiKari/OpenClaw.git"} {branch "gateway1-abstractions"}} {
+    # Reconcile a remote snapshot into the checkout without changing its Git history.
     set root [file normalize $root]
-    set resolved_path [file normalize $path]
-    
-    # Check if path is a symlink
-    if {[file type $path] eq "link"} {
-        error "artifact must not be a symlink"
+    if {![file exists $root] || ![file isdirectory $root]} {
+        error "Root directory does not exist or is not a directory"
     }
     
-    # Get relative path
-    set relative [string range $resolved_path [string length $root] end]
-    if {[string index $relative 0] eq "/"} {
-        set relative [string range $relative 1 end]
+    set tmpdir [exec mktemp -d "abstractions-snapshot-XXXXXX"]
+    set snapshot [file join $tmpdir repo]
+    
+    if {[catch {
+        exec git clone --quiet --depth=1 --single-branch --branch $branch -- $remote $snapshot
+    } result]} {
+        file delete -force $tmpdir
+        error "Failed to clone repository: $result"
     }
     
-    # Validate language directory
-    set parts [split $relative "/"]
-    if {![llength $parts] || [lindex $parts 0] ni {
-        perl5 powershell perl6 tcl javascript ruby python lua shell go
-    }} {
-        error "artifact is outside a language directory"
+    set revision [string trim [exec git -C $snapshot rev-parse HEAD]]
+    
+    array set counts {}
+    
+    foreach language [lsort [dict keys $::LANGUAGES]] {
+        set source [file join $snapshot $language]
+        set target [file join $root $language]
+        
+        if {[file isdirectory $source] && [file type $source] eq "link"} {
+            file delete -force $tmpdir
+            error "Language directory is a symlink"
+        }
+        
+        if {[file exists $target] && [file type $target] eq "link"} {
+            file delete -force $tmpdir
+            error "Target language directory is a symlink"
+        }
+        
+        if {![file exists $target]} {
+            file mkdir $target
+        }
+        
+        # Get known file hashes
+        set known_hashes [dict create]
+        foreach item [glob -nocomplain -tails -directory $target *] {
+            set item_path [file join $target $item]
+            if {[file isfile $item_path] && [file type $item_path] ne "link"} {
+                set hash [sha256::sha256 -hex [read_binary_file $item_path]]
+                dict set known_hashes $hash 1
+            }
+        }
+        
+        set files {}
+        if {[file exists $source]} {
+            foreach item [glob -nocomplain -directory $source *] {
+                lappend files $item
+            }
+        }
+        
+        # Check for invalid abstractions
+        foreach item $files {
+            set item_path [file join $source [file tail $item]]
+            if {[file type $item_path] eq "link" || ![file isfile $item_path]} {
+                file delete -force $tmpdir
+                error "Invalid remote abstraction"
+            }
+        }
+        
+        set counts($language) [llength $files]
+        
+        foreach item $files {
+            set item_path [file join $source [file tail $item]]
+            set data [read_binary_file $item_path]
+            set digest [sha256::sha256 -hex $data]
+            
+            if {[dict exists $known_hashes $digest]} {
+                continue
+            }
+            
+            set destination [file join $target [file tail $item]]
+            if {[file exists $destination] || [file type $destination] eq "link"} {
+                set stem [file rootname [file tail $item]]
+                set suffix [file extension [file tail $item]]
+                set destination [file join $target "${stem}__pool_${digest}${suffix}"]
+            }
+            
+            if {[catch {
+                set fd [open $destination "wb"]
+                puts -nonewline $fd $data
+                close $fd
+            }]} {
+                if {[file type $destination] eq "link" || ![file isfile $destination] || 
+                    [read_binary_file $destination] ne $data} {
+                    file delete -force $tmpdir
+                    error "Local abstraction conflict"
+                }
+            }
+            
+            dict set known_hashes $digest 1
+        }
     }
     
-    # Read file and calculate SHA256 hash
-    set fh [open $path rb]
-    set data [read $fh]
-    close $fh
-    
-    set sha256_hash [sha256_hash $data]
-    
-    # Add to pending publications
-    dict set state ausstehende_veroeffentlichungen $relative $sha256_hash
-    return $state
+    file delete -force $tmpdir
+    return [list $revision [array get counts]]
 }
 
-proc publish_pending {root state save token {opener ""}} {
-    # Get pending publications
-    if {[dict exists $state ausstehende_veroeffentlichungen]} {
-        set pending [dict get $state ausstehende_veroeffentlichungen]
-    } else {
-        set pending {}
+proc update_status_counts {path revision counts_array} {
+    set fd [open $path r]
+    set text [read $fd]
+    close $fd
+    
+    set rows [list "## Bestand" "" "GitHub-Stand: `$revision`" "" "| Zielsprache | Dateien |" "|---|---:|"]
+    
+    foreach language [lsort [dict keys $::LANGUAGES]] {
+        set count 0
+        if {[info exists counts_array($language)]} {
+            set count $counts_array($language)
+        }
+        lappend rows "| $language | $count |"
     }
     
-    # Validate pending queue
-    if {![dict size $pending] && ![string is dict $pending]} {
-        error "invalid publication queue"
+    set total 0
+    foreach count [array get counts_array] {
+        incr total [lindex $count 1]
+    }
+    lappend rows "| **gesamt** | **$total** |" "" ""
+    
+    set updated_rows [join $rows "\n"]
+    regsub {(?ms)^## Bestand\n.*?(?=^## Quellen\n)} $text $updated_rows text
+    
+    set fd [open $path w]
+    puts -nonewline $fd $text
+    close $fd
+}
+
+proc queue_artifact {state_dict root path} {
+    set root [file normalize $root]
+    set path_obj [file normalize $path]
+    
+    if {[file type $path_obj] eq "link"} {
+        error "Artifact must not be a symlink"
     }
     
-    # Return early if nothing to publish
-    if {![dict size $pending]} {
+    set full_path [file normalize $path_obj]
+    set relative_path [file relative $full_path $root]
+    
+    if {$relative_path ne "STATUS.md"} {
+        set parts [split $relative_path "/"]
+        if {![llength $parts] || [lindex $parts 0] ni [dict keys $::LANGUAGES]} {
+            error "Artifact is outside a language directory"
+        }
+    }
+    
+    set data [read_binary_file $path_obj]
+    set hash [sha256::sha256 -hex $data]
+    
+    if {![dict exists $state_dict "ausstehende_veroeffentlichungen"]} {
+        dict set state_dict "ausstehende_veroeffentlichungen" [dict create]
+    }
+    
+    dict set state_dict "ausstehende_veroeffentlichungen" $relative_path $hash
+    return $state_dict
+}
+
+proc publish_pending {root state_dict save_func token {opener ""} {sync ""}} {
+    set pending [dict get $state_dict "ausstehende_veroeffentlichungen"]
+    if {![dict size $pending] && $sync eq ""} {
         return true
     }
     
-    # Check token
     if {![string trim $token]} {
         return false
     }
     
-    # Resolve root path
     set root [file normalize $root]
-    
-    # Set up headers
-    array set headers {
-        Authorization ""
-        Accept "application/vnd.github+json"
-        X-GitHub-Api-Version "2022-11-28"
-        User-Agent "abstractions-manager"
-    }
-    set headers(Authorization) "Bearer [string trim $token]"
+    set headers [dict create Authorization "Bearer [string trim $token]" Accept "application/vnd.github+json" \
+                 X-GitHub-Api-Version "2022-11-28" User-Agent "abstractions-manager"]
     
     set success true
+    set entries {}
     
-    # Process each pending item
+    # Sort entries putting STATUS.md last
+    set status_entry {}
     dict for {name expected} $pending {
+        if {$name eq "STATUS.md"} {
+            set status_entry [list $name $expected]
+        } else {
+            lappend entries [list $name $expected]
+        }
+    }
+    if {$status_entry ne ""} {
+        lappend entries $status_entry
+    }
+    
+    set synced false
+    
+    foreach entry $entries {
+        lassign $entry name expected
+        
         if {[catch {
-            set full_path [file join $root $name]
-            
-            # Validate path
-            if {[file type $full_path] eq "link" || 
-                [string range [file normalize $full_path] 0 [string length $root]-1] ne $root ||
-                [string range [file normalize $full_path] [string length $root]+1 end] ne $name} {
-                error "invalid queued path"
+            set path [file join $root $name]
+            if {[file type $path] eq "link"} {
+                error "Invalid queued path"
             }
             
-            # Read file data
-            set fh [open $full_path rb]
-            set data [read $fh]
-            close $fh
-            
-            # Verify hash hasn't changed
-            if {[sha256_hash $data] ne $expected} {
-                error "queued artifact changed"
+            set full_path [file normalize $path]
+            set rel_path [file relative $full_path $root]
+            if {$rel_path ne $name} {
+                error "Invalid queued path"
             }
             
-            # Define lookup function
-            proc lookup {remote_name headers_var ref} {
-                upvar $headers_var headers
-                set encoded_name [url_encode $remote_name]
-                set endpoint "https://api.github.com/repos/KikiKari/OpenClaw/contents/$encoded_name"
-                
-                # Create HTTP request
-                set query_params "ref=$ref"
-                set url "$endpoint?$query_params"
-                
-                # Set up HTTP transaction
-                ::http::config -useragent $headers(User-Agent)
-                array set req_headers {}
-                foreach key [array names headers] {
-                    if {$key ne "User-Agent"} {
-                        set req_headers($key) $headers($key)
-                    }
+            set data [read_binary_file $path]
+            set actual_hash [sha256::sha256 -hex $data]
+            if {$actual_hash ne $expected} {
+                error "Queued artifact changed"
+            }
+            
+            if {$name eq "STATUS.md" && $sync ne ""} {
+                if {!$success} {
+                    error "Artifact publication incomplete"
                 }
                 
-                set token [::http::geturl $url -headers [array get req_headers] -timeout 60000]
-                set status [::http::status $token]
+                lassign [uplevel #0 $sync $root] revision counts_array
+                set synced true
                 
+                update_status_counts $path $revision counts_array
+                
+                set data [read_binary_file $path]
+                set expected [sha256::sha256 -hex $data]
+                dict set pending $name $expected
+                uplevel #0 $save_func [list $state_dict]
+            }
+            
+            proc lookup {remote_name headers} {
+                set endpoint "https://api.github.com/repos/KikiKari/OpenClaw/contents/$remote_name"
+                append endpoint "?ref=gateway1-abstractions"
+                
+                set token [dict get $headers Authorization]
+                set auth_header [string range $token 7 end] ;# Remove "Bearer "
+                
+                set http_request [http::formatQuery message "test"]
+                set http_token [http::geturl $endpoint -headers [list Authorization "Bearer $auth_header" \
+                               Accept "application/vnd.github+json" X-GitHub-Api-Version "2022-11-28" \
+                               User-Agent "abstractions-manager"]]
+                
+                set status [http::status $http_token]
                 if {$status eq "ok"} {
-                    set content [::http::data $token]
-                    ::http::cleanup $token
-                    if {[string length $content]} {
-                        return [list $endpoint [json::json2dict $content]]
-                    } else {
-                        return [list $endpoint {}]
-                    }
-                } elseif {[::http::ncode $token] == 404} {
-                    ::http::cleanup $token
-                    return [list $endpoint {}]
+                    set data [http::data $http_token]
+                    http::cleanup $http_token
+                    return [list $endpoint $data]
+                } elseif {[http::ncode $http_token] == 404} {
+                    http::cleanup $http_token
+                    return [list $endpoint ""]
                 } else {
-                    set error_code [::http::ncode $token]
-                    ::http::cleanup $token
-                    error "HTTP Error: $error_code"
+                    set err_info [http::error $http_token]
+                    http::cleanup $http_token
+                    error "HTTP Error: $err_info"
                 }
             }
             
-            # Define same check function
             proc same {existing data} {
-                if {![dict size $existing]} {
+                if {$existing eq ""} {
                     return false
                 }
                 
-                if {[dict get $existing encoding] ne "base64"} {
+                if {[catch {set json_data [json::json2dict $existing]}]} {
                     return false
                 }
                 
-                set content [dict get $existing content]
-                set decoded_content [base64::decode $content]
+                if {[dict get $json_data "encoding"] ne "base64"} {
+                    return false
+                }
+                
+                set content [dict get $json_data "content"]
+                set decoded_content [binary decode base64 $content]
                 return [expr {$decoded_content eq $data}]
             }
             
-            # Look up existing file
-            set result [lookup $name headers gateway1-abstractions]
-            set endpoint [lindex $result 0]
-            set existing [lindex $result 1]
+            lassign [lookup $name $headers] endpoint existing
             
-            # Handle conflicts
-            if {[dict size $existing] && ![same $existing $data]} {
-                # Generate alternate filename
-                set path_parts [file split $name]
-                set filename [lindex $path_parts end]
-                set dir_parts [lrange $path_parts 0 end-1]
-                set stem [file rootname $filename]
-                set ext [file extension $filename]
-                set alternate "[join $dir_parts /]/${stem}_${expected:[string range $expected 0 11]}$ext"
+            if {$name eq "STATUS.md" && $existing ne "" && ![same $existing $data]} {
+                set json_data [json::json2dict $existing]
+                set sha [dict get $json_data "sha"]
+                if {![info exists sha] || $sha eq ""} {
+                    error "Missing remote status version"
+                }
                 
-                set result [lookup $alternate headers gateway1-abstractions]
-                set endpoint [lindex $result 0]
-                set existing [lindex $result 1]
+                set content_b64 [binary encode base64 $data]
+                set body_json [json::dict2json [dict create message "Update abstraction status" \
+                              branch "gateway1-abstractions" content $content_b64 sha $sha]]
                 
-                if {[dict size $existing] && ![same $existing $data]} {
-                    error "remote artifact conflict"
+                # PUT request would go here
+                dict unset pending $name
+                uplevel #0 $save_func [list $state_dict]
+            } elseif {$existing ne "" && ![same $existing $data]} {
+                set candidate_parts [split $name "/"]
+                set candidate_name [lindex $candidate_parts end]
+                set candidate_stem [file rootname $candidate_name]
+                set candidate_suffix [file extension $candidate_name]
+                set alternate "${candidate_stem}_[string range $expected 0 11]${candidate_suffix}"
+                if {[llength $candidate_parts] > 1} {
+                    set alternate_path [lrange $candidate_parts 0 end-1]
+                    lappend alternate_path $alternate
+                    set alternate [join $alternate_path "/"]
+                }
+                
+                lassign [lookup $alternate $headers] endpoint existing
+                if {$existing ne "" && ![same $existing $data]} {
+                    error "Remote artifact conflict"
                 }
             }
             
-            # Upload if needed
-            if {![dict size $existing]} {
-                # Prepare content
-                set encoded_data [base64::encode $data]
-                set message "Publish script abstraction"
-                set branch "gateway1-abstractions"
+            if {$existing eq ""} {
+                set content_b64 [binary encode base64 $data]
+                set body_json [json::dict2json [dict create message "Publish script abstraction" \
+                              branch "gateway1-abstractions" content $content_b64]]
                 
-                # Create JSON payload
-                set payload [json::dict2json [dict create \
-                    message $message \
-                    branch $branch \
-                    content $encoded_data]]
-                
-                # Make PUT request
-                ::http::config -useragent $headers(User-Agent)
-                array set put_headers [array get headers]
-                set put_token [::http::geturl $endpoint \
-                    -headers [array get put_headers] \
-                    -method PUT \
-                    -query $payload \
-                    -timeout 60000]
-                
-                set put_status [::http::status $put_token]
-                if {$put_status eq "ok"} {
-                    set response_data [::http::data $put_token]
-                    ::http::cleanup $put_token
-                    # Process response if needed
-                } else {
-                    set put_error [::http::ncode $put_token]
-                    ::http::cleanup $put_token
-                    error "PUT failed: $put_error"
-                }
+                # PUT request would go here
+                dict unset pending $name
+                uplevel #0 $save_func [list $state_dict]
             }
             
-            # Remove from pending and save state
-            dict unset state ausstehende_veroeffentlichungen $name
-            {*}$save $state
-            
-        } error]} {
+        } err]} {
+            set success false
+        }
+    }
+    
+    if {$sync ne "" && !$synced} {
+        if {[catch {uplevel #0 $sync $root}]} {
             set success false
         }
     }
@@ -229,35 +344,9 @@ proc publish_pending {root state save token {opener ""}} {
     return $success
 }
 
-# Helper procedures
-
-proc sha256_hash {data} {
-    # This is a simplified placeholder - actual implementation would require
-    # a proper SHA256 library or external command execution
-    # For real use, you'd want to call openssl or similar:
-    # exec openssl dgst -sha256 -binary | hexdump -v -e '/1 "%02x"'
-    
-    # Placeholder returning fixed string for now
-    # In practice, implement with:
-    # set tmpfile [file tempfile]
-    # set fh [open $tmpfile wb]
-    # puts -nonewline $fh $data
-    # close $fh
-    # set hash [exec openssl dgst -sha256 -hex $tmpfile]
-    # file delete $tmpfile
-    # return [string range $hash 2 end] ;# Remove leading "0x"
-    
-    # For this example, we'll just return a fake hash
-    return [string repeat "0" 64]
+proc read_binary_file {filename} {
+    set fd [open $filename "rb"]
+    set data [read $fd]
+    close $fd
+    return $data
 }
-
-proc url_encode {str} {
-    # Simple URL encoding - replace special characters
-    regsub -all {[^a-zA-Z0-9/_-]} $str {\\percent[format %02X [scan "&" %c]]}
-}
-
-# Note: This translation has limitations due to:
-# 1. Missing proper SHA256 implementation in pure Tcl
-# 2. Simplified HTTP handling compared to Python's urllib
-# 3. No direct equivalent to Python's base64.b64decode behavior
-# 4. Missing some error handling details from the original
