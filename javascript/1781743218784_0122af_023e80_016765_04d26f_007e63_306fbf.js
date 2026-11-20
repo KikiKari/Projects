@@ -1,32 +1,18 @@
 #!/usr/bin/env node
-// 1781743218784_0122af_023e80_016765_04d26f_007e63.py — portiert nach javascript
-// Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f_007e63.py
-// Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+// 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.pl
+// Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
-
-// Helper to get __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Check command line arguments
+// Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+    const scriptName = require('path').basename(process.argv[1]);
+    process.stderr.write(`Aufruf: ${scriptName} <Ausgabedatei>\n`);
     process.exit(1);
 }
 
 const outputPath = process.argv[2];
 
-// Ensure directory exists
-const outputDir = dirname(outputPath);
-if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-}
-
-// HTML content
+// HTML-Inhalt
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -233,10 +219,11 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>`;
 
-// Try to write the HTML file
+// Versuche, die HTML-Datei zu schreiben
+const fs = require('fs');
 try {
-    writeFileSync(outputPath, htmlContent);
-} catch (e) {
-    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
+} catch (err) {
+    process.stderr.write(`Fehler beim Schreiben der Datei ${outputPath}\n`);
     process.exit(1);
 }

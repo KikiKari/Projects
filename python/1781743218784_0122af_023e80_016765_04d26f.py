@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 # 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach javascript
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f.pl
-# Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 import sys
-import asyncio
-import aiofiles
+import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print("Aufruf: " + sys.argv[0] + " <Ausgabedatei>", file=sys.stderr)
+    sys.stderr.write("Aufruf: " + sys.argv[0] + " <Ausgabedatei>\n")
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -226,17 +225,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
 # Versuche, die HTML-Datei zu schreiben
-async def write_file():
-    try:
-        async with aiofiles.open(output_path, 'w', encoding='utf-8') as f:
-            await f.write(html_content)
-    except Exception as error:
-        print("Fehler beim Schreiben der Datei " + output_path, file=sys.stderr)
-        sys.exit(1)
-
-# Hauptprogramm
-async def main():
-    await write_file()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+try:
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+except Exception as e:
+    sys.stderr.write("Fehler beim Schreiben der Datei " + output_path + "\n")
+    sys.exit(1)

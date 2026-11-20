@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
 # 1781743218784_0122af_023e80_016765.js — portiert nach powershell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
+# Prüfe Kommandozeilenargumente
 if ($args.Count -ne 1) {
-  Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
-  exit 1
+    Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
+    exit 1
 }
 
 $outputPath = $args[0]
@@ -220,10 +220,17 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Versuche, die HTML-Datei zu schreiben
+# Versuche die HTML-Datei zu schreiben
 try {
-  Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
+    # Erstelle das Verzeichnis falls es nicht existiert
+    $dir = Split-Path $outputPath -Parent
+    if (!(Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    
+    # Schreibe die Datei
+    [System.IO.File]::WriteAllText($outputPath, $htmlContent, [System.Text.Encoding]::UTF8)
 } catch {
-  Write-Error "Fehler beim Schreiben der Datei $outputPath"
-  exit 1
+    Write-Error "Fehler beim Schreiben der Datei $outputPath"
+    exit 1
 }

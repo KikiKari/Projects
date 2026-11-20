@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80.js
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
 # Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_023e80.ps1 — portiert nach javascript
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80.ps1
+# 1781743218784_0122af_023e80.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218780_0122af_023e80.js
 # Erzeugt: 2026-11-18 durch ABSTRACTIONS_MANAGER.py
 
 import sys
@@ -12,7 +16,7 @@ import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+    print("Aufruf: python script.py <Ausgabedatei>", file=sys.stderr)
     sys.exit(1)
 
 output_path = sys.argv[1]

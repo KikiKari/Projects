@@ -1,9 +1,13 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
+# Import required packages
+package require Tcl 8.6
+package require fileutil
+
+# Check command line arguments
 if {$argc != 1} {
     puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
@@ -11,7 +15,7 @@ if {$argc != 1} {
 
 set outputPath [lindex $argv 0]
 
-# HTML-Inhalt
+# HTML content
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -218,11 +222,18 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $outputPath w]}]} {
+# Try to write the HTML file
+if {[catch {
+    # Create directory if it doesn't exist
+    set dir [file dirname $outputPath]
+    if {![file exists $dir]} {
+        file mkdir $dir
+    }
+    
+    set fh [open $outputPath w]
+    puts -nonewline $fh $htmlContent
+    close $fh
+} error]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-
-puts -nonewline $fd $htmlContent
-close $fd

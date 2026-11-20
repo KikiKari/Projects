@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63.pl
-// Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
@@ -9,11 +9,11 @@ if (process.argv.length !== 3) {
     process.exit(1);
 }
 
-const outputPath = process.argv[2];
 const fs = require('fs');
+const output_path = process.argv[2];
 
 // HTML-Inhalt
-const htmlContent = `<!DOCTYPE html>
+const html_content = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -222,8 +222,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 // Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(outputPath, htmlContent);
+    fs.writeFileSync(output_path, html_content, { encoding: 'utf8' });
 } catch (err) {
-    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
+    console.error(`Fehler beim Schreiben der Datei ${output_path}: ${err.message}`);
     process.exit(1);
 }

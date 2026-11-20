@@ -1,11 +1,8 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-package require Tcl 8.6
-
-# Parameter verarbeiten
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -219,17 +216,17 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>}
 
-# Stelle sicher, dass das Verzeichnis existiert
+# Create directory if it doesn't exist
 set dir [file dirname $outputPath]
 if {![file exists $dir]} {
     file mkdir $dir
 }
 
-# Schreibe die Datei
-if {[catch {open $outputPath w} fd]} {
-    puts stderr "Failed to open $outputPath for writing"
+# Write file
+if {[catch {open $outputPath w} fileId]} {
+    puts stderr "Error: Could not create file $outputPath"
     exit 1
 }
 
-puts -nonewline $fd $htmlContent
-close $fd
+puts -nonewline $fileId $htmlContent
+close $fileId

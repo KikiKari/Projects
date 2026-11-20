@@ -1,15 +1,21 @@
 #!/usr/bin/env pwsh
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.py — portiert nach powershell
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f_007e63.py
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js — portiert nach powershell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
+# Prüfe Kommandozeilenargumente
 if ($args.Count -ne 1) {
     Write-Error "Aufruf: $($MyInvocation.MyCommand.Name) <Ausgabedatei>"
     exit 1
 }
 
 $outputPath = $args[0]
+
+# Stelle sicher, dass das Verzeichnis existiert
+$outputDir = Split-Path $outputPath -Parent
+if (-not (Test-Path $outputDir)) {
+    New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+}
 
 # HTML-Inhalt
 $htmlContent = @'
@@ -220,11 +226,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '@
 
-# Versuche, die HTML-Datei zu schreiben
+# Versuche die HTML-Datei zu schreiben
 try {
     Set-Content -Path $outputPath -Value $htmlContent -Encoding UTF8
-}
-catch {
+} catch {
     Write-Error "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }

@@ -1,20 +1,20 @@
 #!/bin/bash
 # 1781743218784_0122af_023e80_016765_04d26f_007e63.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Aufrufparameter
-if [ $# -ne 1 ]; then
+if [[ $# -ne 1 ]]; then
     echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
 
 # HTML-Inhalt
-read -r -d '' htmlContent <<'EOF_HTMLCONTENT'
+read -r -d '' html_content <<'HTML_END'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,10 +220,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-EOF_HTMLCONTENT
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
-if ! printf "%s" "$htmlContent" > "$outputPath"; then
-    echo "Fehler beim Schreiben der Datei $outputPath" >&2
+if ! printf '%s' "$html_content" > "$output_path"; then
+    echo "Fehler beim Schreiben der Datei $output_path" >&2
     exit 1
 fi

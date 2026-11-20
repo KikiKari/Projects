@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80_016765.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
-// Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-// Import required modules
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+'use strict';
 
-// Check command line arguments
+const fs = require('fs');
+const path = require('path');
+
+// Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-  console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
-  process.exit(1);
+    console.error(`Aufruf: ${path.basename(process.argv[1])} <Ausgabedatei>`);
+    process.exit(1);
 }
 
 const outputPath = process.argv[2];
 
-// HTML content
+// HTML-Inhalt
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,18 +221,13 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
-// Try to write the HTML file
+// Versuche, die HTML-Datei zu schreiben
 try {
-  // Create directory if it doesn't exist
-  const dir = dirname(outputPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-  
-  writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
-} catch (error) {
-  console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
-  process.exit(1);
+    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf8' });
+} catch (err) {
+    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
+    process.exit(1);
 }

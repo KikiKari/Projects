@@ -1,24 +1,26 @@
 #!/bin/bash
 # 1781743218784_0122af.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Parameter verarbeiten
+# Prüfe Anzahl der Argumente
 if [[ $# -ne 1 ]]; then
     echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
 output_path="$1"
-output_dir="$(dirname "$output_path")"
+output_dir=$(dirname "$output_path")
 
-# Erstelle das Ausgabeverzeichnis falls es nicht existiert
-mkdir -p "$output_dir"
+# Erstelle Zielverzeichnis falls notwendig
+if [[ ! -d "$output_dir" ]]; then
+    mkdir -p "$output_dir"
+fi
 
-# HTML-Inhalt
-read -r -d '' html_content <<'EOF'
+# Schreibe HTML-Inhalt in Zieldatei
+cat > "$output_path" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -117,7 +119,7 @@ const T = {
  sub:{de:"Verschlüsselte Secret-Vault (AES-256-GCM, PBKDF2) — alles im Browser, kein Server.",en:"Encrypted secret vault (AES-256-GCM, PBKDF2) — fully in the browser, no server."},
  hOpen:{de:"Öffnen oder neu",en:"Open or new"},
  pass:{de:"Passphrase",en:"Passphrase"},
- file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64")},
+ file:{de:"Vault laden (Datei oder Base64 einfügen)",en:"Load vault (file or paste Base64)"},
  blob:{de:"…oder Base64 hier einfügen",en:"…or paste Base64 here"},
  open:{de:"Öffnen / Entschlüsseln",en:"Open / Decrypt"},
  neu:{de:"Neuer leerer Vault",en:"New empty vault"},
@@ -226,5 +228,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 EOF
 
-# Schreibe die Datei
-echo "$html_content" > "$output_path"
+# Prüfung auf erfolgreiche Erstellung
+if [[ $? -ne 0 ]]; then
+    echo "Fehler beim Schreiben der Datei: $output_path" >&2
+    exit 1
+fi

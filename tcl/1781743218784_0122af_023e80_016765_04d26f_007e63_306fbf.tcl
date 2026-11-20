@@ -1,18 +1,24 @@
-#!/usr/bin/env tclsh
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.py — portiert nach tcl
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f_007e63.py
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/env tclsh8.6
+# 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
+# Prüfe Kommandozeilenargumente
 if {$argc != 1} {
     puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
-set output_path [lindex $argv 0]
+set outputPath [lindex $argv 0]
+
+# Stelle sicher, dass das Verzeichnis existiert
+set outputDir [file dirname $outputPath]
+if {![file exists $outputDir]} {
+    file mkdir $outputDir
+}
 
 # HTML-Inhalt
-set html_content {<!DOCTYPE html>
+set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -219,9 +225,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $output_path w]} err]} {
-    puts stderr "Fehler beim Schreiben der Datei $output_path"
+if {[catch {set fileId [open $outputPath w]} errorMsg]} {
+    puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-puts -nonewline $fd $html_content
-close $fd
+
+puts -nonewline $fileId $htmlContent
+close $fileId
