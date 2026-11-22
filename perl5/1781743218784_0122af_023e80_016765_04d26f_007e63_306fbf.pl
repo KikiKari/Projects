@@ -1,31 +1,23 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use File::Basename qw(dirname);
-use File::Path qw(make_path);
-use Encode qw(decode_utf8);
 
-# Prüfe Kommandozeilenargumente
+# Prüfe Aufrufparameter
 if (@ARGV != 1) {
-    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
+    my $script_name = $0;
+    $script_name =~ s|.*/||;
+    print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
-
-# Stelle sicher, dass das Verzeichnis existiert
-my $outputDir = dirname($outputPath);
-unless (-d $outputDir) {
-    make_path($outputDir) or die "Konnte Verzeichnis $outputDir nicht erstellen: $!";
-}
+my $output_path = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML_END';
+my $html_content = <<'HTML';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -231,15 +223,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 
 # Versuche, die HTML-Datei zu schreiben
-eval {
-    open my $fh, '>:encoding(UTF-8)', $outputPath or die "Fehler beim Öffnen der Datei $outputPath zum Schreiben: $!";
-    print $fh $htmlContent;
-    close $fh;
-};
-if ($@) {
-    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
+open(my $fh, '>', $output_path) or do {
+    print STDERR "Fehler beim Schreiben der Datei $output_path\n";
     exit 1;
-}
+};
+print $fh $html_content;
+close($fh);

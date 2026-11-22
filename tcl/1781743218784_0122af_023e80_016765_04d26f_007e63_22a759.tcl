@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach tcl
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63.pl
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_007e63_22a759.py — portiert nach tcl
+# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f_007e63_22a759.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
@@ -220,12 +220,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 }
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {
-    set fh [open $output_path w]
-    fconfigure $fh -encoding utf-8
-    puts -nonewline $fh $html_content
-    close $fh
-} error]} {
-    puts stderr "Fehler beim Schreiben der Datei $output_path: $error"
+if {[catch {set fh [open $output_path w]} errmsg]} {
+    puts stderr "Fehler beim Öffnen der Datei $output_path: $errmsg"
+    exit 1
+}
+
+if {[catch {puts $fh $html_content; close $fh} errmsg]} {
+    puts stderr "Fehler beim Schreiben der Datei $output_path: $errmsg"
     exit 1
 }

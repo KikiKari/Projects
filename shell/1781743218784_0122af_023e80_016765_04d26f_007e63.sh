@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1781743218784_0122af_023e80_016765_04d26f_007e63.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
@@ -14,7 +14,8 @@ fi
 output_path="$1"
 
 # HTML-Inhalt
-read -r -d '' html_content <<'HTML_END'
+html_content=$(
+cat << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,7 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+EOF
+)
 
 # Versuche, die HTML-Datei zu schreiben
 if ! printf '%s' "$html_content" > "$output_path"; then

@@ -1,26 +1,24 @@
 #!/bin/bash
 # 1781743218784_0122af.js — portiert nach shell
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Anzahl der Argumente
-if [[ $# -ne 1 ]]; then
+if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <OutputPath>" >&2
     exit 1
 fi
 
-output_path="$1"
-output_dir=$(dirname "$output_path")
+OUTPUT_PATH="$1"
+OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
 
-# Erstelle Zielverzeichnis falls notwendig
-if [[ ! -d "$output_dir" ]]; then
-    mkdir -p "$output_dir"
-fi
+# Erstelle Verzeichnisstruktur falls nötig
+mkdir -p "$OUTPUT_DIR"
 
 # Schreibe HTML-Inhalt in Zieldatei
-cat > "$output_path" << 'EOF'
+cat > "$OUTPUT_PATH" << 'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -44,7 +42,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 4px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -228,8 +226,4 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 EOF
 
-# Prüfung auf erfolgreiche Erstellung
-if [[ $? -ne 0 ]]; then
-    echo "Fehler beim Schreiben der Datei: $output_path" >&2
-    exit 1
-fi
+echo "HTML file written to $OUTPUT_PATH"

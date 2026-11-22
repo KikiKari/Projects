@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63.pl
-// Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
+    console.error("Aufruf: " + process.argv[1] + " <Ausgabedatei>");
     process.exit(1);
 }
 
-const fs = require('fs');
-const output_path = process.argv[2];
+const outputPath = process.argv[2];
 
 // HTML-Inhalt
-const html_content = `<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -189,7 +193,7 @@ function renderEditor(){
   root.querySelectorAll("input[data-k]").forEach(i=>i.onchange=()=>{ VAULT.providers[i.dataset.p][i.dataset.k]=i.value; });
   root.querySelectorAll("button[data-del]").forEach(b=>b.onclick=()=>{ const [p,k]=b.dataset.del.split("|"); delete VAULT.providers[p][k]; renderEditor(); });
   root.querySelectorAll("button[data-delp]").forEach(b=>b.onclick=()=>{ delete VAULT.providers[b.dataset.delp]; renderEditor(); });
-  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(\`.nf[data-np="\${CSS.escape(p)}"]\`).value.trim(); const nv=root.querySelector(\`.nv[data-np="\${CSS.escape(p)}"]\`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
+  root.querySelectorAll("button[data-addf]").forEach(b=>b.onclick=()=>{ const p=b.dataset.addf; const nf=root.querySelector(\`input.nf[data-np="\${CSS.escape(p)}"]\`).value.trim(); const nv=root.querySelector(\`input.nv[data-np="\${CSS.escape(p)}"]\`).value; if(nf){ VAULT.providers[p][nf]=nv; renderEditor(); } });
 }
 
 document.getElementById("file").onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ blob.value=r.result.trim(); }; r.readAsText(f); };
@@ -222,8 +226,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 // Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(output_path, html_content, { encoding: 'utf8' });
+    fs.writeFileSync(outputPath, htmlContent, 'utf8');
 } catch (err) {
-    console.error(`Fehler beim Schreiben der Datei ${output_path}: ${err.message}`);
+    console.error("Fehler beim Schreiben der Datei " + outputPath);
     process.exit(1);
 }

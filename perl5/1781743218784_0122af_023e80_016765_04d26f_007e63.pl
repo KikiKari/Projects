@@ -1,13 +1,12 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765_04d26f_007e63.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
 use utf8;
-use Encode qw(encode decode);
-use File::Slurp qw(write_file);
+use open qw(:std :utf8);
 
 # Prüfe Aufrufparameter
 if (@ARGV != 1) {
@@ -15,10 +14,10 @@ if (@ARGV != 1) {
     exit 1;
 }
 
-my $outputPath = $ARGV[0];
+my $output_path = $ARGV[0];
 
 # HTML-Inhalt
-my $htmlContent = <<'HTML';
+my $html_content = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,13 +223,15 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    write_file($outputPath, $htmlContent);
+    open my $fh, '>:encoding(UTF-8)', $output_path or die "Fehler beim Öffnen der Datei $output_path: $!";
+    print $fh $html_content;
+    close $fh;
 };
 if ($@) {
-    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
+    print STDERR "Fehler beim Schreiben der Datei $output_path: $@\n";
     exit 1;
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765_04d26f_007e63.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
@@ -225,6 +225,6 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as e:
-    print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
+except Exception as err:
+    print(f"Fehler beim Schreiben der Datei {output_path}: {err}", file=sys.stderr)
     sys.exit(1)

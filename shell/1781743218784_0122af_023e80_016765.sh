@@ -1,11 +1,11 @@
 #!/bin/bash
 # 1781743218784_0122af_023e80_016765.pl — portiert nach shell
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
-# Prüfe Aufrufparameter
+# Prüfe Kommandozeilenargumente
 if [[ $# -ne 1 ]]; then
     echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
@@ -14,8 +14,7 @@ fi
 outputPath="$1"
 
 # HTML-Inhalt
-htmlContent=$(
-cat <<'HTML_END'
+htmlContent=$(cat <<'HTML'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -221,11 +220,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_END
+HTML
 )
 
 # Versuche, die HTML-Datei zu schreiben
-if ! printf '%s' "$htmlContent" > "$outputPath"; then
+(
+    # Erstelle das Verzeichnis, falls es nicht existiert
+    dir=$(dirname "$outputPath")
+    if [[ ! -d "$dir" ]]; then
+        mkdir -p "$dir"
+    fi
+    
+    echo "$htmlContent" > "$outputPath"
+) || {
     echo "Fehler beim Schreiben der Datei $outputPath" >&2
     exit 1
-fi
+}

@@ -1,21 +1,16 @@
-#!/usr/bin/env tclsh8.6
+#!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Kommandozeilenargumente
+# Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <Ausgabedatei>"
+    set scriptName [file tail $argv0]
+    puts stderr "Aufruf: $scriptName <Ausgabedatei>"
     exit 1
 }
 
 set outputPath [lindex $argv 0]
-
-# Stelle sicher, dass das Verzeichnis existiert
-set outputDir [file dirname $outputPath]
-if {![file exists $outputDir]} {
-    file mkdir $outputDir
-}
 
 # HTML-Inhalt
 set htmlContent {<!DOCTYPE html>
@@ -225,10 +220,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fileId [open $outputPath w]} errorMsg]} {
+if {[catch {set fh [open $outputPath w]}]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-
-puts -nonewline $fileId $htmlContent
-close $fileId
+puts -nonewline $fh $htmlContent
+close $fh

@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.py — portiert nach javascript
-# Quelle: python, Projects@abstractions:python/1781743218784_0122af_023e80_016765_04d26f_007e63.py
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63_306fbf.pl
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-# Check command line arguments
+# Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print(f'Aufruf: {sys.argv[0]} <Ausgabedatei>', file=sys.stderr)
+    script_name = os.path.basename(sys.argv[0])
+    sys.stderr.write(f'Aufruf: {script_name} <Ausgabedatei>\n')
     sys.exit(1)
 
 output_path = sys.argv[1]
 
-# Ensure directory exists
-output_dir = os.path.dirname(output_path)
-if output_dir and not os.path.exists(output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-
-# HTML content
+# HTML-Inhalt
 html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -229,10 +225,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </body>
 </html>'''
 
-# Try to write the HTML file
+# Versuche, die HTML-Datei zu schreiben
 try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-except Exception as e:
-    print(f'Fehler beim Schreiben der Datei {output_path}', file=sys.stderr)
+except Exception:
+    sys.stderr.write(f'Fehler beim Schreiben der Datei {output_path}\n')
     sys.exit(1)

@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach python
+# 1781743218784_0122af_023e80_016765_04d26f_007e63_22a759.sh — portiert nach python
+# Quelle: shell, Projects@abstractions:shell/1781743218784_0122af_023e80_016765_04d26f_007e63_22a759.sh
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80_016765_04d26f_007e63.pl — portiert nach Python 3.12
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f_007e63.pl
 # Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
-
-# 1781743218784_0122af_023e80_016765_04d26f_007e63.ps1 — portiert nach python3
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af_023e80_016765_04d26f_007e63.ps1
-# Erzeugt: 2026-11-19 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
-# Prüfe Aufrufparameter
-if len(sys.argv) != 2:
-    print("Aufruf: {} <Ausgabedatei>".format(sys.argv[0]), file=sys.stderr)
-    sys.exit(1)
+def main():
+    # Prüfe Aufrufparameter
+    if len(sys.argv) != 2:
+        print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+        sys.exit(1)
 
-output_path = sys.argv[1]
+    output_path = sys.argv[1]
 
-# HTML-Inhalt
-html_content = '''<!DOCTYPE html>
+    # HTML-Inhalt
+    html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Secret Vault Public",
@@ -225,10 +226,13 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>
 '''
 
-# Versuche, die HTML-Datei zu schreiben
-try:
-    with open(output_path, 'w', encoding='utf-8') as fh:
-        fh.write(html_content)
-except Exception as e:
-    print("Fehler beim Schreiben der Datei {}: {}".format(output_path, str(e)), file=sys.stderr)
-    sys.exit(1)
+    # Versuche, die HTML-Datei zu schreiben
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+    except Exception as e:
+        print(f"Fehler beim Schreiben der Datei {output_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

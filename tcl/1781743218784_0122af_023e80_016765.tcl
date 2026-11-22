@@ -1,21 +1,17 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
-# Import required packages
-package require Tcl 8.6
-package require fileutil
-
-# Check command line arguments
+# Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <Ausgabedatei>"
+    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
     exit 1
 }
 
 set outputPath [lindex $argv 0]
 
-# HTML content
+# HTML-Inhalt
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,20 +216,16 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
-# Try to write the HTML file
-if {[catch {
-    # Create directory if it doesn't exist
-    set dir [file dirname $outputPath]
-    if {![file exists $dir]} {
-        file mkdir $dir
-    }
-    
-    set fh [open $outputPath w]
-    puts -nonewline $fh $htmlContent
-    close $fh
-} error]} {
-    puts stderr "Fehler beim Schreiben der Datei $outputPath"
+# Versuche, die HTML-Datei zu schreiben
+if {[catch {set fd [open $outputPath w]} err]} {
+    puts stderr "Fehler beim Öffnen der Datei $outputPath: $err"
+    exit 1
+}
+
+if {[catch {puts -nonewline $fd $htmlContent; close $fd} err]} {
+    puts stderr "Fehler beim Schreiben der Datei $outputPath: $err"
     exit 1
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfe Aufrufparameter
 if {$argc != 1} {
-    puts stderr "Aufruf: [info script] <Ausgabedatei>"
+    puts stderr "Aufruf: [info nameofexecutable] [lindex $argv0] <Ausgabedatei>"
     exit 1
 }
 
@@ -219,10 +219,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $outputPath w]} err]} {
+if {[catch {set fh [open $outputPath w]} err]} {
     puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }
-
-puts -nonewline $fd $htmlContent
-close $fd
+puts -nonewline $fh $htmlContent
+close $fh
