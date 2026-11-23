@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-# 1781743218784_0122af.ps1 — portiert nach python
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_00969e.js — portiert nach python
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_00969e.js
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 import sys
 import os
 
 # Prüfen der Anzahl an übergebenen Argumenten
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print("Usage: script.py <OutputPath>", file=sys.stderr)
     sys.exit(1)
 
-output_path = sys.argv[1]
+output_path = sys.argv[2]
 
 html_content = '''<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -220,9 +220,12 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </html>'''
 
 try:
-    dir_path = os.path.dirname(output_path)
-    if dir_path and not os.path.exists(dir_path):
-        os.makedirs(dir_path, exist_ok=True)
+    # Erstellen des Verzeichnisses falls es nicht existiert
+    dir_name = os.path.dirname(output_path)
+    if dir_name and not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok=True)
+    
+    # Schreiben der HTML-Datei
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // 1781743218784_0122af_023e80.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80.pl
-// Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 // Prüfe Aufrufparameter
 if (process.argv.length !== 3) {
-    console.error("Aufruf: node script.js <Ausgabedatei>");
+    console.error(`Aufruf: ${process.argv[1]} <Ausgabedatei>`);
     process.exit(1);
 }
 
@@ -221,8 +221,8 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 // Versuche, die HTML-Datei zu schreiben
 try {
-    fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (err) {
-    console.error("Fehler beim Schreiben der Datei " + outputPath);
+    fs.writeFileSync(outputPath, htmlContent, { encoding: 'utf-8' });
+} catch (error) {
+    console.error(`Fehler beim Schreiben der Datei ${outputPath}`);
     process.exit(1);
 }

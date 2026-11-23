@@ -1,14 +1,13 @@
-#!/usr/bin/env perl
-# 1781743218784_0122af.ps1 — portiert nach perl5
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+#!/usr/bin/perl
+# 1781743218784_0122af_00969e.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_00969e.js
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use Encode qw(encode decode);
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
+use File::Spec;
 
 # Prüfen der Anzahl an übergebenen Argumenten
 if (@ARGV != 1) {
@@ -18,7 +17,7 @@ if (@ARGV != 1) {
 
 my $outputPath = $ARGV[0];
 
-my $htmlContent = <<'HTML_CONTENT';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,19 +223,19 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_CONTENT
+HTML_END
 
 eval {
     my $dir = dirname($outputPath);
-    if (!-d $dir) {
+    unless (-d $dir) {
         make_path($dir) or die "Failed to create directory '$dir': $!";
     }
-    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Could not open file '$outputPath' for writing: $!";
+    open(my $fh, '>', $outputPath) or die "Could not open file '$outputPath': $!";
     print $fh $htmlContent;
     close $fh;
-    1;
-} or do {
-    my $error = $@ || 'Unknown error';
-    print STDERR $error;
-    exit 1;
 };
+
+if ($@) {
+    print STDERR "$@\n";
+    exit 1;
+}

@@ -1,7 +1,14 @@
 #!/usr/bin/env node
-// 1781743218784_0122af.ps1 — portiert nach javascript
+// 1781743218784_0122af_00969e.pl — portiert nach javascript
+// Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_00969e.pl
+// Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
+
+// 1781743218784_0122af.ps1 — portiert nach JavaScript fuer Node 20
 // Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
 // Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+
+const fs = require('fs');
+const path = require('path');
 
 // Prüfen der Anzahl an übergebenen Argumenten
 if (process.argv.length !== 3) {
@@ -10,8 +17,6 @@ if (process.argv.length !== 3) {
 }
 
 const outputPath = process.argv[2];
-const fs = require('fs');
-const path = require('path');
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -217,7 +222,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>`;
+</html>
+`;
 
 try {
     const dir = path.dirname(outputPath);

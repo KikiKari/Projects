@@ -1,11 +1,19 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af_023e80_016765.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
+
+# 1781743218784_0122af_023e80_016765.pl — portiert nach javascript
+# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
 # Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 
-# Prüfe Aufrufparameter
+# 1781743218784_0122af_023e80_016765.js — portiert nach perl5
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
+# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
+
+# Prüfe Kommandozeilenargumente
 if {$argc != 1} {
-    puts stderr "Aufruf: [file tail $argv0] <Ausgabedatei>"
+    puts stderr "Aufruf: [info script] <Ausgabedatei>"
     exit 1
 }
 
@@ -216,16 +224,20 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
 # Versuche, die HTML-Datei zu schreiben
-if {[catch {set fd [open $outputPath w]} err]} {
-    puts stderr "Fehler beim Öffnen der Datei $outputPath: $err"
-    exit 1
-}
-
-if {[catch {puts -nonewline $fd $htmlContent; close $fd} err]} {
-    puts stderr "Fehler beim Schreiben der Datei $outputPath: $err"
+if {[catch {
+    # Erstelle das Verzeichnis, falls es nicht existiert
+    set dir [file dirname $outputPath]
+    if {![file exists $dir]} {
+        file mkdir $dir
+    }
+    
+    set fh [open $outputPath w]
+    puts -nonewline $fh $htmlContent
+    close $fh
+} error]} {
+    puts stderr "Fehler beim Schreiben der Datei $outputPath"
     exit 1
 }

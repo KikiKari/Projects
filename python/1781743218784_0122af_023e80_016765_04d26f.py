@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 # 1781743218784_0122af_023e80_016765_04d26f.js — portiert nach python
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765_04d26f.js
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach python
+# 1781743218784_0122af_023e80_016765_04d26f.pl — portiert nach javascript
 # Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765_04d26f.pl
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py
-
+# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
 import sys
 import os
 
 # Prüfe Aufrufparameter
 if len(sys.argv) != 2:
-    print(f"Aufruf: {sys.argv[0]} <Ausgabedatei>", file=sys.stderr)
+    sys.stderr.write(f"Aufruf: {sys.argv[0]} <Ausgabedatei>\n")
     sys.exit(1)
 
 output_path = sys.argv[1]
@@ -229,5 +228,5 @@ try:
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 except Exception as e:
-    print(f"Fehler beim Schreiben der Datei {output_path}", file=sys.stderr)
+    sys.stderr.write(f"Fehler beim Schreiben der Datei {output_path}\n")
     sys.exit(1)

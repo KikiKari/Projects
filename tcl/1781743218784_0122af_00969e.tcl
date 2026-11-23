@@ -1,7 +1,7 @@
 #!/usr/bin/env tclsh
-# 1781743218784_0122af.ps1 — portiert nach tcl
-# Quelle: powershell, Projects@abstractions:powershell/1781743218784_0122af.ps1
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_00969e.js — portiert nach tcl
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_00969e.js
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 # Prüfen der Anzahl an übergebenen Argumenten
 if {$argc != 1} {
@@ -215,20 +215,18 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>
-}
+</html>}
 
-# Erstellen des Verzeichnisses falls es nicht existiert
+# Erstellen des Verzeichnisses falls es nicht existiert und Schreiben der Datei
 set dir [file dirname $outputPath]
 if {![file exists $dir]} {
     file mkdir $dir
 }
 
-# Schreiben der HTML-Datei
 if {[catch {set fd [open $outputPath w]} errmsg]} {
     puts stderr $errmsg
     exit 1
 }
 
-puts $fd $htmlContent
+puts -nonewline $fd $htmlContent
 close $fd

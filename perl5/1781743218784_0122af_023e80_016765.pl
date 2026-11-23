@@ -1,24 +1,24 @@
 #!/usr/bin/perl
 # 1781743218784_0122af_023e80_016765.js — portiert nach perl5
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 use strict;
 use warnings;
-use utf8;
-use File::Basename;
+use File::Basename qw(dirname);
+use File::Path qw(make_path);
+use Encode qw(encode);
 
-# Prüfe Aufrufparameter
+# Prüfe Kommandozeilenargumente
 if (@ARGV != 1) {
-    my $script_name = basename($0);
-    print STDERR "Aufruf: $script_name <Ausgabedatei>\n";
+    print STDERR "Aufruf: $0 <Ausgabedatei>\n";
     exit 1;
 }
 
-my $output_path = $ARGV[0];
+my $outputPath = $ARGV[0];
 
 # HTML-Inhalt
-my $html_content = <<'HTML_CONTENT';
+my $htmlContent = <<'HTML_END';
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -224,15 +224,22 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML_CONTENT
+HTML_END
 
 # Versuche, die HTML-Datei zu schreiben
 eval {
-    open(my $fh, '>:encoding(UTF-8)', $output_path) or die "Cannot open file '$output_path': $!";
-    print $fh $html_content;
-    close $fh;
+    # Erstelle das Verzeichnis, falls es nicht existiert
+    my $dir = dirname($outputPath);
+    unless (-d $dir) {
+        make_path($dir) or die "Konnte Verzeichnis $dir nicht erstellen: $!";
+    }
+    
+    open(my $fh, '>:encoding(UTF-8)', $outputPath) or die "Konnte Datei $outputPath nicht öffnen: $!";
+    print $fh $htmlContent;
+    close($fh);
 };
+
 if ($@) {
-    print STDERR "Fehler beim Schreiben der Datei $output_path\n";
+    print STDERR "Fehler beim Schreiben der Datei $outputPath\n";
     exit 1;
 }

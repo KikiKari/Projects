@@ -1,20 +1,24 @@
 #!/bin/bash
-# 1781743218784_0122af_023e80_016765.pl — portiert nach shell
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af_023e80_016765.pl
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# 1781743218784_0122af_023e80_016765.js — portiert nach shell
+# Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af_023e80_016765.js
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 set -euo pipefail
 
 # Prüfe Kommandozeilenargumente
-if [[ $# -ne 1 ]]; then
+if [ "$#" -ne 1 ]; then
     echo "Aufruf: $0 <Ausgabedatei>" >&2
     exit 1
 fi
 
-outputPath="$1"
+output_path="$1"
+output_dir=$(dirname "$output_path")
+
+# Erstelle das Verzeichnis, falls es nicht existiert
+mkdir -p "$output_dir"
 
 # HTML-Inhalt
-htmlContent=$(cat <<'HTML'
+read -r -d '' html_content <<'EOF'
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -220,19 +224,10 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 </script>
 </body>
 </html>
-HTML
-)
+EOF
 
 # Versuche, die HTML-Datei zu schreiben
-(
-    # Erstelle das Verzeichnis, falls es nicht existiert
-    dir=$(dirname "$outputPath")
-    if [[ ! -d "$dir" ]]; then
-        mkdir -p "$dir"
-    fi
-    
-    echo "$htmlContent" > "$outputPath"
-) || {
-    echo "Fehler beim Schreiben der Datei $outputPath" >&2
+if ! printf "%s" "$html_content" >"$output_path"; then
+    echo "Fehler beim Schreiben der Datei $output_path" >&2
     exit 1
-}
+fi

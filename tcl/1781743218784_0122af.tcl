@@ -1,12 +1,11 @@
 #!/usr/bin/env tclsh
 # 1781743218784_0122af.js — portiert nach tcl
 # Quelle: javascript, Projects@abstractions:javascript/1781743218784_0122af.js
-# Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+# Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
-# 1781743218784_0122af.pl — portiert nach javascript — portiert nach Tcl 8.6
-# Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-# Erzeugt: 2026-11-20 durch ABSTRACTIONS_MANAGER.py — portiert am 2026-11-20
+package require Tcl 8.6
 
+# Hole das Ausgabeverzeichnis aus den Kommandozeilenargumenten
 if {$argc != 1} {
     puts stderr "Usage: tclsh script.tcl <OutputPath>"
     exit 1
@@ -14,6 +13,7 @@ if {$argc != 1} {
 
 set outputPath [lindex $argv 0]
 
+# HTML-Inhalt als Tcl-Variable
 set htmlContent {<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -37,7 +37,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0 0 4px;font-weight:700;}
+h1{font-size:21px;margin:0;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -218,7 +218,8 @@ dlBtn.onclick=()=>{ if(!result.value)return; try{ const b=new Blob([result.value
 expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2); };
 </script>
 </body>
-</html>}
+</html>
+}
 
 # Stelle sicher, dass das Verzeichnis existiert
 set dir [file dirname $outputPath]
@@ -226,7 +227,11 @@ if {![file exists $dir]} {
     file mkdir $dir
 }
 
-# Schreibe die Datei
-set fh [open $outputPath w]
-puts -nonewline $fh $htmlContent
-close $fh
+# Schreibe den HTML-Inhalt in die Ausgabedatei
+if {[catch {open $outputPath w} fileId]} {
+    puts stderr "Error: Could not create file $outputPath"
+    exit 1
+}
+
+puts $fileId $htmlContent
+close $fileId

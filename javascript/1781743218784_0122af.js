@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 // 1781743218784_0122af.pl — portiert nach javascript
 // Quelle: perl5, Projects@abstractions:perl5/1781743218784_0122af.pl
-// Erzeugt: 2026-11-22 durch ABSTRACTIONS_MANAGER.py
+// Erzeugt: 2026-11-23 durch ABSTRACTIONS_MANAGER.py
 
 const fs = require('fs');
 const path = require('path');
-
-const outputPath = process.argv[2];
 
 if (process.argv.length !== 3) {
   console.error("Usage: node script.js <OutputPath>");
   process.exit(1);
 }
+
+const outputPath = process.argv[2];
 
 const htmlContent = `<!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
@@ -36,7 +36,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Hel
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
 .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 12px rgba(91,91,214,.35);position:relative;flex:0 0 auto;}
 .mark:after{content:"";position:absolute;inset:8px;border-radius:4px;border:2px solid rgba(255,255,255,.92);}
-h1{font-size:21px;margin:0;font-weight:700;}
+h1{font-size:21px;margin:0 0 4px;font-weight:700;}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
 .card h2{font-size:14px;margin:0 0 10px;}
@@ -222,12 +222,9 @@ expBtn.onclick=()=>{ if(!VAULT)return; result.value=JSON.stringify(VAULT,null,2)
 
 try {
   const dir = path.dirname(outputPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
+  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(outputPath, htmlContent, 'utf8');
-} catch (error) {
-  console.error(error.message);
+} catch (err) {
+  console.error(err.message);
   process.exit(1);
 }
