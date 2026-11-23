@@ -1,8 +1,5 @@
 name: Abstraktionen
 
-# Alle sechs Stunden wird eine Prioritaetsstufe abgearbeitet und das Ergebnis
-# in diesen Branch geschrieben. Der Zustand liegt im Cache, damit ein Lauf
-# dort weitermacht, wo der vorige aufgehoert hat.
 on:
   schedule:
     - cron: "0 */6 * * *"
@@ -23,87 +20,89 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
+  statuses: read
 
 jobs:
   uebersetzen:
-    name: Quellcode portieren
+    name: Quellcode ueber Gateway-Nodes portieren
     runs-on: ubuntu-latest
     timeout-minutes: 330
+    env:
+      ABSTRACTIONS_WORKSPACE: ${{ github.workspace }}/arbeit
+      GITHUB_TOKEN: ${{ github.token }}
+      RUNNER_COMPONENTS: ${{ github.workspace }}/runner/abstractions/runtime
+      RUNNER_OUTPUT: ${{ github.workspace }}/output
+      MANAGER_PATH: ${{ github.workspace }}/manager/skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
+      BATCH_DIR: ${{ runner.temp }}/abstractions-gateway-batch
     steps:
-      - name: Branch auschecken
+      - name: Runner-Code auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: runner
+          persist-credentials: false
+      - name: Ausgabezweig auschecken
         uses: actions/checkout@v4
         with:
           ref: abstractions
+          path: output
           fetch-depth: 0
-
+      - name: Aktuellen Gateway-Manager auschecken
+        uses: actions/checkout@v4
+        with:
+          repository: KikiKari/OpenClaw
+          ref: gateway1
+          path: manager
+          persist-credentials: false
       - name: Python bereitstellen
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Pruefwerkzeuge bereitstellen
+      - name: Pruefwerkzeuge und Grammatiken bereitstellen
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq tcl perl >/dev/null
-          node --version && perl --version | head -2 && tclsh <<< 'puts [info patchlevel]'
-
-      - name: Zustand aus dem Cache holen
+          sudo apt-get install -y -qq tcl perl ruby lua5.4 raku >/dev/null
+          python3 -m pip install 'cryptography==46.0.5' 'tree-sitter-language-pack==1.25.2'
+          python3 -c 'from tree_sitter_language_pack import prefetch; prefetch(["java", "c", "cpp", "php", "fsharp", "css"])'
+      - name: Zustand und Quellspiegel wiederherstellen
         uses: actions/cache@v4
         with:
           path: |
             arbeit/db
             arbeit/git/quellen
-          key: abstraktionen-${{ github.run_id }}
-          restore-keys: abstraktionen-
-
-      - name: Arbeitsbaum vorbereiten
-        run: |
-          mkdir -p arbeit/git
-          ln -sfn "$GITHUB_WORKSPACE" arbeit/git/Abstraktionen
-          git config user.name  "KikiKari"
-          git config user.email "272986081+KikiKari@users.noreply.github.com"
-
-      - name: Schluessel pruefen
+          key: abstraktionen-gateway-${{ github.run_id }}
+          restore-keys: abstraktionen-gateway-
+      - name: Gateway-Auftrag vorbereiten
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PRIORITY: ${{ inputs.prioritaet || 'reihum' }}
+          SOURCE_COUNT: ${{ inputs.anzahl || '40' }}
         run: |
-          # Nur die Laenge wird gemeldet, nie der Wert. Ein leerer oder nur aus
-          # Leerraum bestehender Schluessel soll hier auffallen und nicht erst
-          # nach dreissig vergeblichen Modellaufrufen.
-          roh=${#OPENROUTER_API_KEY}
-          sauber=$(printf '%s' "$OPENROUTER_API_KEY" | tr -d '[:space:]')
-          echo "Secret vorhanden: $roh Zeichen, davon $(printf '%s' "$sauber" | wc -c) ohne Leerraum"
-          if [ -z "$sauber" ]; then
-            echo "::error::OPENROUTER_API_KEY ist leer. Secret unter Settings → Secrets and variables → Actions neu setzen."
+          python3 "$RUNNER_COMPONENTS/runner_manager.py" prepare \
+            --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
+            --priority "$PRIORITY" --count "$SOURCE_COUNT"
+      - name: Gateway-Auftrag bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-gateway-request-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/abstractions-gateway-batch/request.json
+          if-no-files-found: error
+          retention-days: 1
+      - name: Ergebnis empfangen und pruefen
+        run: |
+          python3 "$RUNNER_COMPONENTS/runner_manager.py" receive \
+            --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
+            --trusted-key-file "$RUNNER_COMPONENTS/gateway-signing.pub"
+      - name: Gepruefte Uebersetzungen veroeffentlichen
+        run: |
+          git -C "$RUNNER_OUTPUT" config user.name "KikiKari"
+          git -C "$RUNNER_OUTPUT" config user.email "272986081+KikiKari@users.noreply.github.com"
+          for lang in javascript perl5 powershell python shell tcl perl6 ruby lua go java c cpp php fsharp css; do
+            if [ -d "$RUNNER_OUTPUT/$lang" ]; then git -C "$RUNNER_OUTPUT" add -- "$lang"; fi
+          done
+          if git -C "$RUNNER_OUTPUT" diff --cached --quiet; then
+            echo '::error::Der Lauf hat keinen neuen Ausgabecommit erzeugt.'
             exit 1
           fi
-          case "$sauber" in
-            sk-or-*) echo "Praefix sieht richtig aus." ;;
-            *) echo "::error::OPENROUTER_API_KEY beginnt nicht mit sk-or-." ; exit 1 ;;
-          esac
-
-      - name: Uebersetzen
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ABSTRACTIONS_WORKSPACE: ${{ github.workspace }}/arbeit
-        run: |
-          STUFE="${{ inputs.prioritaet }}"
-          ANZAHL="${{ inputs.anzahl }}"
-          python3 abstractions/ABSTRACTIONS_MANAGER.py \
-            ${STUFE:+$( [ "$STUFE" != "reihum" ] && echo --prioritaet "$STUFE" )} \
-            --anzahl "${ANZAHL:-40}"
-
-      - name: Bestand melden
-        if: always()
-        run: |
-          {
-            echo "## Bestand nach dem Lauf"
-            echo
-            echo "| Zielsprache | Dateien |"
-            echo "|---|---:|"
-            for s in javascript perl5 powershell python shell tcl; do
-              n=$( [ -d "$s" ] && find "$s" -type f | wc -l || echo 0 )
-              echo "| $s | $n |"
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
+          git -C "$RUNNER_OUTPUT" commit -m 'Publish gateway translations'
+          git -C "$RUNNER_OUTPUT" push origin HEAD:refs/heads/abstractions
