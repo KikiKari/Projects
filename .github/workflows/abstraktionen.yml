@@ -34,7 +34,7 @@ jobs:
       RUNNER_COMPONENTS: ${{ github.workspace }}/runner/abstractions/runtime
       RUNNER_OUTPUT: ${{ github.workspace }}/output
       MANAGER_PATH: ${{ github.workspace }}/manager/skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
-      BATCH_DIR: ${{ runner.temp }}/abstractions-gateway-batch
+      BATCH_DIR: ${{ github.workspace }}/.abstractions-gateway-batch
     steps:
       - name: Runner-Code auschecken
         uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openclaw-gateway-request-v2-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/abstractions-gateway-batch/request.json
+          path: ${{ github.workspace }}/.abstractions-gateway-batch/request.json
           if-no-files-found: error
           retention-days: 1
       - name: Ergebnis empfangen und pruefen
