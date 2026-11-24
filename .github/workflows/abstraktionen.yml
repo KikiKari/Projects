@@ -36,6 +36,10 @@ jobs:
       MANAGER_PATH: ${{ github.workspace }}/manager/skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
       BATCH_DIR: ${{ github.workspace }}/.abstractions-gateway-batch
     steps:
+      # This runs just after job setup. Leave 15 minutes for setup and cleanup.
+      - name: Empfangsfrist festlegen
+        shell: bash
+        run: echo "GATEWAY_RECEIVE_DEADLINE=$(( $(date +%s) + 315 * 60 ))" >> "$GITHUB_ENV"
       - name: Runner-Code auschecken
         uses: actions/checkout@v4
         with:
@@ -100,7 +104,8 @@ jobs:
         run: |
           python3 "$RUNNER_COMPONENTS/runner_manager.py" receive \
             --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
-            --trusted-key-file "$RUNNER_COMPONENTS/gateway-signing.pub"
+            --trusted-key-file "$RUNNER_COMPONENTS/gateway-signing.pub" \
+            --deadline-epoch "$GATEWAY_RECEIVE_DEADLINE"
       - name: Gepruefte Uebersetzungen veroeffentlichen
         run: |
           git -C "$RUNNER_OUTPUT" config user.name "KikiKari"

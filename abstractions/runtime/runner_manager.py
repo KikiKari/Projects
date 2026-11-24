@@ -76,17 +76,34 @@ def prepare(manager, directory, *, priority, count, run_id, run_attempt, workflo
     return len(manifest["jobs"])
 
 
-def receive(manager, directory, token, trusted_gateway_key, *, timeout_seconds=18000, interval=15):
+def receive(manager, directory, token, trusted_gateway_key, *, timeout_seconds=18000, interval=15, deadline_epoch=None, progress_interval=300):
     directory = Path(directory)
     manifest = json.loads((directory / "request.json").read_text(encoding="utf-8"))
     entries = json.loads((directory / "entries.json").read_text(encoding="utf-8"))
     private = (directory / "runner-private.pem").read_bytes()
-    deadline = time.monotonic() + timeout_seconds
+    if timeout_seconds <= 0 or interval <= 0 or progress_interval <= 0:
+        raise ValueError("invalid receive timeout or interval")
+    remaining = timeout_seconds if deadline_epoch is None else min(timeout_seconds, deadline_epoch - time.time())
+    start = time.monotonic()
+    deadline = start + max(0, remaining)
+    next_progress = start
+    polls = 0
+    failures = 0
     while time.monotonic() < deadline:
         try:
             result = runner_result_client.receive(manifest, token, private, trusted_gateway_key)
         except (urllib.error.URLError, OSError):
             result = None
+            failures += 1
+            state_label = "transport_error"
+        else:
+            state_label = "result_pending" if result is None else "result_received"
+        polls += 1
+        now = time.monotonic()
+        if now >= next_progress or result is not None:
+            print(f"Gateway-Empfang: {state_label}; Abfragen={polls}; Transportfehler={failures}; "
+                  f"verbleibend={max(0, int(deadline - now))}s", flush=True)
+            next_progress = now + progress_interval
         if result is not None:
             state = manager.zustand_laden()
             counts = runner_apply.apply(manager, manifest, entries, result, state, manager.zustand_speichern)
@@ -95,8 +112,8 @@ def receive(manager, directory, token, trusted_gateway_key, *, timeout_seconds=1
             state["naechste_prioritaet"] = {"high": "medium", "medium": "low", "low": "high", "alle": "alle"}[manifest["priority"]]
             manager.zustand_speichern(state)
             return counts
-        time.sleep(interval)
-    raise TimeoutError("Gateway result not received within runner deadline")
+        time.sleep(max(0, min(interval, deadline - time.monotonic())))
+    raise TimeoutError(f"Gateway result not received within runner deadline; polls={polls}, transport_errors={failures}")
 
 
 def main():
@@ -108,6 +125,7 @@ def main():
     parser.add_argument("--priority", default="reihum", choices=("reihum", "high", "medium", "low", "alle"))
     parser.add_argument("--count", type=int, default=40)
     parser.add_argument("--trusted-key-file")
+    parser.add_argument("--deadline-epoch", type=int)
     args = parser.parse_args()
     manager = load_manager(args.manager, args.output_root)
     if args.phase == "prepare":
@@ -121,7 +139,7 @@ def main():
         raise ValueError("gateway signing key must be pinned")
     token = os.environ.get("GITHUB_TOKEN", "")
     trusted = Path(args.trusted_key_file).read_text(encoding="utf-8").strip()
-    result = receive(manager, args.directory, token, trusted)
+    result = receive(manager, args.directory, token, trusted, deadline_epoch=args.deadline_epoch)
     print("Ergebnisse:", result)
     return 1 if result["verworfen"] else 0
 
