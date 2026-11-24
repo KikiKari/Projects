@@ -49,13 +49,13 @@ jobs:
           path: output
           fetch-depth: 0
       - name: Aktuellen Gateway-Manager auschecken
-        uses: actions/checkout@v4
-        with:
-          repository: KikiKari/OpenClaw
-          ref: gateway1
-          path: manager
-          sparse-checkout: skills/script-abstractions-manager
-          persist-credentials: false
+        shell: bash
+        run: |
+          set -eu
+          git init "$RUNNER_TEMP/gateway-manager-git"
+          git -C "$RUNNER_TEMP/gateway-manager-git" fetch --depth=1 https://github.com/KikiKari/OpenClaw.git refs/heads/gateway1
+          mkdir -p "$(dirname "$MANAGER_PATH")"
+          git -C "$RUNNER_TEMP/gateway-manager-git" show FETCH_HEAD:skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py > "$MANAGER_PATH"
       - name: Python bereitstellen
         uses: actions/setup-python@v5
         with:
