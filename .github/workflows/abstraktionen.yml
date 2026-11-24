@@ -27,7 +27,7 @@ jobs:
   uebersetzen:
     name: Quellcode ueber Gateway-Nodes portieren
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 300
     env:
       ABSTRACTIONS_WORKSPACE: ${{ github.workspace }}/arbeit
       GITHUB_TOKEN: ${{ github.token }}
@@ -36,10 +36,20 @@ jobs:
       MANAGER_PATH: ${{ github.workspace }}/manager/skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
       BATCH_DIR: ${{ github.workspace }}/.abstractions-gateway-batch
     steps:
-      # This runs just after job setup. Leave 15 minutes for setup and cleanup.
+      # The run creation time includes concurrency queueing; reserve 15 minutes
+      # for final result validation, publication and cleanup.
       - name: Empfangsfrist festlegen
         shell: bash
-        run: echo "GATEWAY_RECEIVE_DEADLINE=$(( $(date +%s) + 315 * 60 ))" >> "$GITHUB_ENV"
+        run: |
+          set -eu
+          created_at="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)"
+          created_epoch="$(date -u -d "$created_at" +%s)"
+          deadline=$(( created_epoch + 285 * 60 ))
+          if (( deadline <= $(date +%s) )); then
+            echo '::error::runner_start_deadline_exceeded: Lauf zu lange in der Warteschlange; neuer Auftrag wird nicht uebermittelt.'
+            exit 1
+          fi
+          echo "GATEWAY_RECEIVE_DEADLINE=$deadline" >> "$GITHUB_ENV"
       - name: Runner-Code auschecken
         uses: actions/checkout@v4
         with:
