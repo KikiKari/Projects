@@ -12,7 +12,7 @@ on:
         default: reihum
       anzahl:
         description: "Hoechstzahl Quelldateien in diesem Lauf"
-        default: "40"
+        default: "20"
 
 concurrency:
   group: abstraktionen
@@ -81,7 +81,7 @@ jobs:
       - name: Gateway-Auftrag vorbereiten
         env:
           PRIORITY: ${{ inputs.prioritaet || 'reihum' }}
-          SOURCE_COUNT: ${{ inputs.anzahl || '40' }}
+          SOURCE_COUNT: ${{ inputs.anzahl || '20' }}
         run: |
           python3 "$RUNNER_COMPONENTS/runner_manager.py" prepare \
             --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
