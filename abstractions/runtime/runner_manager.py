@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 import runner_apply
 import runner_planner
+import runner_source_index
 import runner_result_client
 
 
@@ -60,6 +61,8 @@ def prepare(manager, directory, *, priority, count, run_id, run_attempt, workflo
     trees = manager.quellen_holen()
     if not trees:
         raise RuntimeError("no source repositories available")
+    index = runner_source_index.snapshot(manager, run_id, run_attempt, workflow_sha)
+    write_private(directory / "source-index.json", json.dumps(index, ensure_ascii=True).encode("utf-8"))
     inventory = manager.inventar_bauen(trees)
     if not inventory:
         raise RuntimeError("source inventory is empty")

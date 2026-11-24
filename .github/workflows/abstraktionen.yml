@@ -82,6 +82,13 @@ jobs:
           python3 "$RUNNER_COMPONENTS/runner_manager.py" prepare \
             --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
             --priority "$PRIORITY" --count "$SOURCE_COUNT"
+      - name: Quellenindex fuer Observer bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-source-index-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ github.workspace }}/.abstractions-gateway-batch/source-index.json
+          if-no-files-found: error
+          retention-days: 1
       - name: Gateway-Auftrag bereitstellen
         uses: actions/upload-artifact@v4
         with:
