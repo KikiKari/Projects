@@ -54,6 +54,7 @@ jobs:
           repository: KikiKari/OpenClaw
           ref: gateway1
           path: manager
+          sparse-checkout: skills/script-abstractions-manager
           persist-credentials: false
       - name: Python bereitstellen
         uses: actions/setup-python@v5
