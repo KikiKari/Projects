@@ -1,7 +1,7 @@
 # 🤖 Abstractions Manager
 
 **Automatisierter Multi-Node Abstraction Manager.** Portiert OpenClaw-Scripts alle sechs
-Stunden per Cron in **zehn Zielsprachen**, prüft das Ergebnis gegen die laufende Umgebung und
+Stunden per Cron in **16 Zielsprachen**, prüft das Ergebnis gegen die laufende Umgebung und
 pflegt daraus einen Status-Report sowie Dokumentations-Datenbanken.
 
 Kein Übersetzer für sich, sondern eine Pipeline mit Zustand: Was schon portiert und geprüft
@@ -9,7 +9,7 @@ ist, wird nicht noch einmal angefasst.
 
 ---
 
-## Schnellstart
+## Bestehender Managerbestand und Schnellstart
 
 ```bash
 # Manuell ausfuehren
@@ -93,7 +93,7 @@ sequenceDiagram
         else Zielsprache scheitert
             A-->>M: eigene Exception mit Sprache und Grund
             M->>L: Fehler protokollieren, Lauf geht weiter
-            Note over M: Eine gescheiterte Sprache darf<br/>die anderen neun nicht mitreissen.
+            Note over M: Eine gescheiterte Sprache darf<br/>die anderen nicht mitreissen.
         end
     end
     M-->>C: Status-Report
@@ -203,9 +203,34 @@ docs/architektur.json                   Schichtbeschreibung
 
 - **Portierung ist keine Übersetzung.** Was in einer Sprache idiomatisch ist, ist es in der
   nächsten nicht. Der Live-Check sagt, ob es läuft — nicht, ob es schön ist.
-- **Zehn Sprachen heißen zehn Fehlerquellen.** Der Lauf ist deshalb so gebaut, dass eine
+- **Die Zielsprachen werden unabhängig behandelt.** Der Lauf ist deshalb so gebaut, dass eine
   gescheiterte Sprache die anderen nicht mitreißt.
 - **`reset` ist teuer.** Danach wird alles neu portiert. Deshalb ein eigener Befehl und keine
   Option.
 - **Sechs Stunden sind ein Kompromiss.** Häufiger kostet Kontingent, seltener lässt Stände
   veralten.
+
+## Abstraction Manager: Betrieb und Entwicklungsstand
+
+Der Manager unterstützt 16 Zielsprachen: JavaScript, Perl 5, PowerShell, Python, Shell, Tcl, Raku, Ruby, Lua, Go, Java, C, C++, PHP, F# und CSS. Alle Projects-Branches dienen als Quellen; CSS berücksichtigt HTML mit vorhandenen Stilen.
+
+Übersetzungsaufträge verwenden über OpenRouter die Kette `qwen/qwen3-coder`, `deepseek/deepseek-chat-v3.1`, `z-ai/glm-4.6`, `mistralai/codestral-2508` und `qwen/qwen-2.5-coder-32b-instruct`. `ABSTRACTIONS_MODELL` ersetzt die Auswahl bei Bedarf. Der Schlüssel wird aus der Laufzeitumgebung gelesen.
+
+`OpenClaw@gateway1` enthält Gateway-Manager und Transport. `Projects@abstractions` ist zusätzliche Arbeits- und Veröffentlichungsfläche; fehlende Übersetzungsinhalte werden einseitig unter Erhalt von Varianten nach `OpenClaw@gateway1-abstractions` übernommen. Der eigenständige Container arbeitet im Zwölf-Stunden-Takt, der Gateway-Manager im Sechs-Stunden-Takt und der Observer-Cron im Drei-Stunden-Takt.
+
+```mermaid
+flowchart LR
+  S[Projects Quellen] --> R[Runner Manager]
+  R --> G[Gateway Koordination]
+  G --> W[Worker Nodes]
+  W --> G
+  G -->|authentifizierte Ergebnisse| R
+  R --> P[Projects abstractions]
+  P --> O[Observer und Abgleich]
+  O --> K[OpenClaw gateway1-abstractions]
+  K --> V[Automatisches Deployment]
+```
+
+Der [Projects-Workflow auf main](https://github.com/KikiKari/Projects/blob/main/.github/workflows/abstraktionen.yml) verwendet den neuen Runner-Manager. Ein produktiver Gesamtlauf mit Node-Ausführung und authentifizierter Rückgabe ist noch nachzuweisen. Ein manueller Gateway-Observer-Lauf ist abgeschlossen und in der Datenbank erfasst. [0PE-265](https://linear.app/0penclaw/issue/0PE-265), [0PE-266](https://linear.app/0penclaw/issue/0PE-266), [0PE-267](https://linear.app/0penclaw/issue/0PE-267), [0PE-274](https://linear.app/0penclaw/issue/0PE-274) und [0PE-277](https://linear.app/0penclaw/issue/0PE-277) dokumentieren Aufgaben und Nachweise.
+
+Der [aktuelle Arbeitsstand](https://github.com/KikiKari/OpenClaw/tree/gateway1-abstractions#aktueller-arbeitsstand) zählt versionierte Dateien automatisch; [STATUS.md](https://github.com/KikiKari/OpenClaw/blob/gateway1-abstractions/STATUS.md) enthält Laufdetails. Bestehende Mermaid-Abläufe, Three.js-Ansicht, Grafiken und Generatoren bleiben erhalten.
