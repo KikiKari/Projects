@@ -26,8 +26,6 @@ def main():
     manifest = json.loads((directory / "request.json").read_text(encoding="utf-8"))
     entries = json.loads((directory / "entries.json").read_text(encoding="utf-8"))
     jobs = manifest["jobs"]
-    if len(jobs) > 100:
-        raise ValueError("Mehr als 100 Teilauftraege")
     state = manager.zustand_laden()
     occupied = {}
     counts = {"erzeugt": 0, "verworfen": 0}
