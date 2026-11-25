@@ -81,7 +81,7 @@ jobs:
           python3 -m pip install 'cryptography==46.0.5' 'tree-sitter-language-pack==1.25.2'
           python3 -c 'from tree_sitter_language_pack import prefetch; prefetch(["java", "c", "cpp", "php", "fsharp", "css"])'
       - name: Zustand und Quellspiegel wiederherstellen
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: |
             arbeit/db
@@ -96,6 +96,13 @@ jobs:
           python3 "$RUNNER_COMPONENTS/runner_manager.py" prepare \
             --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
             --priority "$PRIORITY" --count "$SOURCE_COUNT"
+      - name: Quellspiegel fuer weitere Laeufe sichern
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            arbeit/db
+            arbeit/git/quellen
+          key: abstraktionen-gateway-${{ github.run_id }}
       - name: Quellenindex fuer Observer bereitstellen
         uses: actions/upload-artifact@v7
         with:
