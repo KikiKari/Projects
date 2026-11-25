@@ -12,7 +12,7 @@ on:
         default: reihum
       anzahl:
         description: "Hoechstzahl Quelldateien in diesem Lauf"
-        default: "20"
+        default: "10"
 
 concurrency:
   group: abstraktionen
@@ -71,7 +71,7 @@ jobs:
           mkdir -p "$(dirname "$MANAGER_PATH")"
           git -C "$RUNNER_TEMP/gateway-manager-git" show FETCH_HEAD:skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py > "$MANAGER_PATH"
       - name: Python bereitstellen
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Pruefwerkzeuge und Grammatiken bereitstellen
@@ -81,7 +81,7 @@ jobs:
           python3 -m pip install 'cryptography==46.0.5' 'tree-sitter-language-pack==1.25.2'
           python3 -c 'from tree_sitter_language_pack import prefetch; prefetch(["java", "c", "cpp", "php", "fsharp", "css"])'
       - name: Zustand und Quellspiegel wiederherstellen
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             arbeit/db
@@ -91,20 +91,20 @@ jobs:
       - name: Gateway-Auftrag vorbereiten
         env:
           PRIORITY: ${{ inputs.prioritaet || 'reihum' }}
-          SOURCE_COUNT: ${{ inputs.anzahl || '20' }}
+          SOURCE_COUNT: ${{ inputs.anzahl || '10' }}
         run: |
           python3 "$RUNNER_COMPONENTS/runner_manager.py" prepare \
             --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
             --priority "$PRIORITY" --count "$SOURCE_COUNT"
       - name: Quellenindex fuer Observer bereitstellen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openclaw-source-index-v1-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ github.workspace }}/.abstractions-gateway-batch/source-index.json
           if-no-files-found: error
           retention-days: 1
       - name: Gateway-Auftrag bereitstellen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openclaw-gateway-request-v2-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ github.workspace }}/.abstractions-gateway-batch/request.json
