@@ -87,6 +87,9 @@ def plan(manager, inventory, state, *, priority, count, run_id, run_attempt, wor
         targets = remaining
         if not targets:
             continue
+        # Keep each source together while limiting the batch to 100 jobs.
+        if len(jobs) + len(targets) > 100:
+            break
         selected += 1
         for target in targets:
             job_id = str(uuid.uuid4())
