@@ -77,7 +77,7 @@ jobs:
       - name: Pruefwerkzeuge und Grammatiken bereitstellen
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq tcl perl ruby lua5.4 raku >/dev/null
+          sudo apt-get install -y -qq tcl perl ruby lua5.4 raku libfile-slurp-perl libfile-slurper-perl >/dev/null
           python3 -m pip install 'cryptography==46.0.5' 'tree-sitter-language-pack==1.25.2'
           python3 -c 'from tree_sitter_language_pack import prefetch; prefetch(["java", "c", "cpp", "php", "fsharp", "css"])'
       - name: Zustand und Quellspiegel wiederherstellen
