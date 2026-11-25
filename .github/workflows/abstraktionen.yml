@@ -87,7 +87,9 @@ jobs:
             arbeit/db
             arbeit/git/quellen
           key: abstraktionen-gateway-${{ github.run_id }}
-          restore-keys: abstraktionen-gateway-
+          restore-keys: |
+            abstraktionen-source-
+            abstraktionen-gateway-
       - name: Gateway-Auftrag vorbereiten
         env:
           PRIORITY: ${{ inputs.prioritaet || 'reihum' }}
@@ -102,7 +104,7 @@ jobs:
           path: |
             arbeit/db
             arbeit/git/quellen
-          key: abstraktionen-gateway-${{ github.run_id }}
+          key: abstraktionen-source-prep-${{ github.run_id }}
       - name: Quellenindex fuer Observer bereitstellen
         uses: actions/upload-artifact@v7
         with:
@@ -136,3 +138,10 @@ jobs:
           fi
           git -C "$RUNNER_OUTPUT" commit -m 'Publish gateway translations'
           git -C "$RUNNER_OUTPUT" push origin HEAD:refs/heads/abstractions
+      - name: Zustand nach Ergebnissen sichern
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            arbeit/db
+            arbeit/git/quellen
+          key: abstraktionen-source-result-${{ github.run_id }}
