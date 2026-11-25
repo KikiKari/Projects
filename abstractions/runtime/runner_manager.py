@@ -223,14 +223,14 @@ def prepare(manager, directory, *, priority, count, run_id, run_attempt, workflo
     return len(manifest["jobs"])
 
 
-def receive(manager, directory, token, trusted_gateway_key, *, timeout_seconds=18000, interval=15, deadline_epoch=None, progress_interval=300):
+def receive(manager, directory, token, trusted_gateway_key, *, timeout_seconds=3000, interval=15, deadline_epoch=None, progress_interval=300):
     directory = Path(directory)
     manifest = json.loads((directory / "request.json").read_text(encoding="utf-8"))
     entries = json.loads((directory / "entries.json").read_text(encoding="utf-8"))
     private = (directory / "runner-private.pem").read_bytes()
     if timeout_seconds <= 0 or interval <= 0 or progress_interval <= 0:
         raise ValueError("invalid receive timeout or interval")
-    remaining = timeout_seconds if deadline_epoch is None else min(timeout_seconds, deadline_epoch - time.time())
+    remaining = min(timeout_seconds, 3000) if deadline_epoch is None else min(timeout_seconds, 3000, deadline_epoch - time.time())
     start = time.monotonic()
     deadline = start + max(0, remaining)
     next_progress = start
