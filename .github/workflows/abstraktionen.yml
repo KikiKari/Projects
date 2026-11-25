@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   uebersetzen:
-    name: Quellcode ueber Gateway-Nodes portieren
+    name: Quellcode direkt portieren
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -36,20 +36,6 @@ jobs:
       MANAGER_PATH: ${{ github.workspace }}/manager/skills/script-abstractions-manager/scripts/ABSTRACTIONS_MANAGER.py
       BATCH_DIR: ${{ github.workspace }}/.abstractions-gateway-batch
     steps:
-      # The run creation time includes concurrency queueing; reserve 5 minutes
-      # for final result validation, publication and cleanup.
-      - name: Empfangsfrist festlegen
-        shell: bash
-        run: |
-          set -eu
-          created_at="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)"
-          created_epoch="$(date -u -d "$created_at" +%s)"
-          deadline=$(( created_epoch + 55 * 60 ))
-          if (( deadline <= $(date +%s) )); then
-            echo '::error::runner_start_deadline_exceeded: Lauf zu lange in der Warteschlange; neuer Auftrag wird nicht uebermittelt.'
-            exit 1
-          fi
-          echo "GATEWAY_RECEIVE_DEADLINE=$deadline" >> "$GITHUB_ENV"
       - name: Runner-Code auschecken
         uses: actions/checkout@v6
         with:
@@ -112,19 +98,12 @@ jobs:
           path: ${{ github.workspace }}/.abstractions-gateway-batch/source-index.json
           if-no-files-found: error
           retention-days: 1
-      - name: Gateway-Auftrag bereitstellen
-        uses: actions/upload-artifact@v7
-        with:
-          name: openclaw-gateway-request-v2-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ github.workspace }}/.abstractions-gateway-batch/request.json
-          if-no-files-found: error
-          retention-days: 1
-      - name: Ergebnis empfangen und pruefen
+      - name: Quellen direkt portieren
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python3 "$RUNNER_COMPONENTS/runner_manager.py" receive \
-            --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" \
-            --trusted-key-file "$RUNNER_COMPONENTS/gateway-signing.pub" \
-            --deadline-epoch "$GATEWAY_RECEIVE_DEADLINE"
+          python3 "$RUNNER_COMPONENTS/runner_direct.py" \\
+            --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR"
       - name: Gepruefte Uebersetzungen veroeffentlichen
         run: |
           git -C "$RUNNER_OUTPUT" config user.name "KikiKari"
