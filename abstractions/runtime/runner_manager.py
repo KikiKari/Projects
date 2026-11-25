@@ -82,10 +82,10 @@ def prepare_git_sources(manager, directory, state, priority, count, run_id, run_
         repo, branch, commit = item
         mirror = manager.QUELLEN_DIR / (repo + ".git")
         records = []
-        for item in git(mirror, "ls-tree", "-r", "-z", "--full-tree", commit).split(b"\\0"):
+        for item in git(mirror, "ls-tree", "-r", "-z", "--full-tree", commit).split(b"\0"):
             if not item:
                 continue
-            metadata, raw_path = item.split(b"\\t", 1)
+            metadata, raw_path = item.split(b"\t", 1)
             mode, kind, oid = metadata.split(b" ", 2)
             if kind != b"blob" or mode not in (b"100644", b"100755"):
                 continue
@@ -131,7 +131,7 @@ def prepare_git_sources(manager, directory, state, priority, count, run_id, run_
     def read_blobs(pair):
         repo, items = pair
         mirror = manager.QUELLEN_DIR / (repo + ".git")
-        requested = b"".join((item["blob"] + "\\n").encode("ascii") for item in items)
+        requested = b"".join((item["blob"] + "\n").encode("ascii") for item in items)
         checks = git(mirror, "cat-file", "--batch-check=%(objectname) %(objecttype) %(objectsize)", data=requested).splitlines()
         if len(checks) != len(items):
             raise ValueError("incomplete Git blob metadata")
@@ -144,15 +144,15 @@ def prepare_git_sources(manager, directory, state, priority, count, run_id, run_
                 eligible.append((item, int(fields[2])))
         if not eligible:
             return []
-        wanted = b"".join((item["blob"] + "\\n").encode("ascii") for item, _ in eligible)
+        wanted = b"".join((item["blob"] + "\n").encode("ascii") for item, _ in eligible)
         output = io.BytesIO(git(mirror, "cat-file", "--batch", data=wanted))
         result = []
         for item, size in eligible:
-            header = output.readline().rstrip(b"\\n").split()
+            header = output.readline().rstrip(b"\n").split()
             if len(header) != 3 or header[0].decode("ascii") != item["blob"] or header[1] != b"blob" or int(header[2]) != size:
                 raise ValueError("invalid Git blob response")
             raw = output.read(size)
-            if len(raw) != size or output.read(1) != b"\\n":
+            if len(raw) != size or output.read(1) != b"\n":
                 raise ValueError("incomplete Git blob response")
             result.append((item, raw))
         return result
