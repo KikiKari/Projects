@@ -102,8 +102,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python3 "$RUNNER_COMPONENTS/runner_direct.py" \\
-            --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR"
+          python3 "$RUNNER_COMPONENTS/runner_direct.py" --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR"
       - name: Gepruefte Uebersetzungen veroeffentlichen
         run: |
           git -C "$RUNNER_OUTPUT" config user.name "KikiKari"
