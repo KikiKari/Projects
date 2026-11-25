@@ -51,13 +51,13 @@ jobs:
           fi
           echo "GATEWAY_RECEIVE_DEADLINE=$deadline" >> "$GITHUB_ENV"
       - name: Runner-Code auschecken
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
           path: runner
           persist-credentials: false
       - name: Ausgabezweig auschecken
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: abstractions
           path: output
