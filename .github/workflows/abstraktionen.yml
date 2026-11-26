@@ -102,13 +102,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          status=0
-          timeout --signal=TERM --kill-after=10s 48m python3 "$RUNNER_COMPONENTS/runner_direct.py" --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR" || status=$?
-          if [ "$status" -eq 124 ]; then
-            echo "Zeitfenster fuer Uebersetzungen beendet; vorhandene Ergebnisse werden veroeffentlicht."
-          elif [ "$status" -ne 0 ]; then
-            exit "$status"
-          fi
+          python3 "$RUNNER_COMPONENTS/runner_direct.py" --manager "$MANAGER_PATH" --output-root "$RUNNER_OUTPUT" --directory "$BATCH_DIR"
       - name: Gepruefte Uebersetzungen veroeffentlichen
         run: |
           git -C "$RUNNER_OUTPUT" config user.name "KikiKari"
