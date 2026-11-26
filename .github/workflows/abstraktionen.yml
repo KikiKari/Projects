@@ -116,6 +116,19 @@ jobs:
           fi
           git -C "$RUNNER_OUTPUT" commit -m 'Publish gateway translations'
           git -C "$RUNNER_OUTPUT" push origin HEAD:refs/heads/abstractions
+      - name: Bestand nach dem Lauf anzeigen
+        shell: bash
+        run: |
+          {
+            echo "## Bestand nach dem Lauf"
+            echo
+            echo "| Zielsprache | Dateien |"
+            echo "| --- | ---: |"
+            for lang in javascript perl5 powershell python shell tcl perl6 ruby lua go java c cpp php fsharp css; do
+              count=$(git -C "$RUNNER_OUTPUT" ls-files -z -- "$lang/" | tr -cd '\0' | wc -c)
+              echo "| $lang | $count |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Zustand nach Ergebnissen sichern
         uses: actions/cache/save@v6
         with:
