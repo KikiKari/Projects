@@ -1,0 +1,216 @@
+/* abstraction-provenance: {"artifact_sha256": "1729785feaf162a0c4cbc6bf76db94be642bdb0c07ac621eac1a1ce283deb257", "source_sha256": "e48c1623d8fdce193daf72caa7d76d4da5acf28c8842186c21c07f8cfddb5613", "target_language": "css"} */
+/* index.html — portiert nach css */
+/* Quelle: html, OpenClaw@gateway1:skills/scripting-utils/references/eggdrop/index.html */
+/* auch in: OpenClaw@gateway2:skills/scripting-utils/references/eggdrop/index.html */
+/* Erzeugt: 2026-11-26 durch ABSTRACTIONS_MANAGER.py */
+
+/* Allgemeine Stilrichtlinien */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f8f8;
+  color: #333;
+}
+
+/* Header-Bereich */
+.header-wrapper {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.headertitle a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.rel a {
+  color: white;
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.rel a:hover {
+  background-color: #555;
+}
+
+/* Hauptinhalt */
+.content-wrapper {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 20px;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: fit-content;
+}
+
+.sidebar h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.sidebar li {
+  margin: 5px 0;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #0066cc;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+.sidebar .caption {
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* Dokumentenbereich */
+.document {
+  flex: 1;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.document h1, .document h2, .document h3 {
+  color: #333;
+}
+
+.document p {
+  line-height: 1.6;
+}
+
+.document ul {
+  line-height: 1.6;
+}
+
+.document a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.document a:hover {
+  text-decoration: underline;
+}
+
+.document .headerlink {
+  visibility: hidden;
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+
+.document h1:hover .headerlink,
+.document h2:hover .headerlink,
+.document h3:hover .headerlink {
+  visibility: visible;
+}
+
+/* Suchbereich in der Sidebar */
+.sidebar .search {
+  margin-top: 20px;
+}
+
+.sidebar .search input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.sidebar .search input[type="submit"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.sidebar .search input[type="submit"]:hover {
+  background-color: #0052a3;
+}
+
+/* Footer-Bereich */
+.footer-wrapper {
+  background-color: #333;
+  color: white;
+  padding: 20px 0;
+  margin-top: 40px;
+}
+
+.footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer a {
+  color: white;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+  }
+  
+  .header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .rel {
+    margin-top: 10px;
+  }
+}

@@ -1,0 +1,344 @@
+#!/usr/bin/env tclsh
+# abstraction-provenance: {"artifact_sha256": "cd79bb8654f91ce869e84237f1ba1c8d49cf10dea475d19fdfacd471bfde23d5", "source_sha256": "44b94693f002cdbf68dac4e3bb32cff2600b7ff9320fbd036ebc07aa0df7f30a", "target_language": "tcl"}
+# 3d.html — portiert nach tcl
+# Quelle: html, Projects@Vision-Check:public/3d.html
+# Erzeugt: 2026-11-26 durch ABSTRACTIONS_MANAGER.py
+
+# Tcl/Tk Port von 3d.html - Vision-Check interaktive Architektur
+# Dieses Skript erzeugt eine HTML-Datei mit der 3D-Visualisierung
+
+proc write_html_file {filename} {
+    set fp [open $filename w]
+    
+    puts $fp {<!DOCTYPE html>}
+    puts $fp {<html lang="de">}
+    puts $fp {<head>}
+    puts $fp {<meta charset="utf-8">}
+    puts $fp {<meta name="viewport" content="width=device-width, initial-scale=1">}
+    puts $fp {<title>Vision-Check — Interaktive Architektur</title>}
+    puts $fp {<meta name="description" content="Von der Kamera über die On-Device-KI bis zur Cloud-Analyse — drehen, zoomen, Knoten auswählen.">}
+    puts $fp {<meta name="theme-color" content="#0f766e">}
+    puts $fp {<style>}
+    puts $fp {  :root\{}
+    puts $fp {    --bg:#fbfaf7; --panel:#fff; --line:#e6e3dc; --text:#16191d; --muted:#5f6773;}
+    puts $fp {    --ac:#0f766e; --buehne:#0e1420; --buehne-line:#1d2739;}
+    puts $fp {    color-scheme: light;}
+    puts $fp {  \}}
+    puts $fp {  @media (prefers-color-scheme: dark)\{}
+    puts $fp {    :root\{ --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#f2f4f8; --muted:#9aa3b2;}
+    puts $fp {           color-scheme: dark; \}}
+    puts $fp {  \}}
+    puts $fp {  *\{box-sizing:border-box\}}
+    puts $fp {  body\{margin:0;background:var(--bg);color:var(--text);}
+    puts $fp {       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif\}}
+    puts $fp {  .wrap\{max-width:1240px;margin:0 auto;padding:34px 22px 60px\}}
+    puts $fp {  .technik\{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+    puts $fp {           color:var(--ac);margin:0 0 10px\}}
+    puts $fp {  h1\{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:0 0 14px;letter-spacing:-.03em\}}
+    puts $fp {  .lede\{font-size:16.5px;color:var(--muted);max-width:62ch;margin:0 0 26px\}}
+    puts $fp {  .raster\{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px;align-items:start\}}
+    puts $fp {  @media (max-width:880px)\{ .raster\{grid-template-columns:1fr\} \}}
+    puts $fp {  .buehne\{position:relative;background:var(--buehne);border-radius:14px;overflow:hidden;}
+    puts $fp {          min-height:520px;aspect-ratio:16/11\}}
+    puts $fp {  .buehne canvas\{display:block;width:100%;height:100%\}}
+    puts $fp {  .knoepfe\{position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:2\}}
+    puts $fp {  button\{font:inherit;font-size:14px;font-weight:650;padding:9px 14px;border-radius:9px;}
+    puts $fp {         border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer\}}
+    puts $fp {  button:hover\{border-color:var(--ac)\}}
+    puts $fp {  button[aria-pressed="true"]\{background:var(--ac);border-color:var(--ac);color:#fff\}}
+    puts $fp {  .karte\{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px\}}
+    puts $fp {  .karte h2\{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;}
+    puts $fp {            color:var(--muted);margin:0 0 12px\}}
+    puts $fp {  .karte h3\{font-size:23px;margin:0 0 4px;letter-spacing:-.02em\}}
+    puts $fp {  .karte .sub\{color:var(--muted);margin:0 0 18px;font-size:14.5px\}}
+    puts $fp {  .feld\{border-top:1px solid var(--line);padding:12px 0 0;margin:0 0 12px\}}
+    puts $fp {  .feld dt\{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+    puts $fp {           color:var(--muted);margin:0 0 3px\}}
+    puts $fp {  .feld dd\{margin:0;font-weight:650\}}
+    puts $fp {  .blaettern\{display:flex;gap:8px;margin-top:16px\}}
+    puts $fp {  .blaettern button\{flex:1;text-align:center;line-height:1.25;padding:11px 8px\}}
+    puts $fp {  .legende\{display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 0;font-size:13.5px;color:var(--muted)\}}
+    puts $fp {  .legende span\{display:inline-flex;align-items:center;gap:9px\}}
+    puts $fp {  .strich\{width:30px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block\}}
+    puts $fp {  .fuss\{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:80ch\}}
+    puts $fp {  .fehler\{padding:40px;text-align:center;color:var(--muted)\}}
+    puts $fp {  a\{color:var(--ac)\}}
+    puts $fp {</style>}
+    puts $fp {</head>}
+    puts $fp {<body>}
+    puts $fp {<div class="wrap">}
+    puts $fp {}
+    puts $fp {  <p class="technik">three.js · r128</p>}
+    puts $fp {  <h1>Vision-Check</h1>}
+    puts $fp {  <p class="lede">Von der Kamera über die On-Device-KI bis zur Cloud-Analyse — drehen, zoomen, Knoten auswählen.</p>}
+    puts $fp {}
+    puts $fp {  <div class="raster">}
+    puts $fp {    <div class="buehne" id="buehne">}
+    puts $fp {      <div class="knoepfe">}
+    puts $fp {        <button id="btn-plus" title="Näher">+</button>}
+    puts $fp {        <button id="btn-minus" title="Weiter weg">−</button>}
+    puts $fp {        <button id="btn-reset">Zurücksetzen</button>}
+    puts $fp {        <button id="btn-iso" aria-pressed="true" title="Isometrisch oder perspektivisch">Iso</button>}
+    puts $fp {      </div>}
+    puts $fp {    </div>}
+    puts $fp {}
+    puts $fp {    <aside class="karte">}
+    puts $fp {      <h2>Ausgewählter Knoten</h2>}
+    puts $fp {      <h3 id="k-name">—</h3>}
+    puts $fp {      <p class="sub" id="k-sub">Knoten anklicken oder durchblättern</p>}
+    puts $fp {      <dl class="feld"><dt>Schicht</dt><dd id="k-schicht">—</dd></dl>}
+    puts $fp {      <dl class="feld"><dt>ID</dt><dd id="k-id">—</dd></dl>}
+    puts $fp {      <div class="blaettern">}
+    puts $fp {        <button id="btn-prev">←<br>Vorheriger</button>}
+    puts $fp {        <button id="btn-next">Nächster<br>→</button>}
+    puts $fp {      </div>}
+    puts $fp {    </aside>}
+    puts $fp {  </div>}
+    puts $fp {}
+    puts $fp {  <div class="legende" id="legende"></div>}
+    puts $fp {  <p class="fuss">Schematische Dokumentationsansicht — Blockgrößen messen weder Datenmenge noch Leistung. Keine Telemetrie, keine Fernabfragen: Die Seite lädt einmalig three.js vom CDN und rechnet danach ausschließlich lokal.</p>}
+    puts $fp {}
+    puts $fp {</div>}
+    puts $fp {}
+    puts $fp {<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>}
+    puts $fp {<script>}
+    puts $fp {(function()\{}
+    puts $fp {  "use strict";}
+    puts $fp {  var SPEC = \{"schichten": [\{"name": "Erfassung", "farbe": "#5f6773", "blocks": [\{"id": "getusermedia", "name": "getUserMedia", "untertitel": "MediaStream"\}, \{"id": "4k-auswahl", "name": "4K-Auswahl", "untertitel": "3840x2160"\}, \{"id": "geraete-dropdown", "name": "Geraete-Dropdown", "untertitel": "mehrere Kameras"\}\]\}, \{"name": "On-Device-KI", "farbe": "#2481cc", "blocks": [\{"id": "tensorflow-js", "name": "TensorFlow.js", "untertitel": "im Browser"\}, \{"id": "coco-ssd-v2", "name": "COCO-SSD v2", "untertitel": "80 Klassen"\}, \{"id": "webgl", "name": "WebGL", "untertitel": "bald WebGPU"\}\]\}, \{"name": "Bildverbesserung", "farbe": "#6d5bd0", "blocks": [\{"id": "clahe-4x", "name": "CLAHE 4x", "untertitel": "Kontrast"\}, \{"id": "unsharp-mask", "name": "Unsharp-Mask", "untertitel": "5 Stufen"\}, \{"id": "helligkeit-saettigung", "name": "Helligkeit/Saettigung", "untertitel": "Gegenlicht"\}\]\}, \{"name": "Cloud Vision", "farbe": "#b45309", "blocks": [\{"id": "gpt-4o", "name": "GPT-4o", "untertitel": "detail:high"\}, \{"id": "gemini-2-5", "name": "Gemini 2.5", "untertitel": "Bounding-Box"\}, \{"id": "claude", "name": "Claude", "untertitel": "Domaenenwissen"\}, \{"id": "worker-proxy", "name": "Worker-Proxy", "untertitel": "CORS fuer Claude"\}\]\}, \{"name": "Ausgabe", "farbe": "#0f766e", "blocks": [\{"id": "pixel-inspektor", "name": "Pixel-Inspektor", "untertitel": "8x-Lupe"\}, \{"id": "overlay", "name": "Overlay", "untertitel": "Echtzeit"\}, \{"id": "pwa", "name": "PWA", "untertitel": "Service Worker"\}\]\}\], "kanten": [\{"von": "getusermedia", "nach": "tensorflow-js", "art": "fluss"\}, \{"von": "4k-auswahl", "nach": "coco-ssd-v2", "art": "fluss"\}, \{"von": "geraete-dropdown", "nach": "webgl", "art": "fluss"\}, \{"von": "tensorflow-js", "nach": "clahe-4x", "art": "fluss"\}, \{"von": "coco-ssd-v2", "nach": "unsharp-mask", "art": "fluss"\}, \{"von": "webgl", "nach": "helligkeit-saettigung", "art": "fluss"\}, \{"von": "clahe-4x", "nach": "gpt-4o", "art": "fluss"\}, \{"von": "unsharp-mask", "nach": "gemini-2-5", "art": "fluss"\}, \{"von": "helligkeit-saettigung", "nach": "claude", "art": "fluss"\}, \{"von": "gpt-4o", "nach": "pixel-inspektor", "art": "fluss"\}, \{"von": "gemini-2-5", "nach": "overlay", "art": "fluss"\}, \{"von": "claude", "nach": "pwa", "art": "fluss"\}, \{"von": "worker-proxy", "nach": "pixel-inspektor", "art": "fluss"\}\], "kantenarten": [\{"art": "fluss", "farbe": "#0f766e", "stil": "voll", "text": "Fluss von unten nach oben"\}\]\};}
+    puts $fp {}
+    puts $fp {  var buehne = document.getElementById("buehne");}
+    puts $fp {  if (typeof THREE === "undefined")\{}
+    puts $fp {    buehne.insertAdjacentHTML("beforeend",}
+    puts $fp {      '<div class="fehler">three.js konnte nicht geladen werden. ' +}
+    puts $fp {      'Die Seite braucht einmalig Netzzugang zum CDN.</div>');}
+    puts $fp {    return;}
+    puts $fp {  \}}
+    puts $fp {}
+    puts $fp {  // ---------------------------------------------------------------- Szene ---}
+    puts $fp {  var szene = new THREE.Scene();}
+    puts $fp {  szene.background = new THREE.Color(0x0e1420);}
+    puts $fp {  var renderer = new THREE.WebGLRenderer(\{antialias:true\});}
+    puts $fp {  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));}
+    puts $fp {  buehne.appendChild(renderer.domElement);}
+    puts $fp {}
+    puts $fp {  var D = 26, radius = 82, aspekt = 1;}
+    puts $fp {  var kameraIso = new THREE.OrthographicCamera(-D, D, D, -D, 0.1, 600);}
+    puts $fp {  var kameraPersp = new THREE.PerspectiveCamera(42, 1, 0.1, 600);}
+    puts $fp {  var kamera = kameraIso, iso = true;}
+    puts $fp {}
+    puts $fp {  szene.add(new THREE.AmbientLight(0xffffff, 0.66));}
+    puts $fp {  var licht = new THREE.DirectionalLight(0xffffff, 0.8);}
+    puts $fp {  licht.position.set(30, 46, 26); szene.add(licht);}
+    puts $fp {  var gegen = new THREE.DirectionalLight(0x8ea2ff, 0.3);}
+    puts $fp {  gegen.position.set(-32, 16, -28); szene.add(gegen);}
+    puts $fp {}
+    puts $fp {  var raster = new THREE.GridHelper(110, 34, 0x25324a, 0x1a2333);}
+    puts $fp {  raster.position.y = -24; szene.add(raster);}
+    puts $fp {}
+    puts $fp {  // ------------------------------------------------------------ Schilder ---}
+    puts $fp {  // Text auf eine Textur, dann als Billboard — bleibt bei jeder Drehung lesbar.}
+    puts $fp {  function schild(text, unter)\{}
+    puts $fp {    var c = document.createElement("canvas"), x = c.getContext("2d");}
+    puts $fp {    var f1 = "700 40px -apple-system,Segoe UI,Roboto,sans-serif";}
+    puts $fp {    var f2 = "500 27px -apple-system,Segoe UI,Roboto,sans-serif";}
+    puts $fp {    x.font = f1; var w1 = x.measureText(text).width;}
+    puts $fp {    x.font = f2; var w2 = unter ? x.measureText(unter).width : 0;}
+    puts $fp {    var w = Math.ceil(Math.max(w1, w2)) + 40, h = unter ? 96 : 62;}
+    puts $fp {    c.width = w; c.height = h;}
+    puts $fp {    x = c.getContext("2d");}
+    puts $fp {    x.fillStyle = "rgba(255,255,255,.95";}
+    puts $fp {    if (x.roundRect)\{ x.beginPath(); x.roundRect(0,0,w,h,13); x.fill(); \}}
+    puts $fp {    else x.fillRect(0,0,w,h);}
+    puts $fp {    x.fillStyle = "#16191d"; x.font = f1; x.textBaseline = "middle";}
+    puts $fp {    x.fillText(text, 20, unter ? 32 : 31);}
+    puts $fp {    if (unter)\{ x.fillStyle = "#5f6773"; x.font = f2; x.fillText(unter, 20, 68); \}}
+    puts $fp {    var t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter;}
+    puts $fp {    var s = new THREE.Sprite(new THREE.SpriteMaterial(\{map:t, transparent:true, depthTest:false\}));}
+    puts $fp {    s.scale.set(w/62*2.5, h/62*2.5, 1);}
+    puts $fp {    s.renderOrder = 999;}
+    puts $fp {    return s;}
+    puts $fp {  \}}
+    puts $fp {}
+    puts $fp {  // -------------------------------------------------------------- Aufbau ---}
+    puts $fp {  var BW = 7.4, BD = 4.2, BH = 1.7, LUFT = 1.3, ABSTAND = 11.4, START = -17;}
+    puts $fp {  var knoten = [], nachId = \{\}, klickbar = [];}
+    puts $fp {  var gruppe = new THREE.Group();}
+    puts $fp {}
+    puts $fp {  SPEC.schichten.forEach(function(sch, si)\{}
+    puts $fp {    var y = START + si * ABSTAND;}
+    puts $fp {    var bl = sch.blocks.map(function(b)\{}
+    puts $fp {      return (typeof b === "string") ? \{id:null, name:b, untertitel:""\} : b;}
+    puts $fp {    \});}
+    puts $fp {    var spalten = Math.max(1, Math.ceil(bl.length / 2));}
+    puts $fp {    var reihen = bl.length <= 1 ? 1 : 2;}
+    puts $fp {    var gx = spalten*BW + (spalten-1)*LUFT, gz = reihen*BD + (reihen-1)*LUFT;}
+    puts $fp {}
+    puts $fp {    var platte = new THREE.Mesh(}
+    puts $fp {      new THREE.BoxGeometry(gx+3, 0.6, gz+3),}
+    puts $fp {      new THREE.MeshLambertMaterial(\{color:new THREE.Color(sch.farbe).multiplyScalar(0.4)\}));}
+    puts $fp {    platte.position.set(0, y-1.7, 0); gruppe.add(platte);}
+    puts $fp {}
+    puts $fp {    bl.forEach(function(b, i)\{}
+    puts $fp {      var sp = i % spalten, re = Math.floor(i / spalten);}
+    puts $fp {      var x = -gx/2 + BW/2 + sp*(BW+LUFT), z = -gz/2 + BD/2 + re*(BD+LUFT);}
+    puts $fp {      var mat = new THREE.MeshLambertMaterial(\{color:sch.farbe\});}
+    puts $fp {      var m = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), mat);}
+    puts $fp {      m.position.set(x, y, z);}
+    puts $fp {      gruppe.add(m); klickbar.push(m);}
+    puts $fp {      var kante = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),}
+    puts $fp {        new THREE.LineBasicMaterial(\{color:0x0e1420, transparent:true, opacity:.55\}));}
+    puts $fp {      kante.position.copy(m.position); gruppe.add(kante);}
+    puts $fp {}
+    puts $fp {      var s = schild(b.name, b.untertitel);}
+    puts $fp {      s.position.set(x, y + BH/2 + (b.untertitel ? 2.1 : 1.6), z);}
+    puts $fp {      gruppe.add(s);}
+    puts $fp {}
+    puts $fp {      var id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));}
+    puts $fp {      var eintrag = \{id:id, name:b.name, untertitel:b.untertitel||"", schicht:sch.name,}
+    puts $fp {                     mesh:m, mat:mat, farbe:new THREE.Color(sch.farbe), pos:m.position\};}
+    puts $fp {      m.userData.index = knoten.length;}
+    puts $fp {      knoten.push(eintrag); nachId[id] = eintrag;}
+    puts $fp {    \});}
+    puts $fp {  \});}
+    puts $fp {}
+    puts $fp {  // -------------------------------------------------------------- Kanten ---}
+    puts $fp {  var STIL = \{\};}
+    puts $fp {  (SPEC.kantenarten || []).forEach(function(a)\{ STIL[a.art] = a; \});}
+    puts $fp {}
+    puts $fp {  (SPEC.kanten || []).forEach(function(k)\{}
+    puts $fp {    var a = nachId[k.von], b = nachId[k.nach];}
+    puts $fp {    if (!a || !b) return;}
+    puts $fp {    var art = STIL[k.art] || \{farbe:"#8ea2ff", stil:"voll"\};}
+    puts $fp {    var g = new THREE.BufferGeometry().setFromPoints([}
+    puts $fp {      a.pos.clone().setY(a.pos.y + 0.9), b.pos.clone().setY(b.pos.y - 0.9)]);}
+    puts $fp {    var linie;}
+    puts $fp {    if (art.stil === "gestrichelt")\{}
+    puts $fp {      linie = new THREE.Line(g, new THREE.LineDashedMaterial(}
+    puts $fp {        \{color:art.farbe, dashSize:1.4, gapSize:1.0, transparent:true, opacity:.9\}));}
+    puts $fp {      linie.computeLineDistances();}
+    puts $fp {    \} else \{}
+    puts $fp {      linie = new THREE.Line(g, new THREE.LineBasicMaterial(}
+    puts $fp {        \{color:art.farbe, transparent:true, opacity:.85\}));}
+    puts $fp {    \}}
+    puts $fp {    gruppe.add(linie);}
+    puts $fp {  \});}
+    puts $fp {}
+    puts $fp {  szene.add(gruppe);}
+    puts $fp {}
+    puts $fp {  var leg = document.getElementById("legende");}
+    puts $fp {  (SPEC.kantenarten || []).forEach(function(a)\{}
+    puts $fp {    var s = document.createElement("span");}
+    puts $fp {    s.innerHTML = '<i class="strich" style="border-top-color:' + a.farbe +}
+    puts $fp {                  ';border-top-style:' + (a.stil === "gestrichelt" ? "dashed" : "solid") +}
+    puts $fp {                  '"></i>' + a.text;}
+    puts $fp {    leg.appendChild(s);}
+    puts $fp {  \});}
+    puts $fp {}
+    puts $fp {  // ------------------------------------------------------------- Auswahl ---}
+    puts $fp {  var aktiv = -1;}
+    puts $fp {  function waehle(i)\{}
+    puts $fp {    if (aktiv >= 0)\{}
+    puts $fp {      knoten[aktiv].mat.color.copy(knoten[aktiv].farbe);}
+    puts $fp {      knoten[aktiv].mat.emissive.setHex(0x000000);}
+    puts $fp {      knoten[aktiv].mesh.scale.set(1,1,1);}
+    puts $fp {    \}}
+    puts $fp {    aktiv = ((i % knoten.length) + knoten.length) % knoten.length;}
+    puts $fp {    var k = knoten[aktiv];}
+    puts $fp {    k.mat.emissive.setHex(0x333333);}
+    puts $fp {    k.mesh.scale.set(1.1, 1.5, 1.1);}
+    puts $fp {    document.getElementById("k-name").textContent = k.name;}
+    puts $fp {    document.getElementById("k-sub").textContent = k.untertitel || "—";}
+    puts $fp {    document.getElementById("k-schicht").textContent = k.schicht;}
+    puts $fp {    document.getElementById("k-id").textContent = k.id;}
+    puts $fp {  \}}
+    puts $fp {}
+    puts $fp {  var strahl = new THREE.Raycaster(), zeiger = new THREE.Vector2();}
+    puts $fp {  renderer.domElement.addEventListener("click", function(e)\{}
+    puts $fp {    if (gezogen) return;}
+    puts $fp {    var r = renderer.domElement.getBoundingClientRect();}
+    puts $fp {    zeiger.x = ((e.clientX - r.left) / r.width) * 2 - 1;}
+    puts $fp {    zeiger.y = -((e.clientY - r.top) / r.height) * 2 + 1;}
+    puts $fp {    strahl.setFromCamera(zeiger, kamera);}
+    puts $fp {    var treffer = strahl.intersectObjects(klickbar, false);}
+    puts $fp {    if (treffer.length) waehle(treffer[0].object.userData.index);}
+    puts $fp {  \});}
+    puts $fp {  document.getElementById("btn-prev").addEventListener("click", function()\{ waehle(aktiv - 1); \});}
+    puts $fp {  document.getElementById("btn-next").addEventListener("click", function()\{ waehle(aktiv + 1); \});}
+    puts $fp {}
+    puts $fp {  // ------------------------------------------------------------- Kamera ----}
+    puts $fp {  var azimut = Math.PI/4, elevation = 0.62, rotiert = true;}
+    puts $fp {  function stelle()\{}
+    puts $fp {    var x = radius*Math.cos(elevation)*Math.sin(azimut);}
+    puts $fp {    var y = radius*Math.sin(elevation);}
+    puts $fp {    var z = radius*Math.cos(elevation)*Math.cos(azimut);}
+    puts $fp {    kamera.position.set(x, y, z); kamera.lookAt(0, 0, 0);}
+    puts $fp {  \}}
+    puts $fp {  var zieht = false, gezogen = false, lx = 0, ly = 0;}
+    puts $fp {  renderer.domElement.addEventListener("pointerdown", function(e)\{}
+    puts $fp {    zieht = true; gezogen = false; lx = e.clientX; ly = e.clientY;}
+    puts $fp {  \});}
+    puts $fp {  window.addEventListener("pointermove", function(e)\{}
+    puts $fp {    if (!zieht) return;}
+    puts $fp {    if (Math.abs(e.clientX-lx) + Math.abs(e.clientY-ly) > 3)\{ gezogen = true; rotiert = false; \}}
+    puts $fp {    azimut -= (e.clientX - lx) * 0.006;}
+    puts $fp {    elevation = Math.max(0.08, Math.min(1.45, elevation + (e.clientY - ly) * 0.005));}
+    puts $fp {    lx = e.clientX; ly = e.clientY;}
+    puts $fp {  \});}
+    puts $fp {  window.addEventListener("pointerup", function()\{ zieht = false; setTimeout(function()\{ gezogen = false; \}, 0); \});}
+    puts $fp {}
+    puts $fp {  function zoom(f)\{}
+    puts $fp {    if (iso)\{ D = Math.max(11, Math.min(54, D * f)); groesse(); \}}
+    puts $fp {    else \{ radius = Math.max(32, Math.min(160, radius * f)); \}}
+    puts $fp {  \}}
+    puts $fp {  document.getElementById("btn-plus").addEventListener("click", function()\{ zoom(0.85); \});}
+    puts $fp {  document.getElementById("btn-minus").addEventListener("click", function()\{ zoom(1.18); \});}
+    puts $fp {  renderer.domElement.addEventListener("wheel", function(e)\{}
+    puts $fp {    e.preventDefault(); zoom(e.deltaY > 0 ? 1.08 : 0.93);}
+    puts $fp {  \}, \{passive:false\});}
+    puts $fp {  document.getElementById("btn-reset").addEventListener("click", function()\{}
+    puts $fp {    azimut = Math.PI/4; elevation = 0.62; D = 26; radius = 82; rotiert = true;}
+    puts $fp {    iso = true; kamera = kameraIso;}
+    puts $fp {    document.getElementById("btn-iso").setAttribute("aria-pressed", "true");}
+    puts $fp {    document.getElementById("btn-iso").textContent = "Iso";}
+    puts $fp {    waehle(0); groesse();}
+    puts $fp {  \});}
+    puts $fp {  document.getElementById("btn-iso").addEventListener("click", function()\{}
+    puts $fp {    iso = !iso; kamera = iso ? kameraIso : kameraPersp;}
+    puts $fp {    this.setAttribute("aria-pressed", String(iso));}
+    puts $fp {    this.textContent = iso ? "Iso" : "Persp";}
+    puts $fp {    groesse();}
+    puts $fp {  \});}
+    puts $fp {}
+    puts $fp {  function groesse()\{}
+    puts $fp {    var w = buehne.clientWidth, h = buehne.clientHeight;}
+    puts $fp {    aspekt = w / h;}
+    puts $fp {    kameraIso.left = -D*aspekt; kameraIso.right = D*aspekt;}
+    puts $fp {    kameraIso.top = D; kameraIso.bottom = -D; kameraIso.updateProjectionMatrix();}
+    puts $fp {    kameraPersp.aspect = aspekt; kameraPersp.updateProjectionMatrix();}
+    puts $fp {    renderer.setSize(w, h, false);}
+    puts $fp {  \}}
+    puts $fp {  window.addEventListener("resize", groesse);}
+    puts $fp {}
+    puts $fp {  groesse();}
+    puts $fp {  waehle(0);}
+    puts $fp {  (function schleife()\{}
+    puts $fp {    requestAnimationFrame(schleife);}
+    puts $fp {    if (rotiert) azimut += 0.003;}
+    puts $fp {    stelle();}
+    puts $fp {    renderer.render(szene, kamera);}
+    puts $fp {  \})();}
+    puts $fp {\})();}
+    puts $fp {</script>}
+    puts $fp {</body>}
+    puts $fp {</html>}
+    
+    close $fp
+}
+
+# Hauptprogramm - Dateiname als Kommandozeilenargument
+if {$argc != 1} {
+    puts stderr "Verwendung: $argv0 <ausgabedatei>"
+    exit 1
+}
+
+write_html_file [lindex $argv 0]

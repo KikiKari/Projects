@@ -1,0 +1,277 @@
+<?php
+// abstraction-provenance: {"artifact_sha256": "9a1c0b19b507694cd3f488976d16054c037361fdc483be1d0cdc840475e4be4e", "source_sha256": "83117e76f05b08bc4554d3f4feb0f928c62429bbccc6f556ec336643a33b2a1a", "target_language": "php"}
+// TikTok-Live-Viewer.html — portiert nach php
+// Quelle: html, Projects@Telegram-Monitor:TikTok-Live-Viewer.html
+// Erzeugt: 2026-11-26 durch ABSTRACTIONS_MANAGER.py
+// TikTok Live Companion — Viewer
+// Portiert von HTML zu PHP
+
+class TikTokLiveViewer {
+    public function generateHTML() {
+        $html = '<!DOCTYPE html>' . "\n";
+        $html .= '<html lang="de">' . "\n";
+        $html .= '<head>' . "\n";
+        $html .= '<meta charset="utf-8">' . "\n";
+        $html .= '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
+        $html .= '<title>TikTok Live Companion — Viewer</title>' . "\n";
+        $html .= '<style>' . "\n";
+        $html .= '  :root{' . "\n";
+        $html .= '    --bg:#0f1115; --card:#171a21; --line:#262b36; --text:#f2f4f8; --muted:#9aa3b2;' . "\n";
+        $html .= '    --tt:#fe2c55; --ok:#22c55e; --warn:#f59e0b;' . "\n";
+        $html .= '    color-scheme: dark;' . "\n";
+        $html .= '  }' . "\n";
+        $html .= '  @media (prefers-color-scheme: light){' . "\n";
+        $html .= '    :root{ --bg:#f6f7f9; --card:#fff; --line:#e3e6ea; --text:#16191d; --muted:#6b7280; }' . "\n";
+        $html .= '  }' . "\n";
+        $html .= '  *{box-sizing:border-box}' . "\n";
+        $html .= '  body{margin:0;background:var(--bg);color:var(--text);' . "\n";
+        $html .= '       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' . "\n";
+        $html .= '  .wrap{max-width:1180px;margin:0 auto;padding:16px}' . "\n";
+        $html .= '  header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}' . "\n";
+        $html .= '  h1{font-size:17px;margin:0;font-weight:650}' . "\n";
+        $html .= '  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;' . "\n";
+        $html .= '         padding:3px 10px;border-radius:99px;background:#2a2f3a;color:var(--muted)}' . "\n";
+        $html .= '  .badge.live{background:var(--tt);color:#fff}' . "\n";
+        $html .= '  .badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}' . "\n";
+        $html .= '  .badge.live .dot{animation:pulse 1.6s infinite}' . "\n";
+        $html .= '  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}' . "\n";
+        $html .= '  input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);' . "\n";
+        $html .= '                      background:var(--card);color:var(--text);padding:9px 12px}' . "\n";
+        $html .= '  input{min-width:220px}' . "\n";
+        $html .= '  button{cursor:pointer;font-weight:600}' . "\n";
+        $html .= '  button.primary{background:var(--tt);border-color:var(--tt);color:#fff}' . "\n";
+        $html .= '  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}' . "\n";
+        $html .= '  .grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:14px}' . "\n";
+        $html .= '  @media (max-width:900px){ .grid{grid-template-columns:1fr} }' . "\n";
+        $html .= '  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}' . "\n";
+        $html .= '  .player{position:relative;width:100%;aspect-ratio:9/16;max-height:80vh;background:#000;' . "\n";
+        $html .= '          border-radius:12px;overflow:hidden;border:1px solid var(--line)}' . "\n";
+        $html .= '  .player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}' . "\n";
+        $html .= '  .ph{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;' . "\n";
+        $html .= '      align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:26px}' . "\n";
+        $html .= '  h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);' . "\n";
+        $html .= '     margin:0 0 8px;font-weight:650}' . "\n";
+        $html .= '  .meta{color:var(--muted);font-size:13px}' . "\n";
+        $html .= '  .strong{color:var(--text);font-weight:600}' . "\n";
+        $html .= '  .stream{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}' . "\n";
+        $html .= '  .stream:last-child{border-bottom:0}' . "\n";
+        $html .= '  .stream .when{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}' . "\n";
+        $html .= '  .stream .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' . "\n";
+        $html .= '  .stream.now{color:var(--tt);font-weight:650}' . "\n";
+        $html .= '  .hint{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:10px}' . "\n";
+        $html .= '  a{color:var(--tt)} a:hover{text-decoration:underline}' . "\n";
+        $html .= '  code{background:rgba(127,127,127,.15);padding:1px 5px;border-radius:4px;font-size:12.5px;' . "\n";
+        $html .= '       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}' . "\n";
+        $html .= '</style>' . "\n";
+        $html .= '</head>' . "\n";
+        $html .= '<body>' . "\n";
+        $html .= '<div class="wrap">' . "\n";
+        $html .= '  <header>' . "\n";
+        $html .= '    <h1>TikTok Live Companion — Viewer</h1>' . "\n";
+        $html .= '    <span class="badge" id="badge"><span class="dot"></span><span id="badgeText">bereit</span></span>' . "\n";
+        $html .= '    <span class="meta" id="checked"></span>' . "\n";
+        $html .= '  </header>' . "\n";
+        $html .= '' . "\n";
+        $html .= '  <div class="row">' . "\n";
+        $html .= '    <input id="user" placeholder="@name eingeben — beliebiges öffentliches Konto" autofocus>' . "\n";
+        $html .= '    <button class="primary" id="go">Anzeigen</button>' . "\n";
+        $html .= '    <button id="clear">Leeren</button>' . "\n";
+        $html .= '    <select id="every">' . "\n";
+        $html .= '      <option value="0" selected>Status: nur manuell</option>' . "\n";
+        $html .= '      <option value="60">Status alle 60 s</option>' . "\n";
+        $html .= '      <option value="120">alle 2 min</option>' . "\n";
+        $html .= '      <option value="300">alle 5 min</option>' . "\n";
+        $html .= '    </select>' . "\n";
+        $html .= '    <input id="api" value="http://127.0.0.1:8765" placeholder="Monitor-Adresse" style="min-width:250px">' . "\n";
+        $html .= '  </div>' . "\n";
+        $html .= '' . "\n";
+        $html .= '  <div class="grid">' . "\n";
+        $html .= '    <div>' . "\n";
+        $html .= '      <div class="player" id="player">' . "\n";
+        $html .= '        <div class="ph" id="ph">' . "\n";
+        $html .= '          <div style="font-size:34px">📺</div>' . "\n";
+        $html .= '          <div id="phText">Namen eintragen und „Anzeigen“ drücken —<br>der Player startet sofort.</div>' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '      </div>' . "\n";
+        $html .= '      <p class="hint">' . "\n";
+        $html .= '        Eingebettet wird der offizielle TikTok-Live-Player' . "\n";
+        $html .= '        <code id="curUrl">tiktok.com/embed/live/@name</code> — <b>keine Anmeldung,' . "\n";
+        $html .= '        keine Geschenk- oder Kauf-Oberfläche</b>. Ist das Konto offline, zeigt der' . "\n";
+        $html .= '        Rahmen eine Fehlerseite von TikTok; das ist das Offline-Zeichen.' . "\n";
+        $html .= '      </p>' . "\n";
+        $html .= '    </div>' . "\n";
+        $html .= '' . "\n";
+        $html .= '    <div>' . "\n";
+        $html .= '      <div class="card">' . "\n";
+        $html .= '        <h2>Aufruf</h2>' . "\n";
+        $html .= '        <div class="meta" id="links">noch kein Konto gewählt</div>' . "\n";
+        $html .= '      </div>' . "\n";
+        $html .= '' . "\n";
+        $html .= '      <div class="card" style="margin-top:12px">' . "\n";
+        $html .= '        <h2>Status</h2>' . "\n";
+        $html .= '        <div class="meta" id="status">' . "\n";
+        $html .= '          Läuft gerade / seit wann / letzte Sendungen kommen aus dem lokalen Monitor.' . "\n";
+        $html .= '          Ohne ihn zeigt diese Seite nur den Player — eine lokale Datei darf im' . "\n";
+        $html .= '          Browser keine fremden Server abfragen.' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '        <div class="hint">' . "\n";
+        $html .= '          Monitor starten: <code>python server.py --poll-interval 120</code> im' . "\n";
+        $html .= '          Projektordner, dann oben <code>http://127.0.0.1:8765</code> eintragen' . "\n";
+        $html .= '          und „Anzeigen“ drücken.' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '      </div>' . "\n";
+        $html .= '' . "\n";
+        $html .= '      <div class="card" style="margin-top:12px">' . "\n";
+        $html .= '        <h2>Letzte Sendungen</h2>' . "\n";
+        $html .= '        <div class="meta" id="streams">—</div>' . "\n";
+        $html .= '      </div>' . "\n";
+        $html .= '    </div>' . "\n";
+        $html .= '  </div>' . "\n";
+        $html .= '</div>' . "\n";
+        $html .= '' . "\n";
+        $html .= '<script>' . "\n";
+        $html .= 'const $ = s => document.querySelector(s);' . "\n";
+        $html .= 'const esc = s => String(s ?? \'\').replace(/[&<>"]/g, c =>' . "\n";
+        $html .= '  ({\'&\':\'&amp;\',\'<\':\'&lt;\',\'>\':\'&gt;\',\'"\':\'&quot;\'}[c]));' . "\n";
+        $html .= 'const num = n => n == null ? \'?\' : Number(n).toLocaleString(\'de-DE\');' . "\n";
+        $html .= 'const clean = s => String(s || \'\').trim()' . "\n";
+        $html .= '  .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, \'\')' . "\n";
+        $html .= '  .replace(/\/live.*$/i, \'\').replace(/^@/, \'\').trim();' . "\n";
+        $html .= '' . "\n";
+        $html .= 'let timer = null;' . "\n";
+        $html .= '' . "\n";
+        $html .= 'function embedUrl(user){' . "\n";
+        $html .= '  return \'https://www.tiktok.com/embed/live/@\' + encodeURIComponent(user);' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= '/* Player sofort einbetten — ohne jede Statusabfrage. */' . "\n";
+        $html .= 'function mount(user){' . "\n";
+        $html .= '  const holder = $(\'#player\');' . "\n";
+        $html .= '  holder.querySelectorAll(\'iframe\').forEach(f => f.remove());' . "\n";
+        $html .= '  const f = document.createElement(\'iframe\');' . "\n";
+        $html .= '  f.src = embedUrl(user);' . "\n";
+        $html .= '  f.allow = \'autoplay; encrypted-media; picture-in-picture; fullscreen\';' . "\n";
+        $html .= '  f.referrerPolicy = \'origin\';' . "\n";
+        $html .= '  f.title = \'TikTok Live von @\' + user;' . "\n";
+        $html .= '  holder.appendChild(f);' . "\n";
+        $html .= '  $(\'#ph\').style.display = \'none\';' . "\n";
+        $html .= '  $(\'#curUrl\').textContent = \'tiktok.com/embed/live/@\' + user;' . "\n";
+        $html .= '  $(\'#links\').innerHTML =' . "\n";
+        $html .= '    \'<div class="strong">@\'+ esc(user) + \'</div>\' +' . "\n";
+        $html .= '    \'<div style="margin-top:6px">\' +' . "\n";
+        $html .= '    \'<a href="https://www.tiktok.com/@\' + esc(user) + \'/live" target="_blank" rel="noopener">Live-Seite</a> · \' +' . "\n";
+        $html .= '    \'<a href="https://www.tiktok.com/@\' + esc(user) + \'" target="_blank" rel="noopener">Profil</a> · \' +' . "\n";
+        $html .= '    \'<a href="\' + esc(embedUrl(user)) + \'" target="_blank" rel="noopener">Player einzeln</a></div>\';' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= 'function setBadge(live){' . "\n";
+        $html .= '  $(\'#badge\').className = \'badge\' + (live === true ? \' live\' : \'\');' . "\n";
+        $html .= '  $(\'#badgeText\').textContent = live === true ? \'LIVE\'' . "\n";
+        $html .= '    : (live === false ? \'offline\' : \'Status unbekannt\');' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= '/* Status nur, wenn ein Monitor eingetragen ist. */' . "\n";
+        $html .= 'async function fetchStatus(user){' . "\n";
+        $html .= '  const base = $(\'#api\').value.trim().replace(/\/+$/, \'\');' . "\n";
+        $html .= '  if(!base){ setBadge(null); return; }' . "\n";
+        $html .= '  try{' . "\n";
+        $html .= '    const r = await fetch(base + \'/api/tiktok/status?users=\' + encodeURIComponent(user),' . "\n";
+        $html .= '                          { cache: \'no-store\' });' . "\n";
+        $html .= '    if(!r.ok) throw new Error(\'HTTP \' + r.status);' . "\n";
+        $html .= '    const d = await r.json();' . "\n";
+        $html .= '    const st = (d.accounts || [])[0];' . "\n";
+        $html .= '    if(!st) throw new Error(\'keine Daten\');' . "\n";
+        $html .= '    render(st);' . "\n";
+        $html .= '  }catch(e){' . "\n";
+        $html .= '    setBadge(null);' . "\n";
+        $html .= '    $(\'#status\').innerHTML = \'<span style="color:var(--warn)">Monitor nicht erreichbar (\' +' . "\n";
+        $html .= '      esc(e.message) + \').</span><br>Der Player oben läuft davon unabhängig weiter.\';' . "\n";
+        $html .= '  }' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= 'function render(st){' . "\n";
+        $html .= '  setBadge(st.live);' . "\n";
+        $html .= '  $(\'#checked\').textContent = st.checked_at' . "\n";
+        $html .= '    ? \'geprüft \' + new Date(st.checked_at).toLocaleTimeString(\'de-DE\') : \'\';' . "\n";
+        $html .= '  $(\'#status\').innerHTML =' . "\n";
+        $html .= '    (st.title ? \'<div class="strong">\' + esc(st.title) + \'</div>\' : \'\') +' . "\n";
+        $html .= '    (st.started_at ? \'<div>Beginn \' + esc(st.started_at.replace(\'T\',\' \')) +' . "\n";
+        $html .= '      (st.since ? \' · seit ca. \' + esc(st.since) : \'\') + \'</div>\' : \'\') +' . "\n";
+        $html .= '    (st.last_seen ? \'<div>zuletzt gesehen \' + esc(st.last_seen) + \'</div>\' : \'\') +' . "\n";
+        $html .= '    (st.streams_total ? \'<div>\' + num(st.streams_total) + \' Sendungen · \' +' . "\n";
+        $html .= '      esc(st.airtime || \'\') + \' · \' + num(st.active_days) + \' aktive Tage</div>\' : \'\');' . "\n";
+        $html .= '  $(\'#streams\').innerHTML = (st.streams || []).length' . "\n";
+        $html .= '    ? st.streams.slice(0, 12).map(s =>' . "\n";
+        $html .= '        \'<div class="stream\' + (s.is_live ? \' now\' : \'\') + \'">\' +' . "\n";
+        $html .= '        \'<span class="when">\' + esc(String(s.day).slice(5)) + \' \' + esc(s.time || \'\') + \'</span>\' +' . "\n";
+        $html .= '        \'<span class="t">\' + esc(s.title || \'(ohne Titel)\') + \'</span>\' +' . "\n";
+        $html .= '        \'<span class="when">\' + esc(s.duration || \'\') + \'</span></div>\').join(\'\')' . "\n";
+        $html .= '    : \'keine Daten\';' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= 'function start(){' . "\n";
+        $html .= '  const user = clean($(\'#user\').value);' . "\n";
+        $html .= '  if(!user){ $(\'#user\').focus(); return; }' . "\n";
+        $html .= '  $(\'#user\').value = user;' . "\n";
+        $html .= '  try{' . "\n";
+        $html .= '    localStorage.setItem(\'ttv.user\', user);' . "\n";
+        $html .= '    localStorage.setItem(\'ttv.api\', $(\'#api\').value.trim());' . "\n";
+        $html .= '  }catch(e){}' . "\n";
+        $html .= '  mount(user);' . "\n";
+        $html .= '  fetchStatus(user);' . "\n";
+        $html .= '  if(timer) clearInterval(timer);' . "\n";
+        $html .= '  const every = parseInt($(\'#every\').value, 10);' . "\n";
+        $html .= '  if(every > 0) timer = setInterval(() => fetchStatus(user), every * 1000);' . "\n";
+        $html .= '}' . "\n";
+        $html .= '' . "\n";
+        $html .= '$(\'#go\').onclick = start;' . "\n";
+        $html .= '$(\'#user\').addEventListener(\'keydown\', e => { if(e.key === \'Enter\') start(); });' . "\n";
+        $html .= '$(\'#every\').addEventListener(\'change\', start);' . "\n";
+        $html .= '$(\'#clear\').onclick = () => {' . "\n";
+        $html .= '  if(timer) clearInterval(timer);' . "\n";
+        $html .= '  document.querySelectorAll(\'#player iframe\').forEach(f => f.remove());' . "\n";
+        $html .= '  $(\'#ph\').style.display = \'\';' . "\n";
+        $html .= '  $(\'#user\').value = \'\';' . "\n";
+        $html .= '  $(\'#links\').textContent = \'noch kein Konto gewählt\';' . "\n";
+        $html .= '  $(\'#streams\').textContent = \'—\';' . "\n";
+        $html .= '  $(\'#curUrl\').textContent = \'tiktok.com/embed/live/@name\';' . "\n";
+        $html .= '  setBadge(null);' . "\n";
+        $html .= '  try{ localStorage.removeItem(\'ttv.user\'); }catch(e){}' . "\n";
+        $html .= '  $(\'#user\').focus();' . "\n";
+        $html .= '};' . "\n";
+        $html .= '' . "\n";
+        $html .= '/* Nichts fest eingebaut — nur das zuletzt selbst eingegebene Konto. */' . "\n";
+        $html .= 'try{' . "\n";
+        $html .= '  const savedApi = localStorage.getItem(\'ttv.api\');' . "\n";
+        $html .= '  if(savedApi) $(\'#api\').value = savedApi;' . "\n";
+        $html .= '  const savedUser = localStorage.getItem(\'ttv.user\');' . "\n";
+        $html .= '  if(savedUser){ $(\'#user\').value = savedUser; start(); }' . "\n";
+        $html .= '}catch(e){}' . "\n";
+        $html .= '</script>' . "\n";
+        $html .= '</body>' . "\n";
+        $html .= '</html>' . "\n";
+        
+        return $html;
+    }
+    
+    public function saveToFile($filename) {
+        $content = $this->generateHTML();
+        return file_put_contents($filename, $content) !== false;
+    }
+}
+
+// Hauptausführung
+if (isset($argv[1])) {
+    $viewer = new TikTokLiveViewer();
+    if ($viewer->saveToFile($argv[1])) {
+        echo "Datei erfolgreich erstellt: " . $argv[1] . "\n";
+    } else {
+        echo "Fehler beim Erstellen der Datei: " . $argv[1] . "\n";
+        exit(1);
+    }
+} else {
+    // Wenn kein Dateiname übergeben wurde, geben wir den HTML-Code direkt aus
+    $viewer = new TikTokLiveViewer();
+    echo $viewer->generateHTML();
+}
+?>

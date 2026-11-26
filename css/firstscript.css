@@ -1,0 +1,143 @@
+/* abstraction-provenance: {"artifact_sha256": "96b664068d24498cde08efac2d1c8d644aaa88ad0001ead86722bc09a1e5d1db", "source_sha256": "4f983e18647beafe2b9b2b47b22a387ea65bb995eabb76e5206fc5b0ebb175d2", "target_language": "css"} */
+/* firstscript.html — portiert nach css */
+/* Quelle: html, OpenClaw@gateway1:skills/scripting-utils/references/eggdrop/firstscript.html */
+/* auch in: OpenClaw@gateway2:skills/scripting-utils/references/eggdrop/firstscript.html */
+/* Erzeugt: 2026-11-26 durch ABSTRACTIONS_MANAGER.py */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.header-wrapper {
+  role: banner;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+.headertitle a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.rel {
+  role: navigation;
+  aria-label: related navigation;
+}
+
+.content-wrapper {
+  display: flex;
+}
+
+.content {
+  display: flex;
+}
+
+.sidebar {
+  width: 250px;
+  padding: 20px;
+}
+
+.sidebar h3 {
+  margin-top: 1.5em;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.sidebar li {
+  margin-bottom: 5px;
+}
+
+.sidebar .toctree-l1 a {
+  text-decoration: none;
+}
+
+.sidebar .toctree-l1.current a {
+  font-weight: bold;
+}
+
+.sidebar .caption {
+  role: heading;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.search {
+  margin-top: 10px;
+}
+
+.search input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.document {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.documentwrapper {
+  display: flex;
+}
+
+.bodywrapper {
+  flex-grow: 1;
+}
+
+.body {
+  role: main;
+}
+
+.section {
+  margin-bottom: 30px;
+}
+
+.section h1 {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.highlight-default {
+  background-color: #f5f5f5;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.highlight pre {
+  margin: 0;
+  white-space: pre;
+}
+
+.footer-wrapper {
+  clear: both;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+.footer .left {
+  flex: 1;
+}
+
+.footer .right {
+  flex: 1;
+  text-align: right;
+}
+
+.clearer {
+  clear: both;
+}
