@@ -1,0 +1,51 @@
+/* abstraction-provenance: {"artifact_sha256": "bfde9f0eb82297708981cc80ed4b76c79832035e1a0b424619cf99b89f43d7a3", "source_sha256": "acf0fac539f0a8aaf291ce2cdb6ca15cda4a6a1087f02b8e0c2854bd81fa82b3", "target_language": "css"} */
+/* tiktok-embed-viewer.html — portiert nach css */
+/* Quelle: html, Projects@Telegram-Monitor:plugin/tiktok-embed-viewer.html */
+/* Erzeugt: 2026-11-27 durch ABSTRACTIONS_MANAGER.py */
+
+:root{
+  --bg:#0f1115; --card:#171a21; --line:#262b36; --text:#f2f4f8; --muted:#9aa3b2;
+  --accent:#25f4ee; --accent2:#fe2c55; --ok:#22c55e; --off:#6b7280;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f6f7f9; --card:#fff; --line:#e3e6ea; --text:#16191d; --muted:#6b7280; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+     font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:16px}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:17px;margin:0;font-weight:650}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+       padding:3px 10px;border-radius:99px;background:#2a2f3a;color:var(--muted)}
+.badge.live{background:var(--accent2);color:#fff}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.badge.live .dot{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);
+                    background:var(--card);color:var(--text);padding:8px 11px}
+button{cursor:pointer;font-weight:600}
+button.primary{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
+@media (max-width:860px){ .grid{grid-template-columns:1fr} }
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.player{position:relative;width:100%;aspect-ratio:9/16;max-height:78vh;background:#000;
+        border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;
+             align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:24px}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+   margin:0 0 8px;font-weight:600}
+.meta{color:var(--muted);font-size:13px}
+.stream{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.stream:last-child{border-bottom:0}
+.stream .when{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.stream .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stream.now{color:var(--accent2);font-weight:600}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+a{color:var(--accent2)} a:hover{text-decoration:underline}
+.err{background:#3a1d22;border:1px solid #5c2a33;color:#ffb4c0;padding:9px 12px;
+     border-radius:8px;font-size:13px;margin-bottom:10px}
+@media (prefers-color-scheme: light){ .err{background:#fdeceb;border-color:#f5c6c2;color:#b91c1c} }

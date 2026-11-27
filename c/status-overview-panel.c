@@ -1,0 +1,91 @@
+// abstraction-provenance: {"artifact_sha256": "7c1d003026ebc2553c8d68fabec56936d385cbbf75ce7a15f427edc01d11bdb8", "source_sha256": "9be2a45ff3b835da1be1793cc88c8cb54d6a2456cf2ccc358c8243df836440e3", "target_language": "c"}
+// status-overview-panel.css — portiert nach c
+// Quelle: css, Projects@TikTok-Live-Companion:plugin-source/browser-extension/status-overview-panel.css
+// Erzeugt: 2026-11-27 durch ABSTRACTIONS_MANAGER.py
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void write_css_rule(FILE* file, const char* selector, const char* properties) {
+    fprintf(file, "%s { %s }\n", selector, properties);
+}
+
+void write_css_rule_multi(FILE* file, const char* selectors[], int count, const char* properties) {
+    for (int i = 0; i < count; i++) {
+        if (i > 0) fprintf(file, ", ");
+        fprintf(file, "%s", selectors[i]);
+    }
+    fprintf(file, " { %s }\n", properties);
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <output_file>\n", argv[0]);
+        return 1;
+    }
+
+    FILE* file = fopen(argv[1], "w");
+    if (!file) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // .overview-row
+    write_css_rule(file, ".overview-row", "display:grid; grid-template-columns:24px minmax(0,1fr) 11px 22px auto; gap:7px; align-items:center; margin:6px 0");
+
+    // .overview-row input
+    write_css_rule(file, ".overview-row input", "min-width:0; width:100%");
+
+    // .overview-state
+    write_css_rule(file, ".overview-state", "width:11px; height:11px; border-radius:50%; background:#888");
+
+    // .overview-state.online
+    write_css_rule(file, ".overview-state.online", "background:var(--good); box-shadow:0 0 0 3px color-mix(in srgb, var(--good) 15%, transparent)");
+
+    // .overview-state.offline
+    write_css_rule(file, ".overview-state.offline", "background:var(--bad); box-shadow:0 0 0 3px color-mix(in srgb, var(--bad) 15%, transparent)");
+
+    // .overview-state.checking, .overview-state.error
+    const char* checking_error_selectors[] = {".overview-state.checking", ".overview-state.error"};
+    write_css_rule_multi(file, checking_error_selectors, 2, "background:var(--warn)");
+
+    // .overview-count
+    write_css_rule(file, ".overview-count", "font-size:11px; text-align:center; font-variant-numeric:tabular-nums");
+
+    // .overview-actions
+    write_css_rule(file, ".overview-actions", "display:grid; grid-template-columns:44px repeat(2,minmax(0,1fr)); gap:6px; align-items:stretch");
+
+    // .overview-actions button
+    write_css_rule(file, ".overview-actions button", "min-width:0; padding:8px 2px; font-size:11px; white-space:nowrap");
+
+    // #overview-rows
+    write_css_rule(file, "#overview-rows", "display:flex; flex-direction:column");
+
+    // .monitor-settings > label:not(.option-row)
+    write_css_rule(file, ".monitor-settings > label:not(.option-row)", "display:block; margin:12px 0");
+
+    // .monitor-settings .option-row input
+    write_css_rule(file, ".monitor-settings .option-row input", "appearance:auto; width:13px; height:13px; min-width:13px; background:none");
+
+    // .overview-link
+    write_css_rule(file, ".overview-link", "padding:8px 0; border-bottom:1px solid #bbb; overflow-wrap:anywhere");
+
+    // .overview-link p
+    write_css_rule(file, ".overview-link p", "margin:4px 0");
+
+    // .overview-row .overview-retry
+    write_css_rule(file, ".overview-row .overview-retry", "width:24px; min-width:24px; height:26px; min-height:26px; padding:0; background-image:var(--icon-reset); background-size:20px; background-position:center; background-repeat:no-repeat");
+
+    // .top-setting input
+    write_css_rule(file, ".top-setting input", "appearance:auto; -webkit-appearance:checkbox; width:13px; height:13px; min-width:13px; background:none");
+
+    // .overview-visually-hidden
+    write_css_rule(file, ".overview-visually-hidden", "position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0");
+
+    // .overview-row[hidden]
+    write_css_rule(file, ".overview-row[hidden]", "display:none");
+
+    fclose(file);
+    return 0;
+}

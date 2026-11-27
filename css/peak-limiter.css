@@ -1,0 +1,22 @@
+/* abstraction-provenance: {"artifact_sha256": "3f2b97b726a0a4643711dc1dc285df9b75511cc4f35fbe168e178bf60aeaa00d", "source_sha256": "162cbb093559fd1ff9a7f362e753f4d965a73d5e557fce20d9cd95367574146b", "target_language": "css"} */
+/* peak-limiter.html — portiert nach css */
+/* Quelle: html, Projects@TikTok-Live-Companion:plugin-source/tests/peak-limiter.html */
+/* auch in: Projects@TikTok-Live-Companion-Android:plugin-source/tests/peak-limiter.html */
+/* auch in: Projects@TikTok-Live-Companion-iOS:plugin-source/tests/peak-limiter.html */
+/* auch in: Projects@vercel/install-and-configure-vercel-s-8vf8rt:plugin-source/tests/peak-limiter.html */
+/* Erzeugt: 2026-11-27 durch ABSTRACTIONS_MANAGER.py */
+
+body {
+  font: 16px system-ui;
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+button {
+  padding: 12px;
+}
