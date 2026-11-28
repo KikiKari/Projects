@@ -1,0 +1,378 @@
+/* abstraction-provenance: {"artifact_sha256": "b0a58ce2ef77f0cb611635f6e0b3487157c5206699dab86314850b15197ec634", "source_sha256": "0f3530ed5a95fa71241e65119ede0362d09d6dbde8fbabfc84d844298613edb6", "target_language": "css"} */
+/* language.html — portiert nach css */
+/* Quelle: html, OpenClaw@gateway1:skills/scripting-utils/references/raku/language.html */
+/* auch in: OpenClaw@gateway2:skills/scripting-utils/references/raku/language.html */
+/* Erzeugt: 2026-11-28 durch ABSTRACTIONS_MANAGER.py */
+
+/* Base styles from HTML document */
+html {
+    scroll-padding-top: 60px;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #fff;
+    color: #333;
+}
+
+/* Navigation styles */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #333;
+    z-index: 1000;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar-item {
+    padding: 0.5rem 1rem;
+}
+
+.navbar-logo {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-logo img {
+    height: 38px;
+    width: 52.83px;
+}
+
+.navbar-logo-tm {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    color: #fff;
+}
+
+.navbar-menu {
+    display: flex;
+    flex-grow: 1;
+    justify-content: space-between;
+}
+
+.navbar-start, .navbar-end {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-dropdown {
+    background-color: #333;
+    border-radius: 4px;
+    display: none;
+    min-width: 160px;
+    position: absolute;
+    z-index: 1;
+}
+
+.navbar-dropdown.is-right {
+    right: 0;
+}
+
+.navbar-dropdown.is-rounded {
+    border-radius: 4px;
+}
+
+.navbar-link:hover + .navbar-dropdown,
+.navbar-dropdown:hover {
+    display: block;
+}
+
+.navbar-divider {
+    background-color: #666;
+    border: none;
+    height: 1px;
+    margin: 0.5rem 0;
+}
+
+.navbar-item.has-dropdown {
+    position: relative;
+}
+
+.navbar-item.has-dropdown:hover .navbar-dropdown {
+    display: block;
+}
+
+.field.has-addons {
+    display: flex;
+}
+
+.control {
+    position: relative;
+}
+
+.input {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.button {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 4px;
+}
+
+.modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+    color: black;
+}
+
+/* Layout styles */
+.tile {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.tile.is-ancestor {
+    margin: 0 -0.75rem;
+}
+
+.tile.is-parent {
+    padding: 0.75rem;
+}
+
+.tile.is-2 {
+    flex: none;
+    width: 16.66667%;
+}
+
+.tile.is-hidden {
+    display: none;
+}
+
+.section {
+    padding: 3rem 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.columns {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.one-col {
+    width: 100%;
+}
+
+/* Content styles */
+.page-header {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.camelia {
+    display: block;
+    margin: 2rem auto;
+    max-width: 300px;
+    height: auto;
+}
+
+.raku-h2 {
+    font-size: 2rem;
+    margin: 2rem 0 1rem 0;
+    color: #333;
+}
+
+.raku-anchor {
+    text-decoration: none;
+    color: #007bff;
+    margin-left: 0.5rem;
+}
+
+.raku-anchor:hover {
+    text-decoration: underline;
+}
+
+/* Footer styles */
+.footer {
+    background-color: #f8f9fa;
+    padding: 2rem 0;
+    border-top: 1px solid #dee2e6;
+}
+
+.level {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.level-left, .level-right {
+    display: flex;
+    align-items: center;
+}
+
+.level-item {
+    margin: 0 1rem;
+}
+
+/* Toggle switches */
+.chyronToggle, .centreToggle {
+    display: inline-block;
+    position: relative;
+    width: var(--switch-width, 8em);
+    height: 2em;
+    background-color: #ddd;
+    border-radius: 1em;
+    cursor: pointer;
+}
+
+.chyronToggle input, .centreToggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.chyronToggle .text, .centreToggle .text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.chyronToggle .on, .chyronToggle .off,
+.centreToggle .on, .centreToggle .off {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.chyronToggle .on, .centreToggle .on {
+    left: 0.5em;
+}
+
+.chyronToggle .off, .centreToggle .off {
+    right: 0.5em;
+}
+
+/* Search styles */
+.autoComplete_options {
+    position: relative;
+}
+
+.ss-selected {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.options-search-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Edit button */
+.page-edit {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+}
+
+.page-edit-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.page-edit-button:hover {
+    background-color: #0056b3;
+}
+
+.icon {
+    display: inline-block;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .navbar-menu {
+        flex-direction: column;
+    }
+    
+    .navbar-start, .navbar-end {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .tile.is-2 {
+        width: 100%;
+    }
+}
